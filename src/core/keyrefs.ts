@@ -2,7 +2,7 @@
 import { KEY_EPS, sortKeys } from './edit';
 import type { Animation, Id } from './model';
 
-export type KeyKind = 'bone' | 'slot' | 'ik' | 'deform' | 'drawOrder' | 'event' | 'slider';
+export type KeyKind = 'bone' | 'slot' | 'ik' | 'deform' | 'drawOrder' | 'event' | 'slider' | 'transform';
 
 export interface KeyRef {
   kind: KeyKind;
@@ -33,6 +33,8 @@ export function resolveKeys(anim: Animation, ref: Pick<KeyRef, 'kind' | 'target'
       return (anim.slots[ref.target] as Record<string, AnyKeys | undefined> | undefined)?.[ref.prop];
     case 'ik':
       return anim.ik[ref.target];
+    case 'transform':
+      return anim.transform?.[ref.target];
     case 'slider':
       return (anim.slider?.[ref.target] as Record<string, AnyKeys | undefined> | undefined)?.[ref.prop];
     case 'deform': {
@@ -113,6 +115,7 @@ export function pruneEmpty(anim: Animation) {
     if (Object.keys(t).length === 0) delete anim.slots[id];
   }
   for (const id in anim.ik) if (anim.ik[id].length === 0) delete anim.ik[id];
+  for (const id in anim.transform ?? {}) if (anim.transform[id].length === 0) delete anim.transform[id];
   for (const id in anim.slider ?? {}) {
     const t = anim.slider[id] as Record<string, AnyKeys | undefined>;
     for (const p of Object.keys(t)) if (!t[p] || t[p]!.length === 0) delete t[p];

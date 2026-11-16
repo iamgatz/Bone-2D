@@ -42,7 +42,7 @@ $env:FUZZ_SEEDS='300'; $env:FUZZ_STEPS='100'; npx vitest run tests/fuzz.test.ts
 - Skins (swap the image in a slot), events, undo / redo (a gesture collapses into one step).
 
 **Animation (Animate mode)**
-- Auto-key (or manual keys + "Key all"); keys for rotate / translate / scale / shear, slot colors, attachment changes, IK mix / bend, **mesh deformation**, draw order, events.
+- Auto-key (or manual keys + "Key all"); keys for rotate / translate / scale / shear, slot colors (light and dark), attachment changes, IK mix / bend, transform-constraint mixes, **mesh deformation**, draw order, events.
 - Dopesheet: selection, box select, drag keys with frame snapping, copy / paste, interpolation (linear / stepped / bezier / ease).
 - **Graph editor**: per-channel curves, drag keys and Bézier handles.
 - Playback, loop, frame stepping.
@@ -91,7 +91,7 @@ Rationale for the choices is in [docs/PROMPT.md](docs/PROMPT.md); notes on the 4
 
 Path and physics constraints, path attachments, weights and deformation for clipping / bounding boxes (only moving vertices is supported),
 linked meshes (imported as copies), sequence atlases, draw-order folders, import of Spine 4.0–4.2 files (different constraint format), binary export (`.skel`),
-keying transform-constraint mixes in the timeline (data and export are supported, no UI), onion skin, collaboration.
+onion skin, collaboration.
 
 Spine quirks we reproduce on purpose: angles go through float32 π (`180 / 3.1415927`), and reading a world rotation at the 0 / 360° boundary (the source of a transform
 constraint or a slider driver) gives 0 or 360 depending on ~1e-6° noise, so different runtimes can disagree on such an edge.

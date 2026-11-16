@@ -102,6 +102,7 @@ function allKeyRefs(a: Animation): KeyRef[] {
   for (const id in a.bones) for (const prop of Object.keys(a.bones[id])) for (const k of (a.bones[id] as Record<string, { time: number }[]>)[prop]) out.push({ kind: 'bone', target: id, prop, time: k.time });
   for (const id in a.slots) for (const prop of Object.keys(a.slots[id])) for (const k of (a.slots[id] as Record<string, { time: number }[]>)[prop]) out.push({ kind: 'slot', target: id, prop, time: k.time });
   for (const id in a.ik) for (const k of a.ik[id]) out.push({ kind: 'ik', target: id, prop: '', time: k.time });
+  for (const id in a.transform) for (const k of a.transform[id]) out.push({ kind: 'transform', target: id, prop: '', time: k.time });
   for (const id in a.slider) for (const prop of Object.keys(a.slider[id])) for (const k of (a.slider[id] as Record<string, { time: number }[]>)[prop]) out.push({ kind: 'slider', target: id, prop, time: k.time });
   for (const skinId in a.deform) for (const slotId in a.deform[skinId]) for (const att in a.deform[skinId][slotId]) for (const k of a.deform[skinId][slotId][att]) out.push({ kind: 'deform', target: slotId, prop: deformProp(skinId, att), time: k.time });
   for (const k of a.drawOrder) out.push({ kind: 'drawOrder', target: '', prop: '', time: k.time });
@@ -176,6 +177,7 @@ export const ops: Op[] = [
   { name: 'createSlider', run: (c) => { SL.createSlider(c.chance(0.6) ? c.pick(doc().bones)!.id : null); } },
   { name: 'updateSlider', run: (c) => { const s = c.pick(doc().constraints.filter((x) => x.type === 'slider')); if (s) SL.updateSlider(s.id, { additive: c.chance(0.5), loop: c.chance(0.5), local: c.chance(0.5), property: c.pick(TRANSFORM_PROPS)!, from: c.num(-50, 50), to: c.num(0, 1), scale: c.num(-0.05, 0.05), animation: c.chance(0.85) ? (c.pick(doc().animations)?.id ?? null) : null, bone: c.chance(0.7) ? c.pick(doc().bones)!.id : null, mix: c.r(), time: c.num(0, 2) }); } },
   { name: 'setSliderValues', run: (c) => { const s = c.pick(doc().constraints.filter((x) => x.type === 'slider')); if (s) SL.setSliderValues(s.id, { mix: c.r(), ...(c.chance(0.5) ? { time: c.num(0, 2) } : {}) }); } },
+  { name: 'setTransformMix', run: (c) => { const k = c.pick(doc().constraints.filter((x) => x.type === 'transform')); if (k) T.setTransformMix(k.id, { [c.pick(TRANSFORM_PROPS)!]: c.r(), ...(c.chance(0.3) ? { [c.pick(TRANSFORM_PROPS)!]: c.num(0, 1.5) } : {}) }); } },
   { name: 'updateTransform', run: (c) => { const k = c.pick(doc().constraints.filter((x) => x.type === 'transform')); if (k) T.updateTransform(k.id, (t) => { t.clamp = c.chance(0.5); t.additive = c.chance(0.5); t.localTarget = c.chance(0.5); t.mix.rotate = c.r(); }); } },
   // ---- animations / keys
   { name: 'setMode', run: (c) => { A.setMode(c.chance(0.6) ? 'animate' : 'setup'); } },
@@ -190,8 +192,8 @@ export const ops: Op[] = [
   { name: 'moveKeysBy', run: (c) => { const a = A.currentAnimation(); if (!a) return; const refs = allKeyRefs(a); const k = c.pick(refs); if (k) A.moveKeysBy(refs.filter((r) => r.kind === k.kind && r.target === k.target && r.prop === k.prop && c.chance(0.6)).concat(k), c.num(-1, 1)); } },
   { name: 'deleteKeys', run: (c) => { const a = A.currentAnimation(); if (!a) return; const refs = allKeyRefs(a); A.deleteKeys(refs.filter(() => c.chance(0.15))); } },
   { name: 'setKeysCurve', run: (c) => { const a = A.currentAnimation(); if (!a) return; const refs = allKeyRefs(a).filter((r) => r.kind !== 'drawOrder' && r.kind !== 'event' && r.prop !== 'attachment'); const k = c.pick(refs); if (k) A.setKeysCurve([k], c.pick(['linear', 'stepped', 'bezier', [0.1, 0.2, 0.9, 0.8]] as const)! as 'linear'); } },
-  { name: 'setKeyChannelValue', run: (c) => { const a = A.currentAnimation(); if (!a) return; const refs = allKeyRefs(a).filter((r) => r.kind === 'bone' || r.kind === 'ik' || r.kind === 'slider'); const k = c.pick(refs); if (k) A.setKeyChannelValue(k, 0, c.num(-50, 50)); } },
-  { name: 'setKeyCurveHandle', run: (c) => { const a = A.currentAnimation(); if (!a) return; const refs = allKeyRefs(a).filter((r) => r.kind === 'bone' || r.kind === 'ik' || r.kind === 'deform'); const k = c.pick(refs); if (k) A.setKeyCurveHandle(k, 0, c.chance(0.5) ? 1 : 2, c.r(), c.num(-1, 2)); } },
+  { name: 'setKeyChannelValue', run: (c) => { const a = A.currentAnimation(); if (!a) return; const refs = allKeyRefs(a).filter((r) => r.kind === 'bone' || r.kind === 'ik' || r.kind === 'slider' || r.kind === 'transform'); const k = c.pick(refs); if (k) A.setKeyChannelValue(k, 0, c.num(-50, 50)); } },
+  { name: 'setKeyCurveHandle', run: (c) => { const a = A.currentAnimation(); if (!a) return; const refs = allKeyRefs(a).filter((r) => r.kind === 'bone' || r.kind === 'ik' || r.kind === 'deform' || r.kind === 'transform'); const k = c.pick(refs); if (k) A.setKeyCurveHandle(k, 0, c.chance(0.5) ? 1 : 2, c.r(), c.num(-1, 2)); } },
   { name: 'copyPasteKeys', run: (c) => { const a = A.currentAnimation(); if (!a) return; const refs = allKeyRefs(a).filter((r) => r.kind !== 'drawOrder'); const k = c.pick(refs); if (!k) return; A.copyKeys([k]); A.pasteKeys(c.num(0, 2)); } },
   // ---- history
   { name: 'undo', run: () => docStore.undo() },
@@ -279,10 +281,15 @@ export function parityMismatch(p: Project): Mismatch | null {
         // large terms (a = 3.5 next to b = 75), and the exporter's rounding (5 decimals for mixes, 7 digits for slider times)
         // is amplified by a slider with mix 48 into 0.01 degrees of a 3492 degree rotation — 3e-6 relative, harmless.
         const mag = Math.max(Math.abs(q.a), Math.abs(q.b), Math.abs(q.c), Math.abs(q.d));
-        const pairs: [string, number, number, number][] = [['a', mine.a, q.a, mag], ['b', mine.b, q.b, mag], ['c', mine.c, q.c, mag], ['d', mine.d, q.d, mag], ['worldX', mine.worldX, q.worldX, 0], ['worldY', mine.worldY, q.worldY, 0]];
+        // The position is a sum of terms the size of (local offset x parent matrix): a bone 7000 units out on a parent with a
+        // 1e-5 relative difference (an IK solve, a slider mix of 48) is off by a few tenths, which is still the same pose.
+        const parentMag = ob.parent ? Math.max(Math.abs(ob.parent.appliedPose.a), Math.abs(ob.parent.appliedPose.b), Math.abs(ob.parent.appliedPose.c), Math.abs(ob.parent.appliedPose.d)) : 1;
+        const wscale = 0.004 * (Math.abs(mine.ax) + Math.abs(mine.ay)) * parentMag;
+        const pairs: [string, number, number, number][] = [['a', mine.a, q.a, mag], ['b', mine.b, q.b, mag], ['c', mine.c, q.c, mag], ['d', mine.d, q.d, mag], ['worldX', mine.worldX, q.worldX, wscale], ['worldY', mine.worldY, q.worldY, wscale]];
         for (const [what, x, y, scale] of pairs) if (!(Math.abs(x - y) <= 5e-3 * Math.max(1, Math.abs(x), Math.abs(y), scale))) return { bone: ob.data.name, what, ours: x, official: y, animation: anim.name, time: t };
       }
-      const colors = colorMismatch(p, ours, official);
+      // (a slider whose driver sits on the 0/360 wrap applies its animation at time 0 in one runtime and at 360 in the other)
+      const colors = ambiguous.size ? null : colorMismatch(p, ours, official);
       if (colors) return { ...colors, animation: anim.name, time: t };
       const shapes = attachmentMismatch(p, ours, official, ambiguous);
       if (shapes) return { ...shapes, animation: anim.name, time: t };

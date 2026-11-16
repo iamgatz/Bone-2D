@@ -36,7 +36,7 @@
 
 ## Фаза 5 — Дальше
 - [x] Слайдеры 4.3 (модель, рантайм по официальному `Slider.js`, экспорт, UI, дифф-тест, случайные сессии)
-- [ ] Кейинг transform-миксов в таймлайне
+- [x] Кейинг transform-миксов в таймлайне (раунд 3 C: ключ `transform`, ◆ в инспекторе, строка в dopesheet, каналы в graph editor)
 - [x] clipping, bounding box, point (раунд 3, см. `ROUND3.md`)
 - [x] two-color tint (`rgba2`/`rgb2`: модель, солвер, экспорт/импорт, шейдер, инспектор, dopesheet/graph) — раунд 3 B
 - [ ] path/physics-констрейнты, linked mesh

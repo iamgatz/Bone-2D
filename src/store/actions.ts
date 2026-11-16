@@ -897,6 +897,7 @@ export function pasteKeys(time: number): KeyRef[] {
         if (c.kind === 'bone') (ensureBoneTimelines(a, c.target) as Record<string, unknown>)[c.prop] = keys = [];
         else if (c.kind === 'slot') ((a.slots[c.target] ??= {}) as Record<string, unknown>)[c.prop] = keys = [];
         else if (c.kind === 'ik') keys = a.ik[c.target] = [];
+        else if (c.kind === 'transform') keys = (a.transform[c.target] = []);
         else if (c.kind === 'slider') ((a.slider[c.target] ??= {}) as Record<string, unknown>)[c.prop] = keys = [];
         else if (c.kind === 'deform') {
           const [skinId, att] = c.prop.split('\u0001');
