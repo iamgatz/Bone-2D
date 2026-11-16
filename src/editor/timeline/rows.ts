@@ -33,6 +33,7 @@ const PROP_LABEL: Record<string, string> = {
   shear: 'Shear',
   attachment: 'Attachment',
   rgba: 'Color',
+  rgba2: 'Color',
   time: 'Time',
   mix: 'Mix',
 };
@@ -85,7 +86,7 @@ export function buildRows(doc: SkeletonDoc, anim: Animation | null, selectedBone
   for (const slot of doc.slots) {
     const tl = anim.slots[slot.id];
     if (!tl) continue;
-    const props = (['attachment', 'rgba'] as const).filter((p) => tl[p]?.length).map((p) => ({ prop: p, kind: 'slot' as const, target: slot.id, keys: tl[p]! }));
+    const props = (['attachment', 'rgba', 'rgba2'] as const).filter((p) => tl[p]?.length).map((p) => ({ prop: p, kind: 'slot' as const, target: slot.id, keys: tl[p]! }));
     if (!props.length) continue;
     const id = `slot:${slot.id}`;
     const open = isOpen(id, selectedSlot === slot.id);

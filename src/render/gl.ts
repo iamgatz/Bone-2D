@@ -4,7 +4,7 @@
  */
 import { clipOutline, fanIndices, planClipping } from '@/core/clip';
 import type { ClipState } from '@/core/clip';
-import type { BlendMode, RGBA } from '@/core/model';
+import type { BlendMode, RGB, RGBA } from '@/core/model';
 import { REGION_TRIANGLES, REGION_UVS, meshWorldVertices, regionWorldVertices } from '@/core/skeleton';
 import type { Skeleton, Slot } from '@/core/skeleton';
 
@@ -27,13 +27,16 @@ const VS = `#version 300 es
 in vec2 aPos;
 in vec2 aUv;
 in vec4 aColor;
+in vec3 aDark;
 uniform vec2 uCenter;
 uniform vec2 uScale;
 out vec2 vUv;
 out vec4 vColor;
+out vec3 vDark;
 void main() {
   vUv = aUv;
   vColor = aColor;
+  vDark = aDark;
   gl_Position = vec4((aPos - uCenter) * uScale, 0.0, 1.0);
 }`;
 
@@ -41,17 +44,19 @@ const FS = `#version 300 es
 precision highp float;
 in vec2 vUv;
 in vec4 vColor;
+in vec3 vDark;
 uniform sampler2D uTex;
 uniform float uTextured;
 out vec4 outColor;
 void main() {
-  vec4 c = vColor;
-  if (uTextured > 0.5) c *= texture(uTex, vUv);
-  outColor = c;
+  vec4 tex = uTextured > 0.5 ? texture(uTex, vUv) : vec4(1.0);
+  // Two-color tinting, as in Spine's straight-alpha shader: the light color multiplies the texture, the dark color fills in
+  // where the texture is dark. With a black dark color (no two-color tinting) this is the plain multiply.
+  outColor = vec4(tex.rgb * vColor.rgb + (1.0 - tex.rgb) * vDark, tex.a * vColor.a);
 }`;
 
 const MAX_VERTS = 16384;
-const FLOATS = 8;
+const FLOATS = 11; // x, y, u, v, light r g b a, dark r g b
 
 function compile(gl: WebGL2RenderingContext, type: number, src: string): WebGLShader {
   const sh = gl.createShader(type)!;
@@ -95,6 +100,7 @@ export class GLRenderer {
     gl.bindAttribLocation(prog, 0, 'aPos');
     gl.bindAttribLocation(prog, 1, 'aUv');
     gl.bindAttribLocation(prog, 2, 'aColor');
+    gl.bindAttribLocation(prog, 3, 'aDark');
     gl.linkProgram(prog);
     if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) throw new Error('Program link error: ' + gl.getProgramInfoLog(prog));
     this.program = prog;
@@ -116,6 +122,8 @@ export class GLRenderer {
     gl.vertexAttribPointer(1, 2, gl.FLOAT, false, stride, 8);
     gl.enableVertexAttribArray(2);
     gl.vertexAttribPointer(2, 4, gl.FLOAT, false, stride, 16);
+    gl.enableVertexAttribArray(3);
+    gl.vertexAttribPointer(3, 3, gl.FLOAT, false, stride, 32);
     this.ibo = gl.createBuffer()!;
     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.ibo);
     gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, this.idx.byteLength, gl.DYNAMIC_DRAW);
@@ -210,8 +218,8 @@ export class GLRenderer {
     this.iCount = 0;
   }
 
-  /** Pushes triangles. `world` holds x,y pairs; `uvs` is null for untextured geometry. */
-  pushGeometry(world: ArrayLike<number>, uvs: ArrayLike<number> | null, tris: ArrayLike<number>, vertexCount: number, triIndexCount: number, color: RGBA, tex: WebGLTexture | null, blend: BlendMode) {
+  /** Pushes triangles. `world` holds x,y pairs; `uvs` is null for untextured geometry; `dark` is the slot's dark color (two-color tinting). */
+  pushGeometry(world: ArrayLike<number>, uvs: ArrayLike<number> | null, tris: ArrayLike<number>, vertexCount: number, triIndexCount: number, color: RGBA, tex: WebGLTexture | null, blend: BlendMode, dark: RGB | null = null) {
     if (vertexCount > MAX_VERTS) return;
     if (tex !== this.curTex || blend !== this.curBlend || this.vCount + vertexCount > MAX_VERTS || this.iCount + triIndexCount > this.idx.length) {
       this.flush();
@@ -230,6 +238,9 @@ export class GLRenderer {
       v[o++] = color[1];
       v[o++] = color[2];
       v[o++] = color[3];
+      v[o++] = dark ? dark[0] : 0;
+      v[o++] = dark ? dark[1] : 0;
+      v[o++] = dark ? dark[2] : 0;
     }
     for (let i = 0; i < triIndexCount; i++) this.idx[this.iCount + i] = base + tris[i];
     this.vCount += vertexCount;
@@ -256,6 +267,9 @@ export class GLRenderer {
       v[o++] = colors[i * 4 + 1];
       v[o++] = colors[i * 4 + 2];
       v[o++] = colors[i * 4 + 3];
+      v[o++] = 0;
+      v[o++] = 0;
+      v[o++] = 0;
     }
     for (let i = 0; i < triIndexCount; i++) this.idx[this.iCount + i] = base + tris[i];
     this.vCount += vertexCount;
@@ -334,12 +348,12 @@ export class GLRenderer {
       const t = this.texture(att.path);
       if (att.kind === 'region') {
         regionWorldVertices(att, slot.bone, this.scratch);
-        this.pushGeometry(this.scratch, REGION_UVS, REGION_TRIANGLES, 4, 6, color, t?.tex ?? null, slot.data.blend);
+        this.pushGeometry(this.scratch, REGION_UVS, REGION_TRIANGLES, 4, 6, color, t?.tex ?? null, slot.data.blend, slot.dark);
       } else {
         const n = att.vertexCount;
         if (n * 2 > this.scratch.length) this.scratch = new Float32Array(n * 2 * 2);
         meshWorldVertices(skeleton, slot, att, slot.deform.length ? slot.deform : null, this.scratch);
-        this.pushGeometry(this.scratch, att.uvs, att.triangles, n, att.triangles.length, color, t?.tex ?? null, slot.data.blend);
+        this.pushGeometry(this.scratch, att.uvs, att.triangles, n, att.triangles.length, color, t?.tex ?? null, slot.data.blend, slot.dark);
       }
     }
     this.clipEnd();

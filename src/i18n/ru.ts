@@ -512,4 +512,12 @@ export const RU: Record<string, string> = {
   'Bind the mesh to bones so it bends with them. Select the bones in the viewport first.': 'Привяжи меш к костям, чтобы он гнулся вместе с ними. Сначала выбери кости во вьюпорте.',
   '"{}" is {#} s long': '«{1}» длится {2} с',
   'Timeline': 'Таймлайн',
+  // ---------------------------------------------------------------- two-color tint
+  'Dark tint': 'Тёмный тинт',
+  'Dark color': 'Тёмный цвет',
+  'Slot colors': 'Цвета слота',
+  'Two-color tint: a dark color that fills in where the image is dark (glow, hit flash)': 'Двухцветный тинт: тёмный цвет проступает там, где картинка тёмная (свечение, вспышка при ударе)',
+  'dark r': 'тёмный r',
+  'dark g': 'тёмный g',
+  'dark b': 'тёмный b',
 };
