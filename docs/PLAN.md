@@ -38,7 +38,8 @@
 - [x] Слайдеры 4.3 (модель, рантайм по официальному `Slider.js`, экспорт, UI, дифф-тест, случайные сессии)
 - [ ] Кейинг transform-миксов в таймлайне
 - [x] clipping, bounding box, point (раунд 3, см. `ROUND3.md`)
-- [ ] two-color tint (`rgba2`/`rgb2`, рендер и UI), path/physics-констрейнты, linked mesh
+- [x] two-color tint (`rgba2`/`rgb2`: модель, солвер, экспорт/импорт, шейдер, инспектор, dopesheet/graph) — раунд 3 B
+- [ ] path/physics-констрейнты, linked mesh
 - [x] Импорт Spine 4.3 JSON + атлас (round-trip идемпотентен)
 - [x] Интерфейс на русском и английском (`src/i18n`: словарь + JSX-рантайм, переключатель EN/RU, тест покрытия строк)
 - [x] Публикация: репозиторий iamgatz/Bone-2D, MIT, GitHub Pages через Actions

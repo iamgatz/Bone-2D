@@ -29,7 +29,7 @@ $env:FUZZ_SEEDS='300'; $env:FUZZ_STEPS='100'; npx vitest run tests/fuzz.test.ts
 
 **Rigging (Setup mode)**
 - Bones: create by dragging (chains start at the tip of the selected bone), hierarchy with drag-and-drop, inherit modes (`normal`, `onlyTranslation`, `noRotationOrReflection`, `noScale`, `noScaleOrReflection`).
-- Slots and images: drop PNGs into the window, draw order, blend modes, tint.
+- Slots and images: drop PNGs into the window, draw order, blend modes, tint, and **two-color tint** (a dark color that fills in where the image is dark: glow, hit flash; keyed in Animate mode together with the light color).
 - **Meshes**: auto-trace by alpha → Delaunay triangulation, vertex editing, add / remove, re-triangulate.
 - **Weights**: bind to bones (auto-weights), brush (add / subtract / replace / smooth), heat map, normalize, up to 4 influences per vertex.
 - **IK** (1 and 2 bones): mix, softness, bend, stretch, compress, scaleY modes; create by dragging.
@@ -90,7 +90,6 @@ Rationale for the choices is in [docs/PROMPT.md](docs/PROMPT.md); notes on the 4
 ## Not done yet
 
 Path and physics constraints, path attachments, weights and deformation for clipping / bounding boxes (only moving vertices is supported),
-two-color tint animation (`rgba2` / `rgb2`: the `dark` field is stored and exported but neither drawn nor keyed — the plan is in `docs/ROUND3.md`),
 linked meshes (imported as copies), sequence atlases, draw-order folders, import of Spine 4.0–4.2 files (different constraint format), binary export (`.skel`),
 keying transform-constraint mixes in the timeline (data and export are supported, no UI), onion skin, collaboration.
 
