@@ -58,6 +58,13 @@ export function removeSlots(doc: SkeletonDoc, slotIds: Set<Id>) {
   if (slotIds.size === 0) return;
   doc.slots = doc.slots.filter((s) => !slotIds.has(s.id));
   for (const skin of doc.skins) for (const id of slotIds) delete skin.attachments[id];
+  // a path constraint needs the slot that holds its path
+  const deadPaths = new Set(doc.constraints.filter((c) => c.type === 'path' && slotIds.has(c.target)).map((c) => c.id));
+  if (deadPaths.size) {
+    doc.constraints = doc.constraints.filter((c) => !deadPaths.has(c.id));
+    for (const skin of doc.skins) skin.constraints = skin.constraints.filter((c) => !deadPaths.has(c));
+    for (const a of doc.animations) for (const id of deadPaths) delete a.path?.[id];
+  }
   // a clipping attachment that ended at a removed slot clips until the end of the draw order
   for (const skin of doc.skins) {
     for (const perSlot of Object.values(skin.attachments)) {
@@ -94,7 +101,7 @@ export function removeBones(doc: SkeletonDoc, ids: Iterable<Id>, bindPose?: Bone
       const slotMat = slot && bindPose?.get(slot.bone);
       for (const name in skin.attachments[slotId]) {
         const att = skin.attachments[slotId][name];
-        if ((att.type === 'mesh' || att.type === 'clipping' || att.type === 'boundingbox') && att.weights) {
+        if ((att.type === 'mesh' || att.type === 'clipping' || att.type === 'boundingbox' || att.type === 'path') && att.weights) {
           const before = att.type === 'mesh' ? ({ ...att } as MeshAttachment) : null;
           const touched = att.weights.some((list) => list.some((inf) => gone.has(inf[0])));
           const orphaned = att.weights.some((list) => list.every((inf) => gone.has(inf[0])));
@@ -111,6 +118,8 @@ export function removeBones(doc: SkeletonDoc, ids: Iterable<Id>, bindPose?: Bone
           });
           // influences vanished: deform values follow the bones that stay
           if (before && att.type === 'mesh' && touched && skinIndex === 0) reconcileDeform(doc, slotId, name, before, att, null, (id) => wasBone.has(id));
+          // a path whose influences changed can no longer use its deform keys (their layout is per influence)
+          if (att.type === 'path' && touched) for (const a of doc.animations) for (const skinId of Object.keys(a.deform)) dropDeformTimeline(a, skinId, slotId, name);
         }
       }
     }
@@ -121,12 +130,13 @@ export function removeBones(doc: SkeletonDoc, ids: Iterable<Id>, bindPose?: Bone
       delete a.ik[id];
       if (a.transform) delete a.transform[id];
       if (a.slider) delete a.slider[id];
+      if (a.path) delete a.path[id];
     }
   }
   return gone;
 }
 
-function dropDeformTimeline(a: Animation, skinId: Id, slotId: Id, attName: string) {
+export function dropDeformTimeline(a: Animation, skinId: Id, slotId: Id, attName: string) {
   const perSlot = a.deform[skinId]?.[slotId];
   if (!perSlot) return;
   delete perSlot[attName];

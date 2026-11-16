@@ -117,7 +117,7 @@ describe('Spine JSON import: files made by Spine itself', () => {
     constraints: [
       { name: 'arm ik', type: 'ik', bones: ['arm'], target: 'root', bendPositive: false },
       { name: 'rot', type: 'transform', bones: ['arm'], source: 'hip', properties: { rotate: { offset: 5, to: { rotate: { scale: -1 } } } }, mixRotate: 0.5 },
-      { name: 'path', type: 'path', bones: ['arm'], slot: 'body', target: 'body' },
+      { name: 'springy', type: 'physics', bone: 'arm' }, // physics constraints are not supported yet
       { name: 'swing', type: 'slider', animation: 'swing pose', bone: 'hip', property: 'rotate', from: 0, to: 0, scale: 0.01, loop: true },
     ],
     skins: [
@@ -161,7 +161,7 @@ describe('Spine JSON import: files made by Spine itself', () => {
 
   it('imports the supported content and reports what it could not use', () => {
     const w = result.warnings.join('\n');
-    expect(w).toContain('path constraint "path"');
+    expect(w).toContain('physics constraint "springy"');
     expect(w).not.toContain('boundingbox attachment'); // bounding boxes are imported now
     expect(w).toContain('slot "lost" was skipped');
     expect(w).toContain('linked mesh "hatLinked" was imported as an independent mesh');

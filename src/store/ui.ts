@@ -2,9 +2,11 @@ import type { Id } from '@/core/model';
 import { createStore, useStore } from './store';
 
 export type Mode = 'setup' | 'animate';
-export type Tool = 'select' | 'create' | 'translate' | 'rotate' | 'scale' | 'mesh' | 'weights' | 'ik' | 'clipping' | 'boundingbox' | 'point';
+export type Tool = 'select' | 'create' | 'translate' | 'rotate' | 'scale' | 'mesh' | 'weights' | 'ik' | 'clipping' | 'boundingbox' | 'point' | 'path';
+/** Tools that draw clipping polygons, bounding boxes and points. */
+export const POLYGON_TOOLS: readonly Tool[] = ['clipping', 'boundingbox', 'point'];
 /** Tools that create attachments in the viewport (Setup mode only). */
-export const ATTACHMENT_TOOLS: readonly Tool[] = ['clipping', 'boundingbox', 'point'];
+export const ATTACHMENT_TOOLS: readonly Tool[] = [...POLYGON_TOOLS, 'path'];
 export type CurveKind = 'linear' | 'bezier' | 'stepped';
 
 export interface Selection {

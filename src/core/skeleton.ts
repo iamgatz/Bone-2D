@@ -16,6 +16,10 @@ import type {
   Inherit,
   Influence,
   MeshAttachment,
+  PathAttachment,
+  PathPositionMode,
+  PathRotateMode,
+  PathSpacingMode,
   PointAttachment,
   RGB,
   RGBA,
@@ -25,6 +29,7 @@ import type {
 } from './model';
 import { polygonVertexCount } from './model';
 import { DEG2RAD, EPS, EPS2, RAD2DEG, SPINE_PI, atan2Deg, signum } from './math';
+import { computeWorldPositions, newPathScratch, pathCurveLengths, setSize } from './path';
 
 // ------------------------------------------------------------------ compiled data
 
@@ -128,10 +133,22 @@ export interface PointData {
 
 export type PolygonData = BoundingBoxData | ClippingData;
 
+/** A Bezier path: `vertexCount` points, three per node (in-handle, anchor, out-handle). */
+export interface PathAttachmentData extends VertexData {
+  kind: 'path';
+  src: PathAttachment;
+  name: string;
+  color: RGBA;
+  closed: boolean;
+  constantSpeed: boolean;
+  /** Setup pose curve lengths (see `pathCurveLengths`). Filled by `compileSkeleton`; every compiled skin owns its copy. */
+  lengths: number[];
+}
+
 /** Attachments that are drawn as images. */
 export type ImageData = RegionData | MeshData;
 
-export type AttachmentData = RegionData | MeshData | BoundingBoxData | ClippingData | PointData;
+export type AttachmentData = RegionData | MeshData | BoundingBoxData | ClippingData | PointData | PathAttachmentData;
 
 export interface SkinData {
   id: Id;
@@ -210,7 +227,25 @@ export interface SliderData {
   local: boolean;
   skinRequired: boolean;
 }
-export type ConstraintData = IkData | TransformData | SliderData;
+/** Spine 4.3 path constraint: bones follow the path attachment shown in `slot`. */
+export interface PathConstraintData {
+  kind: 'path';
+  index: number;
+  id: Id;
+  name: string;
+  bones: number[];
+  slot: number;
+  positionMode: PathPositionMode;
+  spacingMode: PathSpacingMode;
+  rotateMode: PathRotateMode;
+  offsetRotation: number;
+  position: number;
+  spacing: number;
+  /** setup mixes: rotate, x, y */
+  mix: number[];
+  skinRequired: boolean;
+}
+export type ConstraintData = IkData | TransformData | SliderData | PathConstraintData;
 
 export interface SkeletonData {
   name: string;
@@ -233,13 +268,15 @@ export interface SkeletonData {
 const attachmentCache = new WeakMap<Attachment, { key: string; data: AttachmentData }>();
 
 function compileAttachment(att: Attachment, boneIndex: Map<Id, number>, boneOrderKey: string): AttachmentData {
-  const weighted = (att.type === 'mesh' || att.type === 'clipping' || att.type === 'boundingbox') && att.weights != null;
+  const weighted = (att.type === 'mesh' || att.type === 'clipping' || att.type === 'boundingbox' || att.type === 'path') && att.weights != null;
   const hit = attachmentCache.get(att);
   if (hit && (!weighted || hit.key === boneOrderKey)) return hit.data;
 
   let data: AttachmentData;
   if (att.type === 'point') {
     data = { kind: 'point', src: att, name: att.name, color: att.color, x: att.x, y: att.y, rotation: att.rotation };
+  } else if (att.type === 'path') {
+    data = { kind: 'path', src: att, name: att.name, color: att.color, closed: att.closed, constantSpeed: att.constantSpeed, lengths: [], ...compileVertices(polygonVertexCount(att), att.vertices, att.weights, boneIndex) };
   } else if (att.type === 'clipping') {
     data = { kind: 'clipping', src: att, name: att.name, color: att.color, end: att.end, convex: att.convex, inverse: att.inverse, ...compileVertices(polygonVertexCount(att), att.vertices, att.weights, boneIndex) };
   } else if (att.type === 'boundingbox') {
@@ -417,6 +454,28 @@ export function compileSkeleton(doc: SkeletonDoc): SkeletonData {
       continue;
     }
     const bi = c.bones.map((id) => boneIndex.get(id)).filter((v): v is number => v !== undefined);
+    if (c.type === 'path') {
+      const slot = slotIndex.get(c.target);
+      if (bi.length === 0 || bi.length !== c.bones.length || slot === undefined) continue; // dangling reference
+      constraintIndex.set(c.id, constraints.length);
+      constraints.push({
+        kind: 'path',
+        index: constraints.length,
+        id: c.id,
+        name: c.name,
+        bones: bi,
+        slot,
+        positionMode: c.positionMode,
+        spacingMode: c.spacingMode,
+        rotateMode: c.rotateMode,
+        offsetRotation: c.offsetRotation,
+        position: c.position,
+        spacing: c.spacing,
+        mix: [c.mix.rotate, c.mix.x, c.mix.y],
+        skinRequired: c.skinRequired,
+      });
+      continue;
+    }
     if (c.type === 'transform') {
       const source = boneIndex.get(c.source);
       if (bi.length === 0 || bi.length !== c.bones.length || source === undefined) continue;
@@ -460,13 +519,22 @@ export function compileSkeleton(doc: SkeletonDoc): SkeletonData {
   }
 
   const skinById = new Map<Id, SkinData>();
+  const pathEntries: { att: PathAttachmentData; slot: number }[] = [];
   const skins: SkinData[] = doc.skins.map((s) => {
     const perSlot: Map<string, AttachmentData>[] = slots.map(() => new Map());
     for (const slotId in s.attachments) {
       const si = slotIndex.get(slotId);
       if (si === undefined) continue;
       const atts = s.attachments[slotId];
-      for (const name in atts) perSlot[si].set(name, compileAttachment(atts[name], boneIndex, boneOrderKey));
+      for (const name in atts) {
+        const compiled = compileAttachment(atts[name], boneIndex, boneOrderKey);
+        if (compiled.kind === 'path') {
+          // the lengths depend on the setup pose of THIS document, so every compile gets its own copy of the data
+          const own: PathAttachmentData = { ...compiled, lengths: [] };
+          pathEntries.push({ att: own, slot: si });
+          perSlot[si].set(name, own);
+        } else perSlot[si].set(name, compiled);
+      }
     }
     const skin: SkinData = {
       id: s.id,
@@ -494,8 +562,30 @@ export function compileSkeleton(doc: SkeletonDoc): SkeletonData {
     skinById,
     boneOrderKey,
   };
+  if (pathEntries.length) fillPathLengths(data, pathEntries);
   compileMemo.set(doc, data);
   return data;
+}
+
+/** Measures the curves of every path attachment in the setup pose (animation and constraints ignored). */
+function fillPathLengths(data: SkeletonData, entries: { att: PathAttachmentData; slot: number }[]) {
+  const sk = new Skeleton(data);
+  sk.updateId = 1;
+  for (const b of sk.bones) {
+    b.ax = b.x;
+    b.ay = b.y;
+    b.arotation = b.rotation;
+    b.ascaleX = b.scaleX;
+    b.ascaleY = b.scaleY;
+    b.ashearX = b.shearX;
+    b.ashearY = b.shearY;
+    b.updateWorldTransform();
+  }
+  const points: number[] = [];
+  for (const { att, slot } of entries) {
+    meshWorldVertices(sk, sk.slots[slot], att, null, points);
+    att.lengths = pathCurveLengths(points, Math.floor(att.vertexCount / 3), att.closed);
+  }
 }
 
 // ------------------------------------------------------------------ runtime objects
@@ -1259,6 +1349,218 @@ export class SliderRT {
   }
 }
 
+/**
+ * Spine 4.3 path constraint: moves, rotates and (chainScale) stretches bones so they follow the path attachment that is
+ * shown in a slot. A statement by statement port of the official `PathConstraint.update` / `sort`.
+ */
+export class PathConstraintRT {
+  readonly kind = 'path' as const;
+  readonly data: PathConstraintData;
+  readonly skeleton: Skeleton;
+  readonly bones: Bone[];
+  readonly slot: Slot;
+  position: number;
+  spacing: number;
+  /** mixRotate, mixX, mixY */
+  mix: number[];
+  active = true;
+  private readonly scratch = newPathScratch();
+  private readonly points: number[] = [];
+  private lengths: number[] = [];
+
+  constructor(data: PathConstraintData, skeleton: Skeleton) {
+    this.data = data;
+    this.skeleton = skeleton;
+    this.bones = data.bones.map((i) => skeleton.bones[i]);
+    this.slot = skeleton.slots[data.slot];
+    this.position = data.position;
+    this.spacing = data.spacing;
+    this.mix = data.mix.slice();
+  }
+
+  setToSetupPose() {
+    this.position = this.data.position;
+    this.spacing = this.data.spacing;
+    this.mix = this.data.mix.slice();
+  }
+
+  sourceActive() {
+    return this.slot.bone.active;
+  }
+
+  sort(skeleton: Skeleton) {
+    const slotIndex = this.slot.data.index;
+    const slotBone = this.slot.bone;
+    if (skeleton.skin) this.sortPathSlot(skeleton, skeleton.skin, slotIndex, slotBone);
+    if (skeleton.data.defaultSkin !== skeleton.skin) this.sortPathSlot(skeleton, skeleton.data.defaultSkin, slotIndex, slotBone);
+    this.sortPath(skeleton, skeleton.slotAttachment(this.slot), slotBone);
+    for (const bone of this.bones) skeleton.sortBone(bone);
+    skeleton.cache.push(this);
+    for (const bone of this.bones) skeleton.sortReset(bone.children);
+    for (const bone of this.bones) bone.sorted = true;
+  }
+
+  private sortPathSlot(skeleton: Skeleton, skin: SkinData, slotIndex: number, slotBone: Bone) {
+    const entries = skin.attachments[slotIndex];
+    if (entries) for (const att of entries.values()) this.sortPath(skeleton, att, slotBone);
+  }
+
+  /** Bones that move the path must be up to date before the constraint reads its points. */
+  private sortPath(skeleton: Skeleton, att: AttachmentData | null, slotBone: Bone) {
+    if (!att || att.kind !== 'path') return;
+    const pathBones = att.bones;
+    if (!pathBones) skeleton.sortBone(slotBone);
+    else {
+      const bones = skeleton.bones;
+      for (let i = 0, n = pathBones.length; i < n; ) {
+        let nn = pathBones[i++];
+        nn += i;
+        while (i < nn) skeleton.sortBone(bones[pathBones[i++]]);
+      }
+    }
+  }
+
+  update() {
+    const skeleton = this.skeleton;
+    const att = skeleton.slotAttachment(this.slot);
+    if (!att || att.kind !== 'path') return;
+    const mixRotate = this.mix[0];
+    const mixX = this.mix[1];
+    const mixY = this.mix[2];
+    if (mixRotate === 0 && mixX === 0 && mixY === 0) return;
+    const data = this.data;
+    const tangents = data.rotateMode === 'tangent';
+    const scale = data.rotateMode === 'chainScale';
+    const bones = this.bones;
+    const boneCount = bones.length;
+    const spacesCount = tangents ? boneCount : boneCount + 1;
+    const spaces = setSize(this.scratch.spaces, spacesCount);
+    const lengths = scale ? (this.lengths = setSize(this.lengths, boneCount)) : [];
+    const spacing = this.spacing;
+    switch (data.spacingMode) {
+      case 'percent':
+        if (scale) {
+          for (let i = 0, n = spacesCount - 1; i < n; i++) {
+            const bone = bones[i];
+            const setupLength = bone.data.length;
+            const x = setupLength * bone.a;
+            const y = setupLength * bone.c;
+            lengths[i] = Math.sqrt(x * x + y * y);
+          }
+        }
+        for (let i = 1; i < spacesCount; i++) spaces[i] = spacing;
+        break;
+      case 'proportional': {
+        let sum = 0;
+        for (let i = 0, n = spacesCount - 1; i < n; ) {
+          const bone = bones[i];
+          const setupLength = bone.data.length;
+          if (setupLength < EPS) {
+            if (scale) lengths[i] = 0;
+            spaces[++i] = spacing;
+          } else {
+            const x = setupLength * bone.a;
+            const y = setupLength * bone.c;
+            const length = Math.sqrt(x * x + y * y);
+            if (scale) lengths[i] = length;
+            spaces[++i] = length;
+            sum += length;
+          }
+        }
+        if (sum > 0) {
+          sum = (spacesCount / sum) * spacing;
+          for (let i = 1; i < spacesCount; i++) spaces[i] *= sum;
+        }
+        break;
+      }
+      default: {
+        const lengthSpacing = data.spacingMode === 'length';
+        for (let i = 0, n = spacesCount - 1; i < n; ) {
+          const bone = bones[i];
+          const setupLength = bone.data.length;
+          if (setupLength < EPS) {
+            if (scale) lengths[i] = 0;
+            spaces[++i] = spacing;
+          } else {
+            const x = setupLength * bone.a;
+            const y = setupLength * bone.c;
+            const length = Math.sqrt(x * x + y * y);
+            if (scale) lengths[i] = length;
+            spaces[++i] = ((lengthSpacing ? Math.max(0, setupLength + spacing) : spacing) * length) / setupLength;
+          }
+        }
+      }
+    }
+
+    // the path's points in world space (with the slot's deformation and the bones it is skinned to)
+    const slot = this.slot;
+    meshWorldVertices(skeleton, slot, att, slot.deform.length ? slot.deform : null, this.points);
+    const positions = computeWorldPositions(
+      { points: this.points, verticesLength: att.vertexCount * 2, closed: att.closed, constantSpeed: att.constantSpeed, lengths: att.lengths, position: this.position, positionMode: data.positionMode, spacingMode: data.spacingMode },
+      this.scratch,
+      spacesCount,
+      tangents,
+    );
+    let boneX = positions[0];
+    let boneY = positions[1];
+    let offsetRotation = data.offsetRotation;
+    let tip = false;
+    if (offsetRotation === 0) tip = data.rotateMode === 'chain';
+    else {
+      tip = false;
+      const bone = slot.bone;
+      offsetRotation *= bone.a * bone.d - bone.b * bone.c > 0 ? DEG2RAD : -DEG2RAD;
+    }
+    for (let i = 0, ip = 3; i < boneCount; i++, ip += 3) {
+      const bone = bones[i];
+      bone.modifyWorld();
+      bone.worldX += (boneX - bone.worldX) * mixX;
+      bone.worldY += (boneY - bone.worldY) * mixY;
+      const x = positions[ip];
+      const y = positions[ip + 1];
+      const dx = x - boneX;
+      const dy = y - boneY;
+      if (scale) {
+        const length = lengths[i];
+        if (length !== 0) {
+          const s = (Math.sqrt(dx * dx + dy * dy) / length - 1) * mixRotate + 1;
+          bone.a *= s;
+          bone.c *= s;
+        }
+      }
+      boneX = x;
+      boneY = y;
+      if (mixRotate > 0) {
+        const a = bone.a;
+        const b = bone.b;
+        const c = bone.c;
+        const d = bone.d;
+        let r = 0;
+        if (tangents) r = positions[ip - 1];
+        else if (spaces[i + 1] === 0) r = positions[ip + 2];
+        else r = Math.atan2(dy, dx);
+        r -= Math.atan2(c, a);
+        if (tip) {
+          const cos = Math.cos(r);
+          const sin = Math.sin(r);
+          const length = bone.data.length;
+          boneX += (length * (cos * a - sin * c) - dx) * mixRotate;
+          boneY += (length * (sin * a + cos * c) - dy) * mixRotate;
+        } else r += offsetRotation;
+        if (r > SPINE_PI) r -= PI2;
+        else if (r < -SPINE_PI) r += PI2;
+        r *= mixRotate;
+        const cos = Math.cos(r);
+        const sin = Math.sin(r);
+        bone.a = cos * a - sin * c;
+        bone.b = cos * b - sin * d;
+        bone.c = sin * a + cos * c;
+        bone.d = sin * b + cos * d;
+      }
+    }
+  }
+}
+
 function scaleYFactor(mode: IkData['scaleY'], s: number): number {
   if (mode === 'uniform') return s;
   if (mode === 'volume') return 1 / (s < 0.7 ? 0.25 + 0.642857 * s : s);
@@ -1532,7 +1834,7 @@ export class Skeleton {
   readonly data: SkeletonData;
   readonly bones: Bone[];
   readonly slots: Slot[];
-  readonly constraints: Array<IkConstraint | TransformConstraintRT | SliderRT>;
+  readonly constraints: Array<IkConstraint | TransformConstraintRT | SliderRT | PathConstraintRT>;
   drawOrder: Slot[];
   skin: SkinData | null = null;
   x = 0;
@@ -1541,7 +1843,7 @@ export class Skeleton {
   scaleY = 1;
   color: RGBA = [1, 1, 1, 1];
   /** Update order of bones and constraints. */
-  cache: Array<Bone | IkConstraint | TransformConstraintRT | SliderRT> = [];
+  cache: Array<Bone | IkConstraint | TransformConstraintRT | SliderRT | PathConstraintRT> = [];
 
   constructor(data: SkeletonData) {
     this.data = data;
@@ -1555,7 +1857,9 @@ export class Skeleton {
     }
     this.slots = data.slots.map((sd) => new Slot(sd, this.bones[sd.bone]));
     this.drawOrder = this.slots.slice();
-    this.constraints = data.constraints.map((cd) => (cd.kind === 'ik' ? new IkConstraint(cd, this) : cd.kind === 'transform' ? new TransformConstraintRT(cd, this) : new SliderRT(cd, this)));
+    this.constraints = data.constraints.map((cd) =>
+      cd.kind === 'ik' ? new IkConstraint(cd, this) : cd.kind === 'transform' ? new TransformConstraintRT(cd, this) : cd.kind === 'path' ? new PathConstraintRT(cd, this) : new SliderRT(cd, this),
+    );
     this.updateCache();
   }
 
@@ -1567,9 +1871,14 @@ export class Skeleton {
     const i = this.data.slotIndex.get(id);
     return i === undefined ? undefined : this.slots[i];
   }
-  constraintById(id: Id): IkConstraint | TransformConstraintRT | SliderRT | undefined {
+  constraintById(id: Id): IkConstraint | TransformConstraintRT | SliderRT | PathConstraintRT | undefined {
     const i = this.data.constraintIndex.get(id);
     return i === undefined ? undefined : this.constraints[i];
+  }
+
+  pathById(id: Id): PathConstraintRT | undefined {
+    const c = this.constraintById(id);
+    return c && c.kind === 'path' ? c : undefined;
   }
 
   sliderById(id: Id): SliderRT | undefined {

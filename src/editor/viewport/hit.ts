@@ -1,5 +1,6 @@
 import { distToSegmentSq, pointInTriangle } from '@/core/math';
 import type { Id } from '@/core/model';
+import { samplePath } from '@/core/path';
 import { REGION_TRIANGLES, meshWorldVertices, pointWorld, regionWorldVertices } from '@/core/skeleton';
 import type { Skeleton } from '@/core/skeleton';
 import type { Scene } from '../scene';
@@ -51,6 +52,13 @@ export function hitAttachment(scene: Scene, hiddenSlots: Set<Id>, wx: number, wy
       // a point has no area: grab it within a few pixels
       const p = pointWorld(att, slot.bone);
       if ((p.x - wx) ** 2 + (p.y - wy) ** 2 <= (10 / zoom) ** 2) return { slotId: slot.data.id, name: att.name };
+    } else if (att.kind === 'path') {
+      // a path is a curve: it can only be grabbed on the line
+      const v: number[] = [];
+      meshWorldVertices(skel, slot, att, slot.deform.length ? slot.deform : null, v);
+      const poly = samplePath(v, Math.floor(att.vertexCount / 3), att.closed, 16);
+      const tol2 = (8 / zoom) ** 2;
+      for (let k = 0; k + 3 < poly.length; k += 2) if (distToSegmentSq(wx, wy, poly[k], poly[k + 1], poly[k + 2], poly[k + 3]) <= tol2) return { slotId: slot.data.id, name: att.name };
     } else if (att.kind === 'boundingbox' || att.kind === 'clipping') {
       // only the outline is grabbable: the inside of a clipping polygon or box usually covers the images that should be picked
       const v = new Float32Array(att.vertexCount * 2);
@@ -96,6 +104,6 @@ export function slotWorldVertices(skel: Skeleton, slotId: Id): { vertices: Float
     return { vertices: v, count: 4, kind: 'region' };
   }
   const v = new Float32Array(att.vertexCount * 2);
-  meshWorldVertices(skel, slot, att, att.kind === 'mesh' && slot.deform.length ? slot.deform : null, v);
+  meshWorldVertices(skel, slot, att, (att.kind === 'mesh' || att.kind === 'path') && slot.deform.length ? slot.deform : null, v);
   return { vertices: v, count: att.vertexCount, kind: att.kind === 'mesh' ? 'mesh' : 'polygon' };
 }

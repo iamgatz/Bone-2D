@@ -6,6 +6,7 @@ import { useProject } from '@/store/doc';
 import { currentIkValues, deleteConstraint, moveConstraint, renameConstraint, setConstraintSetup, setIkValues } from '@/store/ikActions';
 import { useUi } from '@/store/ui';
 import { Button, IconButton, NumberField, SelectField, TextField, Toggle } from '../ui/controls';
+import { PathConstraintInspector } from './PathConstraintInspector';
 import { SliderInspector } from './SliderInspector';
 import { TransformInspector } from './TransformInspector';
 
@@ -25,6 +26,7 @@ export function ConstraintInspector({ id }: { id: Id }) {
   if (!c0) return null;
   if (c0.type === 'transform') return <TransformInspector id={id} />;
   if (c0.type === 'slider') return <SliderInspector id={id} />;
+  if (c0.type === 'path') return <PathConstraintInspector id={id} />;
   return <IkInspector id={id} />;
 }
 

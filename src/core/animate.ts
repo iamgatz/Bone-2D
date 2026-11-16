@@ -44,6 +44,11 @@ export function animationEndTime(anim: Animation): number {
     scan(anim.slider[id].time);
     scan(anim.slider[id].mix);
   }
+  for (const id in anim.path ?? {}) {
+    scan(anim.path[id].position);
+    scan(anim.path[id].spacing);
+    scan(anim.path[id].mix);
+  }
   for (const skin in anim.deform) for (const slot in anim.deform[skin]) for (const att in anim.deform[skin][slot]) scan(anim.deform[skin][slot][att]);
   scan(anim.drawOrder);
   scan(anim.events);
@@ -119,6 +124,15 @@ export function applyAnimation(skeleton: Skeleton, anim: Animation | null, time:
     const tl = anim.slider[cid];
     if (tl.time?.length && sampleKeys(tl.time, time, tmp)) c.time = tmp[0];
     if (tl.mix?.length && sampleKeys(tl.mix, time, tmp)) c.mix = tmp[0];
+  }
+
+  for (const cid in anim.path ?? {}) {
+    const c = skeleton.pathById(cid);
+    if (!c) continue;
+    const tl = anim.path[cid];
+    if (tl.position?.length && sampleKeys(tl.position, time, tmp)) c.position = tmp[0];
+    if (tl.spacing?.length && sampleKeys(tl.spacing, time, tmp)) c.spacing = tmp[0];
+    if (tl.mix?.length && sampleKeys(tl.mix, time, tmp)) c.mix = [tmp[0], tmp[1], tmp[2]];
   }
 
   if (anim.drawOrder.length) {
@@ -238,6 +252,15 @@ export function applyAnimationOnto(skeleton: Skeleton, anim: Animation, time: nu
     if (tl.mix?.length && sampleKeys(tl.mix, time, tmp)) c.mix += (additive ? tmp[0] : tmp[0] - c.mix) * alpha;
   }
 
+  for (const cid in anim.path ?? {}) {
+    const c = skeleton.pathById(cid);
+    if (!c || !c.active) continue;
+    const tl = anim.path[cid];
+    if (tl.position?.length && sampleKeys(tl.position, time, tmp)) c.position += (additive ? tmp[0] : tmp[0] - c.position) * alpha;
+    if (tl.spacing?.length && sampleKeys(tl.spacing, time, tmp)) c.spacing += (tmp[0] - c.spacing) * alpha; // Spine never adds spacing
+    if (tl.mix?.length && sampleKeys(tl.mix, time, tmp)) for (let j = 0; j < 3; j++) c.mix[j] += (additive ? tmp[j] : tmp[j] - c.mix[j]) * alpha;
+  }
+
   if (anim.drawOrder.length) {
     const i = findKeyIndex(anim.drawOrder, time);
     if (i >= 0) {
@@ -266,7 +289,7 @@ export function applyAnimationOnto(skeleton: Skeleton, anim: Animation, time: nu
         const keys = perAtt[attName];
         if (!keys.length) continue;
         const att = skin.attachments[slot.data.index]?.get(attName);
-        if (!att || att.kind !== 'mesh' || att !== skeleton.slotAttachment(slot)) continue;
+        if (!att || (att.kind !== 'mesh' && att.kind !== 'path') || att !== skeleton.slotAttachment(slot)) continue;
         const out = sampleDeform(keys, time);
         if (!out || out.length !== att.deformLength) continue;
         const current = slot.deform.length === att.deformLength ? slot.deform : new Array<number>(att.deformLength).fill(0);

@@ -69,6 +69,7 @@ export function deleteConstraint(id: Id) {
       delete a.ik[id];
       delete a.transform[id];
       delete a.slider[id];
+      delete a.path?.[id];
     }
   });
   setSelection({});

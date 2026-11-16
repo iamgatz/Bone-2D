@@ -3,7 +3,7 @@
  * Everything here is pure geometry on plain arrays so it can be tested in Node.
  */
 import Delaunator from 'delaunator';
-import type { Id, Influence, MeshAttachment, RegionAttachment } from './model';
+import type { Id, Influence, MeshAttachment, PathAttachment, RegionAttachment } from './model';
 import { DEG2RAD, distToSegmentSq, matApply, matInvert, pointInPolygon } from './math';
 import type { Mat } from './math';
 
@@ -576,9 +576,9 @@ export function removeMeshVertices(mesh: MeshAttachment, remove: Set<number>, po
  * Number of deform values an attachment expects: x,y per vertex, or x,y per influence for weighted meshes.
  * Mirrors `compileSkeleton` (a vertex without a usable influence still counts one) and the exported vertex layout.
  */
-export function deformLength(mesh: MeshAttachment, hasBone: (id: Id) => boolean): number {
+export function deformLength(mesh: MeshAttachment | PathAttachment, hasBone: (id: Id) => boolean): number {
   if (!mesh.weights) return mesh.vertices.length;
-  const n = mesh.uvs.length >> 1;
+  const n = mesh.type === 'mesh' ? mesh.uvs.length >> 1 : mesh.weights.length;
   let influences = 0;
   for (let i = 0; i < n; i++) {
     let count = 0;

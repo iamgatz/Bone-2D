@@ -129,16 +129,44 @@ export interface ClippingAttachment extends PolygonBase {
 
 export type PolygonAttachment = BoundingBoxAttachment | ClippingAttachment;
 
-export type Attachment = RegionAttachment | MeshAttachment | PolygonAttachment | PointAttachment;
+/**
+ * A composite Bezier path (Spine's `path` attachment) that bones can follow through a path constraint. Its points have the
+ * layout of the file format: three per node — in-handle, anchor, out-handle — in `vertices` (x,y in the slot bone's space) or
+ * in `weights` when the path is skinned to bones. A path with `n` nodes therefore has `3n` points; an open one has `n - 1`
+ * curves (its first in-handle and last out-handle are unused placeholders), a closed one `n` curves.
+ */
+export interface PathAttachment extends PolygonBase {
+  type: 'path';
+  closed: boolean;
+  /**
+   * Constant speed along the path: curve lengths are measured every frame. Otherwise the lengths of the setup pose are used
+   * (they are computed when the skeleton is compiled and exported, never stored).
+   */
+  constantSpeed: boolean;
+}
 
-/** Number of vertices of a polygon attachment. */
+export type Attachment = RegionAttachment | MeshAttachment | PolygonAttachment | PointAttachment | PathAttachment;
+
+/** Number of vertices of a polygon (or number of points of a path) attachment. */
 export function polygonVertexCount(p: { vertices: number[]; weights: Influence[][] | null }): number {
   return p.weights ? p.weights.length : p.vertices.length >> 1;
+}
+
+/** Number of nodes (anchors) of a path. */
+export function pathNodeCount(p: { vertices: number[]; weights: Influence[][] | null }): number {
+  return Math.floor(polygonVertexCount(p) / 3);
+}
+
+/** Number of Bezier curves of a path: one per node when closed, one less when open. */
+export function pathCurveCount(p: { vertices: number[]; weights: Influence[][] | null; closed: boolean }): number {
+  const n = pathNodeCount(p);
+  return p.closed ? n : Math.max(0, n - 1);
 }
 
 export const DEFAULT_CLIPPING_COLOR: RGBA = [0.808, 0.227, 0.227, 1];
 export const DEFAULT_BOUNDING_BOX_COLOR: RGBA = [0.38, 0.94, 0, 1];
 export const DEFAULT_POINT_COLOR: RGBA = [0.945, 0.945, 0, 1];
+export const DEFAULT_PATH_COLOR: RGBA = [1, 0.5, 0, 1];
 
 /** Image (atlas region) name of an attachment, or null for attachments that have no image. */
 export function attachmentImage(a: Attachment): string | null {
@@ -244,11 +272,47 @@ export interface SliderConstraint {
   skinRequired: boolean;
 }
 
-export type Constraint = IkConstraint | TransformConstraint | SliderConstraint;
+export type PathPositionMode = 'fixed' | 'percent';
+export type PathSpacingMode = 'length' | 'fixed' | 'percent' | 'proportional';
+export type PathRotateMode = 'tangent' | 'chain' | 'chainScale';
+export const PATH_POSITION_MODES: PathPositionMode[] = ['fixed', 'percent'];
+export const PATH_SPACING_MODES: PathSpacingMode[] = ['length', 'fixed', 'percent', 'proportional'];
+export const PATH_ROTATE_MODES: PathRotateMode[] = ['tangent', 'chain', 'chainScale'];
+
+/**
+ * Spine 4.3 path constraint: moves (and rotates / scales) bones along the path attachment that is currently shown in `target`
+ * (a slot). The first bone sits at `position`, the others follow with `spacing`.
+ */
+export interface PathConstraint {
+  id: Id;
+  type: 'path';
+  name: string;
+  /** Bones that follow the path. */
+  bones: Id[];
+  /** Slot whose path attachment is followed. */
+  target: Id;
+  /** `fixed`: `position` is a distance along the path; `percent`: 0..1 of its length. */
+  positionMode: PathPositionMode;
+  /** `length`: the bones' lengths plus `spacing`; `fixed`: `spacing` apart; `percent`: of the path length; `proportional`: relative to the bone lengths. */
+  spacingMode: PathSpacingMode;
+  /** `tangent`: bones face along the path; `chain`: bones keep their lengths and point at the next one; `chainScale`: bones are also stretched to reach it. */
+  rotateMode: PathRotateMode;
+  /** Degrees added to the rotation of the bones. */
+  offsetRotation: number;
+  /** Setup position of the first bone and setup spacing (animatable). */
+  position: number;
+  spacing: number;
+  /** Setup mixes, 0..1. */
+  mix: { rotate: number; x: number; y: number };
+  skinRequired: boolean;
+}
+
+export type Constraint = IkConstraint | TransformConstraint | SliderConstraint | PathConstraint;
 
 export function constraintBoneIds(c: Constraint): Id[] {
   if (c.type === 'ik') return [...c.bones, c.target];
   if (c.type === 'transform') return [...c.bones, c.source];
+  if (c.type === 'path') return [...c.bones];
   return c.bone ? [c.bone] : [];
 }
 
@@ -304,6 +368,13 @@ export interface SliderTimelines {
   mix?: Timeline;
 }
 
+/** Path constraint timelines. value = [position] / [spacing] / [mixRotate, mixX, mixY]. */
+export interface PathTimelines {
+  position?: Timeline;
+  spacing?: Timeline;
+  mix?: Timeline;
+}
+
 export interface BoneTimelines {
   /** value = [degrees] relative to setup */
   rotate?: Timeline;
@@ -338,6 +409,8 @@ export interface Animation {
   transform: Record<Id, Timeline>;
   /** Slider time / mix over time, by constraint id. */
   slider: Record<Id, SliderTimelines>;
+  /** Path constraint position / spacing / mixes over time, by constraint id. */
+  path: Record<Id, PathTimelines>;
   /** skin id -> slot id -> attachment name -> keys; Key.value = per vertex deltas (x,y pairs; per influence for weighted meshes). */
   deform: Record<Id, Record<Id, Record<string, Timeline>>>;
   drawOrder: DrawOrderKey[];
@@ -415,7 +488,23 @@ export function newSkin(name: string): Skin {
 }
 
 export function newAnimation(name: string, duration = 1): Animation {
-  return { id: uid(), name, duration, bones: {}, slots: {}, ik: {}, transform: {}, slider: {}, deform: {}, drawOrder: [], events: [] };
+  return { id: uid(), name, duration, bones: {}, slots: {}, ik: {}, transform: {}, slider: {}, path: {}, deform: {}, drawOrder: [], events: [] };
+}
+
+export function newPathConstraint(partial: Partial<PathConstraint> & { name: string; bones: Id[]; target: Id }): PathConstraint {
+  return {
+    id: uid(),
+    type: 'path',
+    positionMode: 'percent',
+    spacingMode: 'length',
+    rotateMode: 'chain',
+    offsetRotation: 0,
+    position: 0,
+    spacing: 0,
+    mix: { rotate: 1, x: 1, y: 1 },
+    skinRequired: false,
+    ...partial,
+  };
 }
 
 export function newSliderConstraint(partial: Partial<SliderConstraint> & { name: string }): SliderConstraint {
@@ -461,6 +550,7 @@ export function migrateProject(p: Project): Project {
   for (const a of p.skeleton.animations) {
     if (!a.transform) a.transform = {};
     if (!a.slider) a.slider = {};
+    if (!a.path) a.path = {};
   }
   return p;
 }

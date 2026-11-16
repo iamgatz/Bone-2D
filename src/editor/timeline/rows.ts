@@ -36,6 +36,8 @@ const PROP_LABEL: Record<string, string> = {
   rgba2: 'Color',
   time: 'Time',
   mix: 'Mix',
+  position: 'Position',
+  spacing: 'Spacing',
 };
 
 function merge(into: RowKeyInfo[], refs: KeyRef[]) {
@@ -109,6 +111,19 @@ export function buildRows(doc: SkeletonDoc, anim: Animation | null, selectedBone
       const open = isOpen(id, false);
       const keys: RowKeyInfo[] = [];
       for (const p of props) merge(keys, p.keys.map((k) => ({ kind: 'slider' as const, target: c.id, prop: p.prop, time: k.time })));
+      keys.sort((a, b) => a.time - b.time);
+      ikRows.push({ id, label: c.name, type: 'entity', depth: 1, expandable: true, expanded: open, keys, target: { kind: 'ik', id: c.id }, tone: 'ik' });
+      if (open) ikRows.push(...propRows(id, 2, props, 'ik'));
+      continue;
+    }
+    if (c.type === 'path') {
+      const tl = anim.path?.[c.id];
+      const props = (['position', 'spacing', 'mix'] as const).filter((p) => tl?.[p]?.length).map((p) => ({ prop: p, kind: 'path' as const, target: c.id, keys: tl![p]! }));
+      if (!props.length) continue;
+      const id = `path:${c.id}`;
+      const open = isOpen(id, false);
+      const keys: RowKeyInfo[] = [];
+      for (const p of props) merge(keys, p.keys.map((k) => ({ kind: 'path' as const, target: c.id, prop: p.prop, time: k.time })));
       keys.sort((a, b) => a.time - b.time);
       ikRows.push({ id, label: c.name, type: 'entity', depth: 1, expandable: true, expanded: open, keys, target: { kind: 'ik', id: c.id }, tone: 'ik' });
       if (open) ikRows.push(...propRows(id, 2, props, 'ik'));

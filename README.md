@@ -39,10 +39,12 @@ $env:FUZZ_SEEDS='300'; $env:FUZZ_STEPS='100'; npx vitest run tests/fuzz.test.ts
 - **Clipping, bounding boxes, points** (tools `C` / `X` / `P`): draw a polygon by clicking (close it by clicking the first point, double-click or Enter),
   edit vertices (drag, Ctrl-click on an edge adds, Del removes), `end` slot, `convex` / `inverse`. Clipping is drawn with the stencil buffer using Spine's semantics
   (the end slot is clipped inclusively); weighted polygons from imported files are kept and drawn.
+- **Paths** (tool `N`): Bezier path attachments — click places a node, dragging pulls its handles; edit nodes with the mesh tool (`M`), Ctrl-click / double-click the curve adds a node, `Del` removes it. Closed / open, constant speed or setup lengths, binding to bones with automatic weights.
+- **Path constraints 4.3** (the spline button next to Constraints): the selected bones follow the path shown in a slot — rotate mode `tangent` / `chain` / `chainScale`, position `fixed` / `percent`, spacing `length` / `fixed` / `percent` / `proportional`, offset rotation, three mixes.
 - Skins (swap the image in a slot), events, undo / redo (a gesture collapses into one step).
 
 **Animation (Animate mode)**
-- Auto-key (or manual keys + "Key all"); keys for rotate / translate / scale / shear, slot colors (light and dark), attachment changes, IK mix / bend, transform-constraint mixes, **mesh deformation**, draw order, events.
+- Auto-key (or manual keys + "Key all"); keys for rotate / translate / scale / shear, slot colors (light and dark), attachment changes, IK mix / bend, transform-constraint mixes, **path position / spacing / mixes**, **mesh and path deformation** (drag nodes in Animate mode), draw order, events.
 - Dopesheet: selection, box select, drag keys with frame snapping, copy / paste, interpolation (linear / stepped / bezier / ease).
 - **Graph editor**: per-channel curves, drag keys and Bézier handles.
 - Playback, loop, frame stepping.
@@ -52,12 +54,12 @@ $env:FUZZ_SEEDS='300'; $env:FUZZ_STEPS='100'; npx vitest run tests/fuzz.test.ts
   A file is **validated and repaired** on open (dangling references, stale deform keys, NaN, duplicate names); a broken image never wipes the open session.
 - Export ZIP: Spine 4.3 JSON + atlas (MaxRects, edge extrusion) + `*-preview.html` (plays the export with the **official** Spine player).
 - **Spine 4.3 JSON import** (File → Import…): pick the `.json` together with the `.atlas` and the page images — regions are cut out (trim offsets and rotation are honored).
-  Whatever is not supported (path / physics constraints, sequences, …) is skipped and listed in the console. Export → import → export gives the same JSON, byte for byte.
+  Whatever is not supported (physics constraints, sequences, …) is skipped and listed in the console. Export → import → export gives the same JSON, byte for byte.
 
 ## Why the export can be trusted
 
 `tests/spine-parity.test.ts` exports a deliberately nasty test rig (all inherit modes, shear, IK, 4 transform constraints, weighted and plain meshes, deformation, colors,
-events, skins, random draw orders), loads the JSON with the official `@esotericsoftware/spine-core@4.3.x` and compares **world matrices of every bone, mesh vertices, colors,
+events, skins, random draw orders; `tests/path.test.ts` adds open / closed / weighted paths and path constraints in every mode), loads the JSON with the official `@esotericsoftware/spine-core@4.3.x` and compares **world matrices of every bone, mesh vertices, colors,
 attachments and draw order** with our own solver at dozens of points in time. The check is not vacuous: mutant tests confirm that any deviation is caught.
 Clipping, bounding boxes and points are checked the same way, including the real `SkeletonClipping` and `SkeletonBounds` (`tests/attachments.test.ts`).
 
@@ -84,12 +86,12 @@ Rationale for the choices is in [docs/PROMPT.md](docs/PROMPT.md); notes on the 4
 
 ## Hotkeys
 
-`V` select / pose · `B` bone · `T` `R` `S` translate / rotate / scale · `M` mesh · `W` weights · `I` IK · `C` clipping · `X` bounding box · `P` point · `Tab` Setup ⇄ Animate ·
+`V` select / pose · `B` bone · `T` `R` `S` translate / rotate / scale · `M` mesh / path nodes · `W` weights · `I` IK · `C` clipping · `X` bounding box · `P` point · `N` path · `Tab` Setup ⇄ Animate ·
 `Space` play · `←` / `→` frame · `K` key · `Ctrl+Z` / `Ctrl+Y` undo / redo · `Del` delete · `F` frame the skeleton · `Ctrl+S` / `Ctrl+O` / `Ctrl+E` save / open / export.
 
 ## Not done yet
 
-Path and physics constraints, path attachments, weights and deformation for clipping / bounding boxes (only moving vertices is supported),
+Physics constraints, weights and deformation for clipping / bounding boxes (only moving vertices is supported),
 linked meshes (imported as copies), sequence atlases, draw-order folders, import of Spine 4.0–4.2 files (different constraint format), binary export (`.skel`),
 onion skin, collaboration.
 

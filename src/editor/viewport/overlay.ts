@@ -212,6 +212,22 @@ export function drawConstraints(o: OverlayInput) {
       ctx.restore();
       continue;
     }
+    if (c.kind === 'path') {
+      // path constraint: a dot on every constrained bone, in the color of paths
+      ctx.save();
+      ctx.fillStyle = 'rgba(255,127,0,0.9)';
+      ctx.strokeStyle = 'rgba(8,10,14,0.9)';
+      ctx.lineWidth = 1.2;
+      for (const b of c.bones) {
+        const [bx, by] = worldToScreen(cam, w, h, b.worldX, b.worldY);
+        ctx.beginPath();
+        ctx.arc(bx, by, 3.6, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+      }
+      ctx.restore();
+      continue;
+    }
     const t = c.target;
     const last = c.bones[c.bones.length - 1];
     const [tx, ty] = worldToScreen(cam, w, h, t.worldX, t.worldY);

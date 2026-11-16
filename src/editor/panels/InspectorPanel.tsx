@@ -1,15 +1,16 @@
-import { Bone as BoneIcon, BoxSelect, Crosshair, Diamond, Image as ImageIcon, Layers, Link2, Scissors, Triangle } from 'lucide-react';
+import { Bone as BoneIcon, BoxSelect, Crosshair, Diamond, Image as ImageIcon, Layers, Link2, Scissors, Spline, Triangle } from 'lucide-react';
 import { useState } from 'react';
 import type { ReactNode } from 'react';
 import { createTransformConstraint, PRESET_LABEL } from '@/store/transformActions';
 import type { TransformPreset } from '@/store/transformActions';
 import { INHERIT_MODES } from '@/core/model';
-import type { Animation, BlendMode, Id, Inherit, MeshAttachment, PointAttachment, PolygonAttachment, RGBA, RegionAttachment } from '@/core/model';
-import { BLEND_MODES, attachmentImage, polygonVertexCount } from '@/core/model';
+import type { Animation, BlendMode, Id, Inherit, MeshAttachment, PathAttachment, PointAttachment, PolygonAttachment, RGBA, RegionAttachment } from '@/core/model';
+import { BLEND_MODES, attachmentImage, pathNodeCount, polygonVertexCount } from '@/core/model';
 import { findKeyIndex } from '@/core/curve';
 import { deleteKeys, keySelectedBones, removeSkinImage, renameBone, renameSlot, setAnimationDuration, setAttachmentProps, setBonePose, setBoneProps, setFps, setSkinImage, setSlotAttachment, setSlotBone, setSlotColor, setSlotProps, setTool, currentAnimation } from '@/store/actions';
 import type { PoseProps } from '@/store/actions';
 import { docStore, useProject } from '@/store/doc';
+import { bindPathToBones, setPathClosed, unbindPath } from '@/store/pathActions';
 import { useUi } from '@/store/ui';
 import { getScene } from '../scene';
 import { Button, ColorSwatch, IconButton, NumberField, SelectField, TextField, Toggle } from '../ui/controls';
@@ -222,6 +223,7 @@ function SlotInspector({ slotId, attachmentName }: { slotId: Id; attachmentName:
       {att && att.type === 'region' && !animate && <ConvertToMeshGroup slotId={slotId} name={att.name} />}
       {att && att.type === 'mesh' && <MeshGroup slotId={slotId} att={att} />}
       {att && (att.type === 'clipping' || att.type === 'boundingbox') && <PolygonInspector slotId={slotId} att={att} disabled={animate} />}
+      {att && att.type === 'path' && <PathAttachmentInspector slotId={slotId} att={att} disabled={animate} />}
       {att && att.type === 'point' && <PointInspector slotId={slotId} att={att} disabled={animate} />}
     </>
   );
@@ -283,6 +285,55 @@ function PolygonInspector({ slotId, att, disabled }: { slotId: Id; att: PolygonA
       )}
       <p className="hint-text" style={{ margin: '8px 0 0' }}>
         Drag vertices · Ctrl-click or double-click an edge adds one · Del removes the selected vertices.
+      </p>
+    </div>
+  );
+}
+
+/** A Bezier path: bones follow it through a path constraint (Constraints list in the tree). */
+function PathAttachmentInspector({ slotId, att, disabled }: { slotId: Id; att: PathAttachment; disabled: boolean }) {
+  const tool = useUi((s) => s.tool);
+  const selectedBones = useUi((s) => s.selection.bones);
+  const set = (patch: Record<string, unknown>, label: string) => setAttachmentProps(slotId, att.name, patch, label);
+  return (
+    <div className="group">
+      <div className="group-title">
+        <Spline size={14} />
+        <span>Path</span>
+      </div>
+      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 8 }}>
+        <span className="chip">{`${pathNodeCount(att)} nodes`}</span>
+        <span className="chip">{att.closed ? 'closed' : 'open'}</span>
+        {att.weights && (
+          <span className="chip" style={{ color: 'var(--accent)' }}>
+            weighted
+          </span>
+        )}
+      </div>
+      <PropRow label="Closed">
+        <Toggle on={att.closed} onChange={(v) => !disabled && setPathClosed(slotId, att.name, v)} title="Join the last node to the first one" />
+      </PropRow>
+      <PropRow label="Constant speed">
+        <Toggle on={att.constantSpeed} onChange={(v) => !disabled && set({ constantSpeed: v }, 'Path constant speed')} title="Measure the curves every frame so bones move at a constant speed; otherwise the lengths of the setup pose are used (cheaper)" />
+      </PropRow>
+      <ColorRow label="Color" color={att.color} disabled={disabled} onChange={(c) => set({ color: c }, 'Attachment color')} />
+      <Button primary={tool === 'mesh'} icon={Triangle} onClick={() => setTool('mesh')} title="Edit nodes (M)">
+        Edit nodes
+      </Button>
+      {!disabled && (
+        <div style={{ display: 'flex', gap: 6, marginTop: 8 }}>
+          <Button ghost disabled={!selectedBones.length} onClick={() => bindPathToBones(slotId, att.name, selectedBones)} title="Let the selected bones move the path (automatic weights)">
+            Bind to the selected bones
+          </Button>
+          {att.weights && (
+            <Button ghost onClick={() => unbindPath(slotId, att.name)} title="Back to a plain path: the points stay where they are">
+              Unbind
+            </Button>
+          )}
+        </div>
+      )}
+      <p className="hint-text" style={{ margin: '8px 0 0' }}>
+        Drag nodes and handles · Alt-drag a handle mirrors the other one · Ctrl-click or double-click the curve adds a node · Del removes the selected nodes · in Animate mode dragging keys a deform.
       </p>
     </div>
   );

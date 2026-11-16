@@ -34,6 +34,9 @@ const CHANNEL_NAMES: Record<string, string[]> = {
   ik: ['mix', 'softness'],
   time: ['time'],
   mix: ['mix'],
+  position: ['position'],
+  spacing: ['spacing'],
+  pathMix: ['mix rotate', 'mix x', 'mix y'],
 };
 
 /** Curves for: timelines of selected keys, else all timelines of the selected bones. */
@@ -63,6 +66,7 @@ export function buildCurves(doc: SkeletonDoc, anim: Animation | null, selection:
     else if (r.kind === 'slot' && (r.prop === 'rgba' || r.prop === 'rgba2')) add('slot', r.target, r.prop, anim.slots[r.target]?.[r.prop], doc.slots.find((s) => s.id === r.target)?.name ?? '?', CHANNEL_NAMES[r.prop]);
     else if (r.kind === 'transform') add('transform', r.target, '', anim.transform?.[r.target], doc.constraints.find((c) => c.id === r.target)?.name ?? '?', CHANNEL_NAMES.transform);
     else if (r.kind === 'ik') add('ik', r.target, '', anim.ik[r.target], doc.constraints.find((c) => c.id === r.target)?.name ?? '?', CHANNEL_NAMES.ik);
+    else if (r.kind === 'path' && (r.prop === 'position' || r.prop === 'spacing' || r.prop === 'mix')) add('path', r.target, r.prop, anim.path?.[r.target]?.[r.prop], doc.constraints.find((c) => c.id === r.target)?.name ?? '?', r.prop === 'mix' ? CHANNEL_NAMES.pathMix : CHANNEL_NAMES[r.prop]);
     else if (r.kind === 'slider' && (r.prop === 'time' || r.prop === 'mix')) add('slider', r.target, r.prop, anim.slider?.[r.target]?.[r.prop], doc.constraints.find((c) => c.id === r.target)?.name ?? '?', CHANNEL_NAMES[r.prop]);
   }
   if (!out.length) for (const id of selection.bones) addBone(id);
