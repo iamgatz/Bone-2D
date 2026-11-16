@@ -6,6 +6,7 @@ An open-source 2D skeletal animation editor that runs entirely in the browser �
 It exports the **Spine 4.3** format (`.json` + `.atlas` + `.png`), and the export is checked in the test suite against the official `spine-core` 4.3 runtime.
 
 **[Open the editor →](https://iamgatz.github.io/Bone-2D/)** — nothing to install, everything runs locally in your browser.
+The interface is available in **English and Russian** (switch it in the top bar; the choice is remembered, the first visit follows your browser language).
 
 ```bash
 npm install
@@ -91,7 +92,7 @@ Rationale for the choices is in [docs/PROMPT.md](docs/PROMPT.md); notes on the 4
 Path and physics constraints, path attachments, weights and deformation for clipping / bounding boxes (only moving vertices is supported),
 two-color tint animation (`rgba2` / `rgb2`: the `dark` field is stored and exported but neither drawn nor keyed — the plan is in `docs/ROUND3.md`),
 linked meshes (imported as copies), sequence atlases, draw-order folders, import of Spine 4.0–4.2 files (different constraint format), binary export (`.skel`),
-keying transform-constraint mixes in the timeline (data and export are supported, no UI), onion skin, collaboration, a Russian interface (the UI is English-only for now).
+keying transform-constraint mixes in the timeline (data and export are supported, no UI), onion skin, collaboration.
 
 Spine quirks we reproduce on purpose: angles go through float32 π (`180 / 3.1415927`), and reading a world rotation at the 0 / 360° boundary (the source of a transform
 constraint or a slider driver) gives 0 or 360 depending on ~1e-6° noise, so different runtimes can disagree on such an edge.
@@ -107,6 +108,9 @@ npm run build
 
 A new editor feature counts as done when it goes through the whole chain: model → validator → solver / runtime → export → import → differential test against the official
 runtime → UI → an operation in the random-session kit (`tests/fuzzkit.ts`). The reasoning is in `docs/ROUND3.md` (in Russian).
+
+Interface texts stay English in the components and are translated while rendering (`src/i18n`): add the Russian text of any new UI string to `src/i18n/ru.ts`
+(`{}` in a key matches any text, `{#}` a number). `npm test` fails when a static UI string has no translation. To add another language, add a dictionary like `ru.ts` and extend `Lang`.
 
 ## License
 

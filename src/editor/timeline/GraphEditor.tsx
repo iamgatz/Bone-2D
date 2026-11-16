@@ -9,6 +9,7 @@ import { moveKeysBy, setKeyChannelValue, setKeyCurveHandle, setTime } from '@/st
 import { docStore } from '@/store/doc';
 import { uiStore } from '@/store/ui';
 import type { Selection } from '@/store/ui';
+import { tr, useLang } from '@/i18n';
 import { IconButton } from '../ui/controls';
 
 interface Curve {
@@ -91,6 +92,11 @@ export function GraphEditor({ anim, doc, selection, selectedKeys, fps }: { anim:
   state.current.fps = fps;
   const dirty = useRef(true);
   const drag = useRef<Drag | null>(null);
+  const lang = useLang();
+
+  useEffect(() => {
+    dirty.current = true; // the hint on the canvas is drawn, not rendered by React
+  }, [lang]);
 
   useEffect(() => {
     state.current.view.auto = true;
@@ -258,7 +264,7 @@ export function GraphEditor({ anim, doc, selection, selectedKeys, fps }: { anim:
         ctx.fillStyle = 'rgba(139,147,161,0.9)';
         ctx.textAlign = 'center';
         ctx.font = '12px Inter Variable, system-ui, sans-serif';
-        ctx.fillText('Select keys or a keyed bone to edit its curves', w / 2, h / 2);
+        ctx.fillText(tr('Select keys or a keyed bone to edit its curves'), w / 2, h / 2);
         ctx.textAlign = 'start';
       }
     };

@@ -12,7 +12,7 @@ const MIX_KEYS: TransformProp[] = ['rotate', 'x', 'y', 'scaleX', 'scaleY', 'shea
 
 function Row(props: { label: string; children: React.ReactNode }) {
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: '62px 1fr', gap: 6, alignItems: 'center', marginBottom: 6 }}>
+    <div style={{ display: 'grid', gridTemplateColumns: '90px 1fr', gap: 6, alignItems: 'center', marginBottom: 6 }}>
       <span style={{ color: 'var(--muted)' }}>{props.label}</span>
       <div>{props.children}</div>
     </div>

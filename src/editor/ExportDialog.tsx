@@ -75,7 +75,8 @@ export function ExportDialog() {
         {result && !busy && (
           <>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8, color: 'var(--text-dim)' }}>
-              <Package size={15} /> {doc.bones.length} bones · {doc.slots.length} slots · {doc.animations.length} animations · {result.pages} atlas page{result.pages === 1 ? '' : 's'}
+              <Package size={15} />
+              {`${doc.bones.length} bones · ${doc.slots.length} slots · ${doc.animations.length} animations · ${result.pages} atlas page${result.pages === 1 ? '' : 's'}`}
             </div>
             {result.files.map((f) => (
               <div key={f.name} style={{ display: 'flex', justifyContent: 'space-between', padding: '2px 0', color: 'var(--text-dim)' }}>

@@ -40,6 +40,8 @@
 - [x] clipping, bounding box, point (раунд 3, см. `ROUND3.md`)
 - [ ] two-color tint (`rgba2`/`rgb2`, рендер и UI), path/physics-констрейнты, linked mesh
 - [x] Импорт Spine 4.3 JSON + атлас (round-trip идемпотентен)
+- [x] Интерфейс на русском и английском (`src/i18n`: словарь + JSX-рантайм, переключатель EN/RU, тест покрытия строк)
+- [x] Публикация: репозиторий iamgatz/Bone-2D, MIT, GitHub Pages через Actions
 - [ ] Бинарный экспорт (`.skel`), onion skin, импорт Spine 4.0–4.2
 
 ## Раунд 2 — ревью и продолжение (см. `ROUND2.md`)
