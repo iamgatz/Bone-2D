@@ -25,7 +25,7 @@ function hasKeyAt(anim: Animation | undefined, boneId: Id, prop: 'rotate' | 'tra
 
 function PropRow(props: { label: string; children: ReactNode; keyBtn?: ReactNode }) {
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: '62px 1fr 24px', gap: 6, alignItems: 'center', marginBottom: 6 }}>
+    <div style={{ display: 'grid', gridTemplateColumns: '90px 1fr 24px', gap: 6, alignItems: 'center', marginBottom: 6 }}>
       <span style={{ color: 'var(--muted)' }}>{props.label}</span>
       <div style={{ display: 'grid', gridTemplateColumns: `repeat(${Array.isArray(props.children) ? props.children.length : 1}, 1fr)`, gap: 6 }}>{props.children}</div>
       <span>{props.keyBtn}</span>
@@ -135,7 +135,7 @@ function TransformCreate({ boneIds }: { boneIds: Id[] }) {
         <span>Transform constraint</span>
       </div>
       <p className="hint-text" style={{ margin: '0 0 8px' }}>
-        Make {boneIds.length > 1 ? 'these bones' : 'this bone'} follow another bone's rotation, position or scale (Spine 4.3 mappings).
+        {`Make ${boneIds.length > 1 ? 'these bones' : 'this bone'} follow another bone's rotation, position or scale (Spine 4.3 mappings).`}
       </p>
       <PropRow label="Follow">
         <SelectField value={src} options={bones.map((b) => ({ value: b.id, label: b.name }))} onChange={setSource} />
@@ -231,6 +231,7 @@ function PolygonInspector({ slotId, att, disabled }: { slotId: Id; att: PolygonA
   const slotOptions = [{ value: '', label: '— to the end of the draw order —' }, ...doc.slots.map((s) => ({ value: s.id, label: s.name }))];
   const index = doc.slots.findIndex((s) => s.id === slotId);
   const endIndex = clip?.end ? doc.slots.findIndex((s) => s.id === clip.end) : -1;
+  const clipHint = clip ? `Clips the slots below this one in the list${clip.end ? (endIndex >= 0 && endIndex <= index ? ' — the end slot is above this slot, so it has no effect' : '') : ' up to the end of the draw order'}.` : '';
   return (
     <div className="group">
       <div className="group-title">
@@ -238,7 +239,7 @@ function PolygonInspector({ slotId, att, disabled }: { slotId: Id; att: PolygonA
         <span>{clip ? 'Clipping' : 'Bounding box'}</span>
       </div>
       <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 8 }}>
-        <span className="chip">{polygonVertexCount(att)} vertices</span>
+        <span className="chip">{`${polygonVertexCount(att)} vertices`}</span>
         {att.weights && <span className="chip" style={{ color: 'var(--accent)' }}>weighted</span>}
       </div>
       {clip && (
@@ -253,8 +254,7 @@ function PolygonInspector({ slotId, att, disabled }: { slotId: Id; att: PolygonA
             <Toggle on={clip.inverse} onChange={(v) => !disabled && set({ inverse: v }, 'Clipping inverse')} title="Show everything outside the polygon instead of the inside" />
           </PropRow>
           <p className="hint-text" style={{ margin: '0 0 8px' }}>
-            Clips the slots below this one in the list{clip.end ? '' : ' up to the end of the draw order'}
-            {clip.end && endIndex >= 0 && endIndex <= index ? ' — the end slot is above this slot, so it has no effect' : ''}.
+            {clipHint}
           </p>
         </>
       )}

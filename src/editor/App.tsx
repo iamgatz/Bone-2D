@@ -9,6 +9,7 @@ import { deleteConstraint } from '@/store/ikActions';
 import { loadSample } from '@/store/sample';
 import { toast, uiStore, useUi } from '@/store/ui';
 import type { Tool } from '@/store/ui';
+import { setLang, useLang } from '@/i18n';
 import { startPlaybackLoop } from './playback';
 import { AssetsPanel } from './panels/AssetsPanel';
 import { InspectorPanel } from './panels/InspectorPanel';
@@ -46,6 +47,19 @@ const HINTS: Record<Tool, string> = {
   boundingbox: 'Click to place polygon points · click the first point, double-click or Enter to finish · Esc cancels · it is created on the selected bone',
   point: 'Click to place a point attachment on the selected bone · set its rotation in the Inspector',
 };
+
+function LangToggle() {
+  const lang = useLang();
+  return (
+    <div className="seg lang" title="Language">
+      {(['en', 'ru'] as const).map((l) => (
+        <button key={l} className={lang === l ? 'active plain' : ''} onClick={() => setLang(l)}>
+          {l.toUpperCase()}
+        </button>
+      ))}
+    </div>
+  );
+}
 
 function TopBar() {
   const project = useProject();
@@ -113,6 +127,7 @@ function TopBar() {
       <IconButton icon={Undo2} title={docStore.undoLabel ? `Undo ${docStore.undoLabel}` : 'Undo'} hotkey="Ctrl Z" disabled={!docStore.canUndo} onClick={() => docStore.undo()} />
       <IconButton icon={Redo2} title="Redo" hotkey="Ctrl Y" disabled={!docStore.canRedo} onClick={() => docStore.redo()} />
       <span className="sep" />
+      <LangToggle />
       <IconButton icon={CircleHelp} title="Shortcuts & help" hotkey="?" onClick={() => uiStore.patch({ helpOpen: true })} />
       <Button primary icon={Download} onClick={() => uiStore.patch({ exportOpen: true })}>Export</Button>
     </div>
@@ -210,6 +225,7 @@ export function App() {
   const panel = useUi((s) => s.panel);
   const exportOpen = useUi((s) => s.exportOpen);
   const helpOpen = useUi((s) => s.helpOpen);
+  useLang(); // the whole tree re-renders when the language changes: strings are translated while rendering
 
   useEffect(() => {
     const stopPlayback = startPlaybackLoop();

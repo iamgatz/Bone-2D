@@ -9,7 +9,7 @@ import { Button, ColorSwatch, NumberField, SelectField } from '../ui/controls';
 
 function Row(props: { label: string; children: React.ReactNode }) {
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: '62px 1fr', gap: 6, alignItems: 'center', marginBottom: 6 }}>
+    <div style={{ display: 'grid', gridTemplateColumns: '90px 1fr', gap: 6, alignItems: 'center', marginBottom: 6 }}>
       <span style={{ color: 'var(--muted)' }}>{props.label}</span>
       <div>{props.children}</div>
     </div>
@@ -69,8 +69,8 @@ export function MeshGroup({ slotId, att }: { slotId: Id; att: MeshAttachment }) 
           <span>Mesh · {att.path}</span>
         </div>
         <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 8 }}>
-          <span className="chip">{att.uvs.length / 2} vertices</span>
-          <span className="chip">{att.triangles.length / 3} triangles</span>
+          <span className="chip">{`${att.uvs.length / 2} vertices`}</span>
+          <span className="chip">{`${att.triangles.length / 3} triangles`}</span>
           <span className="chip" style={weighted ? { color: 'var(--accent)' } : undefined}>
             {weighted ? `weighted · ${influencing.length} bones` : 'unweighted'}
           </span>
@@ -112,10 +112,10 @@ export function MeshGroup({ slotId, att }: { slotId: Id; att: MeshAttachment }) 
           {!weighted ? (
             <>
               <p className="hint-text" style={{ margin: '0 0 8px' }}>
-                Bind the mesh to bones so it bends with them. Select the bones in the viewport first{slot ? '' : ''}.
+                Bind the mesh to bones so it bends with them. Select the bones in the viewport first.
               </p>
               <Button primary icon={Link2} onClick={() => bindMeshToBones(slotId, att.name, selectedBones)} disabled={!selectedBones.length && !slot} title="Auto-weights to the selected bones">
-                Bind to {selectedBones.length || 1} selected bone{selectedBones.length === 1 || !selectedBones.length ? '' : 's'}
+                {`Bind to ${selectedBones.length || 1} selected bone${selectedBones.length === 1 || !selectedBones.length ? '' : 's'}`}
               </Button>
             </>
           ) : (

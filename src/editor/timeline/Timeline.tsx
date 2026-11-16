@@ -59,7 +59,7 @@ function TimelineMenu({ menu, onClose }: { menu: TimelineMenuRequest; onClose: (
   return (
     <div ref={ref} className="menu-pop" style={{ position: 'fixed', left: Math.min(menu.x, window.innerWidth - 230), top: Math.min(menu.y, window.innerHeight - 330), zIndex: 120 }}>
       <div className="section-label" style={{ paddingTop: 4 }}>
-        Interpolation · {refs.length} key{refs.length === 1 ? '' : 's'}
+        {`Interpolation · ${refs.length} key${refs.length === 1 ? '' : 's'}`}
       </div>
       {item('Linear', () => setKeysCurve(refs, 'linear'))}
       {item('Stepped', () => setKeysCurve(refs, 'stepped'))}

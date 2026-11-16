@@ -11,7 +11,7 @@ import { Button, IconButton, NumberField, SelectField, TextField, Toggle } from 
 
 function Row(props: { label: string; children: React.ReactNode; right?: React.ReactNode }) {
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: '62px 1fr 24px', gap: 6, alignItems: 'center', marginBottom: 6 }}>
+    <div style={{ display: 'grid', gridTemplateColumns: '90px 1fr 24px', gap: 6, alignItems: 'center', marginBottom: 6 }}>
       <span style={{ color: 'var(--muted)' }}>{props.label}</span>
       <div>{props.children}</div>
       <span>{props.right}</span>
@@ -119,7 +119,7 @@ export function SliderInspector({ id }: { id: Id }) {
             <NumberField label="s" value={v.time} step={0.05} precision={3} min={0} keyed={animate && keyedAt('time')} onChange={(x) => setSliderValues(id, { time: Math.max(0, x) })} />
           </Row>
         )}
-        {applied && <div style={{ color: 'var(--muted)', marginTop: 4 }}>"{applied.name}" is {applied.duration.toFixed(2)} s long</div>}
+        {applied && <div style={{ color: 'var(--muted)', marginTop: 4 }}>{`"${applied.name}" is ${applied.duration.toFixed(2)} s long`}</div>}
       </div>
 
       <div className="group">
