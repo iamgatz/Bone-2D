@@ -520,4 +520,12 @@ export const RU: Record<string, string> = {
   'dark r': 'тёмный r',
   'dark g': 'тёмный g',
   'dark b': 'тёмный b',
+  // ---------------------------------------------------------------- transform constraint mix keys
+  'Remove the mix key at the playhead': 'Убрать ключ mix в текущем кадре',
+  'Key the mixes at the playhead': 'Поставить ключ на миксы в текущем кадре',
+  'Edit transform mix': 'Правка mix transform-констрейнта',
+  'mix rotate': 'mix поворот',
+  'mix scale x': 'mix масштаб x',
+  'mix scale y': 'mix масштаб y',
+  'mix shear y': 'mix сдвиг y',
 };

@@ -229,6 +229,12 @@ export function buildFixture(): Fixture {
   doc.constraints.push(sliderB, sliderC);
   pose.slider = { [sliderC.id]: { mix: tl([[0, [0.5]], [1, [1]]]) } }; // A keys the mix of C (A runs first)
   anim.slider = { [sliderC.id]: { time: tl([[0, [0], bez([0.3, 0, 0.7, 1])], [0.6, [0.8]], [1.2, [0.1]]]), mix: tl([[0, [1]], [1.2, [0.2]]]) } };
+  // the mixes of "slide follow" (rotate, scale x) are keyed in walk: bezier, stepped and linear segments
+  anim.transform[slideFollow.id] = tl([
+    [0, [0.9, 1, 1, 0.7, 1, 1], bez([0.25, 0.1, 0.75, 0.9, 0.3, 0, 0.7, 1, 0.3, 0, 0.7, 1, 0.3, -0.3, 0.7, 1.4, 0.3, 0, 0.7, 1, 0.3, 0, 0.7, 1])],
+    [0.6, [0.2, 1, 1, 1, 1, 1], 'stepped'],
+    [1.1, [1, 1, 1, 0.4, 1, 1]],
+  ]);
   doc.animations.push(pose, pose2);
 
   // a second skin that swaps the flag image and moves it

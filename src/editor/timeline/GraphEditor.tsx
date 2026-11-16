@@ -30,6 +30,7 @@ const CHANNEL_NAMES: Record<string, string[]> = {
   shear: ['shear x', 'shear y'],
   rgba: ['r', 'g', 'b', 'a'],
   rgba2: ['r', 'g', 'b', 'a', 'dark r', 'dark g', 'dark b'],
+  transform: ['mix rotate', 'mix x', 'mix y', 'mix scale x', 'mix scale y', 'mix shear y'],
   ik: ['mix', 'softness'],
   time: ['time'],
   mix: ['mix'],
@@ -60,6 +61,7 @@ export function buildCurves(doc: SkeletonDoc, anim: Animation | null, selection:
   for (const r of refs) {
     if (r.kind === 'bone') addBone(r.target, r.prop);
     else if (r.kind === 'slot' && (r.prop === 'rgba' || r.prop === 'rgba2')) add('slot', r.target, r.prop, anim.slots[r.target]?.[r.prop], doc.slots.find((s) => s.id === r.target)?.name ?? '?', CHANNEL_NAMES[r.prop]);
+    else if (r.kind === 'transform') add('transform', r.target, '', anim.transform?.[r.target], doc.constraints.find((c) => c.id === r.target)?.name ?? '?', CHANNEL_NAMES.transform);
     else if (r.kind === 'ik') add('ik', r.target, '', anim.ik[r.target], doc.constraints.find((c) => c.id === r.target)?.name ?? '?', CHANNEL_NAMES.ik);
     else if (r.kind === 'slider' && (r.prop === 'time' || r.prop === 'mix')) add('slider', r.target, r.prop, anim.slider?.[r.target]?.[r.prop], doc.constraints.find((c) => c.id === r.target)?.name ?? '?', CHANNEL_NAMES[r.prop]);
   }

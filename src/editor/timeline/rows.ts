@@ -114,6 +114,12 @@ export function buildRows(doc: SkeletonDoc, anim: Animation | null, selectedBone
       if (open) ikRows.push(...propRows(id, 2, props, 'ik'));
       continue;
     }
+    if (c.type === 'transform') {
+      const mixKeys = anim.transform?.[c.id];
+      if (!mixKeys?.length) continue;
+      ikRows.push({ id: `transform:${c.id}`, label: c.name, type: 'entity', depth: 1, expandable: false, expanded: false, keys: mixKeys.map((k) => ({ time: k.time, refs: [{ kind: 'transform' as const, target: c.id, prop: '', time: k.time }] })), target: { kind: 'ik', id: c.id }, tone: 'ik' });
+      continue;
+    }
     const keys = anim.ik[c.id];
     if (!keys?.length) continue;
     ikRows.push({ id: `ik:${c.id}`, label: c.name, type: 'entity', depth: 1, expandable: false, expanded: false, keys: keys.map((k) => ({ time: k.time, refs: [{ kind: 'ik' as const, target: c.id, prop: '', time: k.time }] })), target: { kind: 'ik', id: c.id }, tone: 'ik' });

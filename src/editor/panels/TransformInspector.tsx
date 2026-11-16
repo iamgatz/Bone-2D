@@ -1,9 +1,12 @@
 import { ArrowDown, ArrowRight, ArrowUp, Link2, Plus, Trash2, X } from 'lucide-react';
 import { TRANSFORM_PROPS } from '@/core/model';
 import type { Id, TransformProp } from '@/core/model';
+import { findKeyIndex } from '@/core/curve';
+import { currentAnimation, deleteKeys } from '@/store/actions';
 import { useProject } from '@/store/doc';
+import { useUi } from '@/store/ui';
 import { deleteConstraint, moveConstraint, renameConstraint } from '@/store/ikActions';
-import { updateTransform } from '@/store/transformActions';
+import { currentTransformMix, setTransformMix, updateTransform } from '@/store/transformActions';
 import { Button, IconButton, NumberField, SelectField, TextField, Toggle } from '../ui/controls';
 
 const PROP_LABEL: Record<TransformProp, string> = { rotate: 'Rotation', x: 'X', y: 'Y', scaleX: 'Scale X', scaleY: 'Scale Y', shearY: 'Shear Y' };
@@ -21,12 +24,25 @@ function Row(props: { label: string; children: React.ReactNode }) {
 
 export function TransformInspector({ id }: { id: Id }) {
   const project = useProject();
+  const mode = useUi((s) => s.mode);
+  const time = useUi((s) => s.time);
+  useUi((s) => s.overrides); // every hook goes above the early return
   const doc = project.skeleton;
   const c = doc.constraints.find((x) => x.id === id);
   if (!c || c.type !== 'transform') return null;
   const index = doc.constraints.findIndex((x) => x.id === id);
   const boneName = (b: Id) => doc.bones.find((x) => x.id === b)?.name ?? '?';
   const usedTo = new Set(c.properties.flatMap((f) => f.to.map((t) => t.prop)));
+  const animate = mode === 'animate';
+  const keys = currentAnimation()?.transform?.[id];
+  const keyed =
+    !!keys &&
+    (() => {
+      const i = findKeyIndex(keys, time + 1e-4);
+      return i >= 0 && Math.abs(keys[i].time - time) < 1e-4;
+    })();
+  const cur = animate ? currentTransformMix(id) : null; // the animated mixes
+  const mixOf = (k: TransformProp) => (cur ? cur[TRANSFORM_PROPS.indexOf(k)] : c.mix[k]);
 
   return (
     <>
@@ -106,10 +122,24 @@ export function TransformInspector({ id }: { id: Id }) {
       </div>
 
       <div className="group">
-        <div className="group-title">Mix</div>
+        <div className="group-title">
+          <span>Mix</span>
+          {animate && (
+            <>
+              <span className="spacer" />
+              <button
+                className={`key-btn${keyed ? ' on' : ''}`}
+                title={keyed ? 'Remove the mix key at the playhead' : 'Key the mixes at the playhead'}
+                onClick={() => (keyed ? deleteKeys([{ kind: 'transform', target: id, prop: '', time }]) : setTransformMix(id, {}))}
+              >
+                ◆
+              </button>
+            </>
+          )}
+        </div>
         {MIX_KEYS.filter((k) => usedTo.has(k)).map((k) => (
           <Row key={k} label={PROP_LABEL[k]}>
-            <NumberField label="%" value={c.mix[k] * 100} step={1} precision={0} min={0} max={100} onChange={(v) => updateTransform(id, (x) => void (x.mix[k] = v / 100))} />
+            <NumberField label="%" value={mixOf(k) * 100} step={1} precision={0} min={0} max={100} keyed={animate && keyed} onChange={(v) => setTransformMix(id, { [k]: v / 100 })} />
           </Row>
         ))}
         {!usedTo.size && <p className="hint-text">Add a mapping to set mixes.</p>}

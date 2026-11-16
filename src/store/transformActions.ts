@@ -1,11 +1,12 @@
 /** Transform constraints (Spine 4.3): create from presets and edit. */
 import type { Draft } from 'immer';
-import { freshName } from '@/core/edit';
-import { newTransformConstraint } from '@/core/model';
+import { freshName, makeCurve, upsertKey } from '@/core/edit';
+import { TRANSFORM_PROPS, newTransformConstraint } from '@/core/model';
 import type { Id, TransformConstraint, TransformFrom, TransformProp } from '@/core/model';
+import { getScene } from '@/editor/scene';
 import { setSelection } from './actions';
 import { docStore } from './doc';
-import { toast } from './ui';
+import { toast, uiStore } from './ui';
 
 export type TransformPreset = 'rotation' | 'mirror' | 'position' | 'scale' | 'rotateToX';
 
@@ -63,5 +64,45 @@ export function updateTransform(id: Id, recipe: (c: Draft<TransformConstraint>) 
   docStore.update(label, (d) => {
     const c = d.skeleton.constraints.find((x) => x.id === id);
     if (c && c.type === 'transform') recipe(c);
+  });
+}
+
+/** The constraint's current (animated, constrained) mixes, in `TRANSFORM_PROPS` order. */
+export function currentTransformMix(id: Id): number[] | null {
+  const c = getScene().skeleton.transformById(id);
+  return c ? [...c.mix] : null;
+}
+
+/**
+ * Edits mixes: the setup values in Setup mode, a key at the playhead in Animate mode. Spine keys all six mixes together, so
+ * the channels that are not edited keep their current values.
+ */
+export function setTransformMix(id: Id, patch: Partial<Record<TransformProp, number>>, label = 'Edit transform mix') {
+  const ui = uiStore.get();
+  if (ui.mode === 'setup') {
+    updateTransform(
+      id,
+      (x) => {
+        for (const k of TRANSFORM_PROPS) if (patch[k] !== undefined) x.mix[k] = patch[k]!;
+      },
+      label,
+    );
+    return;
+  }
+  const anim = getScene().animation;
+  const cur = currentTransformMix(id);
+  if (!anim || !cur) return;
+  const value = TRANSFORM_PROPS.map((k, i) => patch[k] ?? cur[i]);
+  docStore.update(label, (d) => {
+    const a = d.skeleton.animations.find((x) => x.id === anim.id);
+    if (!a) return;
+    const keys = (a.transform[id] ??= []);
+    const exist = keys.find((k) => Math.abs(k.time - ui.time) < 1e-4);
+    if (exist) exist.value = value;
+    else {
+      const curve = makeCurve(ui.defaultCurve, 6);
+      upsertKey(keys, { time: ui.time, value, ...(curve !== undefined ? { curve } : {}) });
+    }
+    if (ui.time > a.duration) a.duration = ui.time;
   });
 }
