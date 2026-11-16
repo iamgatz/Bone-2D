@@ -85,6 +85,15 @@ function timeline(keys: unknown, channels: number, valueOf: (k: J) => number[], 
   return out;
 }
 
+/** A 6-channel key (light rgb + dark rgb) as a 7-channel one with a constant alpha in the fourth channel. */
+function withAlphaChannel(k: Key, alpha: number): Key {
+  const v = k.value;
+  const out: Key = { time: k.time, value: [v[0], v[1], v[2], alpha, v[3], v[4], v[5]] };
+  if (Array.isArray(k.curve)) out.curve = [...k.curve.slice(0, 12), 1 / 3, 1 / 3, 2 / 3, 2 / 3, ...k.curve.slice(12)];
+  else if (k.curve !== undefined) out.curve = k.curve;
+  return out;
+}
+
 const single = (name: string, def: number) => (k: J) => [num(k[name] ?? (name === 'value' ? k.angle : undefined), def)];
 const pair = (def: number) => (k: J) => [num(k.x, def), num(k.y, def)];
 
@@ -371,7 +380,22 @@ export function importSpineJson(input: unknown, name = 'imported'): SpineImportR
         if (t.rgb) tl.rgba = toRgba(timeline(t.rgb, 3, (k) => rgba(k.color, [1, 1, 1, 1]).slice(0, 3)), (v) => [v[0], v[1], v[2], setup[3]]);
         else tl.rgba = toRgba(timeline(t.alpha, 1, single('value', 1)), (v) => [setup[0], setup[1], setup[2], v[0]]);
       }
-      if (t.rgba2 || t.rgb2) warn(`animation "${an}": dark color timelines are not supported and were skipped`);
+      if (t.rgba2 || t.rgb2) {
+        const slot = slotByName.get(sn)!;
+        if (!slot.dark) {
+          slot.dark = [0, 0, 0];
+          warn(`slot "${sn}" has two-color keys but no dark color: black was assumed`);
+        }
+        if (t.rgba2) tl.rgba2 = timeline(t.rgba2, 7, (k) => [...rgba(k.light, [1, 1, 1, 1]), ...(rgb(k.dark) ?? [0, 0, 0])]);
+        else {
+          warn(`animation "${an}": a separate rgb2 timeline became a two-color timeline (alpha stays at the setup value)`);
+          tl.rgba2 = timeline(t.rgb2, 6, (k) => [...(rgb(k.light) ?? [1, 1, 1]), ...(rgb(k.dark) ?? [0, 0, 0])]).map((k) => withAlphaChannel(k, slot.color[3]));
+        }
+        if (tl.rgba) {
+          delete tl.rgba;
+          warn(`animation "${an}": rgba keys next to two-color keys were skipped`);
+        }
+      }
       if (!Object.keys(tl).length) delete a.slots[sid];
     }
     // ik

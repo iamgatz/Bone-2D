@@ -428,6 +428,21 @@ function repairAnimations(doc: SkeletonDoc, note: Note) {
         if (!Array.isArray(tl.rgba)) delete tl.rgba;
         else if (cleanKeys(tl.rgba, 4, 4)) note(`${where}: color keys repaired`);
       }
+      if (tl.rgba2) {
+        if (!Array.isArray(tl.rgba2)) delete tl.rgba2;
+        else if (cleanKeys(tl.rgba2, 7, 7)) note(`${where}: two-color keys repaired`);
+      }
+      if (tl.rgba2 && tl.rgba) {
+        delete tl.rgba; // a slot is keyed either with rgba or with rgba2
+        note(`${where}: color keys next to two-color keys removed`);
+      }
+      if (tl.rgba2?.length) {
+        const slot = doc.slots.find((s) => s.id === id);
+        if (slot && !slot.dark) {
+          slot.dark = [0, 0, 0]; // the runtime needs the setup dark color of a slot with two-color keys
+          note(`${where}: slot "${slot.name}" got a dark color for its two-color keys`);
+        }
+      }
     }
 
     for (const id of Object.keys(a.ik)) {

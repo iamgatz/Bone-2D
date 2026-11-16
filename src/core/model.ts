@@ -317,8 +317,13 @@ export interface BoneTimelines {
 
 export interface SlotTimelines {
   attachment?: AttachmentKey[];
-  /** value = [r, g, b, a] absolute */
+  /** value = [r, g, b, a] absolute (the light color) */
   rgba?: Timeline;
+  /**
+   * Two-color tinting: value = [r, g, b, a, darkR, darkG, darkB] absolute. Needs `slot.dark` (the setup dark color) and
+   * replaces `rgba` on that slot (Spine's `rgba2` timeline).
+   */
+  rgba2?: Timeline;
 }
 
 export interface Animation {

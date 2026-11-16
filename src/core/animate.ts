@@ -3,7 +3,21 @@ import { deformProgress, findKeyIndex, sampleKeys } from './curve';
 import type { Animation, Id, Key, Timeline } from './model';
 import type { Skeleton, Slot } from './skeleton';
 
-const tmp: number[] = [0, 0, 0, 0, 0, 0];
+const tmp: number[] = [0, 0, 0, 0, 0, 0, 0];
+
+const clamp01 = (v: number) => (v < 0 ? 0 : v > 1 ? 1 : v);
+
+/**
+ * Spine's RGBA / RGBA2 timeline applied on top of the current pose (sliders): the light color (and the dark one for two-color
+ * keys) moves towards the sampled value by `alpha`. Spine clamps colors to 0..1 (Color.set / Color.add).
+ */
+function mixColor(slot: Slot, v: number[], alpha: number, dark: boolean) {
+  if (alpha === 1) slot.color = [clamp01(v[0]), clamp01(v[1]), clamp01(v[2]), clamp01(v[3])];
+  else for (let j = 0; j < 4; j++) slot.color[j] = clamp01(slot.color[j] + (v[j] - slot.color[j]) * alpha);
+  if (!dark || !slot.dark) return;
+  if (alpha === 1) slot.dark = [clamp01(v[4]), clamp01(v[5]), clamp01(v[6])];
+  else for (let j = 0; j < 3; j++) slot.dark[j] = clamp01(slot.dark[j] + (v[4 + j] - slot.dark[j]) * alpha);
+}
 
 /** Last key time of an animation (or 0). */
 export function animationEndTime(anim: Animation): number {
@@ -22,6 +36,7 @@ export function animationEndTime(anim: Animation): number {
     const t = anim.slots[id];
     scan(t.attachment);
     scan(t.rgba);
+    scan(t.rgba2);
   }
   for (const id in anim.ik) scan(anim.ik[id]);
   for (const id in anim.transform ?? {}) scan(anim.transform[id]);
@@ -69,7 +84,11 @@ export function applyAnimation(skeleton: Skeleton, anim: Animation | null, time:
       if (i >= 0) slot.attachmentName = tl.attachment[i].name;
     }
     if (tl.rgba && tl.rgba.length && sampleKeys(tl.rgba, time, tmp)) {
-      slot.color = [tmp[0], tmp[1], tmp[2], tmp[3]];
+      slot.color = [clamp01(tmp[0]), clamp01(tmp[1]), clamp01(tmp[2]), clamp01(tmp[3])];
+    }
+    if (tl.rgba2 && tl.rgba2.length && sampleKeys(tl.rgba2, time, tmp)) {
+      slot.color = [clamp01(tmp[0]), clamp01(tmp[1]), clamp01(tmp[2]), clamp01(tmp[3])];
+      if (slot.dark) slot.dark = [clamp01(tmp[4]), clamp01(tmp[5]), clamp01(tmp[6])];
     }
   }
 
@@ -186,10 +205,8 @@ export function applyAnimationOnto(skeleton: Skeleton, anim: Animation, time: nu
       const i = findKeyIndex(tl.attachment, time);
       if (i >= 0) slot.attachmentName = tl.attachment[i].name;
     }
-    if (tl.rgba?.length && sampleKeys(tl.rgba, time, tmp)) {
-      if (alpha === 1) slot.color = [tmp[0], tmp[1], tmp[2], tmp[3]];
-      else for (let j = 0; j < 4; j++) slot.color[j] += (tmp[j] - slot.color[j]) * alpha;
-    }
+    if (tl.rgba?.length && sampleKeys(tl.rgba, time, tmp)) mixColor(slot, tmp, alpha, false);
+    if (tl.rgba2?.length && sampleKeys(tl.rgba2, time, tmp)) mixColor(slot, tmp, alpha, true);
   }
 
   for (const cid in anim.ik) {

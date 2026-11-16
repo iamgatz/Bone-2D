@@ -131,6 +131,7 @@ export const ops: Op[] = [
   { name: 'setSlotBone', run: (c) => { const s = c.pick(doc().slots); if (s) A.setSlotBone(s.id, c.pick(doc().bones)!.id); } },
   { name: 'setSlotAttachment', run: (c) => { const s = c.pick(doc().slots); if (!s) return; const names = Object.keys(doc().skins[0].attachments[s.id] ?? {}); A.setSlotAttachment(s.id, c.chance(0.2) ? null : (c.pick(names) ?? null)); } },
   { name: 'setSlotColor', run: (c) => { const s = c.pick(doc().slots); if (s) A.setSlotColor(s.id, [c.r(), c.r(), c.r(), c.r()]); } },
+  { name: 'setSlotColors', run: (c) => { const s = c.pick(doc().slots); if (s) A.setSlotColor(s.id, [c.r(), c.r(), c.r(), c.r()], [c.r(), c.r(), c.r()]); } }, // light + dark (two-color tinting)
   { name: 'deleteAttachment', run: (c) => { const a = c.pick([...meshes(), ...regions(), ...polygons(), ...points()]); if (a) A.deleteAttachment(a.slotId, a.name); } },
   { name: 'setAttachmentProps', run: (c) => { const a = c.pick(regions()); if (a) A.setAttachmentProps(a.slotId, a.name, { x: c.num(-40, 40), rotation: c.num(-90, 90), scaleX: c.num(0.5, 2) }); } },
   // ---- clipping / bounding box / point attachments
@@ -281,9 +282,30 @@ export function parityMismatch(p: Project): Mismatch | null {
         const pairs: [string, number, number, number][] = [['a', mine.a, q.a, mag], ['b', mine.b, q.b, mag], ['c', mine.c, q.c, mag], ['d', mine.d, q.d, mag], ['worldX', mine.worldX, q.worldX, 0], ['worldY', mine.worldY, q.worldY, 0]];
         for (const [what, x, y, scale] of pairs) if (!(Math.abs(x - y) <= 5e-3 * Math.max(1, Math.abs(x), Math.abs(y), scale))) return { bone: ob.data.name, what, ours: x, official: y, animation: anim.name, time: t };
       }
+      const colors = colorMismatch(p, ours, official);
+      if (colors) return { ...colors, animation: anim.name, time: t };
       const shapes = attachmentMismatch(p, ours, official, ambiguous);
       if (shapes) return { ...shapes, animation: anim.name, time: t };
     }
+  }
+  return null;
+}
+
+/**
+ * Slot colors, light and dark. They travel as 8-bit hex in the JSON and a bezier can extrapolate the rounding error, hence the
+ * tolerance: a wrong channel, clamp or mix is off by far more.
+ */
+function colorMismatch(p: Project, ours: ReturnType<typeof createSkeleton>, official: any): Omit<Mismatch, 'animation' | 'time'> | null {
+  for (const os of official.slots) {
+    const slotDoc = p.skeleton.slots.find((s) => s.name === os.data.name);
+    const slot = slotDoc && ours.slotById(slotDoc.id);
+    if (!slot) continue;
+    const c = os.appliedPose.color;
+    const dk = os.appliedPose.darkColor;
+    const pairs: [string, number, number][] = [['color.r', slot.color[0], c.r], ['color.g', slot.color[1], c.g], ['color.b', slot.color[2], c.b], ['color.a', slot.color[3], c.a]];
+    if (dk) pairs.push(['dark.r', slot.dark ? slot.dark[0] : NaN, dk.r], ['dark.g', slot.dark ? slot.dark[1] : NaN, dk.g], ['dark.b', slot.dark ? slot.dark[2] : NaN, dk.b]);
+    else if (slot.dark) pairs.push(['dark (the official slot has none)', 1, 0]);
+    for (const [what, x, y] of pairs) if (!(Math.abs(x - y) <= 1.5e-2)) return { bone: `slot "${os.data.name}"`, what, ours: x, official: y };
   }
   return null;
 }

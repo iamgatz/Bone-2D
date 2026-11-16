@@ -705,7 +705,8 @@ export class Bone {
         const sin = Math.sin(r);
         let za = (pa * cos + pb * sin) * sxi;
         let zc = (pc * cos + pd * sin) * syi;
-        const s = 1 / Math.sqrt(za * za + zc * zc);
+        const zl = Math.sqrt(za * za + zc * zc);
+        const s = zl > 0 ? 1 / zl : 0; // zero only for a collapsed parent (the official code gets Infinity here)
         za *= s;
         zc *= s;
         let zb = -zc;
@@ -781,8 +782,11 @@ export class Bone {
         const wb = this.b * sxi;
         const wc = this.c * syi;
         const wd = this.d * syi;
-        const s = 1 / (pa * pa + pc * pc);
-        const det = 1 / Math.abs(pad * sxi * syi);
+        // a collapsed parent (first column 0) has no rotation to undo: the official code divides by zero, we stay finite
+        const sd = pa * pa + pc * pc;
+        const s = sd > 0 ? 1 / sd : 0;
+        const dd = Math.abs(pad * sxi * syi);
+        const det = dd > 0 ? 1 / dd : 0;
         this.set5((pa * wa + pc * wc) * s, (pa * wb + pc * wd) * s, (pa * wc - pc * wa) * det, (pa * wd - pc * wb) * det, atan2Deg(pc, pa));
         break;
       }
@@ -807,7 +811,8 @@ export class Bone {
         const sin = Math.sin(r);
         let za = (pa * cos + pb * sin) * sxi;
         let zc = (pc * cos + pd * sin) * syi;
-        const s = 1 / Math.sqrt(za * za + zc * zc);
+        const zl = Math.sqrt(za * za + zc * zc);
+        const s = zl > 0 ? 1 / zl : 0; // zero only for a collapsed parent (the official code gets Infinity here)
         za *= s;
         zc *= s;
         const si = this.inherit === 'noScale' && pad < 0 !== (sx < 0 !== sy < 0) ? -1 : 1;
@@ -866,6 +871,12 @@ export class Bone {
 
   worldToLocal(wx: number, wy: number, out: [number, number] = [0, 0]): [number, number] {
     const det = this.a * this.d - this.b * this.c;
+    if (!(Math.abs(det) > 1e-12)) {
+      // a collapsed bone (scaled to 0) has no inverse: its origin is the closest local position
+      out[0] = 0;
+      out[1] = 0;
+      return out;
+    }
     const x = wx - this.worldX;
     const y = wy - this.worldY;
     out[0] = (x * this.d - y * this.b) / det;
