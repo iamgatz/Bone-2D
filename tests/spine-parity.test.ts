@@ -10,6 +10,7 @@ import { exportSpineJson } from '../src/core/export/spineJson';
 import { packAtlas, writeAtlas } from '../src/core/export/atlas';
 import { compileSkeleton, createSkeleton, meshWorldVertices, regionWorldVertices } from '../src/core/skeleton';
 import { applyAnimation } from '../src/core/animate';
+import { sampleKeys } from '../src/core/curve';
 import { newAnimation } from '../src/core/model';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -64,7 +65,7 @@ describe('Spine 4.3 parity', () => {
     expect(sd.findAnimation('walk').duration).toBeCloseTo(1.2, 4);
   });
 
-  const stats = { bones: 0, vertices: 0, meshes: 0 };
+  const stats = { bones: 0, vertices: 0, meshes: 0, dark: 0 };
   const compare = (t: number | null, mutate?: (s: ReturnType<typeof createSkeleton>) => void, skinName?: string) => {
     const official = new (spine as any).Skeleton(sd);
     if (skinName) official.setSkin(sd.findSkin(skinName));
@@ -108,6 +109,14 @@ describe('Spine 4.3 parity', () => {
       close(mine.color[1], c.g, `${tag}.g`);
       close(mine.color[2], c.b, `${tag}.b`);
       close(mine.color[3], c.a, `${tag}.a`);
+      const dk = os.appliedPose.darkColor; // null unless the slot has a dark color (two-color tinting)
+      expect(!!mine.dark, `${tag} has a dark color`).toBe(!!dk);
+      if (dk && mine.dark) {
+        close(mine.dark[0], dk.r, `${tag}.dark.r`);
+        close(mine.dark[1], dk.g, `${tag}.dark.g`);
+        close(mine.dark[2], dk.b, `${tag}.dark.b`);
+        stats.dark++;
+      }
       const ov = officialVertices(official, os);
       const att = ours.slotAttachment(mine);
       if (ov && att && att.kind !== 'point') {
@@ -174,6 +183,59 @@ describe('Spine 4.3 parity', () => {
     expect(stats.bones).toBeGreaterThan(150);
     expect(stats.meshes).toBeGreaterThan(10);
     expect(stats.vertices).toBeGreaterThan(100);
+    expect(stats.dark).toBeGreaterThan(10); // the two-color slot
+  });
+
+  describe('two-color tinting (rgba2)', () => {
+    const glowId = doc.slots.find((s) => s.name === 'glow')!.id;
+    const glowKeys = doc.animations[0].slots[glowId].rgba2!;
+    const slotOf = (s: ReturnType<typeof createSkeleton>) => s.slots.find((x) => x.data.name === 'glow')!;
+
+    it('exports light and dark colors, and the official runtime loads them', () => {
+      const exported = (json as any).animations.walk.slots.glow.rgba2;
+      expect(exported).toHaveLength(glowKeys.length);
+      expect(exported[0]).toMatchObject({ light: expect.stringMatching(/^[0-9a-f]{8}$/), dark: expect.stringMatching(/^[0-9a-f]{6}$/) });
+      expect((json as any).slots.find((s: any) => s.name === 'glow').dark).toBe('1a334d');
+      expect(sd.findSlot('glow').setupPose.darkColor).not.toBeNull();
+    });
+
+    it('keys overshoot 0..1 in the fixture, and ours is clamped like Spine (Color.set / Color.add)', () => {
+      const out: number[] = [];
+      let over = 0;
+      let under = 0;
+      for (let t = 0; t < 0.6; t += 0.01) {
+        sampleKeys(glowKeys, t, out);
+        if (out.some((v) => v > 1)) over++;
+        if (out.some((v) => v < 0)) under++;
+        compare(t + 0.0013);
+        const ours = createSkeleton(data);
+        applyAnimation(ours, doc.animations[0], t + 0.0013);
+        for (const v of [...slotOf(ours).color, ...slotOf(ours).dark!]) expect(v >= 0 && v <= 1).toBe(true);
+      }
+      expect(over).toBeGreaterThan(3);
+      expect(under).toBeGreaterThan(3);
+    });
+
+    it('animates the dark color (it differs from the setup color, and the comparison is not vacuous)', () => {
+      const ours = createSkeleton(data);
+      applyAnimation(ours, doc.animations[0], 0.7);
+      expect(slotOf(ours).dark).not.toEqual(doc.slots.find((s) => s.id === glowId)!.dark);
+      expect(() => compare(0.3513, (s) => (slotOf(s).dark![0] += 0.25))).toThrow(/ours=/);
+      expect(() => compare(0.3513, (s) => (slotOf(s).dark![2] += 0.2))).toThrow(/ours=/);
+      expect(() => compare(0.3513, (s) => (slotOf(s).dark = null))).toThrow();
+    });
+
+    it('a slider applying an animation with rgba2 keys mixes the dark color in (the "from the current pose" path)', () => {
+      const without = structuredClone(doc);
+      delete without.animations.find((a) => a.name === 'pose')!.slots[glowId];
+      const a = createSkeleton(data);
+      applyAnimation(a, doc.animations[0], 0.7); // slider A is at 0.34 s of "pose" here (before its first key at 0.2 s nothing happens)
+      a.updateWorldTransform();
+      const b = createSkeleton(compileSkeleton(without));
+      applyAnimation(b, without.animations[0], 0.7);
+      b.updateWorldTransform();
+      expect(slotOf(a).dark).not.toEqual(slotOf(b).dark);
+    });
   });
 
   const at = (name: string) => doc.constraints.findIndex((c) => c.name === name);

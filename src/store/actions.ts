@@ -1,14 +1,14 @@
 /** Every user-level operation on the document / UI. Components and tools call these; they never mutate state directly. */
 import type { Draft } from 'immer';
 import { animationEndTime } from '@/core/animate';
-import { findAnimation, freshName, makeCurve, normalizeBoneOrder, purgeAttachment, removeBones, removeSlots, snapTime, upsertKey, decompose } from '@/core/edit';
+import { findAnimation, freshName, makeCurve, normalizeBoneOrder, purgeAttachment, removeBones, removeSlots, rgbaToRgba2, setSlotDarkColor, snapTime, upsertKey, decompose } from '@/core/edit';
 import type { BoneMats } from '@/core/mesh';
 import { moveKeys, removeKeys, resolveKeys } from '@/core/keyrefs';
 import type { KeyRef } from '@/core/keyrefs';
 import { RAD2DEG, atan2Deg, matInvert, matMul } from '@/core/math';
 import type { Mat } from '@/core/math';
 import { newAnimation, newBone, newSkin, newSlot } from '@/core/model';
-import type { Animation, Bone, Id, Inherit, Project, RGBA, Slot } from '@/core/model';
+import type { Animation, Bone, Id, Inherit, Project, RGB, RGBA, Slot } from '@/core/model';
 import { getScene, getSetupSkeleton } from '@/editor/scene';
 import { assets } from './assets';
 import { docStore } from './doc';
@@ -415,7 +415,9 @@ export function addImageToScene(imageName: string, worldX: number, worldY: numbe
 export function setSlotProps(id: Id, patch: Partial<Slot>, label = 'Edit slot') {
   docStore.update(label, (d) => {
     const s = d.skeleton.slots.find((x) => x.id === id);
-    if (s) Object.assign(s, patch);
+    if (!s) return;
+    Object.assign(s, patch);
+    if ('dark' in patch) setSlotDarkColor(d.skeleton, id, patch.dark ?? null); // two-color keys follow the dark color
   });
 }
 
@@ -541,10 +543,14 @@ export function setSlotAttachment(slotId: Id, name: string | null) {
   });
 }
 
-export function setSlotColor(slotId: Id, color: RGBA) {
+/**
+ * Setup: sets the slot color. Animate: keys it at the playhead. A slot with a dark color (two-color tinting) is keyed in an rgba2
+ * timeline: `dark` is the dark color to key with the light one (default: the setup dark color).
+ */
+export function setSlotColor(slotId: Id, color: RGBA, dark?: RGB) {
   const ui = uiStore.get();
   if (ui.mode === 'setup') {
-    setSlotProps(slotId, { color }, 'Slot color');
+    setSlotProps(slotId, { color, ...(dark ? { dark } : {}) }, dark ? 'Slot colors' : 'Slot color');
     return;
   }
   const anim = currentAnimation();
@@ -552,13 +558,26 @@ export function setSlotColor(slotId: Id, color: RGBA) {
   docStore.update('Key color', (d) => {
     const a = d.skeleton.animations.find((x) => x.id === anim.id);
     if (!a) return;
+    const setupDark = d.skeleton.slots.find((s) => s.id === slotId)?.dark ?? null;
     const tl = (a.slots[slotId] ??= {});
-    const keys = (tl.rgba ??= []);
+    let keys;
+    let value: number[];
+    if (setupDark) {
+      if (tl.rgba) {
+        tl.rgba2 = rgbaToRgba2(tl.rgba, setupDark); // light-only keys become two-color ones
+        delete tl.rgba;
+      }
+      keys = tl.rgba2 ??= [];
+      value = [color[0], color[1], color[2], color[3], ...(dark ?? setupDark)];
+    } else {
+      keys = tl.rgba ??= [];
+      value = [color[0], color[1], color[2], color[3]];
+    }
     const exist = keys.find((k) => Math.abs(k.time - ui.time) < 1e-4);
-    if (exist) exist.value = [...color];
+    if (exist) exist.value = value;
     else {
-      const curve = makeCurve(ui.defaultCurve, 4);
-      upsertKey(keys, { time: ui.time, value: [...color], ...(curve !== undefined ? { curve } : {}) });
+      const curve = makeCurve(ui.defaultCurve, value.length);
+      upsertKey(keys, { time: ui.time, value, ...(curve !== undefined ? { curve } : {}) });
     }
     extendDuration(a, ui.time);
   });

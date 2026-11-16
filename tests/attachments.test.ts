@@ -224,7 +224,7 @@ describe('clipping: which slots are clipped, and where the visible region is', (
     // sanity: in this rig some slots are clipped and some are not (the end slot included, the one after it excluded)
     const plan = officialPlan(officialAt(sd, null, 0)).draws;
     expect(plan.filter((e) => e.clip).map((e) => e.slot)).toEqual(['head', 'flag']);
-    expect(plan.filter((e) => !e.clip).map((e) => e.slot)).toEqual(['body', 'front', 'arm']);
+    expect(plan.filter((e) => !e.clip).map((e) => e.slot)).toEqual(['body', 'front', 'arm', 'glow']);
   });
 
   it('follows draw order changes, nested clips and a clip without an end slot', () => {

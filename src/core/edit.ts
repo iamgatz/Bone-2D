@@ -3,7 +3,7 @@ import { uniqueName } from './ids';
 import { remapDeformValues, vertexWorldPositions } from './mesh';
 import type { BoneMats, VertexMap } from './mesh';
 import { constraintBoneIds } from './model';
-import type { Animation, Curve, Id, Key, MeshAttachment, SkeletonDoc, Timeline } from './model';
+import type { Animation, Curve, Id, Key, MeshAttachment, RGB, SkeletonDoc, Timeline } from './model';
 import { RAD2DEG, atan2Deg, matApply, matInvert } from './math';
 
 export const KEY_EPS = 1e-4;
@@ -249,6 +249,43 @@ export function names(list: { name: string }[]): Set<string> {
 
 export function freshName(base: string, list: { name: string }[]): string {
   return uniqueName(base, names(list));
+}
+
+/** Drops the dark channels of two-color keys: rgba2 -> rgba. */
+export function rgba2ToRgba(keys: Timeline): Timeline {
+  return keys.map((k) => {
+    const out: Key = { time: k.time, value: k.value.slice(0, 4) };
+    if (Array.isArray(k.curve)) out.curve = k.curve.slice(0, 16);
+    else if (k.curve !== undefined) out.curve = k.curve;
+    return out;
+  });
+}
+
+/** Adds a constant dark color to light-only keys: rgba -> rgba2. The new channels get a linear-looking curve. */
+export function rgbaToRgba2(keys: Timeline, dark: RGB): Timeline {
+  return keys.map((k) => {
+    const out: Key = { time: k.time, value: [k.value[0], k.value[1], k.value[2], k.value[3], dark[0], dark[1], dark[2]] };
+    if (Array.isArray(k.curve)) out.curve = [...k.curve.slice(0, 16), 1 / 3, 1 / 3, 2 / 3, 2 / 3, 1 / 3, 1 / 3, 2 / 3, 2 / 3, 1 / 3, 1 / 3, 2 / 3, 2 / 3];
+    else if (k.curve !== undefined) out.curve = k.curve;
+    return out;
+  });
+}
+
+/**
+ * Sets the setup dark color of a slot (null = no two-color tinting) and keeps the animations valid: two-color keys need a dark
+ * color, so removing it turns them back into plain color keys.
+ */
+export function setSlotDarkColor(doc: SkeletonDoc, slotId: Id, dark: RGB | null) {
+  const slot = doc.slots.find((s) => s.id === slotId);
+  if (!slot) return;
+  slot.dark = dark ? [dark[0], dark[1], dark[2]] : null;
+  if (dark) return;
+  for (const a of doc.animations) {
+    const tl = a.slots[slotId];
+    if (!tl?.rgba2) continue;
+    tl.rgba = rgba2ToRgba(tl.rgba2);
+    delete tl.rgba2;
+  }
 }
 
 export function timelineEnd(t: Timeline | undefined): number {

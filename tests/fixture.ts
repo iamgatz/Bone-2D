@@ -126,6 +126,10 @@ export function buildFixture(): Fixture {
   });
   skin.attachments[armSlot.id].arm = armMesh;
 
+  // two-color tinting: a slot with a dark color, keyed in rgba2 timelines (walk, and "pose" which a slider applies)
+  const glow = addSlot('glow', 'head', 'glowImg', { color: [1, 1, 1, 0.8], dark: [0.1, 0.2, 0.3] });
+  skin.attachments[glow.id].glowImg = region('glowImg', 10, 10, 30, 30);
+
   // ------------------------------------------------------------ animation
   const anim = newAnimation('walk', 1.2);
   const bez = (v: number[]) => v;
@@ -152,6 +156,14 @@ export function buildFixture(): Fixture {
     rgba: tl([[0, [1, 0.8, 0.6, 0.9], bez([0.3, 0, 0.7, 1, 0.3, 0, 0.7, 1, 0.3, 0, 0.7, 1, 0.3, 0, 0.7, 1])], [1.2, [0.2, 0.9, 0.4, 0.3]]]),
   };
   anim.slots[body.id] = { attachment: [{ time: 0.3, name: 'bodyAlt' }, { time: 1.0, name: 'body' }] };
+  anim.slots[glow.id] = {
+    rgba2: tl([
+      [0, [1, 0.8, 0.6, 0.9, 0.1, 0.2, 0.05], bez([0.3, -0.8, 0.7, 1.6, 0.3, 0, 0.7, 1, 0.3, 0, 0.7, 1, 0.3, 0, 0.7, 1, 0.2, 0, 0.8, 2.2, 0.3, 0, 0.7, 1, 0.3, -2.5, 0.7, 1])],
+      [0.6, [0.2, 0.9, 0.4, 0.3, 0.9, 0.5, 0.6], 'stepped'],
+      [0.9, [0.6, 0.3, 1, 1, 0.2, 0.7, 0.8]],
+      [1.2, [1, 1, 1, 0.5, 0, 0, 1]],
+    ]),
+  };
   const ikKeys: IkKey[] = [
     { time: 0, value: [0.4, 0], bendPositive: true, compress: false, stretch: false, curve: [0.3, 0, 0.7, 1, 0.3, 0, 0.7, 1] },
     { time: 0.8, value: [1, 15], bendPositive: false, compress: false, stretch: false },
@@ -193,6 +205,7 @@ export function buildFixture(): Fixture {
     attachment: [{ time: 0.4, name: 'flagB' }, { time: 0.9, name: 'flagA' }],
   };
   pose.slots[body.id] = { attachment: [{ time: 0.6, name: 'bodyAlt' }] };
+  pose.slots[glow.id] = { rgba2: tl([[0.2, [0.5, 0.5, 1, 1, 0.8, 0.1, 0.1]], [1, [0.1, 1, 0.3, 0.7, 0.2, 0.9, 0.5]]]) };
   pose.ik[armIk.id] = [
     { time: 0, value: [0.9, 2], bendPositive: true, compress: false, stretch: true },
     { time: 1, value: [0.2, 0], bendPositive: false, compress: true, stretch: false },
@@ -231,6 +244,7 @@ export function buildFixture(): Fixture {
     { name: 'flagB', width: 30, height: 30 },
     { name: 'front', width: 40, height: 40 },
     { name: 'arm', width: 100, height: 40 },
+    { name: 'glowImg', width: 32, height: 32 },
   ];
   project.images = images.map((i) => ({ id: uid(), ...i }));
   return { project, images };

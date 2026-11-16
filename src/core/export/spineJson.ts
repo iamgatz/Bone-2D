@@ -387,6 +387,18 @@ function exportAnimation(doc: SkeletonDoc, a: Animation, n: Names): Json {
         return e;
       });
     }
+    if (tl.rgba2 && tl.rgba2.length) {
+      const keys = tl.rgba2;
+      o.rgba2 = keys.map((k, i) => {
+        const e: Json = {};
+        withTime(e, k.time);
+        e.light = hexColor(k.value, true);
+        e.dark = hexColor(k.value.slice(4), false);
+        const cv = curveOf(k, keys[i + 1], 7);
+        if (cv !== undefined) e.curve = cv;
+        return e;
+      });
+    }
     if (Object.keys(o).length) slots[name] = o;
   }
   if (Object.keys(slots).length) out.slots = slots;
