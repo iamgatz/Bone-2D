@@ -1,0 +1,189 @@
+import { useEffect, useRef } from 'react';
+import { GLRenderer } from '@/render/gl';
+import { addImageToScene, importImageFiles } from '@/store/actions';
+import { assets } from '@/store/assets';
+import { docStore } from '@/store/doc';
+import { toast, uiStore } from '@/store/ui';
+import { getScene, screenToWorld } from '../scene';
+import { ViewportController } from './controller';
+import { drawOverlay } from './overlay';
+
+export const viewportApi: { controller: ViewportController | null; frame: () => void; size: () => [number, number] } = {
+  controller: null,
+  frame: () => {},
+  size: () => [800, 600],
+};
+
+export function Viewport() {
+  const hostRef = useRef<HTMLDivElement>(null);
+  const glRef = useRef<HTMLCanvasElement>(null);
+  const overlayRef = useRef<HTMLCanvasElement>(null);
+
+  useEffect(() => {
+    const host = hostRef.current!;
+    const glCanvas = glRef.current!;
+    const overlay = overlayRef.current!;
+    let renderer: GLRenderer | null = null;
+    try {
+      renderer = new GLRenderer(glCanvas);
+    } catch (e) {
+      toast(String((e as Error).message), 'error');
+      return;
+    }
+    renderer.source = {
+      get: (name) => {
+        const a = assets.get(name);
+        return a ? { bitmap: a.bitmap, version: a.version } : null;
+      },
+    };
+    const ctx = overlay.getContext('2d')!;
+    const controller = new ViewportController(host, () => {
+      dirty = true;
+    });
+    controller.attach();
+    viewportApi.controller = controller;
+
+    let dirty = true;
+    let raf = 0;
+    let lastW = 0;
+    let lastH = 0;
+    let lastDpr = 0;
+
+    const invalidate = () => {
+      dirty = true;
+    };
+    const unsubs = [docStore.subscribe(invalidate), uiStore.subscribe(invalidate), assets.subscribe(invalidate)];
+
+    const resize = () => {
+      const dpr = window.devicePixelRatio || 1;
+      const w = host.clientWidth;
+      const h = host.clientHeight;
+      if (w === lastW && h === lastH && dpr === lastDpr) return;
+      lastW = w;
+      lastH = h;
+      lastDpr = dpr;
+      for (const c of [glCanvas, overlay]) {
+        c.width = Math.max(1, Math.round(w * dpr));
+        c.height = Math.max(1, Math.round(h * dpr));
+        c.style.width = w + 'px';
+        c.style.height = h + 'px';
+      }
+      dirty = true;
+    };
+    const ro = new ResizeObserver(resize);
+    ro.observe(host);
+    resize();
+
+    viewportApi.size = () => [host.clientWidth, host.clientHeight];
+    viewportApi.frame = () => {
+      const scene = getScene();
+      const b = scene.skeleton.getBounds();
+      let minX = Infinity,
+        minY = Infinity,
+        maxX = -Infinity,
+        maxY = -Infinity;
+      if (b) {
+        minX = b[0];
+        minY = b[1];
+        maxX = b[0] + b[2];
+        maxY = b[1] + b[3];
+      }
+      for (const bone of scene.skeleton.bones) {
+        for (const [x, y] of [
+          [bone.worldX, bone.worldY],
+          [bone.tipX, bone.tipY],
+        ]) {
+          minX = Math.min(minX, x);
+          minY = Math.min(minY, y);
+          maxX = Math.max(maxX, x);
+          maxY = Math.max(maxY, y);
+        }
+      }
+      if (!isFinite(minX)) return;
+      const w = Math.max(host.clientWidth, 100);
+      const h = Math.max(host.clientHeight, 100);
+      const pad = 80;
+      const zoom = Math.min((w - pad * 2) / Math.max(maxX - minX, 40), (h - pad * 2) / Math.max(maxY - minY, 40), 4);
+      uiStore.patch({ camera: { x: (minX + maxX) / 2, y: (minY + maxY) / 2, zoom: Math.max(0.05, zoom) } });
+    };
+
+    const draw = () => {
+      const ui = uiStore.get();
+      const dpr = window.devicePixelRatio || 1;
+      const w = host.clientWidth;
+      const h = host.clientHeight;
+      const scene = getScene();
+      const doc = docStore.get().skeleton;
+      const hiddenSlots = new Set(doc.slots.filter((s) => s.hidden).map((s) => s.id));
+      const hiddenBones = new Set(doc.bones.filter((b) => b.hidden).map((b) => b.id));
+      renderer!.begin({ x: ui.camera.x, y: ui.camera.y, scale: ui.camera.zoom * dpr, width: glCanvas.width, height: glCanvas.height });
+      if (ui.view.images) renderer!.drawSkeleton(scene.skeleton, { skip: (s) => hiddenSlots.has(s.data.id) });
+      controller.meshTool.drawHeat(renderer!, scene);
+      renderer!.end();
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      drawOverlay({ ctx, w, h, cam: ui.camera, scene, ui, hoverBone: controller.hoverBone, hiddenBones, hiddenSlots, interaction: controller.interaction, under: controller.polygonTool.drawUnder, extra: controller.meshTool.drawOverlay });
+    };
+
+    const loop = () => {
+      if (dirty) {
+        dirty = false;
+        try {
+          draw();
+        } catch (e) {
+          console.error(e);
+        }
+      }
+      raf = requestAnimationFrame(loop);
+    };
+    raf = requestAnimationFrame(loop);
+
+    // first-open framing, and re-framing on request (demo rig / new project)
+    setTimeout(() => viewportApi.frame(), 30);
+    const onFrame = () => setTimeout(() => viewportApi.frame(), 40);
+    window.addEventListener('bone2d:frame', onFrame);
+
+    return () => {
+      window.removeEventListener('bone2d:frame', onFrame);
+      cancelAnimationFrame(raf);
+      ro.disconnect();
+      unsubs.forEach((u) => u());
+      controller.detach();
+      viewportApi.controller = null;
+      renderer?.dispose();
+    };
+  }, []);
+
+  const onDragOver = (e: React.DragEvent) => {
+    if (e.dataTransfer.types.includes('Files') || e.dataTransfer.types.includes('application/x-bone2d-image')) {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'copy';
+    }
+  };
+
+  const onDrop = async (e: React.DragEvent) => {
+    e.preventDefault();
+    const host = hostRef.current!;
+    const r = host.getBoundingClientRect();
+    const [wx, wy] = screenToWorld(uiStore.get().camera, host.clientWidth, host.clientHeight, e.clientX - r.left, e.clientY - r.top);
+    const imageName = e.dataTransfer.getData('application/x-bone2d-image');
+    if (imageName) {
+      addImageToScene(imageName, wx, wy);
+      return;
+    }
+    const files = [...e.dataTransfer.files];
+    if (!files.length) return;
+    const names = await importImageFiles(files);
+    let off = 0;
+    for (const n of names) {
+      addImageToScene(n, wx + off, wy - off);
+      off += 24;
+    }
+  };
+
+  return (
+    <div ref={hostRef} className="viewport" tabIndex={0} onDragOver={onDragOver} onDrop={onDrop}>
+      <canvas ref={glRef} className="vp-canvas" />
+      <canvas ref={overlayRef} className="vp-canvas vp-overlay" />
+    </div>
+  );
+}

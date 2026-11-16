@@ -1,0 +1,531 @@
+/**
+ * Document integrity. `repairProject` fixes — in place — everything that would make the editor misbehave or produce an
+ * export the official runtimes reject: dangling ids, stale deform keys, duplicate or empty names, NaN, unsorted keys.
+ * It runs whenever a project is opened. `validateProject` reports the same findings without touching the document;
+ * the fuzz tests use it as the oracle ("after any editor action there is nothing to repair").
+ */
+import { animationEndTime } from './animate';
+import { normalizeBoneOrder } from './edit';
+import { uid, uniqueName } from './ids';
+import { deformLength } from './mesh';
+import { BLEND_MODES, DEFAULT_BOUNDING_BOX_COLOR, DEFAULT_CLIPPING_COLOR, DEFAULT_POINT_COLOR, INHERIT_MODES, TRANSFORM_PROPS, newBone, newSkin } from './model';
+import type { Animation, Attachment, Id, Influence, MeshAttachment, Project, SkeletonDoc } from './model';
+
+type Note = (message: string) => void;
+
+const finite = (v: unknown): v is number => typeof v === 'number' && Number.isFinite(v);
+const isString = (v: unknown): v is string => typeof v === 'string';
+const KEY_EPS = 1e-4;
+
+/** Reports every problem `repairProject` would fix. The project is left untouched. */
+export function validateProject(project: Project): string[] {
+  return repairProject(structuredClone(project));
+}
+
+/** Repairs `project` in place and returns a human readable list of what was changed (empty = it was already fine). */
+export function repairProject(project: Project): string[] {
+  const messages: string[] = [];
+  const note: Note = (m) => void messages.push(m);
+  const doc = project.skeleton;
+
+  if (!finite(doc.fps) || doc.fps < 1 || doc.fps > 240) {
+    doc.fps = finite(doc.fps) ? Math.max(1, Math.min(240, Math.round(doc.fps))) : 30;
+    note('fps was out of range');
+  }
+  // a damaged or hand-edited file may lack whole lists
+  for (const key of ['bones', 'slots', 'skins', 'constraints', 'events', 'animations'] as const) {
+    if (!Array.isArray(doc[key])) (doc as unknown as Record<string, unknown>)[key] = [];
+  }
+
+  repairBones(doc, note);
+  repairSlots(doc, note);
+  repairSkins(doc, note);
+  repairConstraints(doc, note);
+  repairEvents(doc, note);
+  repairAnimations(doc, note);
+
+  // a slider whose animation is gone simply does nothing until a new one is chosen
+  const animationIds = new Set(doc.animations.map((a) => a.id));
+  for (const c of doc.constraints) {
+    if (c.type === 'slider' && c.animation !== null && !animationIds.has(c.animation)) {
+      c.animation = null;
+      note(`slider "${c.name}": its animation does not exist`);
+    }
+  }
+
+  // skins may only list constraints that survived
+  const constraintIds = new Set(doc.constraints.map((c) => c.id));
+  for (const skin of doc.skins) {
+    const kept = (skin.constraints ?? []).filter((id) => constraintIds.has(id));
+    if (kept.length !== (skin.constraints ?? []).length) note(`skin "${skin.name}": dropped unknown constraints`);
+    skin.constraints = kept;
+  }
+
+  const imageNames = new Set<string>();
+  project.images ??= [];
+  project.images = project.images.filter((img) => {
+    if (!img || !isString(img.name) || imageNames.has(img.name)) {
+      note('duplicate or invalid image entry removed');
+      return false;
+    }
+    imageNames.add(img.name);
+    return true;
+  });
+  return messages;
+}
+
+// ------------------------------------------------------------------ helpers
+
+function dedupeIds(list: { id: Id }[], what: string, note: Note) {
+  const seen = new Set<Id>();
+  for (const x of list) {
+    if (!isString(x.id) || !x.id || seen.has(x.id)) {
+      x.id = uid();
+      note(`${what}: duplicate or missing id replaced`);
+    }
+    seen.add(x.id);
+  }
+}
+
+function dedupeNames(list: { name: string }[], fallback: string, what: string, note: Note) {
+  const seen = new Set<string>();
+  for (const x of list) {
+    let name = isString(x.name) && x.name.trim() ? x.name : fallback;
+    if (seen.has(name)) name = uniqueName(name, seen);
+    if (name !== x.name) {
+      note(`${what} "${String(x.name)}" renamed to "${name}"`);
+      x.name = name;
+    }
+    seen.add(name);
+  }
+}
+
+function validColor(c: unknown, length: 3 | 4): boolean {
+  return Array.isArray(c) && c.length >= length && c.slice(0, length).every(finite);
+}
+
+// ------------------------------------------------------------------ bones / slots / skins
+
+function repairBones(doc: SkeletonDoc, note: Note) {
+  if (!doc.bones.length) {
+    doc.bones.push(newBone({ name: 'root' }));
+    note('the skeleton had no bones: added a root');
+  }
+  dedupeIds(doc.bones, 'bone', note);
+  dedupeNames(doc.bones, 'bone', 'bone', note);
+  const ids = new Set(doc.bones.map((b) => b.id));
+  for (const b of doc.bones) {
+    for (const k of ['x', 'y', 'rotation', 'shearX', 'shearY', 'length'] as const) {
+      if (!finite(b[k])) {
+        b[k] = 0;
+        note(`bone "${b.name}": ${k} was not a number`);
+      }
+    }
+    for (const k of ['scaleX', 'scaleY'] as const) {
+      if (!finite(b[k])) {
+        b[k] = 1;
+        note(`bone "${b.name}": ${k} was not a number`);
+      }
+    }
+    if (!INHERIT_MODES.includes(b.inherit)) {
+      b.inherit = 'normal';
+      note(`bone "${b.name}": unknown inherit mode`);
+    }
+    if (b.parent != null && (!ids.has(b.parent) || b.parent === b.id)) {
+      b.parent = doc.bones[0].id === b.id ? null : doc.bones[0].id;
+      note(`bone "${b.name}": parent does not exist`);
+    }
+    if (b.parent === undefined) b.parent = null;
+    if (!validColor(b.color, 4)) b.color = [0.6, 0.6, 0.6, 1];
+    b.skinRequired = !!b.skinRequired;
+    b.hidden = !!b.hidden;
+    b.locked = !!b.locked;
+  }
+  const byId = new Map(doc.bones.map((b) => [b.id, b] as const));
+  for (const b of doc.bones) {
+    let cur = b;
+    let steps = 0;
+    while (cur.parent && steps <= doc.bones.length) {
+      cur = byId.get(cur.parent)!;
+      steps++;
+    }
+    if (steps > doc.bones.length) {
+      b.parent = null;
+      note(`bone "${b.name}": parent chain was a cycle`);
+    }
+  }
+  const order = new Map(doc.bones.map((b, i) => [b.id, i] as const));
+  if (doc.bones.some((b) => b.parent && order.get(b.parent)! > order.get(b.id)!)) {
+    normalizeBoneOrder(doc);
+    note('bones were not ordered parents-first');
+  }
+}
+
+function repairSlots(doc: SkeletonDoc, note: Note) {
+  dedupeIds(doc.slots, 'slot', note);
+  dedupeNames(doc.slots, 'slot', 'slot', note);
+  const boneIds = new Set(doc.bones.map((b) => b.id));
+  for (const s of doc.slots) {
+    if (!boneIds.has(s.bone)) {
+      s.bone = doc.bones[0].id;
+      note(`slot "${s.name}": bone does not exist`);
+    }
+    if (!validColor(s.color, 4)) s.color = [1, 1, 1, 1];
+    if (s.dark != null && !validColor(s.dark, 3)) s.dark = null;
+    if (!BLEND_MODES.includes(s.blend)) s.blend = 'normal';
+    if (s.attachment !== null && !isString(s.attachment)) s.attachment = null;
+    s.hidden = !!s.hidden;
+  }
+}
+
+/**
+ * Checks per vertex influences, fixing what can be fixed in place. Returns a problem or null.
+ * A vertex without usable influences follows the root (the same fallback `compileSkeleton` applies).
+ */
+function repairWeights(weights: Influence[][], label: string, boneIds: Set<Id>, rootId: Id, fixed: (message: string) => void): string | null {
+  for (let i = 0; i < weights.length; i++) {
+    const list = weights[i];
+    if (!Array.isArray(list)) return 'invalid weights';
+    const kept = list.filter((inf) => Array.isArray(inf) && boneIds.has(inf[0]) && finite(inf[1]) && finite(inf[2]) && finite(inf[3]) && inf[3] > 0);
+    const sum = kept.reduce((s, inf) => s + inf[3], 0);
+    if (kept.length === 0) {
+      weights[i] = [[rootId, 0, 0, 1]];
+      fixed(`${label}: vertex ${i} had no influences`);
+    } else if (kept.length !== list.length || Math.abs(sum - 1) > 1e-6) {
+      weights[i] = kept.map((inf) => [inf[0], inf[1], inf[2], inf[3] / sum] as (typeof inf));
+      fixed(`${label}: vertex ${i} had invalid or unnormalized influences`);
+    }
+  }
+  return null;
+}
+
+/** Why an attachment cannot be used (null = fine). Fixes what can be fixed in place and reports it through `fixed`. */
+function attachmentProblem(att: Attachment, boneIds: Set<Id>, slotIds: Set<Id>, rootId: Id, fixed: (message: string) => void): string | null {
+  if (att && att.type === 'point') {
+    if (!isString(att.name)) return 'missing name';
+    if (!validColor(att.color, 4)) att.color = [...DEFAULT_POINT_COLOR];
+    for (const k of ['x', 'y', 'rotation'] as const) if (!finite(att[k])) return `${k} is not a number`;
+    return null;
+  }
+  if (att && (att.type === 'clipping' || att.type === 'boundingbox')) {
+    if (!isString(att.name)) return 'missing name';
+    if (!validColor(att.color, 4)) att.color = [...(att.type === 'clipping' ? DEFAULT_CLIPPING_COLOR : DEFAULT_BOUNDING_BOX_COLOR)];
+    if (att.type === 'clipping') {
+      att.convex = !!att.convex;
+      att.inverse = !!att.inverse;
+      if (att.end != null && (!isString(att.end) || !slotIds.has(att.end))) {
+        att.end = null;
+        fixed(`clipping "${att.name}": its end slot does not exist`);
+      }
+      if (att.end === undefined) att.end = null;
+    }
+    if (!att.weights) {
+      att.weights = null;
+      if (!Array.isArray(att.vertices) || att.vertices.length % 2 !== 0 || !att.vertices.every(finite)) return 'invalid vertices';
+      if (att.vertices.length < 6) return 'a polygon needs at least 3 vertices';
+      return null;
+    }
+    if (!Array.isArray(att.weights) || att.weights.length < 3) return 'a polygon needs at least 3 vertices';
+    att.vertices = [];
+    return repairWeights(att.weights, `${att.type} "${att.name}"`, boneIds, rootId, fixed);
+  }
+  if (!att || (att.type !== 'region' && att.type !== 'mesh')) return 'unknown type';
+  if (!isString(att.name) || !isString(att.path)) return 'missing name or path';
+  if (!validColor(att.color, 4)) att.color = [1, 1, 1, 1];
+  if (att.type === 'region') {
+    for (const k of ['x', 'y', 'rotation', 'scaleX', 'scaleY', 'width', 'height'] as const) if (!finite(att[k])) return `${k} is not a number`;
+    return null;
+  }
+  if (!finite(att.width) || !finite(att.height)) return 'size is not a number';
+  const n = att.uvs.length / 2;
+  if (!Number.isInteger(n) || n < 3 || !att.uvs.every(finite)) return 'invalid uvs';
+  if (att.triangles.length % 3 !== 0 || att.triangles.some((i) => !Number.isInteger(i) || i < 0 || i >= n)) return 'invalid triangles';
+  if (!Number.isInteger(att.hull) || att.hull < 3 || att.hull > n) return 'invalid hull';
+  att.edges ??= [];
+  if (!att.weights) {
+    if (att.vertices.length !== att.uvs.length || !att.vertices.every(finite)) return 'vertex count does not match uvs';
+    return null;
+  }
+  if (att.weights.length !== n) return 'weights do not match uvs';
+  att.vertices = [];
+  return repairWeights(att.weights, `mesh "${att.name}"`, boneIds, rootId, fixed);
+}
+
+function repairSkins(doc: SkeletonDoc, note: Note) {
+  if (!doc.skins.length) {
+    doc.skins.push(newSkin('default'));
+    note('the skeleton had no default skin');
+  }
+  dedupeIds(doc.skins, 'skin', note);
+  dedupeNames(doc.skins, 'skin', 'skin', note);
+  const slotIds = new Set(doc.slots.map((s) => s.id));
+  const boneIds = new Set(doc.bones.map((b) => b.id));
+  for (const skin of doc.skins) {
+    skin.bones = (skin.bones ?? []).filter((id) => boneIds.has(id));
+    skin.attachments ??= {};
+    for (const slotId of Object.keys(skin.attachments)) {
+      const perSlot = skin.attachments[slotId];
+      if (!slotIds.has(slotId) || !perSlot || typeof perSlot !== 'object') {
+        delete skin.attachments[slotId];
+        note(`skin "${skin.name}": attachments of a missing slot removed`);
+        continue;
+      }
+      for (const name of Object.keys(perSlot)) {
+        const problem = attachmentProblem(perSlot[name], boneIds, slotIds, doc.bones[0].id, note);
+        if (problem) {
+          delete perSlot[name];
+          note(`skin "${skin.name}": attachment "${name}" removed (${problem})`);
+        }
+      }
+    }
+  }
+}
+
+// ------------------------------------------------------------------ constraints / events
+
+function repairConstraints(doc: SkeletonDoc, note: Note) {
+  dedupeIds(doc.constraints, 'constraint', note);
+  const boneById = new Map(doc.bones.map((b) => [b.id, b] as const));
+  const keep = doc.constraints.filter((c) => {
+    const problem = constraintProblem(c, boneById);
+    if (problem) note(`constraint "${c.name}" removed (${problem})`);
+    return !problem;
+  });
+  if (keep.length !== doc.constraints.length) doc.constraints = keep;
+  dedupeNames(doc.constraints, 'constraint', 'constraint', note);
+}
+
+function constraintProblem(c: SkeletonDoc['constraints'][number], boneById: Map<Id, SkeletonDoc['bones'][number]>): string | null {
+  if (!c || (c.type !== 'ik' && c.type !== 'transform' && c.type !== 'slider')) return 'unknown type';
+  if (c.type === 'slider') {
+    if (c.bone !== null && !boneById.has(c.bone)) return 'driver bone does not exist';
+    if (!TRANSFORM_PROPS.includes(c.property)) return 'unknown property';
+    if (![c.mix, c.time, c.from, c.to, c.scale, c.max].every(finite)) return 'a value is not a number';
+    return null;
+  }
+  if (!Array.isArray(c.bones) || c.bones.length === 0 || c.bones.some((id) => !boneById.has(id))) return 'bone does not exist';
+  if (c.type === 'ik') {
+    if (!boneById.has(c.target)) return 'target does not exist';
+    if (c.bones.length > 2) return 'more than two bones';
+    if (!boneById.get(c.bones[0])!.parent) return 'the root bone cannot be constrained by IK (the official runtimes crash on it)';
+    if (c.bones.length === 2 && boneById.get(c.bones[1])!.parent !== c.bones[0]) return 'the second bone is not a child of the first';
+    if (!finite(c.mix) || !finite(c.softness)) return 'mix or softness is not a number';
+    return null;
+  }
+  if (!boneById.has(c.source)) return 'source does not exist';
+  if (!Array.isArray(c.properties)) return 'no properties';
+  for (const f of c.properties) {
+    if (!TRANSFORM_PROPS.includes(f.prop) || !finite(f.offset) || !Array.isArray(f.to)) return 'invalid property';
+    for (const t of f.to) if (!TRANSFORM_PROPS.includes(t.prop) || !finite(t.offset) || !finite(t.max) || !finite(t.scale)) return 'invalid mapped property';
+  }
+  if (!c.offsets || !c.mix || Object.values(c.offsets).some((v) => !finite(v)) || Object.values(c.mix).some((v) => !finite(v))) return 'offsets or mix is not a number';
+  return null;
+}
+
+function repairEvents(doc: SkeletonDoc, note: Note) {
+  dedupeIds(doc.events, 'event', note);
+  dedupeNames(doc.events, 'event', 'event', note);
+  for (const e of doc.events) {
+    if (!finite(e.int)) e.int = 0;
+    if (!finite(e.float)) e.float = 0;
+    if (!isString(e.string)) e.string = '';
+  }
+}
+
+// ------------------------------------------------------------------ animations
+
+interface KeyLike {
+  time: number;
+  value?: number[];
+  curve?: unknown;
+}
+
+/**
+ * Drops invalid keys, sorts by time, merges keys at the same time (the later one wins) and removes malformed curves.
+ * `channels` = required length of `value` ('any' = not checked). Returns true when anything changed.
+ */
+function cleanKeys<K extends KeyLike>(keys: K[], channels: number | 'any', curveChannels: number): boolean {
+  const before = keys.slice();
+  let changed = false;
+  const valid = keys.filter((k) => {
+    if (!k || !finite(k.time) || k.time < 0) return false;
+    if (channels === 'any') return true;
+    return Array.isArray(k.value) && k.value.length === channels && k.value.every(finite);
+  });
+  valid.sort((a, b) => a.time - b.time);
+  const merged: K[] = [];
+  for (const k of valid) {
+    if (merged.length && Math.abs(merged[merged.length - 1].time - k.time) <= KEY_EPS) merged[merged.length - 1] = k;
+    else merged.push(k);
+  }
+  for (const k of merged) {
+    const c = k.curve;
+    if (c === undefined || c === 'stepped') continue;
+    if (!Array.isArray(c) || c.length !== curveChannels * 4 || !c.every(finite)) {
+      delete k.curve;
+      changed = true;
+    }
+  }
+  if (changed || merged.length !== before.length || merged.some((k, i) => k !== before[i])) {
+    keys.splice(0, keys.length, ...merged);
+    return true;
+  }
+  return false;
+}
+
+function repairAnimations(doc: SkeletonDoc, note: Note) {
+  dedupeIds(doc.animations, 'animation', note);
+  dedupeNames(doc.animations, 'animation', 'animation', note);
+  const boneIds = new Set(doc.bones.map((b) => b.id));
+  const slotIds = new Set(doc.slots.map((s) => s.id));
+  const eventIds = new Set(doc.events.map((e) => e.id));
+  const constraints = new Map(doc.constraints.map((c) => [c.id, c] as const));
+  const skins = new Map(doc.skins.map((s) => [s.id, s] as const));
+
+  for (const a of doc.animations) {
+    const where = `animation "${a.name}"`;
+    a.bones ??= {};
+    a.slots ??= {};
+    a.ik ??= {};
+    a.transform ??= {};
+    a.slider ??= {};
+    a.deform ??= {};
+    a.drawOrder ??= [];
+    a.events ??= [];
+
+    for (const id of Object.keys(a.bones)) {
+      const tl = a.bones[id];
+      if (!boneIds.has(id) || !tl || typeof tl !== 'object') {
+        delete a.bones[id];
+        note(`${where}: timelines of a missing bone removed`);
+        continue;
+      }
+      const spec = { rotate: 1, translate: 2, scale: 2, shear: 2 } as const;
+      for (const prop of Object.keys(tl) as (keyof typeof spec)[]) {
+        const keys = tl[prop];
+        if (!(prop in spec) || !Array.isArray(keys)) {
+          delete tl[prop];
+          note(`${where}: invalid bone timeline removed`);
+        } else if (cleanKeys(keys, spec[prop], spec[prop])) note(`${where}: bone ${prop} keys repaired`);
+      }
+    }
+
+    for (const id of Object.keys(a.slots)) {
+      const tl = a.slots[id];
+      if (!slotIds.has(id) || !tl || typeof tl !== 'object') {
+        delete a.slots[id];
+        note(`${where}: timelines of a missing slot removed`);
+        continue;
+      }
+      if (tl.attachment) {
+        if (!Array.isArray(tl.attachment)) delete tl.attachment;
+        else {
+          for (const k of tl.attachment) if (k && k.name !== null && !isString(k.name)) k.name = null;
+          if (cleanKeys(tl.attachment, 'any', 0)) note(`${where}: attachment keys repaired`);
+        }
+      }
+      if (tl.rgba) {
+        if (!Array.isArray(tl.rgba)) delete tl.rgba;
+        else if (cleanKeys(tl.rgba, 4, 4)) note(`${where}: color keys repaired`);
+      }
+    }
+
+    for (const id of Object.keys(a.ik)) {
+      const c = constraints.get(id);
+      if (!c || c.type !== 'ik' || !Array.isArray(a.ik[id])) {
+        delete a.ik[id];
+        note(`${where}: IK timeline of a missing constraint removed`);
+        continue;
+      }
+      for (const k of a.ik[id]) {
+        if (!k) continue;
+        k.bendPositive = !!k.bendPositive;
+        k.compress = !!k.compress;
+        k.stretch = !!k.stretch;
+      }
+      if (cleanKeys(a.ik[id], 2, 2)) note(`${where}: IK keys repaired`);
+    }
+
+    for (const id of Object.keys(a.transform)) {
+      const c = constraints.get(id);
+      if (!c || c.type !== 'transform' || !Array.isArray(a.transform[id])) {
+        delete a.transform[id];
+        note(`${where}: transform timeline of a missing constraint removed`);
+        continue;
+      }
+      if (cleanKeys(a.transform[id], 6, 6)) note(`${where}: transform mix keys repaired`);
+    }
+
+    for (const id of Object.keys(a.slider)) {
+      const c = constraints.get(id);
+      const tl = a.slider[id];
+      if (!c || c.type !== 'slider' || !tl || typeof tl !== 'object') {
+        delete a.slider[id];
+        note(`${where}: slider timeline of a missing slider removed`);
+        continue;
+      }
+      for (const prop of ['time', 'mix'] as const) {
+        const keys = tl[prop];
+        if (keys === undefined) continue;
+        if (!Array.isArray(keys)) delete tl[prop];
+        else if (cleanKeys(keys, 1, 1)) note(`${where}: slider ${prop} keys repaired`);
+      }
+    }
+
+    repairDeform(doc, a, skins, boneIds, note, where);
+
+    for (const k of a.drawOrder) {
+      const seen = new Set<Id>();
+      k.order = (Array.isArray(k.order) ? k.order : []).filter((id) => slotIds.has(id) && !seen.has(id) && !!seen.add(id));
+    }
+    if (cleanKeys(a.drawOrder, 'any', 0)) note(`${where}: draw order keys repaired`);
+
+    const before = a.events.length;
+    a.events = a.events.filter((k) => eventIds.has(k.event));
+    if (a.events.length !== before) note(`${where}: keys of a missing event removed`);
+    // event keys may share a time (two events fire together), so they are only validated and sorted
+    a.events = a.events.filter((k) => finite(k.time) && k.time >= 0);
+    a.events.sort((x, y) => x.time - y.time);
+
+    // an explicit duration may exceed the last key, never fall short of it (the export derives the length from the keys)
+    const end = animationEndTime(a);
+    if (!finite(a.duration) || a.duration <= 0 || a.duration < end - 1e-6) {
+      a.duration = Math.max(end, 1 / doc.fps);
+      note(`${where}: duration was shorter than its last key`);
+    }
+  }
+}
+
+function repairDeform(doc: SkeletonDoc, a: Animation, skins: Map<Id, SkeletonDoc['skins'][number]>, boneIds: Set<Id>, note: Note, where: string) {
+  const has = (id: Id) => boneIds.has(id);
+  for (const skinId of Object.keys(a.deform)) {
+    const skin = skins.get(skinId);
+    const perSkin = a.deform[skinId];
+    if (!skin || !perSkin || typeof perSkin !== 'object') {
+      delete a.deform[skinId];
+      note(`${where}: deform timelines of a missing skin removed`);
+      continue;
+    }
+    for (const slotId of Object.keys(perSkin)) {
+      const perSlot = perSkin[slotId];
+      for (const att of Object.keys(perSlot ?? {})) {
+        const mesh = skin.attachments[slotId]?.[att] as Attachment | undefined;
+        const keys = perSlot[att];
+        if (!mesh || mesh.type !== 'mesh' || !Array.isArray(keys)) {
+          delete perSlot[att];
+          note(`${where}: deform timeline of a missing mesh "${att}" removed`);
+          continue;
+        }
+        const expected = deformLength(mesh as MeshAttachment, has);
+        if (keys.some((k) => !k || !Array.isArray(k.value) || k.value.length !== expected || !k.value.every(finite))) {
+          delete perSlot[att];
+          note(`${where}: deform keys of "${att}" no longer match the mesh and were removed`);
+          continue;
+        }
+        if (cleanKeys(keys, 'any', 1)) note(`${where}: deform keys of "${att}" repaired`);
+      }
+      if (!perSlot || Object.keys(perSlot).length === 0) delete perSkin[slotId];
+    }
+    if (Object.keys(perSkin).length === 0) delete a.deform[skinId];
+  }
+}
