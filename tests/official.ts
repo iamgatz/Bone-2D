@@ -26,6 +26,17 @@ export function loadOfficial(json: unknown, atlasText: string) {
   return sj.readSkeletonData(JSON.stringify(json));
 }
 
+/**
+ * The official runtime starts every bone with an all-zero world matrix; ours starts with the identity. They differ only for what
+ * is read before it is updated: a path constraint that follows a path skinned to bones (not to the slot's own bone) looks at the
+ * slot bone's matrix to pick the sign of its rotation offset, and on the very first update of a fresh skeleton the official
+ * runtime sees zeros (the sign flips for that one frame); every later update, in a game or in the editor, sees the previous
+ * frame's matrix and both agree. The parity tests compare first updates of fresh skeletons, so they start ours the same way.
+ */
+export function startLikeOfficial(skeleton: { bones: { a: number; b: number; c: number; d: number }[] }) {
+  for (const b of skeleton.bones) b.a = b.b = b.c = b.d = 0;
+}
+
 /** Image names referenced by any attachment (what the atlas must contain). */
 export function usedImages(project: Project) {
   const used = new Set<string>();

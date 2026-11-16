@@ -121,7 +121,10 @@ export function Viewport() {
       controller.meshTool.drawHeat(renderer!, scene);
       renderer!.end();
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-      drawOverlay({ ctx, w, h, cam: ui.camera, scene, ui, hoverBone: controller.hoverBone, hiddenBones, hiddenSlots, interaction: controller.interaction, under: controller.polygonTool.drawUnder, extra: controller.meshTool.drawOverlay });
+      drawOverlay({ ctx, w, h, cam: ui.camera, scene, ui, hoverBone: controller.hoverBone, hiddenBones, hiddenSlots, interaction: controller.interaction, under: (o) => {
+          controller.pathTool.drawUnder(o);
+          controller.polygonTool.drawUnder(o);
+        }, extra: controller.meshTool.drawOverlay });
     };
 
     const loop = () => {

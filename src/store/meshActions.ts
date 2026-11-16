@@ -334,7 +334,7 @@ export function currentDeform(slotId: Id): number[] | null {
   const slot = scene.skeleton.slotById(slotId);
   if (!slot) return null;
   const att = scene.skeleton.slotAttachment(slot);
-  if (!att || att.kind !== 'mesh') return null;
+  if (!att || (att.kind !== 'mesh' && att.kind !== 'path')) return null;
   return slot.deform.length === att.deformLength ? slot.deform.slice() : new Array(att.deformLength).fill(0);
 }
 
@@ -352,7 +352,7 @@ export function setDeformKey(slotId: Id, name: string, base: number[], moves: { 
   }
   const slot = scene.skeleton.slotById(slotId);
   const att = slot ? scene.skeleton.slotAttachment(slot) : null;
-  if (!slot || !att || att.kind !== 'mesh') return;
+  if (!slot || !att || (att.kind !== 'mesh' && att.kind !== 'path')) return;
   const next = base.slice();
   const bones = scene.skeleton.bones;
   let f = 0;

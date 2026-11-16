@@ -14,11 +14,12 @@ import {
 } from '@/store/actions';
 import { docStore } from '@/store/doc';
 import { createIkFromDrag } from '@/store/ikActions';
-import { ATTACHMENT_TOOLS, toast, uiStore } from '@/store/ui';
+import { POLYGON_TOOLS, toast, uiStore } from '@/store/ui';
 import { getScene, getSetupSkeleton, screenToWorld } from '../scene';
 import type { Interaction } from './overlay';
 import { hitAttachment, hitBone } from './hit';
 import { MeshTool, activeMesh } from './meshTool';
+import { PathTool } from './pathTool';
 import { PolygonTool } from './polygonTool';
 
 type Mat4 = [number, number, number, number];
@@ -27,6 +28,7 @@ type Drag =
   | { kind: 'ik'; bone: Id }
   | { kind: 'mesh' }
   | { kind: 'polygon' }
+  | { kind: 'path' }
   | { kind: 'pan'; sx: number; sy: number; camX: number; camY: number }
   | { kind: 'create'; parent: Id | null; ox: number; oy: number }
   | { kind: 'rotate'; ids: Id[]; cx: Record<Id, [number, number]>; a0: Record<Id, number>; r0: Record<Id, number>; sign: Record<Id, number> }
@@ -42,6 +44,7 @@ export class ViewportController {
   spaceDown = false;
   readonly meshTool: MeshTool;
   readonly polygonTool: PolygonTool;
+  readonly pathTool: PathTool;
   private drag: Drag | null = null;
   private pointerId = -1;
 
@@ -51,6 +54,7 @@ export class ViewportController {
   ) {
     this.meshTool = new MeshTool(invalidate);
     this.polygonTool = new PolygonTool(invalidate);
+    this.pathTool = new PathTool(invalidate);
   }
 
   private size(): [number, number] {
@@ -102,6 +106,12 @@ export class ViewportController {
     const [wx, wy] = screenToWorld(cam, w, h, sx, sy);
     const scene = getScene();
     const blocked = this.blocked();
+
+    if (this.pathTool.handles() && this.pathTool.pointerDown(e, wx, wy, scene)) {
+      if (this.pathTool.dragging) this.begin(e, { kind: 'path' });
+      this.invalidate();
+      return;
+    }
 
     if (this.polygonTool.handles() && this.polygonTool.pointerDown(e, wx, wy, scene)) {
       if (this.polygonTool.dragging) this.begin(e, { kind: 'polygon' });
@@ -300,8 +310,12 @@ export class ViewportController {
     const d = this.drag;
     if (!d) {
       const [wx, wy] = screenToWorld(cam, w, h, sx, sy);
+      if (this.pathTool.handles() && this.pathTool.pointerMove(e, wx, wy, getScene())) {
+        this.el.style.cursor = ui.tool === 'path' ? 'crosshair' : this.pathTool.hoverPoint >= 0 ? 'pointer' : 'default';
+        return;
+      }
       if (this.polygonTool.handles() && this.polygonTool.pointerMove(e, wx, wy, getScene())) {
-        this.el.style.cursor = ATTACHMENT_TOOLS.includes(ui.tool) ? 'crosshair' : this.polygonTool.hoverVertex >= 0 ? 'pointer' : 'default';
+        this.el.style.cursor = POLYGON_TOOLS.includes(ui.tool) ? 'crosshair' : this.polygonTool.hoverVertex >= 0 ? 'pointer' : 'default';
         return;
       }
       if ((ui.tool === 'mesh' || ui.tool === 'weights') && activeMesh()) {
@@ -327,6 +341,9 @@ export class ViewportController {
         break;
       case 'polygon':
         this.polygonTool.pointerMove(e, wx, wy, getScene());
+        break;
+      case 'path':
+        this.pathTool.pointerMove(e, wx, wy, getScene());
         break;
       case 'ik': {
         const b = getScene().skeleton.boneById(d.bone);
@@ -393,6 +410,17 @@ export class ViewportController {
     const [w, h] = this.size();
     const [sx, sy] = this.local(e);
     if (d.kind === 'mesh') this.meshTool.pointerUp();
+    if (d.kind === 'path') {
+      this.pathTool.pointerUp();
+      this.drag = null;
+      try {
+        this.el.releasePointerCapture(e.pointerId);
+      } catch {
+        /* ignore */
+      }
+      this.invalidate();
+      return;
+    }
     if (d.kind === 'polygon') {
       this.polygonTool.pointerUp();
       this.drag = null;

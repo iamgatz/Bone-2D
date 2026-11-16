@@ -85,7 +85,7 @@ export function movePolygonVertices(slotId: Id, name: string, moves: { index: nu
   const inv = matInvert(slotMat(slotId));
   docStore.update('Move vertices', (d) => {
     const p = d.skeleton.skins[0].attachments[slotId]?.[name];
-    if (!p || (p.type !== 'clipping' && p.type !== 'boundingbox')) return;
+    if (!p || (p.type !== 'clipping' && p.type !== 'boundingbox' && p.type !== 'path')) return; // path points move the same way
     for (const mv of moves) {
       if (p.weights) {
         const list = p.weights[mv.index];

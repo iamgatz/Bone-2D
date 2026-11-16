@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Bone, BoxSelect, Brush, Crosshair, Download, Eye, FilePlus2, FolderOpen, Grid3x3, Image as ImageIcon, CircleHelp, Link2, Maximize, MousePointer2, Move, Play, Redo2, RotateCw, Save, Scaling, Scissors, Sparkles, Triangle, Type, Undo2 } from 'lucide-react';
+import { Bone, BoxSelect, Brush, Crosshair, Download, Eye, FilePlus2, FolderOpen, Grid3x3, Image as ImageIcon, CircleHelp, Link2, Maximize, MousePointer2, Move, PenTool, Play, Redo2, RotateCw, Save, Scaling, Scissors, Sparkles, Triangle, Type, Undo2 } from 'lucide-react';
 import { decodeKey } from '@/core/keyrefs';
 import { clearSelection, copyKeys, deleteBones, deleteKeys, keySelectedBones, pasteKeys, sanitizeSelection, setMode, setSelection, setTime, setTool, togglePlay } from '@/store/actions';
 import { docStore, useProject } from '@/store/doc';
@@ -32,6 +32,7 @@ const TOOLS: { tool: Tool; icon: typeof Bone; title: string; hotkey: string; set
   { tool: 'clipping', icon: Scissors, title: 'Clipping polygon', hotkey: 'C', setupOnly: true },
   { tool: 'boundingbox', icon: BoxSelect, title: 'Bounding box', hotkey: 'X', setupOnly: true },
   { tool: 'point', icon: Crosshair, title: 'Point', hotkey: 'P', setupOnly: true },
+  { tool: 'path', icon: PenTool, title: 'Path', hotkey: 'N', setupOnly: true },
 ];
 
 const HINTS: Record<Tool, string> = {
@@ -46,6 +47,7 @@ const HINTS: Record<Tool, string> = {
   clipping: 'Click to place polygon points · click the first point, double-click or Enter to finish · Esc cancels · it is created on the selected bone',
   boundingbox: 'Click to place polygon points · click the first point, double-click or Enter to finish · Esc cancels · it is created on the selected bone',
   point: 'Click to place a point attachment on the selected bone · set its rotation in the Inspector',
+  path: 'Click to place a node · drag to pull its handles · click the first node, double-click or Enter to finish · Esc cancels · it is created on the selected bone',
 };
 
 function LangToggle() {
@@ -287,9 +289,10 @@ export function App() {
         case 'c': setTool('clipping'); break;
         case 'x': setTool('boundingbox'); break;
         case 'p': setTool('point'); break;
+        case 'n': setTool('path'); break;
         case 'f': viewportApi.frame(); break;
         case 'enter':
-          if (viewportApi.controller?.polygonTool.commit()) e.preventDefault();
+          if (viewportApi.controller?.polygonTool.commit() || viewportApi.controller?.pathTool.commit()) e.preventDefault();
           break;
         case 'k': keySelectedBones(); break;
         case 'tab':
@@ -317,7 +320,7 @@ export function App() {
             e.preventDefault();
             deleteKeys(ui.selectedKeys.map(decodeKey));
             uiStore.patch({ selectedKeys: [] });
-          } else if (ui.tool === 'mesh' && ui.selection.vertices.length && (viewportApi.controller?.polygonTool.deleteSelectedVertices() || viewportApi.controller?.meshTool.deleteSelectedVertices())) {
+          } else if (ui.tool === 'mesh' && ui.selection.vertices.length && (viewportApi.controller?.pathTool.deleteSelectedVertices() || viewportApi.controller?.polygonTool.deleteSelectedVertices() || viewportApi.controller?.meshTool.deleteSelectedVertices())) {
             e.preventDefault();
           } else if (ui.selection.constraint && !ui.selection.bones.length) {
             e.preventDefault();
@@ -328,7 +331,7 @@ export function App() {
           }
           break;
         case 'escape':
-          if (viewportApi.controller?.polygonTool.cancel()) break; // an unfinished polygon is dropped first
+          if (viewportApi.controller?.polygonTool.cancel() || viewportApi.controller?.pathTool.cancel()) break; // an unfinished polygon or path is dropped first
           clearSelection();
           uiStore.patch({ selectedKeys: [] });
           break;

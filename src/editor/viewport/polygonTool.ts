@@ -5,7 +5,7 @@ import { setSelection } from '@/store/actions';
 import { docStore } from '@/store/doc';
 import { addPolygonVertex, createPoint, createPolygon, deletePolygonVertices, getPolygon, movePolygonVertices } from '@/store/polygonActions';
 import type { PolygonKind } from '@/store/polygonActions';
-import { ATTACHMENT_TOOLS, toast, uiStore } from '@/store/ui';
+import { POLYGON_TOOLS, toast, uiStore } from '@/store/ui';
 import { worldToScreen } from '../scene';
 import type { Scene } from '../scene';
 import { slotWorldVertices } from './hit';
@@ -53,8 +53,8 @@ export class PolygonTool {
   /** Is this tool in charge of pointer events right now? */
   handles(): boolean {
     const ui = uiStore.get();
-    if (!ATTACHMENT_TOOLS.includes(ui.tool)) this.draft = null; // an unfinished polygon is dropped when another tool is picked
-    return ATTACHMENT_TOOLS.includes(ui.tool) || (ui.tool === 'mesh' && activePolygon() !== null);
+    if (!POLYGON_TOOLS.includes(ui.tool)) this.draft = null; // an unfinished polygon is dropped when another tool is picked
+    return POLYGON_TOOLS.includes(ui.tool) || (ui.tool === 'mesh' && activePolygon() !== null);
   }
 
   private hitVertex(v: Float32Array, count: number, wx: number, wy: number, zoom: number, tolPx = 9): number {
@@ -318,7 +318,7 @@ export class PolygonTool {
 
   private drawDraft(o: OverlayInput) {
     const d = this.draft;
-    if (!d || !ATTACHMENT_TOOLS.includes(o.ui.tool)) return;
+    if (!d || !POLYGON_TOOLS.includes(o.ui.tool)) return;
     const { ctx, w, h, cam } = o;
     const pts = d.points.map(([x, y]) => worldToScreen(cam, w, h, x, y));
     const cur = worldToScreen(cam, w, h, d.cursor[0], d.cursor[1]);

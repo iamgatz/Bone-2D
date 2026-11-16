@@ -8,7 +8,20 @@ import { animationEndTime } from './animate';
 import { normalizeBoneOrder } from './edit';
 import { uid, uniqueName } from './ids';
 import { deformLength } from './mesh';
-import { BLEND_MODES, DEFAULT_BOUNDING_BOX_COLOR, DEFAULT_CLIPPING_COLOR, DEFAULT_POINT_COLOR, INHERIT_MODES, TRANSFORM_PROPS, newBone, newSkin } from './model';
+import {
+  BLEND_MODES,
+  DEFAULT_BOUNDING_BOX_COLOR,
+  DEFAULT_CLIPPING_COLOR,
+  DEFAULT_PATH_COLOR,
+  DEFAULT_POINT_COLOR,
+  INHERIT_MODES,
+  PATH_POSITION_MODES,
+  PATH_ROTATE_MODES,
+  PATH_SPACING_MODES,
+  TRANSFORM_PROPS,
+  newBone,
+  newSkin,
+} from './model';
 import type { Animation, Attachment, Id, Influence, MeshAttachment, Project, SkeletonDoc } from './model';
 
 type Note = (message: string) => void;
@@ -207,6 +220,22 @@ function attachmentProblem(att: Attachment, boneIds: Set<Id>, slotIds: Set<Id>, 
     for (const k of ['x', 'y', 'rotation'] as const) if (!finite(att[k])) return `${k} is not a number`;
     return null;
   }
+  if (att && att.type === 'path') {
+    if (!isString(att.name)) return 'missing name';
+    if (!validColor(att.color, 4)) att.color = [...DEFAULT_PATH_COLOR];
+    att.closed = !!att.closed;
+    att.constantSpeed = !!att.constantSpeed;
+    // three points per node (in-handle, anchor, out-handle); a path needs at least two nodes
+    if (!att.weights) {
+      att.weights = null;
+      if (!Array.isArray(att.vertices) || att.vertices.length % 6 !== 0 || !att.vertices.every(finite)) return 'invalid vertices';
+      if (att.vertices.length < 12) return 'a path needs at least 2 nodes';
+      return null;
+    }
+    if (!Array.isArray(att.weights) || att.weights.length % 3 !== 0 || att.weights.length < 6) return 'a path needs at least 2 nodes';
+    att.vertices = [];
+    return repairWeights(att.weights, `path "${att.name}"`, boneIds, rootId, fixed);
+  }
   if (att && (att.type === 'clipping' || att.type === 'boundingbox')) {
     if (!isString(att.name)) return 'missing name';
     if (!validColor(att.color, 4)) att.color = [...(att.type === 'clipping' ? DEFAULT_CLIPPING_COLOR : DEFAULT_BOUNDING_BOX_COLOR)];
@@ -286,8 +315,9 @@ function repairSkins(doc: SkeletonDoc, note: Note) {
 function repairConstraints(doc: SkeletonDoc, note: Note) {
   dedupeIds(doc.constraints, 'constraint', note);
   const boneById = new Map(doc.bones.map((b) => [b.id, b] as const));
+  const slotIds = new Set(doc.slots.map((s) => s.id));
   const keep = doc.constraints.filter((c) => {
-    const problem = constraintProblem(c, boneById);
+    const problem = constraintProblem(c, boneById, slotIds);
     if (problem) note(`constraint "${c.name}" removed (${problem})`);
     return !problem;
   });
@@ -295,12 +325,19 @@ function repairConstraints(doc: SkeletonDoc, note: Note) {
   dedupeNames(doc.constraints, 'constraint', 'constraint', note);
 }
 
-function constraintProblem(c: SkeletonDoc['constraints'][number], boneById: Map<Id, SkeletonDoc['bones'][number]>): string | null {
-  if (!c || (c.type !== 'ik' && c.type !== 'transform' && c.type !== 'slider')) return 'unknown type';
+function constraintProblem(c: SkeletonDoc['constraints'][number], boneById: Map<Id, SkeletonDoc['bones'][number]>, slotIds: Set<Id>): string | null {
+  if (!c || (c.type !== 'ik' && c.type !== 'transform' && c.type !== 'slider' && c.type !== 'path')) return 'unknown type';
   if (c.type === 'slider') {
     if (c.bone !== null && !boneById.has(c.bone)) return 'driver bone does not exist';
     if (!TRANSFORM_PROPS.includes(c.property)) return 'unknown property';
     if (![c.mix, c.time, c.from, c.to, c.scale, c.max].every(finite)) return 'a value is not a number';
+    return null;
+  }
+  if (c.type === 'path') {
+    if (!Array.isArray(c.bones) || c.bones.length === 0 || c.bones.some((id) => !boneById.has(id))) return 'bone does not exist';
+    if (!slotIds.has(c.target)) return 'target slot does not exist';
+    if (!PATH_POSITION_MODES.includes(c.positionMode) || !PATH_SPACING_MODES.includes(c.spacingMode) || !PATH_ROTATE_MODES.includes(c.rotateMode)) return 'unknown mode';
+    if (![c.offsetRotation, c.position, c.spacing].every(finite) || !c.mix || ![c.mix.rotate, c.mix.x, c.mix.y].every(finite)) return 'a value is not a number';
     return null;
   }
   if (!Array.isArray(c.bones) || c.bones.length === 0 || c.bones.some((id) => !boneById.has(id))) return 'bone does not exist';
@@ -389,6 +426,7 @@ function repairAnimations(doc: SkeletonDoc, note: Note) {
     a.ik ??= {};
     a.transform ??= {};
     a.slider ??= {};
+    a.path ??= {};
     a.deform ??= {};
     a.drawOrder ??= [];
     a.events ??= [];
@@ -487,6 +525,24 @@ function repairAnimations(doc: SkeletonDoc, note: Note) {
       }
     }
 
+    for (const id of Object.keys(a.path)) {
+      const c = constraints.get(id);
+      const tl = a.path[id];
+      if (!c || c.type !== 'path' || !tl || typeof tl !== 'object') {
+        delete a.path[id];
+        note(`${where}: path timeline of a missing constraint removed`);
+        continue;
+      }
+      const spec = { position: 1, spacing: 1, mix: 3 } as const;
+      for (const prop of Object.keys(tl) as (keyof typeof spec)[]) {
+        const keys = tl[prop];
+        if (!(prop in spec) || !Array.isArray(keys)) {
+          delete tl[prop];
+          note(`${where}: invalid path timeline removed`);
+        } else if (cleanKeys(keys, spec[prop], spec[prop])) note(`${where}: path ${prop} keys repaired`);
+      }
+    }
+
     repairDeform(doc, a, skins, boneIds, note, where);
 
     for (const k of a.drawOrder) {
@@ -526,12 +582,12 @@ function repairDeform(doc: SkeletonDoc, a: Animation, skins: Map<Id, SkeletonDoc
       for (const att of Object.keys(perSlot ?? {})) {
         const mesh = skin.attachments[slotId]?.[att] as Attachment | undefined;
         const keys = perSlot[att];
-        if (!mesh || mesh.type !== 'mesh' || !Array.isArray(keys)) {
+        if (!mesh || (mesh.type !== 'mesh' && mesh.type !== 'path') || !Array.isArray(keys)) {
           delete perSlot[att];
           note(`${where}: deform timeline of a missing mesh "${att}" removed`);
           continue;
         }
-        const expected = deformLength(mesh as MeshAttachment, has);
+        const expected = deformLength(mesh, has);
         if (keys.some((k) => !k || !Array.isArray(k.value) || k.value.length !== expected || !k.value.every(finite))) {
           delete perSlot[att];
           note(`${where}: deform keys of "${att}" no longer match the mesh and were removed`);

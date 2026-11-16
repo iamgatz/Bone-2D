@@ -1,7 +1,7 @@
 /**
  * Spine 4.3 JSON -> Bone 2D project. The structure follows what the official 4.3 `SkeletonJson` reads, so files exported
- * by Spine itself (and by Bone 2D) open. Things Bone 2D has no model for — path / physics constraints, path attachments,
- * sequences, draw order folders — are skipped and reported in `warnings`.
+ * by Spine itself (and by Bone 2D) open. Things Bone 2D has no model for — physics constraints, sequences, draw order
+ * folders — are skipped and reported in `warnings`.
  * Images are not part of the JSON: attachments keep their region `path`; pixels come from an atlas (see atlas.ts).
  */
 import { animationEndTime } from '../animate';
@@ -12,8 +12,12 @@ import {
   BLEND_MODES,
   DEFAULT_BOUNDING_BOX_COLOR,
   DEFAULT_CLIPPING_COLOR,
+  DEFAULT_PATH_COLOR,
   DEFAULT_POINT_COLOR,
   INHERIT_MODES,
+  PATH_POSITION_MODES,
+  PATH_ROTATE_MODES,
+  PATH_SPACING_MODES,
   TRANSFORM_PROPS,
   attachmentImage,
   emptyProject,
@@ -22,7 +26,7 @@ import {
   newSkin,
   newSlot,
 } from '../model';
-import type { Animation, Attachment, BlendMode, Bone, Constraint, Curve, Id, Inherit, Influence, Key, MeshAttachment, Project, RGB, RGBA, SkeletonDoc, Timeline, TransformFrom, TransformProp } from '../model';
+import type { Animation, Attachment, BlendMode, Bone, Constraint, Curve, Id, Inherit, Influence, Key, MeshAttachment, PathTimelines, Project, RGB, RGBA, SkeletonDoc, Timeline, TransformFrom, TransformProp } from '../model';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 type J = Record<string, any>;
@@ -38,6 +42,12 @@ const bool = (v: unknown, d: boolean): boolean => (typeof v === 'boolean' ? v : 
 const str = (v: unknown, d: string): string => (typeof v === 'string' ? v : d);
 const obj = (v: unknown): J => (v && typeof v === 'object' && !Array.isArray(v) ? (v as J) : {});
 const arr = (v: unknown): any[] => (Array.isArray(v) ? v : []);
+/** An enum value as the official loader reads it (first letter case does not matter), or the default. */
+const oneOf = <T extends string>(v: unknown, list: readonly T[], def: T): T => {
+  if (typeof v !== 'string' || !v) return def;
+  const norm = v[0].toLowerCase() + v.slice(1);
+  return (list as readonly string[]).includes(norm) ? (norm as T) : def;
+};
 
 function hexByte(h: string, i: number): number {
   const v = parseInt(h.substr(i * 2, 2), 16);
@@ -248,6 +258,31 @@ export function importSpineJson(input: unknown, name = 'imported'): SpineImportR
       if (typeof cm.animation === 'string') sliderAnimations.push({ id: c.id, animation: cm.animation });
       constraintByName.set(cname, c);
       doc.constraints.push(c);
+    } else if (type === 'path') {
+      const bones = arr(cm.bones).map(boneId);
+      const slot = slotId(cm.slot);
+      if (!bones.length || bones.some((b) => !b) || !slot) {
+        warn(`path constraint "${cname}" was skipped: a bone or its slot is missing`);
+        continue;
+      }
+      const mixX = num(cm.mixX, 1);
+      const c: Constraint = {
+        id: uid(),
+        type: 'path',
+        name: cname,
+        bones: bones as Id[],
+        target: slot,
+        positionMode: oneOf(cm.positionMode, PATH_POSITION_MODES, 'percent'),
+        spacingMode: oneOf(cm.spacingMode, PATH_SPACING_MODES, 'length'),
+        rotateMode: oneOf(cm.rotateMode, PATH_ROTATE_MODES, 'tangent'),
+        offsetRotation: num(cm.rotation, 0),
+        position: num(cm.position, 0),
+        spacing: num(cm.spacing, 0),
+        mix: { rotate: num(cm.mixRotate, 1), x: mixX, y: num(cm.mixY, mixX) },
+        skinRequired,
+      };
+      constraintByName.set(cname, c);
+      doc.constraints.push(c);
     } else {
       warn(`${type || 'unknown'} constraint "${cname}" is not supported by Bone 2D and was skipped`);
     }
@@ -264,7 +299,7 @@ export function importSpineJson(input: unknown, name = 'imported'): SpineImportR
     const skin = newSkin(uniqueName(str(sm.name, 'skin'), new Set(skinByName.keys())));
     skinByName.set(skin.name, skin);
     skin.bones = arr(sm.bones).map(boneId).filter((b): b is Id => !!b);
-    for (const list of ['ik', 'transform', 'slider'] as const) {
+    for (const list of ['ik', 'transform', 'slider', 'path'] as const) {
       for (const cn of arr(sm[list])) {
         const c = constraintByName.get(String(cn));
         if (c && c.type === list) skin.constraints.push(c.id);
@@ -431,6 +466,22 @@ export function importSpineJson(input: unknown, name = 'imported'): SpineImportR
       if (t.mix) tl.mix = timeline(t.mix, 1, single('value', 1));
       if (Object.keys(tl).length) a.slider[c.id] = tl;
     }
+    // path constraint position / spacing / mix
+    for (const [cn, tm] of Object.entries(obj(am.path))) {
+      const c = constraintByName.get(cn);
+      if (!c || c.type !== 'path') continue;
+      const t = obj(tm);
+      const tl: PathTimelines = {};
+      if (t.position) tl.position = timeline(t.position, 1, single('value', 0));
+      if (t.spacing) tl.spacing = timeline(t.spacing, 1, single('value', 0));
+      if (t.mix) {
+        tl.mix = timeline(t.mix, 3, (k) => {
+          const mixX = num(k.mixX, 1);
+          return [num(k.mixRotate, 1), mixX, num(k.mixY, mixX)];
+        });
+      }
+      if (Object.keys(tl).length) a.path[c.id] = tl;
+    }
     // deform
     for (const [skinName, perSkin] of Object.entries(obj(am.attachments))) {
       const skin = skinByName.get(skinName);
@@ -442,8 +493,8 @@ export function importSpineJson(input: unknown, name = 'imported'): SpineImportR
           const mesh = skin.attachments[sid]?.[attName];
           const keys = arr(obj(tlMap).deform).map(obj);
           if (!keys.length) continue;
-          if (!mesh || mesh.type !== 'mesh') {
-            warn(`animation "${an}": deform of "${attName}" was skipped (not a mesh)`);
+          if (!mesh || (mesh.type !== 'mesh' && mesh.type !== 'path')) {
+            warn(`animation "${an}": deform of "${attName}" was skipped (not a mesh or a path)`);
             continue;
           }
           const expected = deformLength(mesh, (id) => doc.bones.some((b) => b.id === id));
@@ -550,6 +601,20 @@ function readAttachment(
     mesh.vertices = data.vertices;
     mesh.weights = data.weights;
     return mesh;
+  }
+  if (type === 'path') {
+    const count = Math.max(0, Math.floor(num(m.vertexCount, 0)));
+    if (count < 6 || count % 3 !== 0) {
+      warn(`skin "${skinName}": path "${key}" was skipped (it needs at least two nodes, three points each)`);
+      return null;
+    }
+    // the file's `lengths` are not kept: they are measured again from the setup pose
+    const data = readVertices(
+      arr(m.vertices).map((v) => num(v, 0)),
+      count * 2,
+      boneIds,
+    );
+    return { type: 'path', name, color: rgba(m.color, DEFAULT_PATH_COLOR), closed: bool(m.closed, false), constantSpeed: bool(m.constantSpeed, true), ...data };
   }
   if (type === 'point') return { type: 'point', name, x: num(m.x, 0), y: num(m.y, 0), rotation: num(m.rotation, 0), color: rgba(m.color, DEFAULT_POINT_COLOR) };
   if (type === 'boundingbox' || type === 'clipping') {
