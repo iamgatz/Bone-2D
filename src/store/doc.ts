@@ -1,0 +1,134 @@
+import { applyPatches, enablePatches, produceWithPatches, setAutoFreeze } from 'immer';
+import type { Draft, Patch } from 'immer';
+import { emptyProject } from '@/core/model';
+import type { Project } from '@/core/model';
+import { useStore } from './store';
+import type { Store } from './store';
+
+enablePatches();
+setAutoFreeze(true);
+
+interface HistoryEntry {
+  label: string;
+  patches: Patch[];
+  inverse: Patch[];
+}
+
+/**
+ * The undoable document. Every change is an immer recipe; patches give us undo/redo for free.
+ * Gestures (drags) coalesce all updates between `beginGesture` and `endGesture` into one history entry.
+ */
+export class DocStore implements Store<Project> {
+  private state: Project = emptyProject();
+  private listeners = new Set<() => void>();
+  private undoStack: HistoryEntry[] = [];
+  private redoStack: HistoryEntry[] = [];
+  private gesture: { entry: HistoryEntry | null; label: string } | null = null;
+  /** Bumps on every change (also undo/redo/replace) — handy for cheap "did anything change" checks. */
+  revision = 0;
+  dirty = false;
+
+  get = () => this.state;
+
+  set = (next: Project | ((p: Project) => Project)) => {
+    this.replace(typeof next === 'function' ? next(this.state) : next);
+  };
+
+  patch = (p: Partial<Project>) => {
+    this.update('patch', (d) => void Object.assign(d, p));
+  };
+
+  subscribe = (fn: () => void) => {
+    this.listeners.add(fn);
+    return () => this.listeners.delete(fn);
+  };
+
+  private emit() {
+    this.revision++;
+    this.listeners.forEach((l) => l());
+  }
+
+  /** Replaces the whole project and clears history (open / new). */
+  replace(project: Project, keepHistory = false) {
+    this.state = project;
+    if (!keepHistory) {
+      this.undoStack = [];
+      this.redoStack = [];
+    }
+    this.gesture = null;
+    this.dirty = false;
+    this.emit();
+  }
+
+  update(label: string, recipe: (draft: Draft<Project>) => void) {
+    const [next, patches, inverse] = produceWithPatches(this.state, recipe);
+    if (patches.length === 0) return;
+    this.state = next;
+    this.dirty = true;
+    this.redoStack = [];
+    if (this.gesture) {
+      if (this.gesture.entry) {
+        this.gesture.entry.patches.push(...patches);
+        this.gesture.entry.inverse = [...inverse, ...this.gesture.entry.inverse];
+      } else {
+        this.gesture.entry = { label: this.gesture.label, patches: [...patches], inverse: [...inverse] };
+        this.undoStack.push(this.gesture.entry);
+      }
+    } else {
+      this.undoStack.push({ label, patches, inverse });
+    }
+    if (this.undoStack.length > 300) this.undoStack.shift();
+    this.emit();
+  }
+
+  beginGesture(label: string) {
+    this.gesture = { entry: null, label };
+  }
+
+  endGesture() {
+    this.gesture = null;
+  }
+
+  get canUndo() {
+    return this.undoStack.length > 0;
+  }
+  get canRedo() {
+    return this.redoStack.length > 0;
+  }
+  get undoLabel() {
+    return this.undoStack[this.undoStack.length - 1]?.label;
+  }
+  get redoLabel() {
+    return this.redoStack[this.redoStack.length - 1]?.label;
+  }
+
+  undo() {
+    this.gesture = null;
+    const e = this.undoStack.pop();
+    if (!e) return;
+    this.state = applyPatches(this.state, e.inverse);
+    this.redoStack.push(e);
+    this.dirty = true;
+    this.emit();
+  }
+
+  redo() {
+    this.gesture = null;
+    const e = this.redoStack.pop();
+    if (!e) return;
+    this.state = applyPatches(this.state, e.patches);
+    this.undoStack.push(e);
+    this.dirty = true;
+    this.emit();
+  }
+}
+
+export const docStore = new DocStore();
+
+export function useProject(): Project {
+  return useStore(docStore, (p) => p);
+}
+
+export function useDoc<S>(selector: (p: Project) => S, equals?: (a: S, b: S) => boolean): S {
+  return useStore(docStore, selector, equals);
+}

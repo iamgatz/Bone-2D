@@ -1,0 +1,561 @@
+/**
+ * Spine 4.3 JSON -> Bone 2D project. The structure follows what the official 4.3 `SkeletonJson` reads, so files exported
+ * by Spine itself (and by Bone 2D) open. Things Bone 2D has no model for — path / physics constraints, path attachments,
+ * sequences, draw order folders — are skipped and reported in `warnings`.
+ * Images are not part of the JSON: attachments keep their region `path`; pixels come from an atlas (see atlas.ts).
+ */
+import { animationEndTime } from '../animate';
+import { curveFromAbsolute } from '../curve';
+import { uid, uniqueName } from '../ids';
+import { deformLength } from '../mesh';
+import {
+  BLEND_MODES,
+  DEFAULT_BOUNDING_BOX_COLOR,
+  DEFAULT_CLIPPING_COLOR,
+  DEFAULT_POINT_COLOR,
+  INHERIT_MODES,
+  TRANSFORM_PROPS,
+  attachmentImage,
+  emptyProject,
+  newAnimation,
+  newBone,
+  newSkin,
+  newSlot,
+} from '../model';
+import type { Animation, Attachment, BlendMode, Bone, Constraint, Curve, Id, Inherit, Influence, Key, MeshAttachment, Project, RGB, RGBA, SkeletonDoc, Timeline, TransformFrom, TransformProp } from '../model';
+
+/* eslint-disable @typescript-eslint/no-explicit-any */
+type J = Record<string, any>;
+
+export interface SpineImportResult {
+  project: Project;
+  /** Things that could not be imported or were approximated. */
+  warnings: string[];
+}
+
+const num = (v: unknown, d: number): number => (typeof v === 'number' && Number.isFinite(v) ? v : d);
+const bool = (v: unknown, d: boolean): boolean => (typeof v === 'boolean' ? v : d);
+const str = (v: unknown, d: string): string => (typeof v === 'string' ? v : d);
+const obj = (v: unknown): J => (v && typeof v === 'object' && !Array.isArray(v) ? (v as J) : {});
+const arr = (v: unknown): any[] => (Array.isArray(v) ? v : []);
+
+function hexByte(h: string, i: number): number {
+  const v = parseInt(h.substr(i * 2, 2), 16);
+  return Number.isFinite(v) ? v / 255 : 1;
+}
+function rgba(hex: unknown, def: RGBA): RGBA {
+  if (typeof hex !== 'string' || hex.length < 6) return [...def] as RGBA;
+  return [hexByte(hex, 0), hexByte(hex, 1), hexByte(hex, 2), hex.length >= 8 ? hexByte(hex, 3) : 1];
+}
+function rgb(hex: unknown): RGB | null {
+  if (typeof hex !== 'string' || hex.length < 6) return null;
+  return [hexByte(hex, 0), hexByte(hex, 1), hexByte(hex, 2)];
+}
+
+/** Normalized bezier / stepped / linear interpolation of the key `i` of a timeline, from Spine's absolute control points. */
+function curveOf(map: J, next: J | undefined, channels: number, valueOf: (k: J) => number[], progress = false): Curve | undefined {
+  const c = map.curve;
+  if (!next) return undefined;
+  if (c === 'stepped') return 'stepped';
+  if (!Array.isArray(c) || c.length < 4) return undefined;
+  const v1 = valueOf(map);
+  const v2 = valueOf(next);
+  const t1 = num(map.time, 0);
+  const t2 = num(next.time, 0);
+  const out: number[] = [];
+  for (let ch = 0; ch < channels; ch++) {
+    const part = c.slice(ch * 4, ch * 4 + 4);
+    if (part.length < 4 || !part.every((x: unknown) => typeof x === 'number')) out.push(1 / 3, 1 / 3, 2 / 3, 2 / 3);
+    // deform curves are stored in "progress" space (0..1): only the time axis is relative to the segment
+    else if (progress) out.push(t2 !== t1 ? (part[0] - t1) / (t2 - t1) : 0, part[1], t2 !== t1 ? (part[2] - t1) / (t2 - t1) : 1, part[3]);
+    else out.push(...curveFromAbsolute(part, t1, v1[ch], t2, v2[ch]));
+  }
+  return out;
+}
+
+function timeline(keys: unknown, channels: number, valueOf: (k: J) => number[], progress = false): Timeline {
+  const list = arr(keys).map(obj);
+  const out: Timeline = [];
+  list.forEach((k, i) => {
+    const key: Key = { time: num(k.time, 0), value: valueOf(k) };
+    const curve = curveOf(k, list[i + 1], channels, valueOf, progress);
+    if (curve !== undefined) key.curve = curve;
+    out.push(key);
+  });
+  return out;
+}
+
+const single = (name: string, def: number) => (k: J) => [num(k[name] ?? (name === 'value' ? k.angle : undefined), def)];
+const pair = (def: number) => (k: J) => [num(k.x, def), num(k.y, def)];
+
+export function importSpineJson(input: unknown, name = 'imported'): SpineImportResult {
+  const root = obj(input);
+  if (!Array.isArray(root.bones) || root.bones.length === 0) throw new Error('Not a Spine skeleton: no bones');
+  const warnings: string[] = [];
+  const warn = (m: string) => {
+    if (!warnings.includes(m)) warnings.push(m);
+  };
+  const header = obj(root.skeleton);
+  const version = str(header.spine, '');
+  if (version && !version.startsWith('4.3')) warn(`The file was exported by Spine ${version}; only 4.3 files import faithfully`);
+
+  const project = emptyProject(name);
+  const doc: SkeletonDoc = project.skeleton;
+  doc.fps = num(header.fps, 30) || 30;
+  doc.bones = [];
+  doc.skins = [];
+
+  // ----------------------------------------------------------- bones
+  const boneByName = new Map<string, Bone>();
+  const boneNames = new Set<string>();
+  for (const bm of root.bones.map(obj)) {
+    const n = uniqueName(str(bm.name, 'bone'), boneNames);
+    boneNames.add(n);
+    const parent = typeof bm.parent === 'string' ? (boneByName.get(bm.parent)?.id ?? null) : null;
+    if (typeof bm.parent === 'string' && !parent) warn(`bone "${n}": parent "${bm.parent}" was not defined before it`);
+    const inheritRaw = bm.inherit ?? bm.transform;
+    const b = newBone({
+      name: n,
+      parent,
+      length: num(bm.length, 0),
+      x: num(bm.x, 0),
+      y: num(bm.y, 0),
+      rotation: num(bm.rotation, 0),
+      scaleX: num(bm.scaleX, 1),
+      scaleY: num(bm.scaleY, 1),
+      shearX: num(bm.shearX, 0),
+      shearY: num(bm.shearY, 0),
+      inherit: INHERIT_MODES.includes(inheritRaw) ? (inheritRaw as Inherit) : 'normal',
+      skinRequired: bool(bm.skin, false),
+      color: rgba(bm.color, [0.6, 0.6, 0.6, 1]),
+    });
+    boneByName.set(n, b);
+    doc.bones.push(b);
+  }
+  const boneId = (n: unknown): Id | null => (typeof n === 'string' ? (boneByName.get(n)?.id ?? null) : null);
+
+  // ----------------------------------------------------------- slots
+  const slotByName = new Map<string, ReturnType<typeof newSlot>>();
+  for (const sm of arr(root.slots).map(obj)) {
+    const bone = boneId(sm.bone);
+    if (!bone) {
+      warn(`slot "${str(sm.name, '?')}" was skipped: its bone "${str(sm.bone, '?')}" does not exist`);
+      continue;
+    }
+    const n = uniqueName(str(sm.name, 'slot'), new Set(slotByName.keys()));
+    const s = newSlot({
+      name: n,
+      bone,
+      color: rgba(sm.color, [1, 1, 1, 1]),
+      dark: rgb(sm.dark),
+      attachment: typeof sm.attachment === 'string' ? sm.attachment : null,
+      blend: BLEND_MODES.includes(sm.blend) ? (sm.blend as BlendMode) : 'normal',
+    });
+    slotByName.set(n, s);
+    doc.slots.push(s);
+  }
+  const slotId = (n: unknown): Id | null => (typeof n === 'string' ? (slotByName.get(n)?.id ?? null) : null);
+
+  // ----------------------------------------------------------- constraints
+  const constraintByName = new Map<string, Constraint>();
+  const sliderAnimations: { id: Id; animation: string }[] = [];
+  for (const cm of arr(root.constraints).map(obj)) {
+    const cname = uniqueName(str(cm.name, 'constraint'), new Set(constraintByName.keys()));
+    const type = str(cm.type, '');
+    const skinRequired = bool(cm.skin, false);
+    if (type === 'ik') {
+      const bones = arr(cm.bones).map(boneId);
+      const target = boneId(cm.target);
+      if (!bones.length || bones.some((b) => !b) || !target) {
+        warn(`IK constraint "${cname}" was skipped: a bone is missing`);
+        continue;
+      }
+      const c: Constraint = { id: uid(), type: 'ik', name: cname, bones: bones as Id[], target, mix: num(cm.mix, 1), softness: num(cm.softness, 0), bendPositive: bool(cm.bendPositive, true), compress: bool(cm.compress, false), stretch: bool(cm.stretch, false), scaleY: cm.scaleY === 'uniform' || cm.scaleY === 'volume' ? cm.scaleY : 'none', skinRequired };
+      constraintByName.set(cname, c);
+      doc.constraints.push(c);
+    } else if (type === 'transform') {
+      const bones = arr(cm.bones).map(boneId);
+      const source = boneId(cm.source);
+      if (!bones.length || bones.some((b) => !b) || !source) {
+        warn(`transform constraint "${cname}" was skipped: a bone is missing`);
+        continue;
+      }
+      const used = new Set<TransformProp>();
+      const properties: TransformFrom[] = [];
+      for (const [fromName, fromEntry] of Object.entries(obj(cm.properties))) {
+        if (!TRANSFORM_PROPS.includes(fromName as TransformProp)) continue;
+        const to = Object.entries(obj(obj(fromEntry).to))
+          .filter(([toName]) => TRANSFORM_PROPS.includes(toName as TransformProp))
+          .map(([toName, te]) => {
+            used.add(toName as TransformProp);
+            return { prop: toName as TransformProp, offset: num(obj(te).offset, 0), max: num(obj(te).max, 1), scale: num(obj(te).scale, 1) };
+          });
+        if (to.length) properties.push({ prop: fromName as TransformProp, offset: num(obj(fromEntry).offset, 0), to });
+      }
+      const mixX = used.has('x') ? num(cm.mixX, 1) : 1;
+      const mixScaleX = used.has('scaleX') ? num(cm.mixScaleX, 1) : 1;
+      const c: Constraint = {
+        id: uid(),
+        type: 'transform',
+        name: cname,
+        bones: bones as Id[],
+        source,
+        localSource: bool(cm.localSource, false),
+        localTarget: bool(cm.localTarget, false),
+        additive: bool(cm.additive, false),
+        clamp: bool(cm.clamp, false),
+        properties,
+        offsets: { rotation: num(cm.rotation, 0), x: num(cm.x, 0), y: num(cm.y, 0), scaleX: num(cm.scaleX, 0), scaleY: num(cm.scaleY, 0), shearY: num(cm.shearY, 0) },
+        mix: { rotate: used.has('rotate') ? num(cm.mixRotate, 1) : 1, x: mixX, y: used.has('y') ? num(cm.mixY, mixX) : 1, scaleX: mixScaleX, scaleY: used.has('scaleY') ? num(cm.mixScaleY, mixScaleX) : 1, shearY: used.has('shearY') ? num(cm.mixShearY, 1) : 1 },
+        skinRequired,
+      };
+      constraintByName.set(cname, c);
+      doc.constraints.push(c);
+    } else if (type === 'slider') {
+      const driver = typeof cm.bone === 'string' ? boneId(cm.bone) : null;
+      if (typeof cm.bone === 'string' && !driver) {
+        warn(`slider "${cname}" was skipped: its bone "${cm.bone}" does not exist`);
+        continue;
+      }
+      const property: TransformProp = TRANSFORM_PROPS.includes(cm.property) ? cm.property : 'rotate';
+      const c: Constraint = {
+        id: uid(),
+        type: 'slider',
+        name: cname,
+        animation: null,
+        additive: bool(cm.additive, false),
+        loop: bool(cm.loop, false),
+        mix: num(cm.mix, 1),
+        time: driver ? 0 : num(cm.time, 0),
+        bone: driver,
+        property,
+        from: num(cm.from, 0),
+        to: num(cm.to, 0),
+        scale: num(cm.scale, 1),
+        max: num(cm.max, 0),
+        local: bool(cm.local, false),
+        skinRequired,
+      };
+      if (typeof cm.animation === 'string') sliderAnimations.push({ id: c.id, animation: cm.animation });
+      constraintByName.set(cname, c);
+      doc.constraints.push(c);
+    } else {
+      warn(`${type || 'unknown'} constraint "${cname}" is not supported by Bone 2D and was skipped`);
+    }
+  }
+
+  // ----------------------------------------------------------- skins
+  const skinList = arr(root.skins).map(obj);
+  if (!skinList.some((s) => s.name === 'default')) skinList.unshift({ name: 'default', attachments: {} });
+  skinList.sort((a, b) => (a.name === 'default' ? -1 : b.name === 'default' ? 1 : 0));
+  const linked: { skin: ReturnType<typeof newSkin>; slot: Id; key: string; map: J }[] = [];
+  const imageSizes = new Map<string, { width: number; height: number }>();
+  const skinByName = new Map<string, ReturnType<typeof newSkin>>();
+  for (const sm of skinList) {
+    const skin = newSkin(uniqueName(str(sm.name, 'skin'), new Set(skinByName.keys())));
+    skinByName.set(skin.name, skin);
+    skin.bones = arr(sm.bones).map(boneId).filter((b): b is Id => !!b);
+    for (const list of ['ik', 'transform', 'slider'] as const) {
+      for (const cn of arr(sm[list])) {
+        const c = constraintByName.get(String(cn));
+        if (c && c.type === list) skin.constraints.push(c.id);
+      }
+    }
+    for (const [slotName, perSlot] of Object.entries(obj(sm.attachments))) {
+      const sid = slotId(slotName);
+      if (!sid) {
+        warn(`skin "${skin.name}": attachments of the unknown slot "${slotName}" were skipped`);
+        continue;
+      }
+      const bag = (skin.attachments[sid] ??= {});
+      for (const [key, am] of Object.entries(obj(perSlot))) {
+        const att = readAttachment(skin.name, key, obj(am), boneIdsByIndex(), warn, imageSizes, slotId);
+        if (att === 'linked') linked.push({ skin, slot: sid, key, map: obj(am) });
+        else if (att) bag[key] = att;
+      }
+    }
+    doc.skins.push(skin);
+  }
+  // linked meshes share their parent's geometry; Bone 2D has no such link, so each one becomes an independent copy
+  for (const l of linked) {
+    const parentSkin = typeof l.map.skin === 'string' ? skinByName.get(l.map.skin) : l.skin;
+    const parent = parentSkin?.attachments[l.slot]?.[String(l.map.parent)] ?? skinByName.get('default')?.attachments[l.slot]?.[String(l.map.parent)];
+    if (!parent || parent.type !== 'mesh') {
+      warn(`linked mesh "${l.key}" was skipped: its parent mesh "${String(l.map.parent)}" does not exist`);
+      continue;
+    }
+    const path = str(l.map.path, str(l.map.name, l.key));
+    const copy: MeshAttachment = { ...structuredClone(parent), name: str(l.map.name, l.key), path, color: rgba(l.map.color, [1, 1, 1, 1]) };
+    l.skin.attachments[l.slot][l.key] = copy;
+    warn(`linked mesh "${l.key}" was imported as an independent mesh`);
+  }
+
+  function boneIdsByIndex(): Id[] {
+    return doc.bones.map((b) => b.id);
+  }
+
+  // ----------------------------------------------------------- events
+  const eventByName = new Map<string, Id>();
+  for (const [en, em] of Object.entries(obj(root.events))) {
+    const e = obj(em);
+    const id = uid();
+    eventByName.set(en, id);
+    doc.events.push({ id, name: en, int: num(e.int, 0), float: num(e.float, 0), string: str(e.string, '') });
+    if (e.audio) warn(`event "${en}": audio is not supported and was dropped`);
+  }
+
+  // ----------------------------------------------------------- animations
+  const animationByName = new Map<string, Animation>();
+  for (const [an, am] of Object.entries(obj(root.animations))) {
+    const a = readAnimation(an, obj(am));
+    animationByName.set(an, a);
+    doc.animations.push(a);
+  }
+  for (const s of sliderAnimations) {
+    const c = doc.constraints.find((x) => x.id === s.id);
+    const anim = animationByName.get(s.animation);
+    if (c && c.type === 'slider') {
+      if (anim) c.animation = anim.id;
+      else warn(`slider "${c.name}": its animation "${s.animation}" does not exist`);
+    }
+  }
+
+  function readAnimation(an: string, am: J): Animation {
+    const a = newAnimation(an, 0);
+    // bones
+    for (const [bn, bt] of Object.entries(obj(am.bones))) {
+      const bid = boneId(bn);
+      if (!bid) {
+        warn(`animation "${an}": timelines of the unknown bone "${bn}" were skipped`);
+        continue;
+      }
+      const t = obj(bt);
+      const tl = (a.bones[bid] ??= {});
+      if (t.rotate) tl.rotate = timeline(t.rotate, 1, single('value', 0));
+      if (t.translate) tl.translate = timeline(t.translate, 2, pair(0));
+      if (t.scale) tl.scale = timeline(t.scale, 2, pair(1));
+      if (t.shear) tl.shear = timeline(t.shear, 2, pair(0));
+      for (const [axis, group, ch, def] of [['translatex', 'translate', 0, 0], ['translatey', 'translate', 1, 0], ['scalex', 'scale', 0, 1], ['scaley', 'scale', 1, 1], ['shearx', 'shear', 0, 0], ['sheary', 'shear', 1, 0]] as const) {
+        if (!t[axis]) continue;
+        if ((tl as Record<string, Timeline | undefined>)[group]) {
+          warn(`animation "${an}": separate ${axis} timeline next to a combined ${group} timeline was ignored`);
+          continue;
+        }
+        warn(`animation "${an}": the separate ${axis} timeline was merged into a ${group} timeline`);
+        const own = timeline(t[axis], 1, single('value', def));
+        (tl as Record<string, Timeline>)[group] = own.map((k): Key => {
+          const value = ch === 0 ? [k.value[0], def] : [def, k.value[0]];
+          const curve = Array.isArray(k.curve) ? (ch === 0 ? [...k.curve, 1 / 3, 1 / 3, 2 / 3, 2 / 3] : [1 / 3, 1 / 3, 2 / 3, 2 / 3, ...k.curve]) : k.curve;
+          return curve === undefined ? { time: k.time, value } : { time: k.time, value, curve };
+        });
+      }
+      if (t.inherit) warn(`animation "${an}": inherit timelines are not supported and were skipped`);
+      if (!Object.keys(tl).length) delete a.bones[bid];
+    }
+    // slots
+    for (const [sn, st] of Object.entries(obj(am.slots))) {
+      const sid = slotId(sn);
+      if (!sid) {
+        warn(`animation "${an}": timelines of the unknown slot "${sn}" were skipped`);
+        continue;
+      }
+      const t = obj(st);
+      const tl = (a.slots[sid] ??= {});
+      if (t.attachment) tl.attachment = arr(t.attachment).map(obj).map((k) => ({ time: num(k.time, 0), name: typeof k.name === 'string' ? k.name : null }));
+      if (t.rgba) tl.rgba = timeline(t.rgba, 4, (k) => [...rgba(k.color, [1, 1, 1, 1])]);
+      else if (t.rgb || t.alpha) {
+        warn(`animation "${an}": separate rgb / alpha timelines are only approximated (the other channels stay at the setup value)`);
+        const setup = slotByName.get(sn)!.color;
+        // curves are approximated as linear (stepped stays stepped)
+        const toRgba = (keys: Timeline, make: (v: number[]) => number[]): Timeline => keys.map((k) => ({ time: k.time, value: make(k.value), ...(k.curve === 'stepped' ? { curve: 'stepped' as const } : {}) }));
+        if (t.rgb) tl.rgba = toRgba(timeline(t.rgb, 3, (k) => rgba(k.color, [1, 1, 1, 1]).slice(0, 3)), (v) => [v[0], v[1], v[2], setup[3]]);
+        else tl.rgba = toRgba(timeline(t.alpha, 1, single('value', 1)), (v) => [setup[0], setup[1], setup[2], v[0]]);
+      }
+      if (t.rgba2 || t.rgb2) warn(`animation "${an}": dark color timelines are not supported and were skipped`);
+      if (!Object.keys(tl).length) delete a.slots[sid];
+    }
+    // ik
+    for (const [cn, keys] of Object.entries(obj(am.ik))) {
+      const c = constraintByName.get(cn);
+      if (!c || c.type !== 'ik') continue;
+      const list = arr(keys).map(obj);
+      a.ik[c.id] = list.map((k, i) => {
+        const key: any = { time: num(k.time, 0), value: [num(k.mix, 1), num(k.softness, 0)], bendPositive: bool(k.bendPositive, true), compress: bool(k.compress, false), stretch: bool(k.stretch, false) };
+        const curve = curveOf(k, list[i + 1], 2, (x) => [num(x.mix, 1), num(x.softness, 0)]);
+        if (curve !== undefined) key.curve = curve;
+        return key;
+      });
+    }
+    // transform constraint mixes
+    for (const [cn, keys] of Object.entries(obj(am.transform))) {
+      const c = constraintByName.get(cn);
+      if (!c || c.type !== 'transform') continue;
+      const valueOf = (k: J) => {
+        const mixX = num(k.mixX, 1);
+        const mixScaleX = num(k.mixScaleX, 1);
+        return [num(k.mixRotate, 1), mixX, num(k.mixY, mixX), mixScaleX, num(k.mixScaleY, mixScaleX), num(k.mixShearY, 1)];
+      };
+      a.transform[c.id] = timeline(keys, 6, valueOf);
+    }
+    // slider time / mix
+    for (const [cn, tm] of Object.entries(obj(am.slider))) {
+      const c = constraintByName.get(cn);
+      if (!c || c.type !== 'slider') continue;
+      const t = obj(tm);
+      const tl: { time?: Timeline; mix?: Timeline } = {};
+      if (t.time) tl.time = timeline(t.time, 1, single('value', 1));
+      if (t.mix) tl.mix = timeline(t.mix, 1, single('value', 1));
+      if (Object.keys(tl).length) a.slider[c.id] = tl;
+    }
+    // deform
+    for (const [skinName, perSkin] of Object.entries(obj(am.attachments))) {
+      const skin = skinByName.get(skinName);
+      if (!skin) continue;
+      for (const [slotName, perSlot] of Object.entries(obj(perSkin))) {
+        const sid = slotId(slotName);
+        if (!sid) continue;
+        for (const [attName, tlMap] of Object.entries(obj(perSlot))) {
+          const mesh = skin.attachments[sid]?.[attName];
+          const keys = arr(obj(tlMap).deform).map(obj);
+          if (!keys.length) continue;
+          if (!mesh || mesh.type !== 'mesh') {
+            warn(`animation "${an}": deform of "${attName}" was skipped (not a mesh)`);
+            continue;
+          }
+          const expected = deformLength(mesh, (id) => doc.bones.some((b) => b.id === id));
+          const valueOf = (k: J) => {
+            const out = new Array<number>(expected).fill(0);
+            const offset = num(k.offset, 0);
+            arr(k.vertices).forEach((v, i) => {
+              if (offset + i < expected && typeof v === 'number') out[offset + i] = v;
+            });
+            return out;
+          };
+          (((a.deform[skin.id] ??= {})[sid] ??= {})[attName] = timeline(keys, 1, valueOf, true)) as Timeline;
+        }
+      }
+    }
+    // draw order
+    if (Array.isArray(am.drawOrder)) {
+      a.drawOrder = arr(am.drawOrder).map(obj).map((k) => ({ time: num(k.time, 0), order: drawOrderFromOffsets(arr(k.offsets).map(obj)) }));
+    }
+    if (am.drawOrderFolder) warn(`animation "${an}": draw order folder timelines are not supported and were skipped`);
+    // events
+    a.events = arr(am.events).map(obj).filter((k) => eventByName.has(String(k.name))).map((k) => {
+      const key: any = { time: num(k.time, 0), event: eventByName.get(String(k.name))! };
+      if (typeof k.int === 'number') key.int = k.int;
+      if (typeof k.float === 'number') key.float = k.float;
+      if (typeof k.string === 'string') key.string = k.string;
+      return key;
+    });
+    a.duration = Math.max(animationEndTime(a), 1 / doc.fps);
+    return a;
+  }
+
+  function drawOrderFromOffsets(offsets: J[]): Id[] {
+    const n = doc.slots.length;
+    const order = new Array<number>(n).fill(-1);
+    const unchanged: number[] = [];
+    let original = 0;
+    for (const o of offsets) {
+      const si = doc.slots.findIndex((s) => s.name === o.slot);
+      if (si < 0) continue;
+      while (original !== si) unchanged.push(original++);
+      const target = original + num(o.offset, 0);
+      if (target >= 0 && target < n) order[target] = original;
+      original++;
+    }
+    while (original < n) unchanged.push(original++);
+    for (let i = n - 1; i >= 0; i--) if (order[i] === -1) order[i] = unchanged.pop() ?? i;
+    return order.map((i) => doc.slots[i].id);
+  }
+
+  // ----------------------------------------------------------- images (sizes come from the attachments)
+  const used = new Set<string>();
+  for (const skin of doc.skins) for (const slot of Object.values(skin.attachments)) for (const att of Object.values(slot)) {
+    const image = attachmentImage(att);
+    if (image) used.add(image);
+  }
+  project.images = [...used].map((p) => ({ id: uid(), name: p, width: imageSizes.get(p)?.width ?? 0, height: imageSizes.get(p)?.height ?? 0 }));
+  return { project, warnings };
+}
+
+function readAttachment(
+  skinName: string,
+  key: string,
+  m: J,
+  boneIds: Id[],
+  warn: (message: string) => void,
+  sizes: Map<string, { width: number; height: number }>,
+  slotId: (name: string) => Id | null,
+): Attachment | 'linked' | null {
+  const type = str(m.type, 'region');
+  const name = str(m.name, key);
+  const path = str(m.path, name);
+  const color = rgba(m.color, [1, 1, 1, 1]);
+  if (m.sequence) warn(`attachment "${key}": sequences are not supported`);
+  if (type === 'region') {
+    const width = num(m.width, 0);
+    const height = num(m.height, 0);
+    if (!sizes.has(path)) sizes.set(path, { width, height });
+    return { type: 'region', name, path, x: num(m.x, 0), y: num(m.y, 0), rotation: num(m.rotation, 0), scaleX: num(m.scaleX, 1), scaleY: num(m.scaleY, 1), width, height, color };
+  }
+  if (type === 'linkedmesh') return 'linked';
+  if (type === 'mesh') {
+    const uvs = arr(m.uvs).map((v) => num(v, 0));
+    const vertexCount = uvs.length / 2;
+    const vertices = arr(m.vertices).map((v) => num(v, 0));
+    const width = num(m.width, 0);
+    const height = num(m.height, 0);
+    if (!sizes.has(path)) sizes.set(path, { width, height });
+    const mesh: MeshAttachment = {
+      type: 'mesh',
+      name,
+      path,
+      color,
+      width,
+      height,
+      uvs,
+      triangles: arr(m.triangles).map((v) => num(v, 0)),
+      hull: num(m.hull, vertexCount),
+      edges: arr(m.edges).map((v) => num(v, 0)),
+      vertices: [],
+      weights: null,
+    };
+    const data = readVertices(vertices, uvs.length, boneIds);
+    mesh.vertices = data.vertices;
+    mesh.weights = data.weights;
+    return mesh;
+  }
+  if (type === 'point') return { type: 'point', name, x: num(m.x, 0), y: num(m.y, 0), rotation: num(m.rotation, 0), color: rgba(m.color, DEFAULT_POINT_COLOR) };
+  if (type === 'boundingbox' || type === 'clipping') {
+    const count = Math.max(0, Math.floor(num(m.vertexCount, 0)));
+    const data = readVertices(
+      arr(m.vertices).map((v) => num(v, 0)),
+      count * 2,
+      boneIds,
+    );
+    if (type === 'boundingbox') return { type, name, color: rgba(m.color, DEFAULT_BOUNDING_BOX_COLOR), ...data };
+    const end = typeof m.end === 'string' ? slotId(m.end) : null;
+    if (typeof m.end === 'string' && !end) warn(`clipping "${key}": the end slot "${m.end}" does not exist; it clips until the end of the draw order`);
+    return { type, name, color: rgba(m.color, DEFAULT_CLIPPING_COLOR), end, convex: bool(m.convex, false), inverse: bool(m.inverse, false), ...data };
+  }
+  warn(`skin "${skinName}": ${type} attachment "${key}" is not supported and was skipped`);
+  return null;
+}
+
+/** Spine vertex array: plain x,y when its length is `plainLength`, otherwise `[count, (bone, x, y, weight)*]` per vertex. */
+function readVertices(vertices: number[], plainLength: number, boneIds: Id[]): { vertices: number[]; weights: Influence[][] | null } {
+  if (vertices.length === plainLength) return { vertices, weights: null };
+  const weights: Influence[][] = [];
+  for (let i = 0; i < vertices.length; ) {
+    const count = vertices[i++];
+    const list: Influence[] = [];
+    for (let k = 0; k < count && i + 3 < vertices.length + 1; k++, i += 4) {
+      const bone = boneIds[vertices[i]];
+      if (bone !== undefined) list.push([bone, vertices[i + 1], vertices[i + 2], vertices[i + 3]]);
+    }
+    weights.push(list);
+  }
+  return { vertices: [], weights };
+}

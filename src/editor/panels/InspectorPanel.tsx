@@ -1,0 +1,375 @@
+import { Bone as BoneIcon, BoxSelect, Crosshair, Diamond, Image as ImageIcon, Layers, Link2, Scissors, Triangle } from 'lucide-react';
+import { useState } from 'react';
+import type { ReactNode } from 'react';
+import { createTransformConstraint, PRESET_LABEL } from '@/store/transformActions';
+import type { TransformPreset } from '@/store/transformActions';
+import { INHERIT_MODES } from '@/core/model';
+import type { Animation, BlendMode, Id, Inherit, MeshAttachment, PointAttachment, PolygonAttachment, RGBA, RegionAttachment } from '@/core/model';
+import { BLEND_MODES, attachmentImage, polygonVertexCount } from '@/core/model';
+import { findKeyIndex } from '@/core/curve';
+import { deleteKeys, keySelectedBones, removeSkinImage, renameBone, renameSlot, setAnimationDuration, setAttachmentProps, setBonePose, setBoneProps, setFps, setSkinImage, setSlotAttachment, setSlotBone, setSlotColor, setSlotProps, setTool, currentAnimation } from '@/store/actions';
+import type { PoseProps } from '@/store/actions';
+import { docStore, useProject } from '@/store/doc';
+import { useUi } from '@/store/ui';
+import { getScene } from '../scene';
+import { Button, ColorSwatch, IconButton, NumberField, SelectField, TextField, Toggle } from '../ui/controls';
+import { ConvertToMeshGroup, MeshGroup } from './MeshInspector';
+import { ConstraintInspector } from './ConstraintInspector';
+
+function hasKeyAt(anim: Animation | undefined, boneId: Id, prop: 'rotate' | 'translate' | 'scale' | 'shear', time: number): boolean {
+  const keys = anim?.bones[boneId]?.[prop];
+  if (!keys || !keys.length) return false;
+  const i = findKeyIndex(keys, time + 1e-4);
+  return i >= 0 && Math.abs(keys[i].time - time) < 1e-4;
+}
+
+function PropRow(props: { label: string; children: ReactNode; keyBtn?: ReactNode }) {
+  return (
+    <div style={{ display: 'grid', gridTemplateColumns: '62px 1fr 24px', gap: 6, alignItems: 'center', marginBottom: 6 }}>
+      <span style={{ color: 'var(--muted)' }}>{props.label}</span>
+      <div style={{ display: 'grid', gridTemplateColumns: `repeat(${Array.isArray(props.children) ? props.children.length : 1}, 1fr)`, gap: 6 }}>{props.children}</div>
+      <span>{props.keyBtn}</span>
+    </div>
+  );
+}
+
+function KeyBtn({ on, onClick, title }: { on: boolean; onClick: () => void; title: string }) {
+  return (
+    <button className={`key-btn${on ? ' on' : ''}`} onClick={onClick} title={title}>
+      <Diamond size={11} fill={on ? 'currentColor' : 'none'} strokeWidth={2.2} />
+    </button>
+  );
+}
+
+function BoneInspector({ id }: { id: Id }) {
+  const project = useProject();
+  const selectedIds = useUi((s) => s.selection.bones);
+  const mode = useUi((s) => s.mode);
+  const time = useUi((s) => s.time);
+  useUi((s) => s.overrides);
+  const doc = project.skeleton;
+  const bone = doc.bones.find((b) => b.id === id);
+  const anim = currentAnimation();
+  if (!bone) return null;
+  const animate = mode === 'animate';
+  const sb = getScene().skeleton.boneById(id);
+  const pose: Required<PoseProps> = animate && sb ? { x: sb.x, y: sb.y, rotation: sb.rotation, scaleX: sb.scaleX, scaleY: sb.scaleY, shearX: sb.shearX, shearY: sb.shearY } : { x: bone.x, y: bone.y, rotation: bone.rotation, scaleX: bone.scaleX, scaleY: bone.scaleY, shearX: bone.shearX, shearY: bone.shearY };
+  const set = (props: PoseProps) => setBonePose([{ id, props }], 'Edit bone');
+  const keyed = (p: 'rotate' | 'translate' | 'scale' | 'shear') => animate && hasKeyAt(anim, id, p, time);
+  const keyBtn = (p: 'rotate' | 'translate' | 'scale' | 'shear', label: string) =>
+    animate ? (
+      <KeyBtn
+        on={keyed(p)}
+        title={`${keyed(p) ? 'Remove' : 'Set'} ${label} key at the playhead`}
+        onClick={() => (keyed(p) ? deleteKeys([{ kind: 'bone', target: id, prop: p, time }]) : keySelectedBones([p]))}
+      />
+    ) : undefined;
+
+  return (
+    <>
+      <div className="group">
+        <div className="group-title">
+          <BoneIcon size={14} />
+          <span>Bone</span>
+          <span className="spacer" />
+          {animate && <span className="chip" style={{ color: 'var(--animate)' }}>animating</span>}
+        </div>
+        <TextField value={bone.name} onCommit={(v) => renameBone(id, v)} wide />
+      </div>
+      <div className="group">
+        <div className="group-title">
+          <span>Transform</span>
+          <span className="spacer" />
+          {animate && (
+            <button className="btn ghost" style={{ height: 22, padding: '0 6px' }} onClick={() => keySelectedBones()} title="Key all transform channels">
+              Key all
+            </button>
+          )}
+        </div>
+        <PropRow label="Rotation" keyBtn={keyBtn('rotate', 'rotation')}>
+          <NumberField label="°" value={pose.rotation} step={1} keyed={keyed('rotate')} onChange={(v) => set({ rotation: v })} />
+        </PropRow>
+        <PropRow label="Position" keyBtn={keyBtn('translate', 'translate')}>
+          <NumberField label="X" value={pose.x} step={1} keyed={keyed('translate')} onChange={(v) => set({ x: v })} />
+          <NumberField label="Y" value={pose.y} step={1} keyed={keyed('translate')} onChange={(v) => set({ y: v })} />
+        </PropRow>
+        <PropRow label="Scale" keyBtn={keyBtn('scale', 'scale')}>
+          <NumberField label="X" value={pose.scaleX} step={0.01} precision={3} keyed={keyed('scale')} onChange={(v) => set({ scaleX: v })} />
+          <NumberField label="Y" value={pose.scaleY} step={0.01} precision={3} keyed={keyed('scale')} onChange={(v) => set({ scaleY: v })} />
+        </PropRow>
+        <PropRow label="Shear" keyBtn={keyBtn('shear', 'shear')}>
+          <NumberField label="X" value={pose.shearX} step={1} keyed={keyed('shear')} onChange={(v) => set({ shearX: v })} />
+          <NumberField label="Y" value={pose.shearY} step={1} keyed={keyed('shear')} onChange={(v) => set({ shearY: v })} />
+        </PropRow>
+      </div>
+      <div className="group">
+        <div className="group-title">Bone setup</div>
+        <PropRow label="Length">
+          <NumberField label="L" value={bone.length} step={1} disabled={animate} onChange={(v) => setBoneProps(id, { length: Math.max(0, v) })} />
+        </PropRow>
+        <PropRow label="Inherit">
+          <SelectField value={bone.inherit} options={INHERIT_MODES.map((m) => ({ value: m, label: m.replace(/([A-Z])/g, ' $1').toLowerCase() }))} onChange={(v: Inherit) => setBoneProps(id, { inherit: v })} />
+        </PropRow>
+        <PropRow label="Color">
+          <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+            <ColorSwatch value={bone.color} onChange={(rgb) => setBoneProps(id, { color: [rgb[0], rgb[1], rgb[2], 1] }, 'Bone color')} />
+            <span className="hint-text">editor only</span>
+          </div>
+        </PropRow>
+      </div>
+      {!animate && <TransformCreate boneIds={selectedIds} />}
+    </>
+  );
+}
+
+function TransformCreate({ boneIds }: { boneIds: Id[] }) {
+  const project = useProject();
+  const [source, setSource] = useState<Id>('');
+  const [preset, setPreset] = useState<TransformPreset>('rotation');
+  const bones = project.skeleton.bones.filter((b) => !boneIds.includes(b.id));
+  const src = bones.some((b) => b.id === source) ? source : (bones[0]?.id ?? '');
+  return (
+    <div className="group">
+      <div className="group-title">
+        <Link2 size={14} color="#b38cff" />
+        <span>Transform constraint</span>
+      </div>
+      <p className="hint-text" style={{ margin: '0 0 8px' }}>
+        Make {boneIds.length > 1 ? 'these bones' : 'this bone'} follow another bone's rotation, position or scale (Spine 4.3 mappings).
+      </p>
+      <PropRow label="Follow">
+        <SelectField value={src} options={bones.map((b) => ({ value: b.id, label: b.name }))} onChange={setSource} />
+      </PropRow>
+      <PropRow label="Preset">
+        <SelectField value={preset} options={(Object.keys(PRESET_LABEL) as TransformPreset[]).map((p) => ({ value: p, label: PRESET_LABEL[p] }))} onChange={setPreset} />
+      </PropRow>
+      <Button icon={Link2} onClick={() => createTransformConstraint(boneIds, src, preset)} disabled={!src}>
+        Create constraint
+      </Button>
+    </div>
+  );
+}
+
+function SlotInspector({ slotId, attachmentName }: { slotId: Id; attachmentName: string | null }) {
+  const project = useProject();
+  const mode = useUi((s) => s.mode);
+  const skinId = useUi((s) => s.skinId); // every hook goes above the early return: undo can remove the selected slot between two renders
+  const doc = project.skeleton;
+  const slot = doc.slots.find((s) => s.id === slotId);
+  if (!slot) return null;
+  const atts = doc.skins[0]?.attachments[slotId] ?? {};
+  const att = attachmentName ? atts[attachmentName] : undefined;
+  const animate = mode === 'animate';
+  const sk = getScene().skeleton.slotById(slotId);
+  const color = animate && sk ? sk.color : slot.color;
+  const current = animate && sk ? sk.attachmentName : slot.attachment;
+  const attOptions = [{ value: '', label: '— none —' }, ...Object.keys(atts).map((n) => ({ value: n, label: n }))];
+  const activeSkin = skinId && skinId !== doc.skins[0]?.id ? doc.skins.find((s) => s.id === skinId) : undefined;
+
+  return (
+    <>
+      <div className="group">
+        <div className="group-title">
+          <Layers size={14} />
+          <span>Slot</span>
+        </div>
+        <TextField value={slot.name} onCommit={(v) => renameSlot(slotId, v)} wide />
+      </div>
+      <div className="group">
+        <PropRow label="Bone">
+          <SelectField value={slot.bone} options={doc.bones.map((b) => ({ value: b.id, label: b.name }))} onChange={(v) => setSlotBone(slotId, v)} />
+        </PropRow>
+        <PropRow label={att && attachmentImage(att) === null ? 'Shape' : 'Image'} keyBtn={animate ? <KeyBtn on={false} title="Key attachment" onClick={() => setSlotAttachment(slotId, current)} /> : undefined}>
+          <SelectField value={current ?? ''} options={attOptions} onChange={(v) => setSlotAttachment(slotId, v || null)} />
+        </PropRow>
+        {activeSkin && att && attachmentImage(att) !== null && (
+          <PropRow label="In skin">
+            <SelectField
+              value={(activeSkin.attachments[slotId]?.[att.name] && attachmentImage(activeSkin.attachments[slotId][att.name])) || ''}
+              options={[{ value: '', label: `default (${attachmentImage(att)})` }, ...project.images.map((i) => ({ value: i.name, label: i.name }))]}
+              onChange={(v) => (v ? setSkinImage(activeSkin.id, slotId, att.name, v) : removeSkinImage(activeSkin.id, slotId, att.name))}
+            />
+          </PropRow>
+        )}
+        <PropRow label="Blend">
+          <SelectField value={slot.blend} options={BLEND_MODES.map((b) => ({ value: b, label: b }))} onChange={(v: BlendMode) => setSlotProps(slotId, { blend: v }, 'Blend mode')} />
+        </PropRow>
+        <PropRow label="Tint" keyBtn={animate ? <KeyBtn on={false} title="Key color" onClick={() => setSlotColor(slotId, [color[0], color[1], color[2], color[3]])} /> : undefined}>
+          <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+            <ColorSwatch value={color} onChange={(rgb) => setSlotColor(slotId, [rgb[0], rgb[1], rgb[2], color[3]])} />
+            <NumberField label="A" value={color[3]} step={0.01} precision={2} min={0} max={1} onChange={(v) => setSlotColor(slotId, [color[0], color[1], color[2], v])} />
+          </div>
+        </PropRow>
+      </div>
+      {att && att.type === 'region' && <RegionInspector slotId={slotId} att={att} disabled={animate} />}
+      {att && att.type === 'region' && !animate && <ConvertToMeshGroup slotId={slotId} name={att.name} />}
+      {att && att.type === 'mesh' && <MeshGroup slotId={slotId} att={att} />}
+      {att && (att.type === 'clipping' || att.type === 'boundingbox') && <PolygonInspector slotId={slotId} att={att} disabled={animate} />}
+      {att && att.type === 'point' && <PointInspector slotId={slotId} att={att} disabled={animate} />}
+    </>
+  );
+}
+
+function ColorRow({ label, color, disabled, onChange }: { label: string; color: RGBA; disabled?: boolean; onChange: (c: RGBA) => void }) {
+  return (
+    <PropRow label={label}>
+      <div style={{ display: 'flex', gap: 6, alignItems: 'center', opacity: disabled ? 0.5 : 1, pointerEvents: disabled ? 'none' : 'auto' }}>
+        <ColorSwatch value={color} onChange={(rgb) => onChange([rgb[0], rgb[1], rgb[2], color[3]])} />
+        <NumberField label="A" value={color[3]} step={0.01} precision={2} min={0} max={1} disabled={disabled} onChange={(v) => onChange([color[0], color[1], color[2], v])} />
+      </div>
+    </PropRow>
+  );
+}
+
+/** Clipping polygons and bounding boxes: they are data for the runtime (a mask / a hit area), not images. */
+function PolygonInspector({ slotId, att, disabled }: { slotId: Id; att: PolygonAttachment; disabled: boolean }) {
+  const project = useProject();
+  const tool = useUi((s) => s.tool);
+  const doc = project.skeleton;
+  const set = (patch: Record<string, unknown>, label: string) => setAttachmentProps(slotId, att.name, patch, label);
+  const clip = att.type === 'clipping' ? att : null;
+  const slotOptions = [{ value: '', label: '— to the end of the draw order —' }, ...doc.slots.map((s) => ({ value: s.id, label: s.name }))];
+  const index = doc.slots.findIndex((s) => s.id === slotId);
+  const endIndex = clip?.end ? doc.slots.findIndex((s) => s.id === clip.end) : -1;
+  return (
+    <div className="group">
+      <div className="group-title">
+        {clip ? <Scissors size={14} /> : <BoxSelect size={14} />}
+        <span>{clip ? 'Clipping' : 'Bounding box'}</span>
+      </div>
+      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 8 }}>
+        <span className="chip">{polygonVertexCount(att)} vertices</span>
+        {att.weights && <span className="chip" style={{ color: 'var(--accent)' }}>weighted</span>}
+      </div>
+      {clip && (
+        <>
+          <PropRow label="End slot">
+            <SelectField value={clip.end ?? ''} options={slotOptions} onChange={(v) => !disabled && set({ end: v || null }, 'Clipping end slot')} />
+          </PropRow>
+          <PropRow label="Convex">
+            <Toggle on={clip.convex} onChange={(v) => !disabled && set({ convex: v }, 'Clipping convex')} title="Treat the polygon as convex (its convex hull is used when it is not)" />
+          </PropRow>
+          <PropRow label="Inverse">
+            <Toggle on={clip.inverse} onChange={(v) => !disabled && set({ inverse: v }, 'Clipping inverse')} title="Show everything outside the polygon instead of the inside" />
+          </PropRow>
+          <p className="hint-text" style={{ margin: '0 0 8px' }}>
+            Clips the slots below this one in the list{clip.end ? '' : ' up to the end of the draw order'}
+            {clip.end && endIndex >= 0 && endIndex <= index ? ' — the end slot is above this slot, so it has no effect' : ''}.
+          </p>
+        </>
+      )}
+      <ColorRow label="Color" color={att.color} disabled={disabled} onChange={(c) => set({ color: c }, 'Attachment color')} />
+      {!disabled && (
+        <Button primary={tool === 'mesh'} icon={Triangle} onClick={() => setTool('mesh')} title="Edit vertices (M)">
+          Edit vertices
+        </Button>
+      )}
+      <p className="hint-text" style={{ margin: '8px 0 0' }}>
+        Drag vertices · Ctrl-click or double-click an edge adds one · Del removes the selected vertices.
+      </p>
+    </div>
+  );
+}
+
+function PointInspector({ slotId, att, disabled }: { slotId: Id; att: PointAttachment; disabled: boolean }) {
+  const set = (patch: Partial<PointAttachment>) => setAttachmentProps(slotId, att.name, patch);
+  return (
+    <div className="group">
+      <div className="group-title">
+        <Crosshair size={14} />
+        <span>Point</span>
+      </div>
+      <PropRow label="Position">
+        <NumberField label="X" value={att.x} disabled={disabled} onChange={(v) => set({ x: v })} />
+        <NumberField label="Y" value={att.y} disabled={disabled} onChange={(v) => set({ y: v })} />
+      </PropRow>
+      <PropRow label="Rotation">
+        <NumberField label="°" value={att.rotation} disabled={disabled} onChange={(v) => set({ rotation: v })} />
+      </PropRow>
+      <ColorRow label="Color" color={att.color} disabled={disabled} onChange={(c) => set({ color: c })} />
+    </div>
+  );
+}
+
+function RegionInspector({ slotId, att, disabled }: { slotId: Id; att: RegionAttachment; disabled: boolean }) {
+  const set = (patch: Partial<RegionAttachment>) => setAttachmentProps(slotId, att.name, patch);
+  return (
+    <div className="group">
+      <div className="group-title">
+        <ImageIcon size={14} />
+        <span>Region · {att.path}</span>
+      </div>
+      <PropRow label="Position">
+        <NumberField label="X" value={att.x} disabled={disabled} onChange={(v) => set({ x: v })} />
+        <NumberField label="Y" value={att.y} disabled={disabled} onChange={(v) => set({ y: v })} />
+      </PropRow>
+      <PropRow label="Rotation">
+        <NumberField label="°" value={att.rotation} disabled={disabled} onChange={(v) => set({ rotation: v })} />
+      </PropRow>
+      <PropRow label="Scale">
+        <NumberField label="X" value={att.scaleX} step={0.01} precision={3} disabled={disabled} onChange={(v) => set({ scaleX: v })} />
+        <NumberField label="Y" value={att.scaleY} step={0.01} precision={3} disabled={disabled} onChange={(v) => set({ scaleY: v })} />
+      </PropRow>
+      <PropRow label="Size">
+        <NumberField label="W" value={att.width} disabled={disabled} onChange={(v) => set({ width: Math.max(1, v) })} />
+        <NumberField label="H" value={att.height} disabled={disabled} onChange={(v) => set({ height: Math.max(1, v) })} />
+      </PropRow>
+      <PropRow label="Color">
+        <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+          <ColorSwatch value={att.color} onChange={(rgb) => set({ color: [rgb[0], rgb[1], rgb[2], att.color[3]] })} />
+          <NumberField label="A" value={att.color[3]} step={0.01} min={0} max={1} onChange={(v) => set({ color: [att.color[0], att.color[1], att.color[2], v] })} />
+        </div>
+      </PropRow>
+    </div>
+  );
+}
+
+export function InspectorPanel() {
+  const selection = useUi((s) => s.selection);
+  const project = useProject();
+  const mode = useUi((s) => s.mode);
+  const doc = project.skeleton;
+  const anim = currentAnimation();
+  const showBone = selection.bones.length > 0 && !(selection.slot && selection.attachment) && !selection.constraint;
+
+  return (
+    <div className="panel grow">
+      <div className="panel-head">
+        <span className="title">Inspector</span>
+        {selection.bones.length > 1 && <span className="chip">{selection.bones.length} bones</span>}
+      </div>
+      <div className="panel-body">
+        {selection.constraint && <ConstraintInspector id={selection.constraint} />}
+        {showBone && <BoneInspector id={selection.bones[0]} />}
+        {selection.slot && <SlotInspector slotId={selection.slot} attachmentName={selection.attachment} />}
+        {!showBone && !selection.slot && !selection.constraint && (
+          <>
+            <div className="group">
+              <div className="group-title">Skeleton</div>
+              <TextField value={doc.name} onCommit={(v) => docStore.update('Rename skeleton', (d) => void (d.skeleton.name = v.trim() || d.skeleton.name))} wide />
+              <div style={{ height: 6 }} />
+              <PropRow label="FPS">
+                <NumberField label="fps" value={doc.fps} step={1} precision={0} min={1} max={240} onChange={(v) => setFps(v)} />
+              </PropRow>
+            </div>
+            {mode === 'animate' && anim && (
+              <div className="group">
+                <div className="group-title">Animation · {anim.name}</div>
+                <PropRow label="Length">
+                  <NumberField label="s" value={anim.duration} step={0.05} precision={3} min={0.05} onChange={(v) => setAnimationDuration(anim.id, v)} />
+                </PropRow>
+              </div>
+            )}
+            <div className="empty">
+              Select a bone or an image in the viewport
+              <br />
+              to edit its properties.
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
+export { IconButton, Toggle };
