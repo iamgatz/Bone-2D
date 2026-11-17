@@ -12,6 +12,8 @@ export interface Settings {
   smoothing: boolean;
   /** The wheel zooms around the pointer; off zooms around the middle of the viewport. */
   zoomToMouse: boolean;
+  /** Show the welcome window when the editor starts with nothing to restore. */
+  showWelcome: boolean;
   /** Onion skin: frames shown before and after the playhead, and the frames between two of them. */
   onionBefore: number;
   onionAfter: number;
@@ -25,6 +27,7 @@ export const DEFAULT_SETTINGS: Settings = {
   viewportBg: [0.075, 0.082, 0.1],
   smoothing: true,
   zoomToMouse: true,
+  showWelcome: true,
   onionBefore: 2,
   onionAfter: 2,
   onionGap: 3,
@@ -45,6 +48,7 @@ export function readSettings(raw: string | null): Settings {
     if (isRgb(data.viewportBg)) out.viewportBg = data.viewportBg;
     if (typeof data.smoothing === 'boolean') out.smoothing = data.smoothing;
     if (typeof data.zoomToMouse === 'boolean') out.zoomToMouse = data.zoomToMouse;
+    if (typeof data.showWelcome === 'boolean') out.showWelcome = data.showWelcome;
     const whole = (v: unknown, lo: number, hi: number): v is number => typeof v === 'number' && Number.isInteger(v) && v >= lo && v <= hi;
     if (whole(data.onionBefore, 0, 6)) out.onionBefore = data.onionBefore;
     if (whole(data.onionAfter, 0, 6)) out.onionAfter = data.onionAfter;

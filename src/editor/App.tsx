@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Bone, BoxSelect, Download, Eye, FilePlus2, FolderOpen, Grid3x3, Bell, Layers, ClipboardCopy, ClipboardPaste, Copy, FlipHorizontal2, RotateCcw, SlidersHorizontal, Image as ImageIcon, CircleHelp, MessageSquareText, Link2, Maximize, Play, Redo2, Save, Sparkles, Type, Undo2 } from 'lucide-react';
+import { Bone, BoxSelect, Download, Eye, FilePlus2, FolderOpen, Grid3x3, Bell, Home, Layers, ClipboardCopy, ClipboardPaste, Copy, FlipHorizontal2, RotateCcw, SlidersHorizontal, Image as ImageIcon, CircleHelp, MessageSquareText, Link2, Maximize, Play, Redo2, Save, Sparkles, Type, Undo2 } from 'lucide-react';
 import { decodeKey } from '@/core/keyrefs';
 import { clearSelection, copyKeys, deleteBones, deleteKeys, keySelectedBones, pasteKeys, sanitizeSelection, setMode, setSelection, setTime, setTool, togglePlay } from '@/store/actions';
 import { docStore, useProject } from '@/store/doc';
@@ -25,6 +25,8 @@ import { focusArea, setFocusArea } from './focus';
 import { hotkeyGroups, KEYS } from './hotkeys';
 import { HINTS, TOOLS, hotkeyOf, toolForKey } from './tools';
 import { SettingsDialog } from './Settings';
+import { WelcomeDialog } from './Welcome';
+import { settingsStore } from '@/store/settings';
 import { copyPose, duplicateSelection, pastePose, resetPose } from '@/store/poseActions';
 import { useSettings } from '@/store/settings';
 import { AnimationsPanel } from './panels/AnimationsPanel';
@@ -75,6 +77,7 @@ function TopBar() {
             <MenuItem icon={FolderOpen} close={close} onClick={() => openSpineImport()}>Import Spine JSON (4.0–4.3)…</MenuItem>
             <div className="menu-sep" />
             <MenuItem icon={Sparkles} close={close} onClick={() => loadSample()}>Load demo rig (Bolt)</MenuItem>
+            <MenuItem icon={Home} close={close} onClick={() => uiStore.patch({ welcomeOpen: true })}>Welcome screen</MenuItem>
           </>
         )}
       </Menu>
@@ -277,6 +280,7 @@ export function App() {
   const updatesOpen = useUi((s) => s.updatesOpen);
   const feedbackOpen = useUi((s) => s.feedbackOpen);
   const settingsOpen = useUi((s) => s.settingsOpen);
+  const welcomeOpen = useUi((s) => s.welcomeOpen);
   useLang(); // the whole tree re-renders when the language changes: strings are translated while rendering
 
   useEffect(() => {
@@ -285,7 +289,10 @@ export function App() {
     const stopLayout = startLayoutPersist();
     const stopSanitize = docStore.subscribe(sanitizeSelection); // undo / redo can remove what is selected
     restoreAutosave().then((ok) => {
-      if (!ok) setTimeout(() => viewportApi.frame(), 60);
+      if (!ok) {
+        setTimeout(() => viewportApi.frame(), 60);
+        if (settingsStore.get().showWelcome) uiStore.patch({ welcomeOpen: true });
+      }
     });
     const warn = (e: BeforeUnloadEvent) => {
       if (docStore.dirty) e.preventDefault();
@@ -467,6 +474,7 @@ export function App() {
       {updatesOpen && <UpdatesDialog />}
       {feedbackOpen && <FeedbackDialog />}
       {settingsOpen && <SettingsDialog />}
+      {welcomeOpen && <WelcomeDialog />}
       <Toast />
       <TooltipHost />
     </div>
