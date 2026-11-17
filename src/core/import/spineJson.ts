@@ -31,7 +31,7 @@ import {
   newSkin,
   newSlot,
 } from '../model';
-import type { Animation, Attachment, BlendMode, Bone, Constraint, Curve, Id, Influence, Key, MeshAttachment, PathTimelines, PhysicsTimelines, Project, RGB, RGBA, SequenceDef, SequenceMode, SkeletonDoc, Timeline, TransformFrom, TransformProp } from '../model';
+import type { Animation, Attachment, BlendMode, Bone, Constraint, Curve, EventDef, Id, Influence, Key, MeshAttachment, PathTimelines, PhysicsTimelines, Project, RGB, RGBA, SequenceDef, SequenceMode, SkeletonDoc, Timeline, TransformFrom, TransformProp } from '../model';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 type J = Record<string, any>;
@@ -394,8 +394,13 @@ export function importSpineJson(input: unknown, name = 'imported'): SpineImportR
     const e = obj(em);
     const id = uid();
     eventByName.set(en, id);
-    doc.events.push({ id, name: en, int: num(e.int, 0), float: num(e.float, 0), string: str(e.string, '') });
-    if (e.audio) warn(`event "${en}": audio is not supported and was dropped`);
+    const def: EventDef = { id, name: en, int: num(e.int, 0), float: num(e.float, 0), string: str(e.string, '') };
+    if (typeof e.audio === 'string' && e.audio) {
+      def.audio = e.audio;
+      def.volume = num(e.volume, 1);
+      def.balance = num(e.balance, 0);
+    }
+    doc.events.push(def);
   }
 
   // ----------------------------------------------------------- animations
@@ -593,6 +598,8 @@ export function importSpineJson(input: unknown, name = 'imported'): SpineImportR
       if (typeof k.int === 'number') key.int = k.int;
       if (typeof k.float === 'number') key.float = k.float;
       if (typeof k.string === 'string') key.string = k.string;
+      if (typeof k.volume === 'number') key.volume = k.volume;
+      if (typeof k.balance === 'number') key.balance = k.balance;
       return key;
     });
     a.duration = Math.max(animationEndTime(a), 1 / doc.fps);

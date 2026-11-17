@@ -60,6 +60,7 @@ $env:FUZZ_SEEDS='300'; $env:FUZZ_STEPS='100'; npx vitest run tests/fuzz.test.ts
 - **Hierarchy filter** by name, **Ctrl+H** shows everything hidden, **Ctrl+Shift+H** shows only the selection.
 - **Close the loop**: the end of an animation takes the value of its start, for seamless cycles.
 - **Sequences** (frame-by-frame pictures on a region or mesh) with all seven Spine modes, in the editor, the JSON / binary export and the import.
+- **Event sounds** (path, volume, balance) are edited in the Hierarchy and kept through the Spine export and import.
 - **Rulers, guides and snapping** to the grid and the guides (guides are saved in the project).
 - Keys copied from one bone **paste onto the selected bone**; Settings: bone size and hints.
 - **Texture packer**: strip whitespace, rotate, Linear / Nearest filter, padding, power-of-two, page size; export settings are remembered and can be saved to / loaded from a file.

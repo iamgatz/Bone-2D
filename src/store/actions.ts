@@ -784,7 +784,7 @@ export function createEvent(name?: string): Id {
   return id;
 }
 
-export function updateEvent(id: Id, patch: Partial<{ name: string; int: number; float: number; string: string }>) {
+export function updateEvent(id: Id, patch: Partial<{ name: string; int: number; float: number; string: string; audio: string; volume: number; balance: number }>) {
   const doc = skeletonDoc();
   docStore.update('Edit event', (d) => {
     const e = d.skeleton.events.find((x) => x.id === id);
@@ -793,6 +793,19 @@ export function updateEvent(id: Id, patch: Partial<{ name: string; int: number; 
     if (patch.int !== undefined) e.int = Math.round(patch.int);
     if (patch.float !== undefined) e.float = patch.float;
     if (patch.string !== undefined) e.string = patch.string;
+    if (patch.audio !== undefined) {
+      const path = patch.audio.trim();
+      if (path) e.audio = path;
+      else {
+        delete e.audio;
+        delete e.volume;
+        delete e.balance;
+      }
+    }
+    if (e.audio) {
+      if (patch.volume !== undefined) e.volume = Math.min(1, Math.max(0, patch.volume));
+      if (patch.balance !== undefined) e.balance = Math.min(1, Math.max(-1, patch.balance));
+    }
   });
 }
 
@@ -1052,7 +1065,14 @@ export function pasteKeys(time: number): KeyRef[] {
   docStore.update('Paste keys', (d) => {
     const a = d.skeleton.animations.find((x) => x.id === anim.id);
     if (!a) return;
-    for (const c of items) {
+    for (const original of items) {
+      let c = original;
+      // colour keys follow the target slot: two-colour keys need a dark colour there, and a two-colour slot keeps its kind of keys
+      if (c.kind === 'slot' && (c.prop === 'rgba' || c.prop === 'rgba2')) {
+        const dark = !!d.skeleton.slots.find((s) => s.id === c.target)?.dark;
+        if (c.prop === 'rgba2' && !dark) c = { ...c, prop: 'rgba', key: { ...c.key, value: (c.key.value as number[]).slice(0, 4) } };
+        else if (c.prop === 'rgba' && dark) continue;
+      }
       const t = snapTime(time + c.dt, fps);
       let keys = resolveKeys(a, c);
       if (!keys) {

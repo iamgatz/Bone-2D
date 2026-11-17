@@ -590,7 +590,11 @@ export function jsonToBinary(json: J): Uint8Array {
     body.varint(num(e.int, 0), false);
     body.float(num(e.float, 0));
     body.string(e.string ?? '');
-    body.string(null); // audio path
+    body.string(e.audio ?? null);
+    if (e.audio) {
+      body.float(num(e.volume, 1));
+      body.float(num(e.balance, 0));
+    }
   }
 
   // ----------------------------------------------------------- animations
@@ -874,6 +878,10 @@ export function jsonToBinary(json: J): Uint8Array {
       out2.varint(num(k.int, num(def.int, 0)), false);
       out2.float(num(k.float, num(def.float, 0)));
       out2.string(k.string ?? null);
+      if (def.audio) {
+        out2.float(num(k.volume, num(def.volume, 1)));
+        out2.float(num(k.balance, num(def.balance, 0)));
+      }
     }
 
     out.varint(count, true);

@@ -1862,3 +1862,7 @@ a.btn {
   background: var(--danger-soft);
   color: var(--danger-ink);
 }
+
+.event-edit {
+  padding: 4px 8px 8px 24px;
+}

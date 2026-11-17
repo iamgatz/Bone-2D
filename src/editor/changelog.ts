@@ -12,6 +12,12 @@ export interface Release {
 
 export const CHANGELOG: Release[] = [
   {
+    version: '0.23',
+    date: '2026-11-17',
+    en: ['Events: click an event in the Hierarchy to open it and set its default Int, Float and Text, and its Sound (the path of the sound file for the engine) with Volume and Balance. A key of the event in an animation can override the volume and balance. Sounds are kept in the Spine export (JSON and binary) and in the import, so Spine projects with sounds no longer lose them; the editor does not play them. Every event key of a sound is written with both numbers, because the official 4.3.13 JSON loader takes the volume of the definition as the default balance.', 'Pasting colour keys onto another slot: two-colour keys become plain colour keys when the slot has no dark colour.'],
+    ru: ['События: щёлкните по событию в иерархии, чтобы открыть его и задать значения по умолчанию (целое, дробное, текст) и звук (путь к файлу звука для движка) с громкостью и балансом. Ключ события в анимации может переопределить громкость и баланс. Звуки сохраняются в экспорте Spine (JSON и бинарном) и в импорте, так что проекты Spine со звуками больше их не теряют; редактор звук не проигрывает. Каждый ключ события со звуком пишется с обоими числами, потому что официальный загрузчик JSON 4.3.13 берёт громкость описания как баланс по умолчанию.', 'Вставка ключей цвета на другой слот: двухцветные ключи становятся обычными, если у слота нет тёмного цвета.'],
+  },
+  {
     version: '0.22',
     date: '2026-11-17',
     en: ['Rulers, guides and snapping (View menu, and two buttons in the viewport): rulers along the top and left show the scene units. Drag a guide out of a ruler (from the top one a horizontal line, from the left one a vertical line), drag a guide to move it, drag it back onto its ruler to take it away; Clear guides removes them all. Guides are saved with the project and are not part of the export. Snap puts new bones and moved bones on the grid, and on a guide when one is close.'],

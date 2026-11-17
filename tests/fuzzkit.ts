@@ -210,6 +210,7 @@ export const ops: Op[] = [
   { name: 'updateEvent', run: (c) => { const e = c.pick(doc().events); if (e) A.updateEvent(e.id, { name: c.pick(NAMES)!, int: c.num(-5, 5), float: c.num(-3, 3), string: c.pick(NAMES)! }); } },
   { name: 'deleteEvent', run: (c) => { const e = c.pick(doc().events); if (e) A.deleteEvent(e.id); } },
   { name: 'keyEvent', run: (c) => { const e = c.pick(doc().events); if (e) { A.setMode('animate'); A.keyEvent(e.id); } } },
+  { name: 'eventSound', run: (c) => { const e = c.pick(doc().events); if (!e) return; A.updateEvent(e.id, { audio: c.chance(0.2) ? '' : c.pick(['a.ogg', 'sfx/b.wav', 'c d.mp3'])!, volume: c.r(), balance: c.num(-1, 1) }); const a = A.currentAnimation(); if (a && a.events.length && c.chance(0.5)) docStore.update('fuzz event key', (d) => { const an = d.skeleton.animations.find((x) => x.id === a.id); const k = an ? c.pick(an.events) : undefined; if (k) { k.volume = c.r(); k.balance = c.num(-1, 1); } }); } },
   // ---- meshes and weights
   { name: 'convertToMesh', run: (c) => { const r = c.pick(regions()); if (r) M.convertToMesh(r.slotId, r.name, 'quad'); } },
   { name: 'addMeshVertex', run: (c) => { const m = c.pick(meshes()); if (!m) return; const { mats, slotMat } = M.setupMats(); const w = meshWorldPositions(M.getMesh(m.slotId, m.name)!, slotMat(m.slotId), mats); const i = Math.floor(c.r() * (w.length / 2)); M.addMeshVertex(m.slotId, m.name, w[i * 2] + c.num(-30, 30), w[i * 2 + 1] + c.num(-30, 30)); } },
