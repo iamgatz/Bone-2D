@@ -13,6 +13,7 @@ npm install
 npm run dev        # http://localhost:5273
 npm test           # unit-тесты + случайные сессии редактора, включая сравнение с официальным spine-core 4.3
 npm run build      # production-сборка в dist/
+npm run cli -- export project.bone2d out/   # данные скелета Spine без редактора (ещё: info, check; npm run cli -- help)
 ```
 
 Длинный прогон случайных сессий (`FUZZ_FROM` — с какого seed начать):

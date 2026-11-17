@@ -13,6 +13,7 @@ npm install
 npm run dev        # http://localhost:5273
 npm test           # unit tests + random editor sessions, including a comparison with the official spine-core 4.3
 npm run build      # production build into dist/
+npm run cli -- export project.bone2d out/   # Spine skeleton data without the editor (also: info, check; npm run cli -- help)
 ```
 
 A long run of random editor sessions (`FUZZ_FROM` is the first seed):
