@@ -251,6 +251,7 @@ export const ops: Op[] = [
   { name: 'unbindMeshFromBones', run: (c) => { const m = c.pick(meshes()); if (m) M.unbindMeshFromBones(m.slotId, m.name); } },
   { name: 'autoWeightMesh', run: (c) => { const m = c.pick(meshes()); if (m) M.autoWeightMesh(m.slotId, m.name); } },
   { name: 'pruneMeshWeights', run: (c) => { const m = c.pick(meshes()); if (m) M.pruneMeshWeights(m.slotId, m.name, c.num(0, 0.4), 1 + Math.floor(c.r() * 4)); } },
+  { name: 'removeBoneFromMesh', run: (c) => { const m = c.pick(meshes()); const w = m && M.getMesh(m.slotId, m.name)?.weights; if (m && w) M.removeBoneFromMesh(m.slotId, m.name, c.pick(w.flat())?.[0] ?? doc().bones[0].id); } },
   { name: 'updateMeshBindings', run: (c) => { const m = c.pick(meshes()); if (m) M.updateMeshBindings(m.slotId, m.name); } },
   { name: 'weldMeshWeights', run: (c) => { const m = c.pick(meshes()); const o = c.pick(meshes()); if (m && o) M.weldMeshWeights(m.slotId, m.name, o.slotId, o.name, c.chance(0.5) ? 'all' : 'overlapping'); } },
   { name: 'mirrorMeshWeights', run: (c) => { const m = c.pick(meshes()); if (m) M.mirrorMeshWeights(m.slotId, m.name, c.chance(0.5)); } },

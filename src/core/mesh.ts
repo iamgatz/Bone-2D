@@ -431,6 +431,29 @@ export function pruneWeights(weights: Influence[][], threshold = 0.05, max = 4, 
 }
 
 /**
+ * Remove (Spine's weights list): the mesh stops following `bone`. Its weight goes to the other bones of each vertex in proportion; a vertex
+ * that followed only that bone goes to `fallback` (the parent of the bone). The vertices stay where they are.
+ * Returns the new weights and how many vertices had the bone.
+ */
+export function removeBoneWeights(weights: Influence[][], world: ArrayLike<number>, bone: Id, fallback: Id | null, bones: BoneMats): { weights: Influence[][]; changed: number } {
+  let changed = 0;
+  const fb = fallback && fallback !== bone ? bones.get(fallback) : undefined;
+  const out = weights.map((list, i) => {
+    if (!list.some((e) => e[0] === bone)) return list;
+    const rest = list.filter((e) => e[0] !== bone && e[3] > 0);
+    if (rest.length) {
+      changed++;
+      return normalizeInfluences(rest.map((e) => [...e] as Influence));
+    }
+    if (!fb) return list; // nowhere to go: this vertex keeps the bone
+    changed++;
+    const p = matApply(matInvert(fb), world[i * 2], world[i * 2 + 1]);
+    return [[fallback!, p[0], p[1], 1] as Influence];
+  });
+  return { weights: out, changed };
+}
+
+/**
  * Update bindings (Spine's weights panel, "Update"): the bind positions stored per bone go stale when a bone was moved after binding, and
  * then every weight edit makes the vertices shift. This re-expresses the CURRENT world position of the vertices of `only` (all when missing)
  * in the space of each of their bones, so the bind pose is the pose the bones have now. The setup pose does not change.
