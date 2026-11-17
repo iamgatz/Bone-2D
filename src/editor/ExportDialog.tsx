@@ -16,6 +16,9 @@ export function ExportDialog() {
   const [padding, setPadding] = useState('2');
   const [pretty, setPretty] = useState(false);
   const [nonessential, setNonessential] = useState(true);
+  const [pot, setPot] = useState(true);
+  const [includePreview, setIncludePreview] = useState(true);
+  const [excluded, setExcluded] = useState<string[]>([]);
   const [tab, setTab] = useState<'data' | 'animation'>('data');
   const [busy, setBusy] = useState(false);
   const [result, setResult] = useState<ExportResult | null>(null);
@@ -26,14 +29,14 @@ export function ExportDialog() {
     if (tab !== 'data') return;
     setBusy(true);
     setError(null);
-    buildSpineExport({ maxSize: +maxSize, padding: +padding, pretty, nonessential })
+    buildSpineExport({ maxSize: +maxSize, padding: +padding, pretty, nonessential, pot, includePreview, excludeAnimations: excluded })
       .then((r) => alive && setResult(r))
       .catch((e: Error) => alive && (setError(e.message), setResult(null)))
       .finally(() => alive && setBusy(false));
     return () => {
       alive = false;
     };
-  }, [maxSize, padding, pretty, nonessential, tab]);
+  }, [maxSize, padding, pretty, nonessential, pot, includePreview, excluded, tab]);
 
   const close = () => uiStore.patch({ exportOpen: false });
   const base = (doc.name || 'skeleton').replace(/[^\w\-]+/g, '_');
@@ -88,7 +91,22 @@ export function ExportDialog() {
         <Toggle on={nonessential} onChange={setNonessential} title="Bone colors, fps, image path" />
         <label>Pretty JSON</label>
         <Toggle on={pretty} onChange={setPretty} />
+        <label>Power-of-two pages</label>
+        <Toggle on={pot} onChange={setPot} title="Atlas page sizes are powers of two" />
+        <label>Preview page</label>
+        <Toggle on={includePreview} onChange={setIncludePreview} title="A page that plays the export with the official Spine player" />
       </div>
+      {doc.animations.length > 0 && (
+        <div className="anim-pick">
+          <span className="section-label flush">Animations to export</span>
+          {doc.animations.map((a) => (
+            <label key={a.id} className="check">
+              <input type="checkbox" checked={!excluded.includes(a.id)} onChange={(e) => setExcluded(e.target.checked ? excluded.filter((x) => x !== a.id) : [...excluded, a.id])} />
+              <span>{a.name}</span>
+            </label>
+          ))}
+        </div>
+      )}
       <div className="card roomy">
         {busy && <span className="hint-text">Packing atlas…</span>}
         {error && <span className="danger-text">{error}</span>}

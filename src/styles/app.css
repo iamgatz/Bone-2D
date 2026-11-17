@@ -1581,3 +1581,24 @@ a.btn {
   justify-content: flex-end;
   margin-top: 12px;
 }
+.anim-pick {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+  align-items: center;
+  margin: 0 0 12px;
+}
+.anim-pick .section-label {
+  padding: 0;
+  width: 100%;
+}
+.check {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-dim);
+  cursor: pointer;
+}
+.check input {
+  accent-color: var(--accent);
+}

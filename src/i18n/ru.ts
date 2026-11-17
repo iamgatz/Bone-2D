@@ -808,4 +808,9 @@ export const RU: Record<string, string> = {
   'Render': 'Отрисовать',
   'Cancel': 'Отмена',
   'Animation exported': 'Анимация экспортирована',
+  'Power-of-two pages': 'Страницы атласа степени двойки',
+  'Atlas page sizes are powers of two': 'Размеры страниц атласа — степени двойки',
+  'Preview page': 'Страница предпросмотра',
+  'A page that plays the export with the official Spine player': 'Страница, которая играет экспорт официальным плеером Spine',
+  'Animations to export': 'Анимации для экспорта',
 };
