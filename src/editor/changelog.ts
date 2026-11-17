@@ -12,6 +12,12 @@ export interface Release {
 
 export const CHANGELOG: Release[] = [
   {
+    version: '0.29',
+    date: '2026-11-17',
+    en: ['Set Parent (Shift+P, Edit menu, command palette): select bones (or a slot), start it, then click the new parent bone in the viewport or in the tree. The bones stay where they are, a selected slot moves to the clicked bone, the whole change is one step in the history, Esc or a click on nothing cancels. In Spine it is the P key; here P is the Point tool, so the key is Shift+P (and can be moved in Settings).'],
+    ru: ['Назначить родителя (Shift+P, меню «Правка», палитра команд): выберите кости (или слот), запустите режим и кликните новую родительскую кость во вьюпорте или в дереве. Кости остаются на месте, выбранный слот переходит на кликнутую кость, всё это один шаг в истории, Esc или клик по пустому месту отменяют. В Spine это клавиша P, у нас P занята инструментом «Точка», поэтому Shift+P (клавишу можно поменять в Настройках).'],
+  },
+  {
     version: '0.28',
     date: '2026-11-17',
     en: ['Folders of images: drop a folder onto the Images window or the viewport (or use the new folder button of the Images window) and every picture in it is imported, subfolders included. The folders stay: "hero/arm/upper.png" is the picture "hero/arm/upper", shown in a folder of the Images window. Numbered files come in the natural order (frame2 before frame10). A whole folder is one step in the history. A folder dropped on the viewport only fills the Images window, it does not put a hundred slots on the scene.'],

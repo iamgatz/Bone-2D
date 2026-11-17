@@ -105,6 +105,8 @@ export interface UiState {
   settingsOpen: boolean;
   welcomeOpen: boolean;
   paletteOpen: boolean;
+  /** Set Parent is waiting for the click on the new parent bone. */
+  pickParent: boolean;
 }
 
 export const emptySelection: Selection = { bones: [], slot: null, attachment: null, constraint: null, vertices: [] };
@@ -144,6 +146,7 @@ export const uiStore = createStore<UiState>({
   settingsOpen: false,
   welcomeOpen: false,
   paletteOpen: false,
+  pickParent: false,
 });
 
 export function useUi<S>(selector: (s: UiState) => S, equals?: (a: S, b: S) => boolean): S {

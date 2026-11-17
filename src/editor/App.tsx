@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Bone, BoxSelect, Download, Eye, EyeOff, FilePlus2, FolderOpen, Grid3x3, Bell, Search, Home, Layers, ClipboardCopy, ClipboardPaste, Copy, FlipHorizontal2, RotateCcw, SlidersHorizontal, Image as ImageIcon, CircleHelp, MessageSquareText, Link2, Maximize, Play, Redo2, Route, Ruler, Magnet, Trash2, Save, Sparkles, Type, Undo2 } from 'lucide-react';
+import { Bone, BoxSelect, Download, Eye, EyeOff, FilePlus2, FolderOpen, Grid3x3, Bell, Search, Home, Layers, ClipboardCopy, ClipboardPaste, Copy, FlipHorizontal2, GitBranch, RotateCcw, SlidersHorizontal, Image as ImageIcon, CircleHelp, MessageSquareText, Link2, Maximize, Play, Redo2, Route, Ruler, Magnet, Trash2, Save, Sparkles, Type, Undo2 } from 'lucide-react';
 import { decodeKey } from '@/core/keyrefs';
 import { clearSelection, copyKeys, deleteBones, deleteKeys, keySelectedBones, pasteKeys, sanitizeSelection, setMode, setSelection, setTime, setTool, togglePlay } from '@/store/actions';
 import { docStore, useProject } from '@/store/doc';
@@ -29,6 +29,7 @@ import { SettingsDialog } from './Settings';
 import { WelcomeDialog } from './Welcome';
 import { Palette } from './Palette';
 import { settingsStore } from '@/store/settings';
+import { cancelSetParent, startSetParent } from '@/store/parentActions';
 import { copyPose, duplicateSelection, pastePose, resetPose } from '@/store/poseActions';
 import { clearGuides } from '@/store/guideActions';
 import { isolateSelection, showAll } from '@/store/visibilityActions';
@@ -107,6 +108,9 @@ function TopBar() {
             </MenuItem>
             <MenuItem icon={FlipHorizontal2} close={close} hotkey={KEYS.mirror} disabled={mode !== 'setup'} onClick={() => duplicateSelection(true)}>
               Mirror bones
+            </MenuItem>
+            <MenuItem icon={GitBranch} close={close} hotkey={KEYS.parent} disabled={mode !== 'setup'} onClick={() => startSetParent()}>
+              Set parent
             </MenuItem>
             <div className="menu-sep" />
             <MenuItem icon={Eye} close={close} hotkey={KEYS.showAll} onClick={() => showAll()}>
@@ -214,6 +218,7 @@ function Toolbox() {
 function ViewportHud() {
   useSettings((s) => s.keyMap);
   const tool = useUi((s) => s.tool);
+  const pickParent = useUi((s) => s.pickParent);
   const mode = useUi((s) => s.mode);
   const zoom = useUi((s) => s.camera.zoom);
   const project = useProject();
@@ -246,7 +251,7 @@ function ViewportHud() {
           </div>
         </div>
       )}
-      {HINTS[tool] && <div className="vp-hint">{HINTS[tool]}</div>}
+      {pickParent ? <div className="vp-hint">Click the new parent bone in the viewport or the tree · Esc cancels</div> : HINTS[tool] && <div className="vp-hint">{HINTS[tool]}</div>}
     </>
   );
 }
@@ -396,6 +401,7 @@ export function App() {
           }
           break;
         case 'escape':
+          if (cancelSetParent()) break;
           if (viewportApi.controller?.polygonTool.cancel() || viewportApi.controller?.pathTool.cancel()) break; // an unfinished polygon or path is dropped first
           clearSelection();
           uiStore.patch({ selectedKeys: [] });

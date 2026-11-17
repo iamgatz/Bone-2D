@@ -17,6 +17,7 @@ import { docStore } from '@/store/doc';
 import { addGuide, moveGuide, removeGuide } from '@/store/guideActions';
 import { settingsStore } from '@/store/settings';
 import { createIkFromDrag } from '@/store/ikActions';
+import { applyParent, cancelSetParent } from '@/store/parentActions';
 import { POLYGON_TOOLS, toast, uiStore } from '@/store/ui';
 import { getScene, getSetupSkeleton, screenToWorld } from '../scene';
 import { RULER } from './overlay';
@@ -128,6 +129,14 @@ export class ViewportController {
     const [wx, wy] = screenToWorld(cam, w, h, sx, sy);
     const scene = getScene();
     const blocked = this.blocked();
+
+    // Set Parent is waiting: the next click names the new parent (a click on nothing cancels)
+    if (ui.pickParent) {
+      const target = hitBone(scene, blocked, wx, wy, cam.zoom, 12);
+      if (target) applyParent(target.id);
+      else cancelSetParent();
+      return;
+    }
 
     // rulers: drag a guide out of the top (a horizontal line) or the left (a vertical line) ruler; drag a guide to move it, back onto a ruler to take it away
     if (ui.view.rulers) {

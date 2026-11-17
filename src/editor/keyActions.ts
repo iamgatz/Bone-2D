@@ -1,5 +1,6 @@
 import { keySelectedBones, setMode, setSelection, togglePlay } from '@/store/actions';
 import { docStore } from '@/store/doc';
+import { startSetParent } from '@/store/parentActions';
 import { duplicateSelection } from '@/store/poseActions';
 import { openProjectFile, saveProjectFile } from '@/store/project';
 import { uiStore } from '@/store/ui';
@@ -60,6 +61,10 @@ export const KEY_ACTIONS: Partial<Record<KeyId, (e: KeyboardEvent) => void>> = {
   isolate: (e) => {
     e.preventDefault();
     isolateSelection();
+  },
+  parent: (e) => {
+    e.preventDefault();
+    startSetParent();
   },
   frame: () => viewportApi.frame(),
   frameSelection: () => viewportApi.frameSelection(),
