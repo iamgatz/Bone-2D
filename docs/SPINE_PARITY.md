@@ -41,7 +41,7 @@
 | Bone creation options: Auto parent / Length | ✅ | — | |
 | Mesh tools: Edit mesh, Auto-trace, Hull, Triangulate, Generate | ✅ | Hull-edges, «Edit mesh outline», Smooth | P2 |
 | Mesh: Linked mesh, Sequence | ✅ | — (linked mesh: настоящая связь, общая деформация, другой слот / скин; создаётся через «В скине» и при импорте) | |
-| Weights: Bind, Auto, Brush, Smooth, Prune, Normalize, Mirror weights | ◐ Есть Bind, Auto, Brush, Smooth, Prune (лимит и порог), Mirror, Swap, Update bindings, Pies / Overlay / Selected, Weld (Overlapping / All; в Spine различие двух режимов не описано, значение выбрано нами), Lock, Feather у кисти, копия и вставка весов, работа на выбранных вершинах | порядок треугольников по списку костей, Remove у кости в списке, цвет кости в списке | P2 |
+| Weights: Bind, Auto, Brush, Smooth, Prune, Normalize, Mirror weights | ◐ Есть Bind, Auto, Brush, Smooth, Prune (лимит и порог), Mirror, Swap, Update bindings, Pies / Overlay / Selected, список костей с цветом и Remove, Weld (Overlapping / All; в Spine различие двух режимов не описано, значение выбрано нами), Lock, Feather у кисти, копия и вставка весов, работа на выбранных вершинах | порядок треугольников по списку костей (перетаскивание в списке) | P2 |
 | Snapping, rulers, guides, pixel grid | ❌ | снап к сетке, линейки | P3 |
 | Atlas → «Regions → Mesh», Tracing | ✅ | — | |
 | Zoom: 100 %, по скелету, по выделенному, zoom to mouse | ✅ F / Shift+F / Shift+Z, zoom to mouse в настройках | J / U (панорама-зум) | P3 |

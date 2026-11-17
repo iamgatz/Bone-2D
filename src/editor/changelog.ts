@@ -12,6 +12,12 @@ export interface Release {
 
 export const CHANGELOG: Release[] = [
   {
+    version: '0.35',
+    date: '2026-11-17',
+    en: ['Weights: the list of the bones a mesh follows (Inspector, Weights) shows each bone with its colour, the Lock toggle and a new Remove button. Remove makes the mesh stop following that bone: its weight goes to the other bones of each vertex in proportion, a vertex that followed only that bone goes to the parent bone, the vertices stay where they are. One step in the history.'],
+    ru: ['Веса: список костей, за которыми следует сетка (Инспектор, «Веса»), показывает каждую кость с её цветом, переключателем замка и новой кнопкой «Убрать». «Убрать» делает так, что сетка перестаёт следовать за костью: её вес переходит другим костям каждой вершины пропорционально, вершина, которая следовала только за ней, переходит на родительскую кость, сами вершины остаются на месте. Один шаг в истории.'],
+  },
+  {
     version: '0.34',
     date: '2026-11-17',
     en: ['Weights view like in Spine: Pies draws a pie chart of the weights on every vertex while the Weights tool is on (the selected vertices larger), Overlay fills the mesh with the colours of its bones instead of the brush-bone heat map, Selected limits the pies to the selected vertices and the vertices weighted to selected bones and shows the other bones black in the overlay. Every bone keeps its own colour.'],

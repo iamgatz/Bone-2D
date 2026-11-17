@@ -1,12 +1,13 @@
 import { useState } from 'react';
-import { ArrowLeftRight, Brush, ClipboardPaste, Copy, Crosshair, Lock, Unlock, FlipHorizontal2, Hexagon, Link2, RefreshCw, Scissors, Sparkles, Triangle, Unlink2, Waves } from 'lucide-react';
+import { ArrowLeftRight, Brush, ClipboardPaste, Copy, Crosshair, Lock, Unlock, FlipHorizontal2, Hexagon, Link2, RefreshCw, Scissors, Sparkles, Triangle, Unlink2, Waves, X } from 'lucide-react';
 import type { Id, MeshAttachment, Project } from '@/core/model';
 import { linkSource } from '@/core/links';
 import { linkMeshTo, setAttachmentProps, setLinkDeform, setTool, unlinkMesh } from '@/store/actions';
-import { autoWeightMesh, bindMeshToBones, convertToMesh, copyVertexWeights, pasteVertexWeights, mirrorMeshWeights, pruneMeshWeights, regenerateMesh, retriangulateMesh, smoothMeshWeights, swapMeshWeights, unbindMeshFromBones, updateMeshBindings, weldMeshWeights, weldTargets } from '@/store/meshActions';
+import { autoWeightMesh, bindMeshToBones, convertToMesh, copyVertexWeights, pasteVertexWeights, mirrorMeshWeights, pruneMeshWeights, regenerateMesh, removeBoneFromMesh, retriangulateMesh, smoothMeshWeights, swapMeshWeights, unbindMeshFromBones, updateMeshBindings, weldMeshWeights, weldTargets } from '@/store/meshActions';
 import { useProject } from '@/store/doc';
 import { uiStore, useUi } from '@/store/ui';
-import { Button, ColorSwatch, NumberField, SelectField, Toggle } from '../ui/controls';
+import { boneCss, boundBones } from '../viewport/weightColors';
+import { Button, ColorSwatch, IconButton, NumberField, SelectField, Toggle } from '../ui/controls';
 import { Field } from '../ui/Field';
 import { Section } from '../ui/Section';
 
@@ -103,6 +104,7 @@ export function MeshGroup({ slotId, att }: { slotId: Id; att: MeshAttachment }) 
   const swapFrom = influencing.includes(swapA) ? swapA : (influencing[0] ?? '');
   const swapTo = influencing.includes(swapB) && swapB !== swapFrom ? swapB : (influencing.find((b) => b !== swapFrom) ?? '');
   const welds = weighted && setup && !linked ? weldTargets(slotId, att.name) : [];
+  const bound = weighted ? boundBones(att.weights!, doc.bones.map((b) => b.id)) : [];
   const weld = welds[Number(weldPick)] ?? welds.find((w) => w.shared >= 2) ?? welds[0];
   const weldKey = String(welds.indexOf(weld));
 
@@ -221,14 +223,17 @@ export function MeshGroup({ slotId, att }: { slotId: Id; att: MeshAttachment }) 
                   Paste weights
                 </Button>
               </div>
-              <Field label="Lock">
-                <div className="hstack wrap">
+              <Field label="Bones">
+                <div className="stack" style={{ gap: 3, width: '100%' }}>
                   {influencing.map((id) => {
                     const on = brush.locked.includes(id);
                     return (
-                      <Button key={id} small ghost={!on} primary={on} icon={on ? Lock : Unlock} title="A locked bone keeps its weights while you paint" onClick={() => uiStore.patch({ brush: { ...brush, locked: on ? brush.locked.filter((x) => x !== id) : [...brush.locked, id] } })}>
-                        {boneName(id)}
-                      </Button>
+                      <div key={id} className="hstack" style={{ gap: 4 }}>
+                        <span style={{ width: 10, height: 10, borderRadius: 5, flex: 'none', background: boneCss(bound.indexOf(id)) }} />
+                        <span style={{ flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{boneName(id)}</span>
+                        <IconButton small active={on} icon={on ? Lock : Unlock} title="A locked bone keeps its weights while you paint" onClick={() => uiStore.patch({ brush: { ...brush, locked: on ? brush.locked.filter((x) => x !== id) : [...brush.locked, id] } })} />
+                        <IconButton small icon={X} title="The mesh stops following this bone; its weights go to the other bones of each vertex (or to the parent bone)" onClick={() => void removeBoneFromMesh(slotId, att.name, id)} />
+                      </div>
                     );
                   })}
                 </div>

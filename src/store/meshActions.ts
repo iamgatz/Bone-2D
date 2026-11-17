@@ -3,7 +3,7 @@ import { makeCurve, reconcileDeform, upsertKey } from '@/core/edit';
 import { RAD2DEG } from '@/core/math';
 import type { Mat } from '@/core/math';
 import { deformHome } from '@/core/links';
-import { adjacency, autoWeights, bindMesh, generateMeshFromImage, keepOutside, locateInMesh, meshFromRegion, meshWorldPositions, mirrorWeights, normalizeInfluences, pruneWeights, removeMeshVertices, setBoneWeight, smoothWeights, swapBoneWeights, triangulate, unbindMesh, updateBindings, weldWeights } from '@/core/mesh';
+import { adjacency, autoWeights, bindMesh, generateMeshFromImage, keepOutside, locateInMesh, meshFromRegion, meshWorldPositions, mirrorWeights, normalizeInfluences, pruneWeights, removeBoneWeights, removeMeshVertices, setBoneWeight, smoothWeights, swapBoneWeights, triangulate, unbindMesh, updateBindings, weldWeights } from '@/core/mesh';
 import { mirrorName } from '@/core/duplicate';
 import type { BoneMats, TraceOptions, VertexMap } from '@/core/mesh';
 import { matInvert } from '@/core/math';
@@ -329,6 +329,25 @@ export function swapMeshWeights(slotId: Id, name: string, a: Id, b: Id): number 
     return 0;
   }
   writeMesh(slotId, name, { ...mesh, weights: r.weights }, 'Swap weights');
+  return r.changed;
+}
+
+/** Remove (Spine's weights list): the mesh stops following one of its bones. Refused when every vertex would be left with nothing to follow. */
+export function removeBoneFromMesh(slotId: Id, name: string, bone: Id): number {
+  const mesh = getShapeMesh(slotId, name);
+  if (!mesh || !mesh.weights) return 0;
+  const doc = docStore.get().skeleton;
+  const fallback = doc.bones.find((b) => b.id === bone)?.parent ?? doc.slots.find((s) => s.id === slotId)?.bone ?? null;
+  const { mats, slotMat } = setupMats();
+  const r = removeBoneWeights(mesh.weights, meshWorldPositions(mesh, slotMat(slotId), mats), bone, fallback, mats);
+  if (!r.changed) {
+    toast('Nothing to remove: the mesh does not follow this bone');
+    return 0;
+  }
+  writeMesh(slotId, name, { ...mesh, weights: r.weights }, 'Remove bone from mesh');
+  const { brush } = uiStore.get();
+  if (brush.bone === bone || brush.locked.includes(bone)) uiStore.patch({ brush: { ...brush, bone: brush.bone === bone ? null : brush.bone, locked: brush.locked.filter((b) => b !== bone) } });
+  toast(`The mesh no longer follows the bone (${r.changed} vertices)`, 'ok');
   return r.changed;
 }
 
