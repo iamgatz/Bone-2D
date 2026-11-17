@@ -7,6 +7,7 @@ import { mirrorName } from '@/core/duplicate';
 import type { BoneMats, TraceOptions, VertexMap } from '@/core/mesh';
 import { matInvert } from '@/core/math';
 import type { Id, Influence, MeshAttachment, RegionAttachment } from '@/core/model';
+import { setupPicture } from '@/core/sequence';
 import { getScene, getSetupSkeleton } from '@/editor/scene';
 import { assets } from './assets';
 import { docStore } from './doc';
@@ -59,7 +60,7 @@ export function convertToMesh(slotId: Id, name: string, kind: 'trace' | 'quad' =
   let mesh: MeshAttachment;
   if (kind === 'quad') mesh = meshFromRegion(region);
   else {
-    const img = assets.getImageData(region.path);
+    const img = assets.getImageData(setupPicture(region) ?? region.path);
     mesh = img ? generateMeshFromImage(region, img.data, img.width, img.height, opts) : meshFromRegion(region);
   }
   mesh.region = { x: region.x, y: region.y, rotation: region.rotation, scaleX: region.scaleX, scaleY: region.scaleY, width: region.width, height: region.height };
@@ -78,8 +79,8 @@ export function regenerateMesh(slotId: Id, name: string, opts: TraceOptions) {
     return;
   }
   const r = mesh.region ?? { x: 0, y: 0, rotation: 0, scaleX: 1, scaleY: 1, width: mesh.width, height: mesh.height };
-  const region: RegionAttachment = { type: 'region', name: mesh.name, path: mesh.path, color: mesh.color, ...r };
-  const img = assets.getImageData(mesh.path);
+  const region: RegionAttachment = { type: 'region', name: mesh.name, path: mesh.path, color: mesh.color, ...r, ...(mesh.sequence ? { sequence: mesh.sequence } : {}) };
+  const img = assets.getImageData(setupPicture(mesh) ?? mesh.path);
   if (!img) return;
   const next = generateMeshFromImage(region, img.data, img.width, img.height, opts);
   next.region = mesh.region;

@@ -1858,3 +1858,7 @@ a.btn {
   color: var(--text);
   font-size: var(--fs-sm);
 }
+.chip.warn {
+  background: var(--danger-soft);
+  color: var(--danger-ink);
+}

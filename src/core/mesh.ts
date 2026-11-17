@@ -40,6 +40,7 @@ export function meshFromRegion(r: RegionAttachment): MeshAttachment {
     edges: [],
     vertices,
     weights: null,
+    ...(r.sequence ? { sequence: { ...r.sequence } } : {}),
   };
 }
 
@@ -355,6 +356,7 @@ export function generateMeshFromImage(region: RegionAttachment, rgba: ArrayLike<
     edges: [],
     vertices,
     weights: null,
+    ...(region.sequence ? { sequence: { ...region.sequence } } : {}),
   };
 }
 

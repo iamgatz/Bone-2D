@@ -8,6 +8,7 @@ import { animationEndTime } from './animate';
 import { normalizeBoneOrder } from './edit';
 import { uid, uniqueName } from './ids';
 import { deformLength } from './mesh';
+import { cleanSequence, cleanSequenceKey } from './sequence';
 import { repairPoses } from './poses';
 import {
   BLEND_MODES,
@@ -272,6 +273,12 @@ function attachmentProblem(att: Attachment, boneIds: Set<Id>, slotIds: Set<Id>, 
   if (!att || (att.type !== 'region' && att.type !== 'mesh')) return 'unknown type';
   if (!isString(att.name) || !isString(att.path)) return 'missing name or path';
   if (!validColor(att.color, 4)) att.color = [1, 1, 1, 1];
+  if (att.sequence !== undefined) {
+    const cleaned = cleanSequence(att.sequence);
+    const old = att.sequence as Partial<typeof cleaned> | null;
+    if (!old || typeof old !== 'object' || old.count !== cleaned.count || old.start !== cleaned.start || old.digits !== cleaned.digits || old.setupIndex !== cleaned.setupIndex) fixed(`${att.type} "${att.name}": its sequence was repaired`);
+    att.sequence = cleaned;
+  }
   if (att.type === 'region') {
     for (const k of ['x', 'y', 'rotation', 'scaleX', 'scaleY', 'width', 'height'] as const) if (!finite(att[k])) return `${k} is not a number`;
     return null;
@@ -600,6 +607,7 @@ function repairAnimations(doc: SkeletonDoc, note: Note) {
     }
 
     repairDeform(doc, a, skins, boneIds, note, where);
+    repairSequences(a, skins, note, where);
 
     for (const k of a.drawOrder) {
       const seen = new Set<Id>();
@@ -621,6 +629,47 @@ function repairAnimations(doc: SkeletonDoc, note: Note) {
       note(`${where}: duration was shorter than its last key`);
     }
   }
+}
+
+/** Sequence keys: only for a region or mesh that has a sequence, sorted, one key per time, every field a valid value. */
+function repairSequences(a: Animation, skins: Map<Id, SkeletonDoc['skins'][number]>, note: Note, where: string) {
+  if (a.sequence === undefined) return;
+  if (!a.sequence || typeof a.sequence !== 'object') {
+    delete a.sequence;
+    note(`${where}: invalid sequence timelines removed`);
+    return;
+  }
+  for (const skinId of Object.keys(a.sequence)) {
+    const skin = skins.get(skinId);
+    const perSkin = a.sequence[skinId];
+    if (!skin || !perSkin || typeof perSkin !== 'object') {
+      delete a.sequence[skinId];
+      note(`${where}: sequence timelines of a missing skin removed`);
+      continue;
+    }
+    for (const slotId of Object.keys(perSkin)) {
+      const perSlot = perSkin[slotId];
+      for (const name of Object.keys(perSlot ?? {})) {
+        const att = skin.attachments[slotId]?.[name] as Attachment | undefined;
+        const keys = perSlot[name];
+        if (!att || (att.type !== 'region' && att.type !== 'mesh') || !att.sequence || !Array.isArray(keys)) {
+          delete perSlot[name];
+          note(`${where}: sequence timeline of "${name}" removed (it has no sequence)`);
+          continue;
+        }
+        const cleaned = keys.filter((k) => k && typeof k === 'object' && finite(k.time) && k.time >= 0).map((k) => cleanSequenceKey(k));
+        cleaned.sort((x, y) => x.time - y.time);
+        const unique = cleaned.filter((k, i) => i === cleaned.length - 1 || Math.abs(cleaned[i + 1].time - k.time) > 1e-6);
+        const same = unique.length === keys.length && unique.every((k, i) => k.time === keys[i].time && k.mode === keys[i].mode && k.index === keys[i].index && k.delay === keys[i].delay);
+        if (!same) note(`${where}: sequence keys of "${name}" repaired`);
+        if (!same) perSlot[name] = unique;
+        if (unique.length === 0) delete perSlot[name];
+      }
+      if (!perSlot || Object.keys(perSlot).length === 0) delete perSkin[slotId];
+    }
+    if (Object.keys(perSkin).length === 0) delete a.sequence[skinId];
+  }
+  if (Object.keys(a.sequence).length === 0) delete a.sequence;
 }
 
 function repairDeform(doc: SkeletonDoc, a: Animation, skins: Map<Id, SkeletonDoc['skins'][number]>, boneIds: Set<Id>, note: Note, where: string) {

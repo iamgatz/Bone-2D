@@ -2,6 +2,7 @@
  * What is in a project, in numbers, and what looks forgotten: the Metrics window reads this. No DOM; the checks are cheap and only report, they never change the document.
  */
 import type { Animation, Attachment, Project } from './model';
+import { attachmentPictures } from './sequence';
 
 export interface Stats {
   bones: number;
@@ -21,7 +22,7 @@ export interface Stats {
   longest: number;
 }
 
-export type WarningKind = 'unusedImage' | 'emptyAnimation' | 'emptySlot' | 'tooManyInfluences' | 'duplicatePath';
+export type WarningKind = 'unusedImage' | 'emptyAnimation' | 'emptySlot' | 'tooManyInfluences' | 'duplicatePath' | 'missingFrame';
 
 export interface Warning {
   kind: WarningKind;
@@ -80,8 +81,10 @@ export function projectWarnings(project: Project): Warning[] {
   const seen = new Map<string, number>();
   for (const a of attachmentsOf(project)) {
     if (a.type === 'region' || a.type === 'mesh') {
-      used.add(a.path);
+      for (const picture of attachmentPictures(a)) used.add(picture);
       seen.set(a.path, (seen.get(a.path) ?? 0) + 1);
+      const have = new Set(project.images.map((i) => i.name));
+      if (a.sequence && attachmentPictures(a).some((p) => !have.has(p))) out.push({ kind: 'missingFrame', subject: a.name });
     }
     if (a.type === 'mesh' && a.weights?.some((w) => w.length > MAX_INFLUENCES)) out.push({ kind: 'tooManyInfluences', subject: a.name });
   }

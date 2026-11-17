@@ -46,10 +46,33 @@ export interface Slot {
   hidden: boolean;
 }
 
+/** The frames of a region or mesh that changes its picture over time (Spine's sequence). */
+export interface SequenceDef {
+  /** Number of frames (pictures). */
+  count: number;
+  /** The number of the first picture (the name is the path with this number added, zero padded to `digits`). */
+  start: number;
+  /** Zero padding of the number in the picture names. 0 for none. */
+  digits: number;
+  /** The frame that shows in the setup pose and while no sequence key is active. */
+  setupIndex: number;
+}
+
+export const SEQUENCE_MODES = ['hold', 'once', 'loop', 'pingpong', 'onceReverse', 'loopReverse', 'pingpongReverse'] as const;
+export type SequenceMode = (typeof SEQUENCE_MODES)[number];
+
+/** A sequence timeline key: from this time the frame is `index`, then advances by one every `delay` seconds the way `mode` says. */
+export interface SequenceKey {
+  time: number;
+  mode: SequenceMode;
+  index: number;
+  delay: number;
+}
+
 export interface RegionAttachment {
   type: 'region';
   name: string;
-  /** Image name used to look up the texture region. */
+  /** Image name used to look up the texture region (with a sequence: the start of the name of every frame). */
   path: string;
   x: number;
   y: number;
@@ -59,6 +82,8 @@ export interface RegionAttachment {
   width: number;
   height: number;
   color: RGBA;
+  /** Frame-by-frame pictures (see core/sequence.ts). */
+  sequence?: SequenceDef;
 }
 
 /** [bone id, bind x, bind y, weight]. Bind position is in the bone's setup-world local space. */
@@ -85,6 +110,8 @@ export interface MeshAttachment {
   weights: Influence[][] | null;
   /** Editor metadata: the region transform this mesh was generated from (used to re-trace). Not exported. */
   region?: { x: number; y: number; rotation: number; scaleX: number; scaleY: number; width: number; height: number };
+  /** Frame-by-frame pictures; every frame is a picture the uvs fit. */
+  sequence?: SequenceDef;
 }
 
 /** A single point + rotation in the slot bone's space (spawn points, muzzles …). Never drawn by runtimes. */
@@ -470,6 +497,8 @@ export interface Animation {
   physics: Record<Id, PhysicsTimelines>;
   /** skin id -> slot id -> attachment name -> keys; Key.value = per vertex deltas (x,y pairs; per influence for weighted meshes). */
   deform: Record<Id, Record<Id, Record<string, Timeline>>>;
+  /** skin id -> slot id -> attachment name -> sequence keys (only for a region or mesh that has a `sequence`). Absent in older projects. */
+  sequence?: Record<Id, Record<Id, Record<string, SequenceKey[]>>>;
   drawOrder: DrawOrderKey[];
   events: EventKey[];
 }

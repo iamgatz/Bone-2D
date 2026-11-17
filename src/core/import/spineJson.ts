@@ -8,6 +8,7 @@ import { animationEndTime } from '../animate';
 import { curveFromAbsolute } from '../curve';
 import { uid, uniqueName } from '../ids';
 import { deformLength } from '../mesh';
+import { attachmentPictures, cleanSequence, cleanSequenceKey, sequenceFrameNames } from '../sequence';
 import { isLegacySpineJson, upgradeLegacySpineJson } from './legacy';
 import {
   BLEND_MODES,
@@ -30,7 +31,7 @@ import {
   newSkin,
   newSlot,
 } from '../model';
-import type { Animation, Attachment, BlendMode, Bone, Constraint, Curve, Id, Influence, Key, MeshAttachment, PathTimelines, PhysicsTimelines, Project, RGB, RGBA, SkeletonDoc, Timeline, TransformFrom, TransformProp } from '../model';
+import type { Animation, Attachment, BlendMode, Bone, Constraint, Curve, Id, Influence, Key, MeshAttachment, PathTimelines, PhysicsTimelines, Project, RGB, RGBA, SequenceDef, SequenceMode, SkeletonDoc, Timeline, TransformFrom, TransformProp } from '../model';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 type J = Record<string, any>;
@@ -376,6 +377,9 @@ export function importSpineJson(input: unknown, name = 'imported'): SpineImportR
     }
     const path = str(l.map.path, str(l.map.name, l.key));
     const copy: MeshAttachment = { ...structuredClone(parent), name: str(l.map.name, l.key), path, color: rgba(l.map.color, [1, 1, 1, 1]) };
+    const ownSequence = readSequenceDef(l.map.sequence);
+    if (ownSequence) copy.sequence = ownSequence;
+    else delete copy.sequence;
     l.skin.attachments[l.slot][l.key] = copy;
     warn(`linked mesh "${l.key}" was imported as an independent mesh`);
   }
@@ -547,6 +551,18 @@ export function importSpineJson(input: unknown, name = 'imported'): SpineImportR
         if (!sid) continue;
         for (const [attName, tlMap] of Object.entries(obj(perSlot))) {
           const mesh = skin.attachments[sid]?.[attName];
+          const sequenceKeys = arr(obj(tlMap).sequence).map(obj);
+          if (sequenceKeys.length) {
+            if (mesh && (mesh.type === 'region' || mesh.type === 'mesh') && mesh.sequence) {
+              let lastDelay = 0;
+              const keys = sequenceKeys.map((k) => {
+                const delay = num(k.delay, lastDelay);
+                lastDelay = delay;
+                return cleanSequenceKey({ time: num(k.time, 0), mode: k.mode as SequenceMode, index: num(k.index, 0), delay });
+              });
+              (((a.sequence ??= {})[skin.id] ??= {})[sid] ??= {})[attName] = keys;
+            } else warn(`animation "${an}": sequence keys of "${attName}" were skipped (it has no sequence)`);
+          }
           const keys = arr(obj(tlMap).deform).map(obj);
           if (!keys.length) continue;
           if (!mesh || (mesh.type !== 'mesh' && mesh.type !== 'path')) {
@@ -604,11 +620,17 @@ export function importSpineJson(input: unknown, name = 'imported'): SpineImportR
   // ----------------------------------------------------------- images (sizes come from the attachments)
   const used = new Set<string>();
   for (const skin of doc.skins) for (const slot of Object.values(skin.attachments)) for (const att of Object.values(slot)) {
-    const image = attachmentImage(att);
-    if (image) used.add(image);
+    for (const picture of attachmentPictures(att)) used.add(picture);
   }
   project.images = [...used].map((p) => ({ id: uid(), name: p, width: imageSizes.get(p)?.width ?? 0, height: imageSizes.get(p)?.height ?? 0 }));
   return { project, warnings };
+}
+
+/** A sequence of the file (count, start 1, digits 0, setup 0), or undefined when the attachment has none. */
+function readSequenceDef(raw: unknown): SequenceDef | undefined {
+  if (!raw || typeof raw !== 'object') return undefined;
+  const s = raw as J;
+  return cleanSequence({ count: num(s.count, 1), start: num(s.start, 1), digits: num(s.digits, 0), setupIndex: num(s.setup, 0) });
 }
 
 function readAttachment(
@@ -624,12 +646,16 @@ function readAttachment(
   const name = str(m.name, key);
   const path = str(m.path, name);
   const color = rgba(m.color, [1, 1, 1, 1]);
-  if (m.sequence) warn(`attachment "${key}": sequences are not supported`);
+  const sequence = readSequenceDef(m.sequence);
+  /** Every frame of a sequence is a picture of the size of the attachment. */
+  const setSizes = (width: number, height: number) => {
+    for (const picture of sequence ? sequenceFrameNames(path, sequence) : [path]) if (!sizes.has(picture)) sizes.set(picture, { width, height });
+  };
   if (type === 'region') {
     const width = num(m.width, 0);
     const height = num(m.height, 0);
-    if (!sizes.has(path)) sizes.set(path, { width, height });
-    return { type: 'region', name, path, x: num(m.x, 0), y: num(m.y, 0), rotation: num(m.rotation, 0), scaleX: num(m.scaleX, 1), scaleY: num(m.scaleY, 1), width, height, color };
+    setSizes(width, height);
+    return { type: 'region', name, path, x: num(m.x, 0), y: num(m.y, 0), rotation: num(m.rotation, 0), scaleX: num(m.scaleX, 1), scaleY: num(m.scaleY, 1), width, height, color, ...(sequence ? { sequence } : {}) };
   }
   if (type === 'linkedmesh') return 'linked';
   if (type === 'mesh') {
@@ -638,7 +664,7 @@ function readAttachment(
     const vertices = arr(m.vertices).map((v) => num(v, 0));
     const width = num(m.width, 0);
     const height = num(m.height, 0);
-    if (!sizes.has(path)) sizes.set(path, { width, height });
+    setSizes(width, height);
     const mesh: MeshAttachment = {
       type: 'mesh',
       name,
@@ -652,6 +678,7 @@ function readAttachment(
       edges: arr(m.edges).map((v) => num(v, 0)),
       vertices: [],
       weights: null,
+      ...(sequence ? { sequence } : {}),
     };
     const data = readVertices(vertices, uvs.length, boneIds);
     mesh.vertices = data.vertices;

@@ -179,6 +179,31 @@ export function buildRows(doc: SkeletonDoc, anim: Animation | null, selectedBone
   }
   if (deformRows.length) rows.push({ id: 'g:deform', label: 'Deform', type: 'group', depth: 0, expandable: false, expanded: true, keys: [] }, ...deformRows);
 
+  // ---- sequences
+  const sequenceRows: Row[] = [];
+  for (const skinId in anim.sequence ?? {}) {
+    const skin = doc.skins.find((s) => s.id === skinId);
+    for (const slotId in anim.sequence![skinId]) {
+      const slot = doc.slots.find((s) => s.id === slotId);
+      for (const att in anim.sequence![skinId][slotId]) {
+        const keys = anim.sequence![skinId][slotId][att];
+        if (!keys.length) continue;
+        sequenceRows.push({
+          id: `sequence:${skinId}:${slotId}:${att}`,
+          label: `${slot?.name ?? '?'} / ${att}${skin && skin.name !== 'default' ? ` (${skin.name})` : ''}`,
+          type: 'entity',
+          depth: 1,
+          expandable: false,
+          expanded: false,
+          keys: keys.map((k) => ({ time: k.time, refs: [{ kind: 'sequence' as const, target: slotId, prop: deformProp(skinId, att), time: k.time }] })),
+          target: slot ? { kind: 'slot', id: slotId } : undefined,
+          tone: 'slot',
+        });
+      }
+    }
+  }
+  if (sequenceRows.length) rows.push({ id: 'g:sequence', label: 'Sequences', type: 'group', depth: 0, expandable: false, expanded: true, keys: [] }, ...sequenceRows);
+
   // ---- draw order / events
   if (anim.drawOrder.length || anim.events.length) {
     rows.push({ id: 'g:other', label: 'Draw order & events', type: 'group', depth: 0, expandable: false, expanded: true, keys: [] });

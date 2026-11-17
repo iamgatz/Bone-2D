@@ -2,8 +2,8 @@
  * The images of a project: which attachments use them, renaming (the name is the atlas region name, so every attachment that shows
  * the image follows), and folders — Spine groups images by the part of the name before the last "/" ("hero/arm").
  */
-import { attachmentImage } from './model';
 import type { Project, SkeletonDoc } from './model';
+import { attachmentPictures } from './sequence';
 
 /** The folder part of an image name ("hero/arm" -> "hero"), or "" for an image in the root. */
 export function folderOf(name: string): string {
@@ -22,8 +22,7 @@ export function imageUsage(doc: SkeletonDoc): Map<string, number> {
   for (const skin of doc.skins) {
     for (const slot of Object.values(skin.attachments)) {
       for (const att of Object.values(slot)) {
-        const image = attachmentImage(att);
-        if (image) uses.set(image, (uses.get(image) ?? 0) + 1);
+        for (const image of attachmentPictures(att)) uses.set(image, (uses.get(image) ?? 0) + 1);
       }
     }
   }
@@ -45,7 +44,20 @@ export function cleanImageName(raw: string): string {
     .join('/');
 }
 
-export type RenameResult = { ok: true; name: string } | { ok: false; reason: 'empty' | 'taken' | 'missing' };
+/** The name of an attachment whose sequence has this picture as a frame (its name is the path and a number, so it cannot be changed on its own), or null. */
+export function sequenceFrameOwner(doc: SkeletonDoc, image: string): string | null {
+  for (const skin of doc.skins) {
+    for (const slot of Object.values(skin.attachments)) {
+      for (const att of Object.values(slot)) {
+        if (att.type !== 'region' && att.type !== 'mesh') continue;
+        if (att.sequence && attachmentPictures(att).includes(image)) return att.name;
+      }
+    }
+  }
+  return null;
+}
+
+export type RenameResult = { ok: true; name: string } | { ok: false; reason: 'empty' | 'taken' | 'missing' | 'frame' };
 
 /**
  * Renames an image and points every attachment that shows it at the new name. Works on a draft. Refuses an empty name and a name that
@@ -58,11 +70,13 @@ export function renameImage(project: Project, from: string, rawTo: string): Rena
   if (!image) return { ok: false, reason: 'missing' };
   if (to === from) return { ok: true, name: to };
   if (project.images.some((i) => i.name === to)) return { ok: false, reason: 'taken' };
+  if (sequenceFrameOwner(project.skeleton, from)) return { ok: false, reason: 'frame' };
   image.name = to;
   for (const skin of project.skeleton.skins) {
     for (const slot of Object.values(skin.attachments)) {
       for (const att of Object.values(slot)) {
-        if ((att.type === 'region' || att.type === 'mesh') && att.path === from) att.path = to;
+        // (the path of a sequence is the start of the names of its frames, not a picture)
+        if ((att.type === 'region' || att.type === 'mesh') && att.path === from && !att.sequence) att.path = to;
       }
     }
   }

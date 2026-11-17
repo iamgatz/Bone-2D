@@ -12,6 +12,12 @@ export interface Release {
 
 export const CHANGELOG: Release[] = [
   {
+    version: '0.20',
+    date: '2026-11-17',
+    en: ['Sequences: a region or a mesh can show a different picture over time (smoke, fire, a blink drawn frame by frame). Number the pictures (flame01, flame02…), select the image and press Make a sequence in the Inspector: the numbered series is found and the frames are set. In Animate mode key the Mode (hold, once, loop, ping-pong and the backwards versions), the Frame and the Delay; the keys have their own Sequences rows in the dopesheet and move, copy and delete like any key. The Spine export (JSON and binary) and the import (JSON and binary) carry sequences, every frame goes into the atlas, and the tests compare the frame shown at every time with the official Spine 4.3 runtime. The Metrics window warns about missing frames.'],
+    ru: ['Последовательности: регион или меш может показывать разные картинки по времени (дым, огонь, моргание, нарисованное покадрово). Пронумеруйте картинки (flame01, flame02…), выберите изображение и нажмите «Сделать последовательность» в инспекторе: ряд картинок находится сам, кадры настраиваются. В режиме Animate ставьте ключи на «Режим» (держать, один раз, по кругу, туда-обратно и версии назад), «Кадр» и «Задержку»; у ключей своя строка «Последовательности» в таймлайне, их можно двигать, копировать и удалять как обычные. Экспорт Spine (JSON и бинарный) и импорт (JSON и бинарный) переносят последовательности, каждый кадр попадает в атлас, а тесты сверяют кадр на каждом времени с официальным рантаймом Spine 4.3. Окно «Сводка» предупреждает, если кадра не хватает.'],
+  },
+  {
     version: '0.19',
     date: '2026-11-17',
     en: ['Close the loop (Animation tools window and the command palette): makes the end of the animation the same as its start, so a walk or an idle repeats without a jump. Every number timeline gets the value of its first key on its last key (or the other way round), and one that ends early gets a key at the end. Works on the selected bones or on the whole animation.'],

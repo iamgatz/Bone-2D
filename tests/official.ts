@@ -2,7 +2,7 @@
 import * as spine from '@esotericsoftware/spine-core';
 import { packAtlas, writeAtlas } from '../src/core/export/atlas';
 import { exportSpineJson } from '../src/core/export/spineJson';
-import { attachmentImage } from '../src/core/model';
+import { attachmentPictures } from '../src/core/sequence';
 import type { Project } from '../src/core/model';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -44,8 +44,7 @@ export function usedImages(project: Project) {
   for (const skin of project.skeleton.skins) {
     for (const slot of Object.values(skin.attachments)) {
       for (const att of Object.values(slot)) {
-        const image = attachmentImage(att);
-        if (image) used.add(image);
+        for (const image of attachmentPictures(att)) used.add(image);
       }
     }
   }

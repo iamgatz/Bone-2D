@@ -14,9 +14,11 @@ import { bakeAnimation, constrainedBoneIndices, poseFrames } from '../src/core/b
 import { applyAnimation, applyPhysicsResets } from '../src/core/animate';
 import { exportSpineJson } from '../src/core/export/spineJson';
 import { deformProp } from '../src/core/keyrefs';
+import { resolveSequenceIndex, sequenceFrameNames } from '../src/core/sequence';
+import { uid } from '../src/core/ids';
 import type { KeyRef } from '../src/core/keyrefs';
 import { meshWorldPositions } from '../src/core/mesh';
-import { BLEND_MODES, GLOBAL_PHYSICS, INHERIT_MODES, PATH_POSITION_MODES, PATH_ROTATE_MODES, PATH_SPACING_MODES, PHYSICS_PARAMS, TRANSFORM_PROPS, pathNodeCount, polygonVertexCount } from '../src/core/model';
+import { SEQUENCE_MODES, BLEND_MODES, GLOBAL_PHYSICS, INHERIT_MODES, PATH_POSITION_MODES, PATH_ROTATE_MODES, PATH_SPACING_MODES, PHYSICS_PARAMS, TRANSFORM_PROPS, pathNodeCount, polygonVertexCount } from '../src/core/model';
 import type { Animation, Project } from '../src/core/model';
 import { compileSkeleton, createSkeleton, meshWorldVertices, pointWorld } from '../src/core/skeleton';
 import { validateProject } from '../src/core/validate';
@@ -30,6 +32,7 @@ import * as PH from '../src/store/physicsActions';
 import * as PO from '../src/store/poseActions';
 import * as P from '../src/store/polygonActions';
 import * as SL from '../src/store/sliderActions';
+import * as SQ from '../src/store/sequenceActions';
 import * as T from '../src/store/transformActions';
 import { emptySelection, uiStore } from '../src/store/ui';
 import { getScene } from '../src/editor/scene';
@@ -248,6 +251,31 @@ export const ops: Op[] = [
   { name: 'moveKeysOffset', run: (c) => { const a = A.currentAnimation(); if (!a) return; const refs = allKeyRefs(a); const k = c.pick(refs); if (k) A.moveKeysBy(refs.filter((r) => r.kind === k.kind && r.target === k.target && r.prop === k.prop && c.chance(0.5)).concat(k), c.num(-2, 2), false, true); } },
   { name: 'moveKeysRipple', run: (c) => { const a = A.currentAnimation(); if (!a) return; const refs = allKeyRefs(a); const k = c.pick(refs); if (k) A.moveKeysBy(refs.filter((r) => r.kind === k.kind && r.target === k.target && r.prop === k.prop && c.chance(0.4)).concat(k), c.num(-1, 1), true); } },
   { name: 'cleanUpKeys', run: () => { const a = A.currentAnimation(); if (a) A.cleanUpKeys(a.id); } },
+  { name: 'sequenceOn', run: (c) => {
+    const r = c.pick([...regions(), ...meshes()]);
+    if (!r) return;
+    const att = doc().skins[0].attachments[r.slotId][r.name];
+    if (att.type !== 'region' && att.type !== 'mesh') return;
+    const count = 2 + Math.floor(c.r() * 4);
+    const def = { count, start: c.pick([0, 1, 3])!, digits: c.pick([0, 2, 3])!, setupIndex: Math.floor(c.r() * count) };
+    // every frame is a picture the export has to find
+    docStore.update('fuzz frames', (d) => {
+      for (const n of sequenceFrameNames(att.path, def)) if (!d.images.some((i) => i.name === n)) d.images.push({ id: uid(), name: n, width: 16, height: 16 });
+    });
+    SQ.setSequence(r.slotId, r.name, def);
+  } },
+  { name: 'sequenceKey', run: (c) => {
+    const withSeq = [...regions(), ...meshes()].filter((r) => {
+      const a = doc().skins[0].attachments[r.slotId][r.name];
+      return (a.type === 'region' || a.type === 'mesh') && !!a.sequence;
+    });
+    const r = c.pick(withSeq);
+    if (!r) return;
+    A.setMode('animate');
+    A.setTime(Math.round(c.r() * 20) / 10);
+    SQ.keySequence(r.slotId, r.name, { mode: c.pick(SEQUENCE_MODES)!, index: Math.floor(c.r() * 6), delay: c.pick([0.04, 0.1, 0.0333, 0.25])! });
+  } },
+  { name: 'sequenceOff', run: (c) => { const withSeq = [...regions(), ...meshes()]; const r = c.pick(withSeq); if (r && c.chance(0.5)) SQ.setSequence(r.slotId, r.name, null); } },
   { name: 'closeLoop', run: (c) => { A.closeCurrentLoop(c.chance(0.7) ? 'first' : 'last', c.chance(0.3)); } },
   { name: 'deleteKeys', run: (c) => { const a = A.currentAnimation(); if (!a) return; const refs = allKeyRefs(a); A.deleteKeys(refs.filter(() => c.chance(0.15))); } },
   { name: 'setKeysCurve', run: (c) => { const a = A.currentAnimation(); if (!a) return; const refs = allKeyRefs(a).filter((r) => r.kind !== 'drawOrder' && r.kind !== 'event' && r.prop !== 'attachment'); const k = c.pick(refs); if (k) A.setKeysCurve([k], c.pick(['linear', 'stepped', 'bezier', [0.1, 0.2, 0.9, 0.8]] as const)! as 'linear'); } },
@@ -562,6 +590,13 @@ function colorMismatch(p: Project, ours: ReturnType<typeof createSkeleton>, offi
     const pairs: [string, number, number][] = [['color.r', slot.color[0], c.r], ['color.g', slot.color[1], c.g], ['color.b', slot.color[2], c.b], ['color.a', slot.color[3], c.a]];
     if (dk) pairs.push(['dark.r', slot.dark ? slot.dark[0] : NaN, dk.r], ['dark.g', slot.dark ? slot.dark[1] : NaN, dk.g], ['dark.b', slot.dark ? slot.dark[2] : NaN, dk.b]);
     else if (slot.dark) pairs.push(['dark (the official slot has none)', 1, 0]);
+    // the picture of a sequence the slot shows
+    const shown = os.appliedPose.attachment;
+    if (shown?.sequence?.hasPathSuffix()) {
+      const mine = ours.slotAttachment(slot);
+      const seq = mine && (mine.kind === 'region' || mine.kind === 'mesh') ? mine.src.sequence : undefined;
+      pairs.push([`sequence frame (ours: ${mine ? mine.kind + ' ' + mine.name : 'none'} seq=${JSON.stringify(seq)} idx=${slot.sequenceIndex}; official: ${shown.name} ${shown.sequence.regions.length} frames)`, seq ? resolveSequenceIndex(seq, slot.sequenceIndex) : NaN, shown.sequence.resolveIndex(os.appliedPose)]);
+    }
     for (const [what, x, y] of pairs) if (!(Math.abs(x - y) <= 1.5e-2)) return { bone: `slot "${os.data.name}"`, what, ours: x, official: y };
   }
   return null;
