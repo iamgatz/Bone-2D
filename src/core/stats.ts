@@ -22,7 +22,7 @@ export interface Stats {
   longest: number;
 }
 
-export type WarningKind = 'unusedImage' | 'emptyAnimation' | 'emptySlot' | 'tooManyInfluences' | 'duplicatePath' | 'missingFrame';
+export type WarningKind = 'unusedImage' | 'emptyAnimation' | 'emptySlot' | 'tooManyInfluences' | 'duplicatePath' | 'missingFrame' | 'ignoredDeform';
 
 export interface Warning {
   kind: WarningKind;
@@ -87,6 +87,18 @@ export function projectWarnings(project: Project): Warning[] {
       if (a.sequence && attachmentPictures(a).some((p) => !have.has(p))) out.push({ kind: 'missingFrame', subject: a.name });
     }
     if (a.type === 'mesh' && a.weights?.some((w) => w.length > MAX_INFLUENCES)) out.push({ kind: 'tooManyInfluences', subject: a.name });
+  }
+  // a linked mesh that shares the deform of its source is moved by the keys of the source: keys of its own are not exported
+  for (const anim of project.skeleton.animations) {
+    for (const [skinId, bySlot] of Object.entries(anim.deform)) {
+      const skin = project.skeleton.skins.find((k) => k.id === skinId);
+      for (const [slotId, byName] of Object.entries(bySlot)) {
+        for (const [name, keys] of Object.entries(byName)) {
+          const att = skin?.attachments[slotId]?.[name];
+          if (att?.type === 'mesh' && att.link?.deform && keys.length) out.push({ kind: 'ignoredDeform', subject: `${anim.name}: ${name}` });
+        }
+      }
+    }
   }
   for (const img of project.images) if (!used.has(img.name)) out.push({ kind: 'unusedImage', subject: img.name });
   for (const anim of project.skeleton.animations) if (countKeys(anim) === 0) out.push({ kind: 'emptyAnimation', subject: anim.name });

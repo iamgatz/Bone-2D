@@ -14,6 +14,7 @@ import { deformHome, linkSource, linkedTo, makeLink, syncLinkedMeshes } from '..
 import { newAnimation, newSkin, newSlot } from '../src/core/model';
 import type { Animation, MeshAttachment, Project } from '../src/core/model';
 import { compileSkeleton, createSkeleton, meshWorldVertices } from '../src/core/skeleton';
+import { projectWarnings } from '../src/core/stats';
 import { repairProject, validateProject } from '../src/core/validate';
 import { duplicateSkin } from '../src/core/skins';
 import * as A from '../src/store/actions';
@@ -226,6 +227,18 @@ describe('the link and the shape of a linked mesh', () => {
     expect(deformHome(doc, skinOf(doc, r).id, r.slotId, r.name)).toEqual({ skinId: doc.skins[0].id, slotId: r.slotId, name: r.name });
     expect(deformHome(doc, skinOf(doc, r).id, r.slotId, 'still')).toEqual({ skinId: skinOf(doc, r).id, slotId: r.slotId, name: 'still' });
     expect(deformHome(doc, doc.skins[0].id, r.slotId, r.name)).toEqual({ skinId: doc.skins[0].id, slotId: r.slotId, name: r.name });
+  });
+
+  it('warns in Metrics about deform keys that sit on a mesh that shares the deform of its source', () => {
+    const r = rig(false);
+    expect(projectWarnings(r.project).some((w) => w.kind === 'ignoredDeform')).toBe(false);
+    const doc = r.project.skeleton;
+    const skin = skinOf(doc, r);
+    const keys = structuredClone(r.animation.deform[doc.skins[0].id][r.slotId][r.name]);
+    r.animation.deform[skin.id] = { [r.slotId]: { [r.name]: keys, still: structuredClone(keys) } };
+    const w = projectWarnings(r.project).filter((x) => x.kind === 'ignoredDeform');
+    // `still` does not share the deform (its keys are exported), the one with the source name does
+    expect(w).toEqual([{ kind: 'ignoredDeform', subject: `wobble: ${r.name}` }]);
   });
 });
 

@@ -11,6 +11,7 @@ const WARNING_TEXT: Record<Warning['kind'], string> = {
   tooManyInfluences: `Mesh has vertices with more than ${MAX_INFLUENCES} bone influences`,
   duplicatePath: 'Two attachments use the same image',
   missingFrame: 'A picture of the sequence is missing: the export cannot be read by an engine',
+  ignoredDeform: 'Deform keys on a linked mesh that shares the deform of its source: the keys are not exported, move the source instead',
 };
 
 /** The Metrics window: how big the skeleton is, and what looks forgotten before an export. */

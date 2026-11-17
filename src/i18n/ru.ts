@@ -826,6 +826,7 @@ export const RU: Record<string, string> = {
   'Nothing looks forgotten': 'Ничего не забыто',
   'Image is not used by any attachment': 'Картинка не используется ни одним вложением',
   'Animation has no keys': 'В анимации нет ключей',
+  'Deform keys on a linked mesh that shares the deform of its source: the keys are not exported, move the source instead': 'Ключи деформации на связанной сетке с общей деформацией: они не экспортируются, двигайте источник',
   'Slot has no attachments in any skin': 'У слота нет вложений ни в одном скине',
   'Mesh has vertices with more than {#} bone influences': 'У меша есть вершины с более чем {} влияниями костей',
   'Two attachments use the same image': 'Два вложения используют одну картинку',
