@@ -494,6 +494,10 @@ export const RU: Record<string, string> = {
   'Region ·': 'Регион ·',
   'Mesh ·': 'Меш ·',
   'Animation ·': 'Анимация ·',
+  // the titles of the sections of the inspector are one string: `Region · hand`
+  'Region · {}': 'Регион · {}',
+  'Mesh · {}': 'Меш · {}',
+  'Animation · {}': 'Анимация · {}',
   '· keyed at playhead': '· ключ в текущем кадре',
   'rotate': 'поворот',
   'translate': 'перенос',

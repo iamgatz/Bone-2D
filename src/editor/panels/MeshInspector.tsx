@@ -6,35 +6,22 @@ import { autoWeightMesh, bindMeshToBones, convertToMesh, regenerateMesh, retrian
 import { useProject } from '@/store/doc';
 import { uiStore, useUi } from '@/store/ui';
 import { Button, ColorSwatch, NumberField, SelectField } from '../ui/controls';
-
-function Row(props: { label: string; children: React.ReactNode }) {
-  return (
-    <div style={{ display: 'grid', gridTemplateColumns: '90px 1fr', gap: 6, alignItems: 'center', marginBottom: 6 }}>
-      <span style={{ color: 'var(--muted)' }}>{props.label}</span>
-      <div>{props.children}</div>
-    </div>
-  );
-}
+import { Field } from '../ui/Field';
+import { Section } from '../ui/Section';
 
 export function ConvertToMeshGroup({ slotId, name }: { slotId: Id; name: string }) {
   const [spacing, setSpacing] = useState(34);
   const [padding, setPadding] = useState(2);
   return (
-    <div className="group">
-      <div className="group-title">
-        <Hexagon size={14} />
-        <span>Mesh</span>
-      </div>
-      <p className="hint-text" style={{ margin: '0 0 8px' }}>
-        Turn this image into a deformable mesh. Tracing follows the opaque pixels and fills the shape with triangles.
-      </p>
-      <Row label="Density">
+    <Section id="mesh.convert" title="Mesh" icon={Hexagon}>
+      <p className="hint-text mb">Turn this image into a deformable mesh. Tracing follows the opaque pixels and fills the shape with triangles.</p>
+      <Field label="Density">
         <NumberField label="px" value={spacing} step={1} precision={0} min={8} max={400} onChange={setSpacing} title="Interior vertex spacing in pixels (smaller = more vertices)" />
-      </Row>
-      <Row label="Padding">
+      </Field>
+      <Field label="Padding">
         <NumberField label="px" value={padding} step={1} precision={0} min={-20} max={40} onChange={setPadding} title="How far the outline sits outside the opaque pixels" />
-      </Row>
-      <div style={{ display: 'flex', gap: 6 }}>
+      </Field>
+      <div className="hstack">
         <Button primary icon={Sparkles} onClick={() => convertToMesh(slotId, name, 'trace', { spacing, padding })}>
           Trace mesh
         </Button>
@@ -42,7 +29,7 @@ export function ConvertToMeshGroup({ slotId, name }: { slotId: Id; name: string 
           Quad
         </Button>
       </div>
-    </div>
+    </Section>
   );
 }
 
@@ -63,19 +50,13 @@ export function MeshGroup({ slotId, att }: { slotId: Id; att: MeshAttachment }) 
 
   return (
     <>
-      <div className="group">
-        <div className="group-title">
-          <Hexagon size={14} />
-          <span>Mesh · {att.path}</span>
-        </div>
-        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 8 }}>
+      <Section id="mesh.main" title={`Mesh · ${att.path}`} icon={Hexagon}>
+        <div className="hstack wrap mb">
           <span className="chip">{`${att.uvs.length / 2} vertices`}</span>
           <span className="chip">{`${att.triangles.length / 3} triangles`}</span>
-          <span className="chip" style={weighted ? { color: 'var(--accent)' } : undefined}>
-            {weighted ? `weighted · ${influencing.length} bones` : 'unweighted'}
-          </span>
+          <span className={`chip${weighted ? ' accent' : ''}`}>{weighted ? `weighted · ${influencing.length} bones` : 'unweighted'}</span>
         </div>
-        <div style={{ display: 'flex', gap: 6, marginBottom: 8 }}>
+        <div className="hstack mb">
           <Button primary={tool === 'mesh'} icon={Triangle} onClick={() => setTool('mesh')} title="Edit vertices (M)">
             {mode === 'animate' ? 'Deform' : 'Edit mesh'}
           </Button>
@@ -85,13 +66,13 @@ export function MeshGroup({ slotId, att }: { slotId: Id; att: MeshAttachment }) 
         </div>
         {setup && (
           <>
-            <Row label="Density">
+            <Field label="Density">
               <NumberField label="px" value={spacing} step={1} precision={0} min={8} max={400} onChange={setSpacing} />
-            </Row>
-            <Row label="Padding">
+            </Field>
+            <Field label="Padding">
               <NumberField label="px" value={padding} step={1} precision={0} min={-20} max={40} onChange={setPadding} />
-            </Row>
-            <div style={{ display: 'flex', gap: 6 }}>
+            </Field>
+            <div className="hstack">
               <Button icon={RefreshCw} onClick={() => regenerateMesh(slotId, att.name, { spacing, padding })} title="Trace the image again (unweighted meshes)">
                 Re-trace
               </Button>
@@ -101,26 +82,20 @@ export function MeshGroup({ slotId, att }: { slotId: Id; att: MeshAttachment }) 
             </div>
           </>
         )}
-      </div>
+      </Section>
 
       {setup && (
-        <div className="group">
-          <div className="group-title">
-            <Link2 size={14} />
-            <span>Weights</span>
-          </div>
+        <Section id="mesh.weights" title="Weights" icon={Link2}>
           {!weighted ? (
             <>
-              <p className="hint-text" style={{ margin: '0 0 8px' }}>
-                Bind the mesh to bones so it bends with them. Select the bones in the viewport first.
-              </p>
+              <p className="hint-text mb">Bind the mesh to bones so it bends with them. Select the bones in the viewport first.</p>
               <Button primary icon={Link2} onClick={() => bindMeshToBones(slotId, att.name, selectedBones)} disabled={!selectedBones.length && !slot} title="Auto-weights to the selected bones">
                 {`Bind to ${selectedBones.length || 1} selected bone${selectedBones.length === 1 || !selectedBones.length ? '' : 's'}`}
               </Button>
             </>
           ) : (
             <>
-              <div style={{ display: 'flex', gap: 6, marginBottom: 8, flexWrap: 'wrap' }}>
+              <div className="hstack wrap mb">
                 <Button icon={Link2} onClick={() => bindMeshToBones(slotId, att.name, selectedBones)} title="Add the selected bones as influences (re-computes weights)">
                   Add bones
                 </Button>
@@ -134,33 +109,33 @@ export function MeshGroup({ slotId, att }: { slotId: Id; att: MeshAttachment }) 
                   Unbind
                 </Button>
               </div>
-              <Row label="Bone">
+              <Field label="Bone">
                 <SelectField value={brush.bone ?? influencing[0]} options={influencing.map((id) => ({ value: id, label: boneName(id) }))} onChange={(v) => uiStore.patch({ brush: { ...brush, bone: v } })} />
-              </Row>
-              <Row label="Mode">
+              </Field>
+              <Field label="Mode">
                 <SelectField value={brush.mode} options={[{ value: 'add', label: 'Add' }, { value: 'subtract', label: 'Subtract' }, { value: 'replace', label: 'Replace' }, { value: 'smooth', label: 'Smooth' }]} onChange={(v) => uiStore.patch({ brush: { ...brush, mode: v } })} />
-              </Row>
-              <Row label="Size">
+              </Field>
+              <Field label="Size">
                 <NumberField label="px" value={brush.size} step={1} precision={0} min={4} max={400} onChange={(v) => uiStore.patch({ brush: { ...brush, size: v } })} />
-              </Row>
-              <Row label="Strength">
+              </Field>
+              <Field label="Strength">
                 <NumberField label="%" value={brush.strength * 100} step={1} precision={0} min={1} max={100} onChange={(v) => uiStore.patch({ brush: { ...brush, strength: v / 100 } })} />
-              </Row>
-              <p className="hint-text" style={{ margin: 0 }}>
+              </Field>
+              <p className="hint-text">
                 Press <span className="kbd">W</span>, then paint over the mesh. Click an influencing bone in the viewport to switch the brush bone.
               </p>
             </>
           )}
-        </div>
+        </Section>
       )}
 
       <div className="group">
-        <Row label="Color">
-          <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+        <Field label="Color">
+          <div className="hstack">
             <ColorSwatch value={att.color} onChange={(rgb) => setAttachmentProps(slotId, att.name, { color: [rgb[0], rgb[1], rgb[2], att.color[3]] })} />
             <NumberField label="A" value={att.color[3]} step={0.01} min={0} max={1} onChange={(v) => setAttachmentProps(slotId, att.name, { color: [att.color[0], att.color[1], att.color[2], v] })} />
           </div>
-        </Row>
+        </Field>
       </div>
     </>
   );

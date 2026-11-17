@@ -1,26 +1,20 @@
-import { ArrowDown, ArrowRight, ArrowUp, Link2, Plus, Trash2, X } from 'lucide-react';
+import { ArrowRight, Link2, Plus, Trash2, X } from 'lucide-react';
 import { TRANSFORM_PROPS } from '@/core/model';
 import type { Id, TransformProp } from '@/core/model';
 import { findKeyIndex } from '@/core/curve';
 import { currentAnimation, deleteKeys } from '@/store/actions';
 import { useProject } from '@/store/doc';
 import { useUi } from '@/store/ui';
-import { deleteConstraint, moveConstraint, renameConstraint } from '@/store/ikActions';
+import { deleteConstraint } from '@/store/ikActions';
 import { currentTransformMix, setTransformMix, updateTransform } from '@/store/transformActions';
-import { Button, IconButton, NumberField, SelectField, TextField, Toggle } from '../ui/controls';
+import { Button, IconButton, NumberField, SelectField, Toggle } from '../ui/controls';
+import { Field, KeyButton } from '../ui/Field';
+import { Section } from '../ui/Section';
+import { ConstraintHeader } from './ConstraintHeader';
 
 const PROP_LABEL: Record<TransformProp, string> = { rotate: 'Rotation', x: 'X', y: 'Y', scaleX: 'Scale X', scaleY: 'Scale Y', shearY: 'Shear Y' };
 const propOptions = TRANSFORM_PROPS.map((p) => ({ value: p, label: PROP_LABEL[p] }));
 const MIX_KEYS: TransformProp[] = ['rotate', 'x', 'y', 'scaleX', 'scaleY', 'shearY'];
-
-function Row(props: { label: string; children: React.ReactNode }) {
-  return (
-    <div style={{ display: 'grid', gridTemplateColumns: '90px 1fr', gap: 6, alignItems: 'center', marginBottom: 6 }}>
-      <span style={{ color: 'var(--muted)' }}>{props.label}</span>
-      <div>{props.children}</div>
-    </div>
-  );
-}
 
 export function TransformInspector({ id }: { id: Id }) {
   const project = useProject();
@@ -30,7 +24,6 @@ export function TransformInspector({ id }: { id: Id }) {
   const doc = project.skeleton;
   const c = doc.constraints.find((x) => x.id === id);
   if (!c || c.type !== 'transform') return null;
-  const index = doc.constraints.findIndex((x) => x.id === id);
   const boneName = (b: Id) => doc.bones.find((x) => x.id === b)?.name ?? '?';
   const usedTo = new Set(c.properties.flatMap((f) => f.to.map((t) => t.prop)));
   const animate = mode === 'animate';
@@ -46,56 +39,40 @@ export function TransformInspector({ id }: { id: Id }) {
 
   return (
     <>
-      <div className="group">
-        <div className="group-title">
-          <Link2 size={14} className="k-transform" />
-          <span>Transform constraint</span>
-          <span className="spacer" />
-          <IconButton icon={ArrowUp} title="Apply earlier" small disabled={index <= 0} onClick={() => moveConstraint(id, -1)} />
-          <IconButton icon={ArrowDown} title="Apply later" small disabled={index >= doc.constraints.length - 1} onClick={() => moveConstraint(id, 1)} />
-          <IconButton icon={Trash2} title="Delete constraint" small onClick={() => deleteConstraint(id)} />
-        </div>
-        <TextField value={c.name} onCommit={(n) => renameConstraint(id, n)} wide />
-      </div>
+      <ConstraintHeader id={id} title="Transform constraint" icon={Link2} kind="transform" />
 
-      <div className="group">
-        <div className="group-title">Bones</div>
-        <Row label="Source">
+      <Section id="transform.bones" title="Bones">
+        <Field label="Source">
           <SelectField value={c.source} options={doc.bones.filter((b) => !c.bones.includes(b.id)).map((b) => ({ value: b.id, label: b.name }))} onChange={(v) => updateTransform(id, (x) => void (x.source = v))} />
-        </Row>
-        <Row label="Drives">
-          <span style={{ color: 'var(--text-dim)' }}>{c.bones.map(boneName).join(', ')}</span>
-        </Row>
-        <div className="row-between">
-          <label title="Read the source's local transform instead of its world transform">Local source</label>
+        </Field>
+        <Field label="Drives">
+          <span className="val">{c.bones.map(boneName).join(', ')}</span>
+        </Field>
+        <Field label="Local source" title="Read the source's local transform instead of its world transform">
           <Toggle on={c.localSource} onChange={(v) => updateTransform(id, (x) => void (x.localSource = v))} />
-        </div>
-        <div className="row-between">
-          <label title="Write the constrained bones' local transforms instead of their world transforms">Local target</label>
+        </Field>
+        <Field label="Local target" title="Write the constrained bones' local transforms instead of their world transforms">
           <Toggle on={c.localTarget} onChange={(v) => updateTransform(id, (x) => void (x.localTarget = v))} />
-        </div>
-        <div className="row-between">
-          <label title="Add to the constrained bone instead of replacing the property">Additive</label>
+        </Field>
+        <Field label="Additive" title="Add to the constrained bone instead of replacing the property">
           <Toggle on={c.additive} onChange={(v) => updateTransform(id, (x) => void (x.additive = v))} />
-        </div>
-        <div className="row-between">
-          <label title="Keep each result between the target offset and max">Clamp</label>
+        </Field>
+        <Field label="Clamp" title="Keep each result between the target offset and max">
           <Toggle on={c.clamp} onChange={(v) => updateTransform(id, (x) => void (x.clamp = v))} />
-        </div>
-      </div>
+        </Field>
+      </Section>
 
-      <div className="group">
-        <div className="group-title">
-          <span>Mappings</span>
-          <span className="spacer" />
-          <IconButton icon={Plus} title="Add mapping" small onClick={() => updateTransform(id, (x) => void x.properties.push({ prop: 'rotate', offset: 0, to: [{ prop: 'rotate', offset: 0, max: 1, scale: 1 }] }))} />
-        </div>
+      <Section
+        id="transform.mappings"
+        title="Mappings"
+        actions={<IconButton icon={Plus} title="Add mapping" small onClick={() => updateTransform(id, (x) => void x.properties.push({ prop: 'rotate', offset: 0, to: [{ prop: 'rotate', offset: 0, max: 1, scale: 1 }] }))} />}
+      >
         {c.properties.map((f, fi) =>
           f.to.map((t, ti) => (
-            <div key={`${fi}-${ti}`} style={{ border: '1px solid var(--border)', borderRadius: 8, padding: 8, marginBottom: 8, background: 'var(--sunken-2)' }}>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 16px 1fr 22px', gap: 6, alignItems: 'center', marginBottom: 6 }}>
+            <div key={`${fi}-${ti}`} className="card">
+              <div className="card-head">
                 <SelectField value={f.prop} options={propOptions} onChange={(v) => updateTransform(id, (x) => void (x.properties[fi].prop = v))} />
-                <ArrowRight size={14} color="var(--muted)" />
+                <ArrowRight size={14} className="muted" />
                 <SelectField value={t.prop} options={propOptions} onChange={(v) => updateTransform(id, (x) => void (x.properties[fi].to[ti].prop = v))} />
                 <IconButton
                   icon={X}
@@ -119,40 +96,28 @@ export function TransformInspector({ id }: { id: Id }) {
           )),
         )}
         {!c.properties.length && <p className="hint-text">No mappings: the constraint does nothing.</p>}
-      </div>
+      </Section>
 
-      <div className="group">
-        <div className="group-title">
-          <span>Mix</span>
-          {animate && (
-            <>
-              <span className="spacer" />
-              <button
-                className={`key-btn${keyed ? ' on' : ''}`}
-                title={keyed ? 'Remove the mix key at the playhead' : 'Key the mixes at the playhead'}
-                onClick={() => (keyed ? deleteKeys([{ kind: 'transform', target: id, prop: '', time }]) : setTransformMix(id, {}))}
-              >
-                ◆
-              </button>
-            </>
-          )}
-        </div>
+      <Section
+        id="transform.mix"
+        title="Mix"
+        actions={animate && <KeyButton on={keyed} title={keyed ? 'Remove the mix key at the playhead' : 'Key the mixes at the playhead'} onClick={() => (keyed ? deleteKeys([{ kind: 'transform', target: id, prop: '', time }]) : setTransformMix(id, {}))} />}
+      >
         {MIX_KEYS.filter((k) => usedTo.has(k)).map((k) => (
-          <Row key={k} label={PROP_LABEL[k]}>
+          <Field key={k} label={PROP_LABEL[k]}>
             <NumberField label="%" value={mixOf(k) * 100} step={1} precision={0} min={0} max={100} keyed={animate && keyed} onChange={(v) => setTransformMix(id, { [k]: v / 100 })} />
-          </Row>
+          </Field>
         ))}
         {!usedTo.size && <p className="hint-text">Add a mapping to set mixes.</p>}
-      </div>
+      </Section>
 
-      <div className="group">
-        <div className="group-title">Offsets applied to the source</div>
+      <Section id="transform.offsets" title="Offsets applied to the source">
         <div className="grid2">
           {(['rotation', 'x', 'y', 'scaleX', 'scaleY', 'shearY'] as const).map((k) => (
             <NumberField key={k} label={k === 'rotation' ? '°' : k.replace('scale', 'S').replace('shear', 'Sh')} value={c.offsets[k]} step={k.startsWith('scale') ? 0.05 : 1} precision={2} onChange={(v) => updateTransform(id, (x) => void (x.offsets[k] = v))} />
           ))}
         </div>
-      </div>
+      </Section>
 
       <div className="group">
         <Button danger icon={Trash2} onClick={() => deleteConstraint(id)}>

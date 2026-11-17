@@ -201,6 +201,10 @@ textarea {
 .btn.primary:hover {
   filter: brightness(1.08);
 }
+.btn.sm {
+  height: 22px;
+  padding: 0 var(--sp-3);
+}
 .btn.ghost {
   background: transparent;
   border-color: transparent;
@@ -434,6 +438,13 @@ textarea {
   padding: 1px 4px;
   outline: none;
   color: var(--text);
+}
+.section-label.bar {
+  display: flex;
+  align-items: center;
+}
+.grow {
+  flex: 1;
 }
 .row .actions {
   display: flex;
@@ -724,11 +735,76 @@ textarea {
   flex-direction: column;
   gap: var(--sp-3);
 }
+.hstack > .field {
+  flex: 1;
+}
 .mt {
   margin-top: var(--sp-4);
 }
 .mb {
   margin-bottom: var(--sp-4);
+}
+.dim {
+  color: var(--text-dim);
+}
+.danger-text {
+  color: var(--danger);
+}
+.flush {
+  margin: 0;
+}
+.contents {
+  display: contents;
+}
+.spread {
+  display: flex;
+  justify-content: space-between;
+  padding: var(--sp-1) 0;
+}
+.muted {
+  color: var(--muted);
+}
+/* a value that is shown, not edited */
+.val {
+  min-width: 0;
+  color: var(--text-dim);
+  overflow-wrap: anywhere;
+}
+.chip.plain {
+  background: transparent;
+}
+.chip.accent {
+  color: var(--accent);
+}
+.chip.animate {
+  color: var(--animate);
+}
+/* a card inside a section: one mapping of a transform constraint */
+.card {
+  margin-bottom: var(--sp-4);
+  padding: var(--sp-4);
+  background: var(--sunken-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+.card.roomy {
+  margin-bottom: 0;
+  padding: var(--sp-6);
+  border-radius: var(--radius-lg);
+}
+.card-head {
+  display: grid;
+  grid-template-columns: 1fr 16px 1fr 22px;
+  gap: var(--sp-3);
+  align-items: center;
+  margin-bottom: var(--sp-3);
+}
+/* switches in two columns: name, switch, name, switch */
+.toggles {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr auto;
+  gap: var(--sp-2) var(--sp-4);
+  align-items: center;
 }
 .sec-toggle,
 .sec-static {

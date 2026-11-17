@@ -56,7 +56,7 @@ export function ExportDialog() {
         </>
       }
     >
-      <p className="hint-text" style={{ marginTop: 0 }}>
+      <p className="hint-text flush">
         Produces <b>.json + .atlas + .png</b> that load in the official Spine 4.3 runtimes (spine-ts, Unity, Godot, Pixi, Phaser…).
       </p>
       <div className="kv">
@@ -69,22 +69,22 @@ export function ExportDialog() {
         <label>Pretty JSON</label>
         <Toggle on={pretty} onChange={setPretty} />
       </div>
-      <div style={{ background: 'var(--sunken-2)', border: '1px solid var(--border)', borderRadius: 10, padding: 12 }}>
+      <div className="card roomy">
         {busy && <span className="hint-text">Packing atlas…</span>}
-        {error && <span style={{ color: 'var(--danger)' }}>{error}</span>}
+        {error && <span className="danger-text">{error}</span>}
         {result && !busy && (
           <>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8, color: 'var(--text-dim)' }}>
+            <div className="hstack mb dim">
               <Package size={15} />
               {`${doc.bones.length} bones · ${doc.slots.length} slots · ${doc.animations.length} animations · ${result.pages} atlas page${result.pages === 1 ? '' : 's'}`}
             </div>
             {result.files.map((f) => (
-              <div key={f.name} style={{ display: 'flex', justifyContent: 'space-between', padding: '2px 0', color: 'var(--text-dim)' }}>
+              <div key={f.name} className="spread dim">
                 <span>{f.name}</span>
-                <span style={{ color: 'var(--muted)' }}>{(f.size / 1024).toFixed(1)} KB</span>
+                <span className="muted">{(f.size / 1024).toFixed(1)} KB</span>
               </div>
             ))}
-            {result.missing.length > 0 && <div style={{ color: 'var(--danger)', marginTop: 8 }}>Missing images: {result.missing.join(', ')}</div>}
+            {result.missing.length > 0 && <div className="danger-text mt">Missing images: {result.missing.join(', ')}</div>}
           </>
         )}
       </div>
