@@ -1,9 +1,9 @@
 import { useState } from 'react';
-import { ArrowLeftRight, Brush, ClipboardPaste, Copy, Lock, Unlock, FlipHorizontal2, Hexagon, Link2, RefreshCw, Scissors, Sparkles, Triangle, Unlink2, Waves } from 'lucide-react';
+import { ArrowLeftRight, Brush, ClipboardPaste, Copy, Crosshair, Lock, Unlock, FlipHorizontal2, Hexagon, Link2, RefreshCw, Scissors, Sparkles, Triangle, Unlink2, Waves } from 'lucide-react';
 import type { Id, MeshAttachment, Project } from '@/core/model';
 import { linkSource } from '@/core/links';
 import { linkMeshTo, setAttachmentProps, setLinkDeform, setTool, unlinkMesh } from '@/store/actions';
-import { autoWeightMesh, bindMeshToBones, convertToMesh, copyVertexWeights, pasteVertexWeights, mirrorMeshWeights, pruneMeshWeights, regenerateMesh, retriangulateMesh, smoothMeshWeights, swapMeshWeights, unbindMeshFromBones } from '@/store/meshActions';
+import { autoWeightMesh, bindMeshToBones, convertToMesh, copyVertexWeights, pasteVertexWeights, mirrorMeshWeights, pruneMeshWeights, regenerateMesh, retriangulateMesh, smoothMeshWeights, swapMeshWeights, unbindMeshFromBones, updateMeshBindings, weldMeshWeights, weldTargets } from '@/store/meshActions';
 import { useProject } from '@/store/doc';
 import { uiStore, useUi } from '@/store/ui';
 import { Button, ColorSwatch, NumberField, SelectField, Toggle } from '../ui/controls';
@@ -90,6 +90,8 @@ export function MeshGroup({ slotId, att }: { slotId: Id; att: MeshAttachment }) 
   const [pruneBelow, setPruneBelow] = useState(5);
   const [swapA, setSwapA] = useState<Id>('');
   const [swapB, setSwapB] = useState<Id>('');
+  const [weldPick, setWeldPick] = useState('');
+  const [weldMode, setWeldMode] = useState<'all' | 'overlapping'>('overlapping');
   const doc = project.skeleton;
   const slot = doc.slots.find((s) => s.id === slotId);
   const weighted = att.weights != null;
@@ -99,6 +101,9 @@ export function MeshGroup({ slotId, att }: { slotId: Id; att: MeshAttachment }) 
   const linked = !!att.link;
   const swapFrom = influencing.includes(swapA) ? swapA : (influencing[0] ?? '');
   const swapTo = influencing.includes(swapB) && swapB !== swapFrom ? swapB : (influencing.find((b) => b !== swapFrom) ?? '');
+  const welds = weighted && setup && !linked ? weldTargets(slotId, att.name) : [];
+  const weld = welds[Number(weldPick)] ?? welds.find((w) => w.shared >= 2) ?? welds[0];
+  const weldKey = String(welds.indexOf(weld));
 
   return (
     <>
@@ -171,6 +176,9 @@ export function MeshGroup({ slotId, att }: { slotId: Id; att: MeshAttachment }) 
                 <Button icon={Scissors} onClick={() => pruneMeshWeights(slotId, att.name, pruneBelow / 100, pruneBones)} title="Drop the influences lighter than the threshold and keep at most the given number of bones per vertex">
                   Prune
                 </Button>
+                <Button icon={Crosshair} onClick={() => updateMeshBindings(slotId, att.name)} title="Make the bind pose the pose the bones have now (after moving bones in the setup pose), so weight edits stop shifting the vertices">
+                  Update bindings
+                </Button>
                 <Button icon={FlipHorizontal2} onClick={() => mirrorMeshWeights(slotId, att.name, true)} title="Copy the weights of the left half to the right half (bones swapped for their mirror twins)">
                   Mirror L→R
                 </Button>
@@ -181,7 +189,7 @@ export function MeshGroup({ slotId, att }: { slotId: Id; att: MeshAttachment }) 
                   Unbind
                 </Button>
               </div>
-              <p className="hint-text mb">{pickedVertices ? `Auto, Smooth, Prune and Swap work on the ${pickedVertices} selected vertices.` : 'Select vertices with the mesh tool (M) to limit Auto, Smooth, Prune and Swap to them; with none selected they work on the whole mesh.'}</p>
+              <p className="hint-text mb">{pickedVertices ? `Auto, Smooth, Prune, Swap, Weld and Update bindings work on the ${pickedVertices} selected vertices.` : 'Select vertices with the mesh tool (M) to limit Auto, Smooth, Prune, Swap, Weld and Update bindings to them; with none selected they work on the whole mesh.'}</p>
               <Field label="Prune">
                 <NumberField label="bones" value={pruneBones} step={1} precision={0} min={1} max={4} onChange={(v) => setPruneBones(Math.max(1, Math.min(4, Math.round(v))))} title="Most bones one vertex may keep" />
                 <NumberField label="%" value={pruneBelow} step={1} precision={0} min={0} max={50} onChange={(v) => setPruneBelow(Math.max(0, Math.min(50, v)))} title="Weights lighter than this are removed" />
@@ -192,6 +200,15 @@ export function MeshGroup({ slotId, att }: { slotId: Id; att: MeshAttachment }) 
                   <SelectField value={swapTo} options={influencing.map((id) => ({ value: id, label: boneName(id) }))} onChange={setSwapB} />
                   <Button icon={ArrowLeftRight} onClick={() => swapMeshWeights(slotId, att.name, swapFrom, swapTo)} title="The two bones exchange their weights on the selected vertices (or the whole mesh)">
                     Swap
+                  </Button>
+                </Field>
+              )}
+              {welds.length > 0 && (
+                <Field label="Weld">
+                  <SelectField value={weldKey} options={welds.map((w, i) => ({ value: String(i), label: `${w.label} (${w.shared})` }))} onChange={setWeldPick} />
+                  <SelectField value={weldMode} options={[{ value: 'overlapping', label: 'Overlapping' }, { value: 'all', label: 'All' }]} onChange={(v) => setWeldMode(v as 'all' | 'overlapping')} />
+                  <Button icon={Link2} disabled={!weld || weld.shared < 2} onClick={() => weld && weldMeshWeights(slotId, att.name, weld.slotId, weld.name, weldMode)} title="Take the weights of the other mesh where this one lies over it (both need the same two or more bones; the number in brackets is how many they share)">
+                    Weld
                   </Button>
                 </Field>
               )}

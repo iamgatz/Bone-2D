@@ -430,6 +430,77 @@ export function pruneWeights(weights: Influence[][], threshold = 0.05, max = 4, 
   });
 }
 
+/**
+ * Update bindings (Spine's weights panel, "Update"): the bind positions stored per bone go stale when a bone was moved after binding, and
+ * then every weight edit makes the vertices shift. This re-expresses the CURRENT world position of the vertices of `only` (all when missing)
+ * in the space of each of their bones, so the bind pose is the pose the bones have now. The setup pose does not change.
+ * Returns the new weights and how many vertices had a stale binding.
+ */
+export function updateBindings(weights: Influence[][], world: ArrayLike<number>, bones: BoneMats, only?: ReadonlySet<number>): { weights: Influence[][]; changed: number } {
+  const inv = new Map<Id, Mat>();
+  for (const [id, m] of bones) inv.set(id, matInvert(m));
+  let changed = 0;
+  const out = weights.map((list, i) => {
+    if ((only && !only.has(i)) || list.length === 0 || list.some((e) => !inv.has(e[0]))) return list;
+    let stale = false;
+    const next = list.map((e) => {
+      const p = matApply(inv.get(e[0])!, world[i * 2], world[i * 2 + 1]);
+      if (Math.abs(p[0] - e[1]) > 1e-6 || Math.abs(p[1] - e[2]) > 1e-6) stale = true;
+      return [e[0], p[0], p[1], e[3]] as Influence;
+    });
+    if (!stale) return list;
+    changed++;
+    return next;
+  });
+  return { weights: out, changed };
+}
+
+/**
+ * Weld (Spine's weights panel): the vertices of this mesh take the weights the other mesh has at the same place, so the two deform as one
+ * picture. Both must be bound to at least the same two bones; only those common bones are used. A vertex over a triangle of the other mesh
+ * gets the weights of its corners blended by position; `overlapping` limits it to the vertices that really lie over the other mesh,
+ * otherwise (`all`) the vertices outside take the weights of the nearest triangle. The vertices stay where they are.
+ * Returns the new weights and how many vertices were set.
+ */
+export function weldWeights(
+  weights: Influence[][],
+  world: ArrayLike<number>,
+  other: { world: ArrayLike<number>; triangles: ArrayLike<number>; weights: Influence[][] },
+  mode: 'all' | 'overlapping',
+  bones: BoneMats,
+  only?: ReadonlySet<number>,
+): { weights: Influence[][]; changed: number } {
+  const mine = new Set(weights.flat().map((e) => e[0]));
+  const common = new Set(other.weights.flat().map((e) => e[0]).filter((b) => mine.has(b) && bones.has(b)));
+  if (common.size < 2) return { weights, changed: 0 };
+  let changed = 0;
+  const out = weights.map((list, i) => {
+    if (only && !only.has(i)) return list;
+    const x = world[i * 2];
+    const y = world[i * 2 + 1];
+    const at = locateInMesh(other.world, other.triangles, x, y);
+    if (!at) return list;
+    if (mode === 'overlapping' && Math.min(...at.bary) < -1e-3) return list;
+    const bary = at.bary.map((b) => Math.max(0, b));
+    const bsum = bary[0] + bary[1] + bary[2];
+    if (bsum <= 1e-9) return list;
+    const acc = new Map<Id, number>();
+    for (let k = 0; k < 3; k++) {
+      const v = other.triangles[at.tri * 3 + k];
+      for (const e of other.weights[v] ?? []) if (common.has(e[0])) acc.set(e[0], (acc.get(e[0]) ?? 0) + (e[3] * bary[k]) / bsum);
+    }
+    const next: Influence[] = [];
+    for (const [b, w] of acc) {
+      const p = matApply(matInvert(bones.get(b)!), x, y);
+      next.push([b, p[0], p[1], w]);
+    }
+    if (next.reduce((s, e) => s + e[3], 0) < 1e-6) return list;
+    changed++;
+    return normalizeInfluences(next);
+  });
+  return { weights: out, changed };
+}
+
 /** Keeps `next` for the vertices in `only` and `old` for every other vertex (scope of Auto, Smooth, Prune and Swap to the selected vertices). */
 export function keepOutside<T>(old: readonly T[], next: readonly T[], only: ReadonlySet<number> | undefined): T[] {
   return only ? next.map((v, i) => (only.has(i) ? v : old[i])) : [...next];

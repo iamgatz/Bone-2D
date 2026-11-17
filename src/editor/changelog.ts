@@ -12,6 +12,12 @@ export interface Release {
 
 export const CHANGELOG: Release[] = [
   {
+    version: '0.33',
+    date: '2026-11-17',
+    en: ['Weights: Update bindings (after you moved bones in the setup pose, the stored bind positions are stale and weight edits shift the vertices; this makes the bind pose the pose the bones have now, the mesh does not move) and Weld (this mesh takes the weights of another weighted mesh where it lies over it, blended by position; both need the same two or more bones; Overlapping limits it to the vertices over the other mesh, All gives the vertices outside the weights of the nearest triangle). Both work on the selected vertices when some are selected, each is one step in the history.'],
+    ru: ['Веса: Обновить привязку (после сдвига костей в позе сборки сохранённые позиции привязки устаревают и правка весов сдвигает вершины; кнопка делает позой привязки текущую позу костей, сетка не двигается) и Слить (эта сетка берёт веса другой сетки там, где лежит поверх неё, с плавным переходом по положению; нужны те же две и более костей; «Перекрытие» — только вершины над другой сеткой, «Все» — вершинам снаружи достаются веса ближайшего треугольника). Оба работают на выбранных вершинах, если они выбраны, каждое — один шаг в истории.'],
+  },
+  {
     version: '0.32',
     date: '2026-11-17',
     en: ['Weights: Lock (a locked bone keeps its weights while you paint, the others share what is left), Feather on the brush (how much of its size fades out: 100% from the centre, 0% a hard edge), Copy weights and Paste weights between the same number of selected vertices.', 'Fixed: pasting two-colour (dark colour) keys onto a slot without a dark colour left the curve of the dark channels in the plain colour key; the document then needed repair. Found by the fuzz test.'],
