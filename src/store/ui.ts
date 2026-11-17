@@ -44,6 +44,8 @@ export interface ViewOptions {
   bonesOnTop: boolean;
   /** Onion skin: faded poses of the frames around the playhead (Animate mode). */
   onion: boolean;
+  /** Motion trails: the path of the selected bones through the animation (Animate mode). */
+  trails: boolean;
 }
 
 export interface Camera {
@@ -120,7 +122,7 @@ export const uiStore = createStore<UiState>({
   defaultCurve: 'bezier',
   camera: { x: 0, y: 120, zoom: 1.2 },
   skinId: null,
-  view: { grid: true, images: true, bones: true, meshes: true, names: false, constraints: true, outlines: true, bonesOnTop: true, onion: false },
+  view: { grid: true, images: true, bones: true, meshes: true, names: false, constraints: true, outlines: true, bonesOnTop: true, onion: false, trails: false },
   overrides: {},
   timelineView: 'dopesheet',
   tlZoom: 220,

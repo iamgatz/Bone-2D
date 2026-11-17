@@ -740,6 +740,8 @@ export const RU: Record<string, string> = {
   'Hide / show all windows': 'Скрыть / показать все окна',
   // ---------------------------------------------------------------- skins window
   'Duplicate skin': 'Дублировать скин',
+  'Motion trails': 'Траектории движения',
+  'Motion trails: the path the selected bones travel in the animation, keys marked (Animate mode)': 'Траектории: путь выбранных костей в анимации, ключи отмечены (режим Animate)',
   '100% (as drawn)': '100% (как нарисовано)',
   'Image name': 'Имя картинки',
   'Rename image (a / in the name makes a folder)': 'Переименовать картинку (/ в имени делает папку)',
