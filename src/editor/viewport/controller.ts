@@ -12,11 +12,14 @@ import {
   setBonePose,
   setSelection,
 } from '@/store/actions';
+import { guideAt, snapPoint } from '@/core/snap';
 import { docStore } from '@/store/doc';
+import { addGuide, moveGuide, removeGuide } from '@/store/guideActions';
 import { settingsStore } from '@/store/settings';
 import { createIkFromDrag } from '@/store/ikActions';
 import { POLYGON_TOOLS, toast, uiStore } from '@/store/ui';
 import { getScene, getSetupSkeleton, screenToWorld } from '../scene';
+import { RULER } from './overlay';
 import type { Interaction } from './overlay';
 import { hitAttachment, hitBone } from './hit';
 import { MeshTool, activeMesh } from './meshTool';
@@ -32,8 +35,9 @@ type Drag =
   | { kind: 'path' }
   | { kind: 'pan'; sx: number; sy: number; camX: number; camY: number }
   | { kind: 'create'; parent: Id | null; ox: number; oy: number }
+  | { kind: 'guide'; axis: 'x' | 'y'; index: number }
   | { kind: 'rotate'; ids: Id[]; cx: Record<Id, [number, number]>; a0: Record<Id, number>; r0: Record<Id, number>; sign: Record<Id, number> }
-  | { kind: 'translate'; ids: Id[]; p0: [number, number]; start: Record<Id, { x: number; y: number }>; inv: Record<Id, Mat4>; axis: 'x' | 'y' | null }
+  | { kind: 'translate'; ids: Id[]; p0: [number, number]; w0: [number, number]; start: Record<Id, { x: number; y: number }>; inv: Record<Id, Mat4>; axis: 'x' | 'y' | null }
   | { kind: 'shear'; ids: Id[]; o: Record<Id, [number, number]>; ang: Record<Id, number>; p0: [number, number]; start: Record<Id, { shx: number; shy: number }>; mode: 'xy' | 'x' | 'y' }
   | { kind: 'scale'; ids: Id[]; o: Record<Id, [number, number]>; d0: Record<Id, number>; start: Record<Id, { sx: number; sy: number }>; mode: 'xy' | 'x' | 'y' }
   | { kind: 'attachment'; slotId: Id; name: string; label: string; p0: [number, number]; start: { x: number; y: number }; inv: Mat4 };
@@ -74,6 +78,22 @@ export class ViewportController {
     return screenToWorld(uiStore.get().camera, w, h, sx, sy);
   }
 
+  /** A point snapped to the guides and the grid when Snap is on (View menu), else as it is. */
+  private snapped(wx: number, wy: number): [number, number] {
+    const ui = uiStore.get();
+    if (!ui.view.snap) return [wx, wy];
+    const s = snapPoint(wx, wy, { zoom: ui.camera.zoom, grid: true, guides: docStore.get().guides });
+    return [s.x, s.y];
+  }
+
+  /** A guide being placed: on the grid when Snap is on. */
+  private snappedLine(v: number, axis: 'x' | 'y'): number {
+    const ui = uiStore.get();
+    if (!ui.view.snap) return v;
+    const s = snapPoint(axis === 'x' ? v : 0, axis === 'y' ? v : 0, { zoom: ui.camera.zoom, grid: true });
+    return axis === 'x' ? s.x : s.y;
+  }
+
   private blocked(): Set<Id> {
     const s = new Set<Id>();
     for (const b of docStore.get().skeleton.bones) if (b.hidden || b.locked) s.add(b.id);
@@ -108,6 +128,31 @@ export class ViewportController {
     const [wx, wy] = screenToWorld(cam, w, h, sx, sy);
     const scene = getScene();
     const blocked = this.blocked();
+
+    // rulers: drag a guide out of the top (a horizontal line) or the left (a vertical line) ruler; drag a guide to move it, back onto a ruler to take it away
+    if (ui.view.rulers) {
+      const fromTop = sy < RULER && sx >= RULER;
+      const fromLeft = sx < RULER && sy >= RULER;
+      if (fromTop || fromLeft) {
+        const axis = fromTop ? 'y' : 'x';
+        this.begin(e, { kind: 'guide', axis, index: -1 });
+        this.interaction = { kind: 'guide', axis, index: -1, x0: wx, y0: wy, x1: 0, y1: 0 };
+        this.invalidate();
+        return;
+      }
+      if (sx >= RULER && sy >= RULER && !hitBone(scene, blocked, wx, wy, cam.zoom, 9)) {
+        const guides = docStore.get().guides;
+        const gx = guideAt(guides?.x ?? [], wx, cam.zoom);
+        const gy = gx >= 0 ? -1 : guideAt(guides?.y ?? [], wy, cam.zoom);
+        if (gx >= 0 || gy >= 0) {
+          const axis = gx >= 0 ? 'x' : 'y';
+          this.begin(e, { kind: 'guide', axis, index: gx >= 0 ? gx : gy });
+          this.interaction = { kind: 'guide', axis, index: gx >= 0 ? gx : gy, x0: wx, y0: wy, x1: 0, y1: 0 };
+          this.invalidate();
+          return;
+        }
+      }
+    }
 
     if (this.pathTool.handles() && this.pathTool.pointerDown(e, wx, wy, scene)) {
       if (this.pathTool.dragging) this.begin(e, { kind: 'path' });
@@ -160,8 +205,10 @@ export class ViewportController {
           }
         }
       }
+      if (!(sel && parent && Math.hypot(ox - wx, oy - wy) > 1e-9)) [ox, oy] = this.snapped(ox, oy); // (a start on the tip of the parent bone stays there)
       this.begin(e, { kind: 'create', parent, ox, oy });
-      this.interaction = { kind: 'create', x0: ox, y0: oy, x1: wx, y1: wy };
+      const [tx, ty] = this.snapped(wx, wy);
+      this.interaction = { kind: 'create', x0: ox, y0: oy, x1: tx, y1: ty };
       this.invalidate();
       return;
     }
@@ -260,7 +307,8 @@ export class ViewportController {
           inv[id] = [p.d / det, -p.b / det, -p.c / det, p.a / det];
         } else inv[id] = [1, 0, 0, 1];
       }
-      this.begin(e, { kind: 'translate', ids, p0: [wx, wy], start, inv, axis });
+      const first = scene.skeleton.boneById(ids[0]);
+      this.begin(e, { kind: 'translate', ids, p0: [wx, wy], w0: first ? [first.worldX, first.worldY] : [0, 0], start, inv, axis });
     } else if (kind === 'rotate') {
       const cx: Record<Id, [number, number]> = {};
       const a0: Record<Id, number> = {};
@@ -368,10 +416,18 @@ export class ViewportController {
       case 'pan':
         uiStore.patch({ camera: { ...cam, x: d.camX - (sx - d.sx) / cam.zoom, y: d.camY + (sy - d.sy) / cam.zoom } });
         break;
-      case 'create':
-        this.interaction = { kind: 'create', x0: d.ox, y0: d.oy, x1: wx, y1: wy };
+      case 'guide': {
+        const v = this.snappedLine(d.axis === 'x' ? wx : wy, d.axis);
+        this.interaction = { kind: 'guide', axis: d.axis, index: d.index, x0: d.axis === 'x' ? v : 0, y0: d.axis === 'y' ? v : 0, x1: 0, y1: 0 };
         this.invalidate();
         break;
+      }
+      case 'create': {
+        const [tx, ty] = this.snapped(wx, wy);
+        this.interaction = { kind: 'create', x0: d.ox, y0: d.oy, x1: tx, y1: ty };
+        this.invalidate();
+        break;
+      }
       case 'rotate': {
         const updates = d.ids.map((id) => {
           const [cx, cy] = d.cx[id];
@@ -386,6 +442,12 @@ export class ViewportController {
         let dy = wy - d.p0[1];
         if (d.axis === 'x') dy = 0;
         if (d.axis === 'y') dx = 0;
+        if (uiStore.get().view.snap) {
+          // the first bone lands on the grid or a guide; the others move by the same step
+          const [tx, ty] = this.snapped(d.w0[0] + dx, d.w0[1] + dy);
+          if (d.axis !== 'y') dx = tx - d.w0[0];
+          if (d.axis !== 'x') dy = ty - d.w0[1];
+        }
         const updates = d.ids.map((id) => {
           const m = d.inv[id];
           return { id, props: { x: d.start[id].x + m[0] * dx + m[1] * dy, y: d.start[id].y + m[2] * dx + m[3] * dy } };
@@ -474,8 +536,21 @@ export class ViewportController {
       const moved = end ? Math.hypot(wx - end.tipX, wy - end.tipY) * ui.camera.zoom : 0;
       if (target || moved > 14) createIkFromDrag(d.bone, target, wx, wy, e.shiftKey);
     }
+    if (d.kind === 'guide') {
+      const [gx, gy] = screenToWorld(ui.camera, w, h, sx, sy);
+      // dropped back on its ruler it goes away (a new one is never made)
+      const onRuler = d.axis === 'y' ? sy < RULER : sx < RULER;
+      const v = this.snappedLine(d.axis === 'x' ? gx : gy, d.axis);
+      if (d.index >= 0 && onRuler) removeGuide(d.axis, d.index);
+      else if (!onRuler) {
+        if (d.index >= 0) moveGuide(d.axis, d.index, v);
+        else addGuide(d.axis, v);
+      }
+      this.interaction = null;
+    }
     if (d.kind === 'create') {
-      const [wx, wy] = screenToWorld(ui.camera, w, h, sx, sy);
+      const [rawX, rawY] = screenToWorld(ui.camera, w, h, sx, sy);
+      const [wx, wy] = this.snapped(rawX, rawY);
       if (Math.hypot(wx - d.ox, wy - d.oy) * ui.camera.zoom >= 8) {
         const id = createBoneWorld({ parent: d.parent, x: d.ox, y: d.oy, tipX: wx, tipY: wy });
         if (id) setSelection({ bones: [id] });

@@ -552,6 +552,8 @@ export interface Project {
   images: ImageRef[];
   /** The pose library of the editor (poses are not part of the Spine export). */
   poses?: PoseEntry[];
+  /** Guide lines laid over the scene in the editor (not part of the Spine export). */
+  guides?: { x: number[]; y: number[] };
 }
 
 // ---------------------------------------------------------------- factories
