@@ -1553,6 +1553,9 @@ a.btn {
 .keycap:hover {
   background: var(--panel-4);
 }
+.keycap.wide {
+  min-width: 120px;
+}
 .keycap.changed {
   border-color: var(--accent-line);
   color: var(--accent);

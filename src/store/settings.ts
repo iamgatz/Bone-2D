@@ -20,7 +20,12 @@ export interface Settings {
   onionGap: number;
   /** Letters of the tools that differ from the defaults (tools.ts). */
   toolKeys: Record<string, string>;
+  /** Key combinations of the commands that differ from the defaults (hotkeys.ts), by command id: "Ctrl+Shift+S". */
+  keyMap: Record<string, string>;
 }
+
+/** A combination as the editor writes it: Ctrl, Alt and Shift in that order, then one key. */
+export const COMBO = /^(Ctrl\+)?(Alt\+)?(Shift\+)?(F\d{1,2}|Tab|Space|[^\s+])$/;
 
 export const DEFAULT_SETTINGS: Settings = {
   autosave: true,
@@ -32,6 +37,7 @@ export const DEFAULT_SETTINGS: Settings = {
   onionAfter: 2,
   onionGap: 3,
   toolKeys: {},
+  keyMap: {},
 };
 
 const KEY = 'bone2d.settings';
@@ -40,7 +46,7 @@ const isRgb = (v: unknown): v is [number, number, number] => Array.isArray(v) &&
 
 /** Takes stored text for what it is worth: what is not valid keeps its default. */
 export function readSettings(raw: string | null): Settings {
-  const out: Settings = { ...DEFAULT_SETTINGS, toolKeys: {} };
+  const out: Settings = { ...DEFAULT_SETTINGS, toolKeys: {}, keyMap: {} };
   if (!raw) return out;
   try {
     const data = JSON.parse(raw) as Partial<Settings>;
@@ -59,6 +65,15 @@ export function readSettings(raw: string | null): Settings {
         if (typeof letter === 'string' && /^[A-Z]$/.test(letter) && !used.has(letter)) {
           out.toolKeys[tool] = letter;
           used.add(letter);
+        }
+      }
+    }
+    if (data.keyMap && typeof data.keyMap === 'object') {
+      const used = new Set<string>();
+      for (const [id, combo] of Object.entries(data.keyMap)) {
+        if (typeof combo === 'string' && COMBO.test(combo) && !used.has(combo)) {
+          out.keyMap[id] = combo;
+          used.add(combo);
         }
       }
     }
@@ -93,5 +108,5 @@ export function setSettings(patch: Partial<Settings>) {
 }
 
 export function resetSettings() {
-  setSettings({ ...DEFAULT_SETTINGS, toolKeys: {} });
+  setSettings({ ...DEFAULT_SETTINGS, toolKeys: {}, keyMap: {} });
 }

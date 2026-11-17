@@ -5,12 +5,16 @@
  */
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { describe, expect, it } from 'vitest';
-import { HOTKEY_GROUPS, KEYS } from '@/editor/hotkeys';
+import { afterEach, describe, expect, it } from 'vitest';
+import { BINDINGS, KEYS, comboOf, hotkeyGroups, keyIdOf, setBinding } from '@/editor/hotkeys';
+import { resetSettings } from '@/store/settings';
 import { HINTS, TOOLS, toolForKey } from '@/editor/tools';
 
 const read = (p: string) => readFileSync(join(process.cwd(), p), 'utf8');
 const app = read('src/editor/App.tsx');
+const actions = read('src/editor/keyActions.ts');
+
+afterEach(resetSettings);
 
 describe('tools', () => {
   it('have one letter each, and no two share it', () => {
@@ -30,7 +34,7 @@ describe('tools', () => {
 });
 
 describe('the shortcuts window', () => {
-  const rows = HOTKEY_GROUPS.flatMap((g) => g.rows);
+  const rows = hotkeyGroups().flatMap((g) => g.rows);
 
   it('lists every tool and names every combination once', () => {
     for (const t of TOOLS) expect(rows.some((r) => r.keys.includes(t.hotkey) && r.label === t.title)).toBe(true);
@@ -46,6 +50,7 @@ describe('the shortcuts window', () => {
       if (/drag|Wheel/.test(combo)) return null; // the pointer, not the keyboard: the viewport and the timeline handle it
       const parts = combo.split('+');
       const key = parts[parts.length - 1];
+      if (BINDINGS.some((b) => !b.fixed && (b.combo === combo || b.aliases?.includes(combo)))) return null; // a movable command: checked below
       const lower: Record<string, string> = { Tab: 'tab', Space: ' ', Del: 'delete', Backspace: 'backspace', Home: 'home', Enter: 'enter', Esc: 'escape', '←': 'arrowleft', '→': 'arrowright', '?': '?' };
       const name = lower[key] ?? key.toLowerCase();
       if (parts.includes('Ctrl')) return `key === '${name}'`;
@@ -58,7 +63,55 @@ describe('the shortcuts window', () => {
       const needle = handled(combo);
       if (needle && !app.includes(needle)) missing.push(`${r.label}: ${combo} (App.tsx has no ${needle})`);
     }
+    // every movable command has its action in keyActions.ts, and every action there belongs to a command
+    for (const b of BINDINGS) if (!b.fixed && !actions.includes(`  ${b.id}:`)) missing.push(`${b.label}: keyActions.ts has no ${b.id}`);
     expect(missing).toEqual([]);
+  });
+});
+
+describe('movable key combinations', () => {
+  const press = (key: string, mods: Partial<{ ctrlKey: boolean; altKey: boolean; shiftKey: boolean; metaKey: boolean }> = {}) => comboOf({ key, ctrlKey: false, metaKey: false, altKey: false, shiftKey: false, ...mods });
+
+  it('are read from a keyboard event the way the table writes them', () => {
+    expect(press('z', { ctrlKey: true })).toBe('Ctrl+Z');
+    expect(press('S', { ctrlKey: true, shiftKey: true })).toBe('Ctrl+Shift+S');
+    expect(press('s', { metaKey: true })).toBe('Ctrl+S');
+    expect(press('?', { shiftKey: true })).toBe('?');
+    expect(press(' ')).toBe('Space');
+    expect(press('F12')).toBe('F12');
+    expect(press('Tab', { shiftKey: true })).toBe('Shift+Tab');
+    for (const k of ['Shift', 'Control', 'Alt', 'ArrowLeft', 'Escape', 'Enter', '+']) expect(press(k), k).toBeNull();
+  });
+
+  it('find the command of a combination, and the redo alias still works', () => {
+    expect(keyIdOf('Ctrl+Z')).toBe('undo');
+    expect(keyIdOf('Ctrl+Shift+Z')).toBe('redo');
+    expect(keyIdOf('Ctrl+Q')).toBeNull();
+  });
+
+  it('move, and the old combination is free while the new one is taken', () => {
+    expect(setBinding('undo', 'Ctrl+U')).toBeNull();
+    expect(KEYS.undo).toBe('Ctrl+U');
+    expect(keyIdOf('Ctrl+U')).toBe('undo');
+    expect(keyIdOf('Ctrl+Z')).toBeNull();
+    expect(hotkeyGroups().flatMap((g) => g.rows).find((r) => r.label === 'Undo')?.keys).toEqual(['Ctrl+U']);
+    expect(setBinding('redo', 'Ctrl+Z')).toBeNull(); // the freed one can be used
+  });
+
+  it('refuse a combination another command, a tool or the browser has, and change nothing', () => {
+    expect(setBinding('undo', 'Ctrl+S')).toBe('Save');
+    expect(setBinding('undo', 'Ctrl+Shift+Z')).toBe('Redo'); // an alias counts
+    expect(setBinding('undo', 'V')).toBe('Pose / select'); // a tool letter
+    expect(setBinding('undo', 'Ctrl+W')).toBe('the browser');
+    expect(setBinding('copy', 'Ctrl+J')).not.toBeNull(); // fixed
+    expect(KEYS.undo).toBe('Ctrl+Z');
+    expect(KEYS.copy).toBe('Ctrl+C');
+  });
+
+  it('go back to the default when it is typed again', () => {
+    setBinding('save', 'Ctrl+U');
+    expect(setBinding('save', 'Ctrl+S')).toBeNull();
+    expect(KEYS.save).toBe('Ctrl+S');
   });
 });
 

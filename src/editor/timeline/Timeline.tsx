@@ -6,6 +6,7 @@ import { decodeKey, encodeKey } from '@/core/keyrefs';
 import type { KeyRef } from '@/core/keyrefs';
 import { cleanUpKeys, copyKeys, createAnimation, currentAnimation, deleteAnimation, deleteKeys, duplicateAnimation, pasteKeys, renameAnimation, selectAnimation, selectBone, selectSlot, setAnimationDuration, setKeysCurve, setMode, setSelection, setTime, togglePlay } from '@/store/actions';
 import { useProject } from '@/store/doc';
+import { useSettings } from '@/store/settings';
 import { uiStore, useUi } from '@/store/ui';
 import type { CurveKind } from '@/store/ui';
 import { KEYS } from '../hotkeys';
@@ -92,6 +93,7 @@ function TimelineMenu({ menu, onClose }: { menu: TimelineMenuRequest; onClose: (
 }
 
 export function Timeline() {
+  useSettings((s) => s.keyMap);
   const project = useProject();
   const doc = project.skeleton;
   const mode = useUi((s) => s.mode);
