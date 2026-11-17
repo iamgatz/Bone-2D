@@ -1,9 +1,9 @@
 import { useState } from 'react';
-import { ArrowLeftRight, Brush, ClipboardPaste, Copy, Crosshair, Lock, Unlock, FlipHorizontal2, Hexagon, Link2, RefreshCw, Scissors, Sparkles, Triangle, Unlink2, Waves, X } from 'lucide-react';
+import { ArrowLeftRight, Brush, ClipboardPaste, Copy, Crosshair, Eraser, Lock, Unlock, FlipHorizontal2, Hexagon, Link2, RefreshCw, Scissors, Sparkles, Spline, Triangle, Unlink2, Waves, X } from 'lucide-react';
 import type { Id, MeshAttachment, Project } from '@/core/model';
 import { linkSource } from '@/core/links';
 import { linkMeshTo, setAttachmentProps, setLinkDeform, setTool, unlinkMesh } from '@/store/actions';
-import { autoWeightMesh, bindMeshToBones, convertToMesh, copyVertexWeights, pasteVertexWeights, mirrorMeshWeights, pruneMeshWeights, regenerateMesh, removeBoneFromMesh, retriangulateMesh, smoothMeshWeights, swapMeshWeights, unbindMeshFromBones, updateMeshBindings, weldMeshWeights, weldTargets } from '@/store/meshActions';
+import { autoWeightMesh, bindMeshToBones, clearMeshEdges, toggleMeshEdge, convertToMesh, copyVertexWeights, pasteVertexWeights, mirrorMeshWeights, pruneMeshWeights, regenerateMesh, removeBoneFromMesh, retriangulateMesh, smoothMeshWeights, swapMeshWeights, unbindMeshFromBones, updateMeshBindings, weldMeshWeights, weldTargets } from '@/store/meshActions';
 import { useProject } from '@/store/doc';
 import { uiStore, useUi } from '@/store/ui';
 import { boneCss, boundBones } from '../viewport/weightColors';
@@ -78,6 +78,8 @@ export function LinkedMeshFields({ skinId, slotId, name, mesh }: { skinId: Id; s
   );
 }
 
+const EMPTY: number[] = [];
+
 export function MeshGroup({ slotId, att }: { slotId: Id; att: MeshAttachment }) {
   const project = useProject();
   const tool = useUi((s) => s.tool);
@@ -85,7 +87,8 @@ export function MeshGroup({ slotId, att }: { slotId: Id; att: MeshAttachment }) 
   const weightView = useUi((s) => s.weightView);
   const mode = useUi((s) => s.mode);
   const selectedBones = useUi((s) => s.selection.bones);
-  const pickedVertices = useUi((s) => (s.selection.slot === slotId && s.selection.attachment === att.name ? s.selection.vertices.length : 0));
+  const pickedList = useUi((s) => (s.selection.slot === slotId && s.selection.attachment === att.name ? s.selection.vertices : EMPTY));
+  const pickedVertices = pickedList.length;
   const [spacing, setSpacing] = useState(34);
   const [padding, setPadding] = useState(2);
   const [pruneBones, setPruneBones] = useState(4);
@@ -149,6 +152,17 @@ export function MeshGroup({ slotId, att }: { slotId: Id; att: MeshAttachment }) 
               </Button>
               <Button onClick={() => retriangulateMesh(slotId, att.name)} title="Rebuild the triangles inside the outline">
                 Retriangulate
+              </Button>
+            </div>
+            <Field label="Edges">
+              <span className="chip" title="Manual edges: the triangles never cross them">{`${(att.edges?.length ?? 0) / 2} manual`}</span>
+            </Field>
+            <div className="hstack mb">
+              <Button icon={Spline} disabled={pickedVertices !== 2} onClick={() => toggleMeshEdge(slotId, att.name, pickedList[0], pickedList[1])} title="Draw an edge between the two selected vertices, or remove the one that is there. Ctrl+drag from one vertex to another does the same in the viewport">
+                Edge
+              </Button>
+              <Button icon={Eraser} disabled={!att.edges?.length} onClick={() => clearMeshEdges(slotId, att.name)} title="Remove every manual edge">
+                Clear
               </Button>
             </div>
           </>

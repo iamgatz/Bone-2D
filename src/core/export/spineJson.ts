@@ -273,7 +273,7 @@ export function exportSpineJson(doc: SkeletonDoc, options: SpineExportOptions = 
           source && att.type === 'mesh' && att.link
             ? { source: att.link.source, slot: source.slotId !== slotId ? slotName(source.slotId) : '', skin: source.skin !== doc.skins[0] ? source.skin.name : '', deform: att.link.deform }
             : null;
-        perSlot[key] = exportAttachment(att, key, data.boneIndex, slotName, compiled?.kind === 'path' ? compiled.lengths : [], linked);
+        perSlot[key] = exportAttachment(att, key, data.boneIndex, slotName, compiled?.kind === 'path' ? compiled.lengths : [], linked, options.nonessential !== false);
       }
       attachments[sn] = perSlot;
     }
@@ -335,7 +335,7 @@ interface LinkJson {
   deform: boolean;
 }
 
-function exportAttachment(att: Attachment, key: string, boneIndex: Map<Id, number>, slotName: (id: Id) => string, pathLengths: number[], linked: LinkJson | null): Json {
+function exportAttachment(att: Attachment, key: string, boneIndex: Map<Id, number>, slotName: (id: Id) => string, pathLengths: number[], linked: LinkJson | null, nonessential = true): Json {
   const o: Json = {};
   if (att.name !== key) o.name = att.name;
   if (att.type === 'path') {
@@ -406,6 +406,7 @@ function exportAttachment(att: Attachment, key: string, boneIndex: Map<Id, numbe
   o.uvs = att.uvs.map((v) => r5(v));
   o.triangles = att.triangles.slice();
   o.hull = att.hull;
+  if (nonessential && att.edges?.length) o.edges = att.edges.slice(); // the manual edges (editor data)
   o.vertices = exportVertices(att, boneIndex);
   if (att.sequence) o.sequence = exportSequence(att.sequence);
   return o;

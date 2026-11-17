@@ -6,6 +6,7 @@ import Delaunator from 'delaunator';
 import type { Id, Influence, MeshAttachment, PathAttachment, RegionAttachment } from './model';
 import { DEG2RAD, distToSegmentSq, matApply, matInvert, pointInPolygon } from './math';
 import type { Mat } from './math';
+import { constrainTriangles, segmentsCross } from './constrain';
 
 // ------------------------------------------------------------------ region -> mesh
 
@@ -249,8 +250,11 @@ export function traceOutline(rgba: ArrayLike<number>, w: number, h: number, opts
 
 // ------------------------------------------------------------------ triangulation
 
-/** Delaunay triangulation of `points` (flat x,y), keeping only triangles whose centroid is inside the hull polygon. */
-export function triangulate(points: ArrayLike<number>, hullCount: number): number[] {
+/**
+ * Delaunay triangulation of `points` (flat x,y), keeping only triangles whose centroid is inside the hull polygon. The outline and the
+ * manual `edges` (vertex index pairs, Spine's orange edges) are always edges of the result: the triangulation never crosses them.
+ */
+export function triangulate(points: ArrayLike<number>, hullCount: number, edges: ArrayLike<number> = []): number[] {
   const n = points.length / 2;
   if (n < 3) return [];
   const flat = new Float64Array(points.length);
@@ -259,7 +263,10 @@ export function triangulate(points: ArrayLike<number>, hullCount: number): numbe
   const hull = new Float64Array(hullCount * 2);
   for (let i = 0; i < hullCount * 2; i++) hull[i] = points[i];
   const out: number[] = [];
-  const t = del.triangles;
+  const constraints: [number, number][] = [];
+  if (hullCount >= 3) for (let i = 0; i < hullCount; i++) constraints.push([i, (i + 1) % hullCount]);
+  for (let i = 0; i + 1 < edges.length; i += 2) if (edges[i] < n && edges[i + 1] < n && edges[i] !== edges[i + 1]) constraints.push([edges[i], edges[i + 1]]);
+  const t = constraints.length ? constrainTriangles(flat, del.triangles, constraints) : del.triangles;
   for (let i = 0; i < t.length; i += 3) {
     const a = t[i];
     const b = t[i + 1];
@@ -272,6 +279,45 @@ export function triangulate(points: ArrayLike<number>, hullCount: number): numbe
     out.push(a, b, c);
   }
   return out;
+}
+
+/** Index pairs of the manual edges after the vertices were renumbered: `from[new]` is the old index of a vertex (-1 for a new one). Edges that lost a vertex are dropped. */
+export function remapEdges(edges: readonly number[], from: ArrayLike<number>): number[] {
+  const to = new Map<number, number>();
+  for (let i = 0; i < from.length; i++) if (from[i] >= 0) to.set(from[i], i);
+  const seen = new Set<string>();
+  const out: number[] = [];
+  for (let i = 0; i + 1 < edges.length; i += 2) {
+    const a = to.get(edges[i]);
+    const b = to.get(edges[i + 1]);
+    if (a === undefined || b === undefined || a === b) continue;
+    const k = a < b ? `${a},${b}` : `${b},${a}`;
+    if (seen.has(k)) continue;
+    seen.add(k);
+    out.push(a, b);
+  }
+  return out;
+}
+
+/** Is `a`-`b` a hull edge (neighbours on the outline)? */
+export function isHullEdge(hull: number, a: number, b: number): boolean {
+  return hull >= 3 && a < hull && b < hull && (((a + 1) % hull === b) || ((b + 1) % hull === a));
+}
+
+/** Can a manual edge be drawn from `a` to `b`: inside the outline, not crossing the outline or another manual edge, not there already. Returns an error text or null. */
+export function edgeProblem(points: ArrayLike<number>, hull: number, edges: readonly number[], a: number, b: number): string | null {
+  const n = points.length >> 1;
+  if (a === b || a < 0 || b < 0 || a >= n || b >= n) return 'Pick two different vertices';
+  if (isHullEdge(hull, a, b)) return 'That edge is part of the outline already';
+  for (let i = 0; i + 1 < edges.length; i += 2) {
+    if ((edges[i] === a && edges[i + 1] === b) || (edges[i] === b && edges[i + 1] === a)) return 'That edge exists already';
+    if (segmentsCross(points, a, b, edges[i], edges[i + 1])) return 'An edge cannot cross another edge';
+  }
+  for (let i = 0; i < hull; i++) if (segmentsCross(points, a, b, i, (i + 1) % hull)) return 'An edge cannot cross the outline';
+  const hullPts = new Float64Array(hull * 2);
+  for (let i = 0; i < hull * 2; i++) hullPts[i] = points[i];
+  if (hull >= 3 && !pointInPolygon((points[a * 2] + points[b * 2]) / 2, (points[a * 2 + 1] + points[b * 2 + 1]) / 2, hullPts)) return 'An edge has to run inside the outline';
+  return null;
 }
 
 /** Interior sample points of a polygon on a staggered grid, kept away from the outline. */
@@ -795,7 +841,8 @@ export function removeMeshVertices(mesh: MeshAttachment, remove: Set<number>, po
     if (weights) weights.push(mesh.weights![i]);
     else vertices.push(mesh.vertices[i * 2], mesh.vertices[i * 2 + 1]);
   }
-  return { ...mesh, uvs, vertices, weights, hull, triangles: triangulate(pos, hull) };
+  const edges = remapEdges(mesh.edges ?? [], keep);
+  return { ...mesh, uvs, vertices, weights, hull, edges, triangles: triangulate(pos, hull, edges) };
 }
 
 // ------------------------------------------------------------------ deform layout

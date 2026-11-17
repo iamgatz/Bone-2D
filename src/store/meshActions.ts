@@ -3,7 +3,7 @@ import { makeCurve, reconcileDeform, upsertKey } from '@/core/edit';
 import { RAD2DEG } from '@/core/math';
 import type { Mat } from '@/core/math';
 import { deformHome } from '@/core/links';
-import { adjacency, autoWeights, bindMesh, generateMeshFromImage, keepOutside, locateInMesh, meshFromRegion, meshWorldPositions, mirrorWeights, normalizeInfluences, pruneWeights, removeBoneWeights, removeMeshVertices, setBoneWeight, smoothWeights, swapBoneWeights, triangulate, unbindMesh, updateBindings, weldWeights } from '@/core/mesh';
+import { adjacency, autoWeights, bindMesh, generateMeshFromImage, keepOutside, locateInMesh, meshFromRegion, meshWorldPositions, mirrorWeights, normalizeInfluences, pruneWeights, remapEdges, edgeProblem, removeBoneWeights, removeMeshVertices, setBoneWeight, smoothWeights, swapBoneWeights, triangulate, unbindMesh, updateBindings, weldWeights } from '@/core/mesh';
 import { mirrorName } from '@/core/duplicate';
 import type { BoneMats, TraceOptions, VertexMap } from '@/core/mesh';
 import { matInvert } from '@/core/math';
@@ -191,8 +191,9 @@ export function addMeshVertex(slotId: Id, name: string, wx: number, wy: number):
   const weights = mesh.weights ? mesh.weights.slice() : null;
   if (weights && newWeights) weights.splice(insertAt, 0, newWeights);
   else vertices.splice(insertAt * 2, 0, local[0], local[1]);
-  const next: MeshAttachment = { ...mesh, uvs, vertices, weights, hull, triangles: triangulate(world2, hull) };
   const from = Array.from({ length: n + 1 }, (_, j) => (j < insertAt ? j : j === insertAt ? -1 : j - 1));
+  const edges = remapEdges(mesh.edges ?? [], from);
+  const next: MeshAttachment = { ...mesh, uvs, vertices, weights, hull, edges, triangles: triangulate(world2, hull, edges) };
   writeMesh(slotId, name, next, 'Add vertex', from);
   setSelection({ slot: slotId, attachment: name, bones: uiStore.get().selection.bones, vertices: [insertAt] });
   return insertAt;
@@ -220,7 +221,42 @@ export function retriangulateMesh(slotId: Id, name: string) {
   if (!mesh) return;
   const { mats, slotMat } = setupMats();
   const world = meshWorldPositions(mesh, slotMat(slotId), mats);
-  writeMesh(slotId, name, { ...mesh, triangles: triangulate(world, mesh.hull) }, 'Retriangulate');
+  writeMesh(slotId, name, { ...mesh, triangles: triangulate(world, mesh.hull, mesh.edges ?? []) }, 'Retriangulate');
+}
+
+/**
+ * Spine's manual edges (orange): the triangulation never crosses them, so the author decides how a mesh bends (a hinge line along an elbow).
+ * Drawing an edge between two vertices that already have one removes it. Returns whether the edge exists afterwards.
+ */
+export function toggleMeshEdge(slotId: Id, name: string, a: number, b: number): boolean {
+  const mesh = getShapeMesh(slotId, name);
+  if (!mesh) return false;
+  const old = mesh.edges ?? [];
+  let at = -1;
+  for (let i = 0; i + 1 < old.length; i += 2) if ((old[i] === a && old[i + 1] === b) || (old[i] === b && old[i + 1] === a)) at = i;
+  const { mats, slotMat } = setupMats();
+  const world = meshWorldPositions(mesh, slotMat(slotId), mats);
+  let edges: number[];
+  if (at >= 0) edges = old.filter((_, i) => i !== at && i !== at + 1);
+  else {
+    const problem = edgeProblem(world, mesh.hull, old, a, b);
+    if (problem) {
+      toast(problem, 'error');
+      return false;
+    }
+    edges = [...old, a, b];
+  }
+  writeMesh(slotId, name, { ...mesh, edges, triangles: triangulate(world, mesh.hull, edges) }, at >= 0 ? 'Delete edge' : 'Add edge');
+  return at < 0;
+}
+
+/** Removes every manual edge and triangulates the mesh from scratch. */
+export function clearMeshEdges(slotId: Id, name: string) {
+  const mesh = getShapeMesh(slotId, name);
+  if (!mesh || !(mesh.edges ?? []).length) return;
+  const { mats, slotMat } = setupMats();
+  const world = meshWorldPositions(mesh, slotMat(slotId), mats);
+  writeMesh(slotId, name, { ...mesh, edges: [], triangles: triangulate(world, mesh.hull, []) }, 'Clear edges');
 }
 
 // ------------------------------------------------------------------ binding & weights
