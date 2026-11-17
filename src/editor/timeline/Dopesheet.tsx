@@ -35,7 +35,7 @@ interface Props {
 type Drag =
   | { kind: 'scrub' }
   | { kind: 'pan'; x: number; scroll: number }
-  | { kind: 'keys'; anchor: KeyRef; grab: number; refs: KeyRef[] }
+  | { kind: 'keys'; anchor: KeyRef; grab: number; refs: KeyRef[]; ripple: boolean }
   | { kind: 'marquee'; x0: number; y0: number; x1: number; y1: number; base: string[] };
 
 function timeToX(t: number, scroll: number, zoom: number) {
@@ -304,13 +304,14 @@ export function Dopesheet({ rows, duration, fps, onMenu }: Props) {
     // keys canvas
     const onDown = (e: PointerEvent) => {
       const [x, y] = local(e, canvas);
-      if (e.button === 1 || (e.button === 0 && e.altKey)) {
+      const hit = hitKey(x, y);
+      // Alt on empty space pans; Alt on a key drags it with every later key of its timeline (Shift in Spine)
+      if (e.button === 1 || (e.button === 0 && e.altKey && !hit)) {
         canvas.setPointerCapture(e.pointerId);
         drag.current = { kind: 'pan', x: e.clientX, scroll: uiStore.get().tlScroll };
         e.preventDefault();
         return;
       }
-      const hit = hitKey(x, y);
       const ui = uiStore.get();
       if (e.button === 2) {
         e.preventDefault();
@@ -337,7 +338,7 @@ export function Dopesheet({ rows, duration, fps, onMenu }: Props) {
         uiStore.patch({ selectedKeys: selected });
         if (selected.length && !(already && (e.shiftKey || e.ctrlKey || e.metaKey))) {
           docStore.beginGesture('Move keys');
-          drag.current = { kind: 'keys', anchor: hit.key.refs[0], grab: xToTime(x) - hit.key.time, refs: selected.map(decodeKey) };
+          drag.current = { kind: 'keys', anchor: hit.key.refs[0], grab: xToTime(x) - hit.key.time, refs: selected.map(decodeKey), ripple: e.altKey };
         }
         return;
       }
@@ -358,7 +359,7 @@ export function Dopesheet({ rows, duration, fps, onMenu }: Props) {
         const delta = target - d.anchor.time;
         if (Math.abs(delta) > 1e-6) {
           const anchorIndex = d.refs.findIndex((r) => encodeKey(r) === encodeKey(d.anchor));
-          const moved = moveKeysBy(d.refs, delta);
+          const moved = moveKeysBy(d.refs, delta, d.ripple);
           d.anchor = { ...d.anchor, time: (moved[anchorIndex] ?? moved[0]).time };
           d.refs = moved;
           uiStore.patch({ selectedKeys: moved.map(encodeKey) });

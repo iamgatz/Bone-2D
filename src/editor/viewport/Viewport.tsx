@@ -6,6 +6,7 @@ import { assets } from '@/store/assets';
 import { docStore } from '@/store/doc';
 import { toast, uiStore } from '@/store/ui';
 import { getScene, screenToWorld } from '../scene';
+import { ghostsFor } from '../ghosts';
 import { ViewportController } from './controller';
 import { drawOverlay } from './overlay';
 
@@ -120,6 +121,9 @@ export function Viewport() {
       const prefs = settingsStore.get();
       renderer!.setSmoothing(prefs.smoothing);
       renderer!.begin({ x: ui.camera.x, y: ui.camera.y, scale: ui.camera.zoom * dpr, width: glCanvas.width, height: glCanvas.height }, [...prefs.viewportBg, 1]);
+      if (ui.view.onion && ui.mode === 'animate' && scene.animation) {
+        for (const g of ghostsFor(scene, scene.animation, ui.time, doc.fps, { before: prefs.onionBefore, after: prefs.onionAfter, gap: prefs.onionGap }, ui.loop, ui.skinId)) renderer!.drawSkeleton(g.skeleton, { skip: (s) => hiddenSlots.has(s.data.id), alpha: g.alpha, tint: g.tint });
+      }
       if (ui.view.images) renderer!.drawSkeleton(scene.skeleton, { skip: (s) => hiddenSlots.has(s.data.id) });
       controller.meshTool.drawHeat(renderer!, scene);
       renderer!.end();

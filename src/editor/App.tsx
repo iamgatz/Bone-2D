@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Bone, BoxSelect, Download, Eye, FilePlus2, FolderOpen, Grid3x3, Bell, ClipboardCopy, ClipboardPaste, Copy, FlipHorizontal2, RotateCcw, SlidersHorizontal, Image as ImageIcon, CircleHelp, MessageSquareText, Link2, Maximize, Play, Redo2, Save, Sparkles, Type, Undo2 } from 'lucide-react';
+import { Bone, BoxSelect, Download, Eye, FilePlus2, FolderOpen, Grid3x3, Bell, Layers, ClipboardCopy, ClipboardPaste, Copy, FlipHorizontal2, RotateCcw, SlidersHorizontal, Image as ImageIcon, CircleHelp, MessageSquareText, Link2, Maximize, Play, Redo2, Save, Sparkles, Type, Undo2 } from 'lucide-react';
 import { decodeKey } from '@/core/keyrefs';
 import { clearSelection, copyKeys, deleteBones, deleteKeys, keySelectedBones, pasteKeys, sanitizeSelection, setMode, setSelection, setTime, setTool, togglePlay } from '@/store/actions';
 import { docStore, useProject } from '@/store/doc';
@@ -137,6 +137,7 @@ function TopBar() {
             <MenuItem close={close} icon={Bone} checked={view.bones} onClick={() => uiStore.patch({ view: { ...view, bones: !view.bones } })}>Bones</MenuItem>
             <MenuItem close={close} icon={Link2} checked={view.constraints} onClick={() => uiStore.patch({ view: { ...view, constraints: !view.constraints } })}>Constraints</MenuItem>
             <MenuItem close={close} icon={BoxSelect} checked={view.outlines} onClick={() => uiStore.patch({ view: { ...view, outlines: !view.outlines } })}>Clips, boxes &amp; points</MenuItem>
+            <MenuItem close={close} icon={Layers} checked={view.onion} onClick={() => uiStore.patch({ view: { ...view, onion: !view.onion } })}>Onion skin</MenuItem>
             <div className="menu-sep" />
             <MenuItem close={close} icon={Maximize} hotkey={KEYS.frame} onClick={() => viewportApi.frame()}>Frame skeleton</MenuItem>
           </>
@@ -187,6 +188,7 @@ function ViewportHud() {
   const mode = useUi((s) => s.mode);
   const zoom = useUi((s) => s.camera.zoom);
   const project = useProject();
+  const view = useUi((s) => s.view);
   const empty = project.skeleton.bones.length <= 1 && project.skeleton.slots.length === 0;
   return (
     <>
@@ -195,6 +197,7 @@ function ViewportHud() {
       <div className="vp-top-right">
         <span className="chip plain">{Math.round(zoom * 100)}%</span>
         <IconButton icon={Maximize} title="Frame skeleton" hotkey={KEYS.frame} small onClick={() => viewportApi.frame()} />
+        <IconButton icon={Layers} title="Onion skin: faded poses of the frames around the playhead (Animate mode)" small active={view.onion} onClick={() => uiStore.patch({ view: { ...uiStore.get().view, onion: !uiStore.get().view.onion } })} />
         <IconButton icon={Eye} title="Toggle names" small onClick={() => uiStore.patch({ view: { ...uiStore.get().view, names: !uiStore.get().view.names } })} />
       </div>
       {empty && (

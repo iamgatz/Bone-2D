@@ -12,6 +12,10 @@ export interface Settings {
   smoothing: boolean;
   /** The wheel zooms around the pointer; off zooms around the middle of the viewport. */
   zoomToMouse: boolean;
+  /** Onion skin: frames shown before and after the playhead, and the frames between two of them. */
+  onionBefore: number;
+  onionAfter: number;
+  onionGap: number;
   /** Letters of the tools that differ from the defaults (tools.ts). */
   toolKeys: Record<string, string>;
 }
@@ -21,6 +25,9 @@ export const DEFAULT_SETTINGS: Settings = {
   viewportBg: [0.075, 0.082, 0.1],
   smoothing: true,
   zoomToMouse: true,
+  onionBefore: 2,
+  onionAfter: 2,
+  onionGap: 3,
   toolKeys: {},
 };
 
@@ -38,6 +45,10 @@ export function readSettings(raw: string | null): Settings {
     if (isRgb(data.viewportBg)) out.viewportBg = data.viewportBg;
     if (typeof data.smoothing === 'boolean') out.smoothing = data.smoothing;
     if (typeof data.zoomToMouse === 'boolean') out.zoomToMouse = data.zoomToMouse;
+    const whole = (v: unknown, lo: number, hi: number): v is number => typeof v === 'number' && Number.isInteger(v) && v >= lo && v <= hi;
+    if (whole(data.onionBefore, 0, 6)) out.onionBefore = data.onionBefore;
+    if (whole(data.onionAfter, 0, 6)) out.onionAfter = data.onionAfter;
+    if (whole(data.onionGap, 1, 30)) out.onionGap = data.onionGap;
     if (data.toolKeys && typeof data.toolKeys === 'object') {
       const used = new Set<string>();
       for (const [tool, letter] of Object.entries(data.toolKeys)) {

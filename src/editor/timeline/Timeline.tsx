@@ -1,10 +1,10 @@
 import { useCallback, useMemo, useRef, useState } from 'react';
-import { ChevronDown, ChevronRight, Copy, Diamond, Film, KeyRound, Maximize, Pause, Pencil, Play, Plus, Repeat, SkipBack, SkipForward, Spline, Trash2 } from 'lucide-react';
+import { ChevronDown, ChevronRight, Copy, Diamond, Eraser, Film, KeyRound, Maximize, Pause, Pencil, Play, Plus, Repeat, SkipBack, SkipForward, Spline, Trash2 } from 'lucide-react';
 import { GraphEditor } from './GraphEditor';
 import { CURVE_PRESETS } from '@/core/curve';
 import { decodeKey, encodeKey } from '@/core/keyrefs';
 import type { KeyRef } from '@/core/keyrefs';
-import { copyKeys, createAnimation, currentAnimation, deleteAnimation, deleteKeys, duplicateAnimation, pasteKeys, renameAnimation, selectAnimation, selectBone, selectSlot, setAnimationDuration, setKeysCurve, setMode, setSelection, setTime, togglePlay } from '@/store/actions';
+import { cleanUpKeys, copyKeys, createAnimation, currentAnimation, deleteAnimation, deleteKeys, duplicateAnimation, pasteKeys, renameAnimation, selectAnimation, selectBone, selectSlot, setAnimationDuration, setKeysCurve, setMode, setSelection, setTime, togglePlay } from '@/store/actions';
 import { useProject } from '@/store/doc';
 import { uiStore, useUi } from '@/store/ui';
 import type { CurveKind } from '@/store/ui';
@@ -151,6 +151,7 @@ export function Timeline() {
           )}
           <IconButton icon={Plus} title="New animation" small onClick={() => (createAnimation(), setMode('animate'))} />
           <IconButton icon={Pencil} title="Rename animation" small disabled={!anim} onClick={() => setRenaming((r) => !r)} />
+          <IconButton icon={Eraser} title="Clean up: remove the keys that change nothing" small disabled={!anim} onClick={() => anim && cleanUpKeys(anim.id)} />
           <IconButton icon={Copy} title="Duplicate animation" small disabled={!anim} onClick={() => anim && duplicateAnimation(anim.id)} />
           <IconButton icon={Trash2} title="Delete animation" small disabled={!anim} onClick={() => anim && deleteAnimation(anim.id)} />
         </div>
