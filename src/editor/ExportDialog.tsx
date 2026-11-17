@@ -6,6 +6,8 @@ import { toast, uiStore } from '@/store/ui';
 import { buildSpineExport } from './exportSpine';
 import type { ExportResult } from './exportSpine';
 import { Button, Dialog, SelectField, Toggle } from './ui/controls';
+import { Segmented } from './ui/Segmented';
+import { ExportAnimation } from './ExportAnimation';
 
 export function ExportDialog() {
   const project = useProject();
@@ -14,12 +16,14 @@ export function ExportDialog() {
   const [padding, setPadding] = useState('2');
   const [pretty, setPretty] = useState(false);
   const [nonessential, setNonessential] = useState(true);
+  const [tab, setTab] = useState<'data' | 'animation'>('data');
   const [busy, setBusy] = useState(false);
   const [result, setResult] = useState<ExportResult | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     let alive = true;
+    if (tab !== 'data') return;
     setBusy(true);
     setError(null);
     buildSpineExport({ maxSize: +maxSize, padding: +padding, pretty, nonessential })
@@ -29,18 +33,20 @@ export function ExportDialog() {
     return () => {
       alive = false;
     };
-  }, [maxSize, padding, pretty, nonessential]);
+  }, [maxSize, padding, pretty, nonessential, tab]);
 
   const close = () => uiStore.patch({ exportOpen: false });
   const base = (doc.name || 'skeleton').replace(/[^\w\-]+/g, '_');
 
   return (
     <Dialog
-      title="Export for Spine 4.3"
+      title="Export"
+      width={tab === 'animation' ? 640 : undefined}
       onClose={close}
       footer={
         <>
           <Button ghost onClick={close}>Close</Button>
+          {tab === 'data' && (
           <Button
             primary
             icon={Download}
@@ -53,9 +59,23 @@ export function ExportDialog() {
           >
             Download ZIP
           </Button>
+          )}
         </>
       }
     >
+      <Segmented
+        label="Export"
+        value={tab}
+        onChange={setTab}
+        options={[
+          { value: 'data', label: 'Spine 4.3 data', tone: 'plain', title: 'Skeleton JSON, texture atlas and a preview page' },
+          { value: 'animation', label: 'Animation (GIF / PNG / video)', tone: 'plain', title: 'Render an animation to pictures' },
+        ]}
+      />
+      {tab === 'animation' ? (
+        <ExportAnimation />
+      ) : (
+        <>
       <p className="hint-text flush">
         Produces <b>.json + .atlas + .png</b> that load in the official Spine 4.3 runtimes (spine-ts, Unity, Godot, Pixi, Phaser…).
       </p>
@@ -88,6 +108,8 @@ export function ExportDialog() {
           </>
         )}
       </div>
+        </>
+      )}
     </Dialog>
   );
 }
