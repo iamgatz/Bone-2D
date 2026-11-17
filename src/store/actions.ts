@@ -5,6 +5,8 @@ import { cleanUpAnimation } from '@/core/cleanup';
 import { findAnimation, freshName, makeCurve, normalizeBoneOrder, purgeAttachment, removeBones, removeSlots, rgbaToRgba2, setSlotDarkColor, snapTime, upsertKey, decompose } from '@/core/edit';
 import type { BoneMats } from '@/core/mesh';
 import { moveKeys, removeKeys, resolveKeys } from '@/core/keyrefs';
+import { duplicateSkin, setSkinRequired, setSkinScope, toggleOverride } from '@/core/skins';
+import type { ScopeKind } from '@/core/skins';
 import type { KeyRef } from '@/core/keyrefs';
 import { RAD2DEG, atan2Deg, matInvert, matMul } from '@/core/math';
 import type { Mat } from '@/core/math';
@@ -833,6 +835,28 @@ export function removeSkinImage(skinId: Id, slotId: Id, placeholder: string) {
     const skin = d.skeleton.skins.find((s) => s.id === skinId);
     if (skin) delete skin.attachments[slotId]?.[placeholder];
   });
+}
+
+export function duplicateSkinAction(id: Id) {
+  let made: Id | null = null;
+  docStore.update('Duplicate skin', (d) => {
+    made = duplicateSkin(d.skeleton, id)?.id ?? null;
+  });
+  if (made) setActiveSkin(made);
+  else toast('The default skin cannot be duplicated');
+}
+
+/** "Skin required": the bone or constraint is only active in the skins that list it. */
+export function setSkinRequiredAction(kind: ScopeKind, id: Id, required: boolean) {
+  docStore.update(required ? 'Require skin' : 'Always active', (d) => setSkinRequired(d.skeleton, kind, id, required));
+}
+
+export function setSkinScopeAction(skinId: Id, kind: ScopeKind, id: Id, on: boolean) {
+  docStore.update('Skin scope', (d) => setSkinScope(d.skeleton, skinId, kind, id, on));
+}
+
+export function toggleSkinOverride(skinId: Id, slotId: Id, name: string) {
+  docStore.update('Skin attachment', (d) => void toggleOverride(d.skeleton, skinId, slotId, name));
 }
 
 /** Edits one channel of one key (graph editor). */

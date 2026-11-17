@@ -409,6 +409,10 @@ export function compileSkeleton(doc: SkeletonDoc): SkeletonData {
   bonesDoc.forEach((b, i) => boneIndex.set(b.id, i));
   const boneOrderKey = bonesDoc.map((b) => b.id).join('|');
 
+  // A bone below a "skin required" bone is required too: a skin that does not list the parent leaves it without a matrix, and the
+  // official runtime would still update the child on top of it (NaN). Spine's editor marks the children itself; here it is a rule.
+  const required = new Set<Id>();
+  for (const b of bonesDoc) if (b.skinRequired || (b.parent !== null && required.has(b.parent))) required.add(b.id);
   const bones: BoneData[] = bonesDoc.map((b, i) => ({
     index: i,
     id: b.id,
@@ -424,7 +428,7 @@ export function compileSkeleton(doc: SkeletonDoc): SkeletonData {
     shearX: b.shearX,
     shearY: b.shearY,
     inherit: b.inherit,
-    skinRequired: b.skinRequired,
+    skinRequired: required.has(b.id),
     color: b.color,
   }));
   for (const b of bones) if (b.parent >= 0) bones[b.parent].children.push(b.index);
@@ -2375,7 +2379,8 @@ export class Skeleton {
   }
 
   sortBone(bone: Bone) {
-    if (bone.sorted) return;
+    // a bone that a skin does not list stays out of the update order (a constraint can clear its `sorted` mark, so check `active` too)
+    if (bone.sorted || !bone.active) return;
     if (bone.parent) this.sortBone(bone.parent);
     bone.sorted = true;
     this.cache.push(bone);

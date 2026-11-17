@@ -2,7 +2,7 @@
  * Which windows (views) are open. Spine lets you open and close every view and keeps the arrangement; so does this: the choice is remembered in the browser.
  * Pure data here (no store), so it can be read by the UI store at start-up and tested.
  */
-export type ViewId = 'tree' | 'images' | 'animations' | 'metrics' | 'history' | 'inspector' | 'timeline';
+export type ViewId = 'tree' | 'images' | 'animations' | 'skins' | 'metrics' | 'history' | 'inspector' | 'timeline';
 export type Views = Record<ViewId, boolean>;
 
 /** The windows with the side of the screen they live on, in the order of the Windows menu. */
@@ -10,20 +10,21 @@ export const VIEW_LIST: { id: ViewId; label: string; side: 'left' | 'right' | 'b
   { id: 'tree', label: 'Hierarchy', side: 'left' },
   { id: 'images', label: 'Images', side: 'left' },
   { id: 'animations', label: 'Animations', side: 'left' },
+  { id: 'skins', label: 'Skins', side: 'left' },
   { id: 'metrics', label: 'Metrics', side: 'left' },
   { id: 'history', label: 'History', side: 'left' },
   { id: 'inspector', label: 'Inspector', side: 'right' },
   { id: 'timeline', label: 'Timeline', side: 'bottom' },
 ];
 
-export const DEFAULT_VIEWS: Views = { tree: true, images: true, animations: false, metrics: false, history: false, inspector: true, timeline: true };
+export const DEFAULT_VIEWS: Views = { tree: true, images: true, animations: false, skins: false, metrics: false, history: false, inspector: true, timeline: true };
 
 /** Ready arrangements, the first one is the default. */
 export const LAYOUTS: { id: string; label: string; views: Views }[] = [
   { id: 'default', label: 'Default', views: DEFAULT_VIEWS },
-  { id: 'rigging', label: 'Rigging', views: { tree: true, images: true, animations: false, metrics: false, history: false, inspector: true, timeline: false } },
-  { id: 'animation', label: 'Animation', views: { tree: true, images: false, animations: true, metrics: false, history: false, inspector: true, timeline: true } },
-  { id: 'viewport', label: 'Viewport only', views: { tree: false, images: false, animations: false, metrics: false, history: false, inspector: false, timeline: false } },
+  { id: 'rigging', label: 'Rigging', views: { tree: true, images: true, animations: false, skins: false, metrics: false, history: false, inspector: true, timeline: false } },
+  { id: 'animation', label: 'Animation', views: { tree: true, images: false, animations: true, skins: false, metrics: false, history: false, inspector: true, timeline: true } },
+  { id: 'viewport', label: 'Viewport only', views: { tree: false, images: false, animations: false, skins: false, metrics: false, history: false, inspector: false, timeline: false } },
 ];
 
 const KEY = 'bone2d.layout';
