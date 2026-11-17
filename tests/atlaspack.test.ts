@@ -184,3 +184,15 @@ describe('the atlas file as the official runtime reads it', () => {
     expect(() => packAtlas([{ name: 'long', width: 300, height: 10 }], { maxSize: 512, padding: 0, rotate: true })).not.toThrow();
   });
 });
+
+describe('page limit', () => {
+  it('no page is bigger than maxSize, however many pictures there are', () => {
+    const inputs: PackInput[] = Array.from({ length: 40 }, (_, i) => ({ name: `p${i}`, width: 90, height: 90 }));
+    for (const maxSize of [128, 256, 512]) {
+      const pages = packAtlas(inputs, { maxSize, padding: 1, pot: true });
+      expect(pages.length).toBeGreaterThan(1);
+      for (const p of pages) expect(Math.max(p.width, p.height)).toBeLessThanOrEqual(maxSize);
+      expect(pages.reduce((n, p) => n + p.regions.length, 0)).toBe(40);
+    }
+  });
+});

@@ -13,7 +13,7 @@ npm install
 npm run dev        # http://localhost:5273
 npm test           # unit tests + random editor sessions, including a comparison with the official spine-core 4.3
 npm run build      # production build into dist/
-npm run cli -- export project.bone2d out/   # Spine skeleton data without the editor (also: info, check; npm run cli -- help)
+npm run cli -- export project.bone2d out/   # Spine skeleton data without the editor; --atlas packs the pictures too (also: info, check; npm run cli -- help)
 ```
 
 A long run of random editor sessions (`FUZZ_FROM` is the first seed):
@@ -72,6 +72,9 @@ $env:FUZZ_SEEDS='300'; $env:FUZZ_STEPS='100'; npx vitest run tests/fuzz.test.ts
 - Keys copied from one bone **paste onto the selected bone**; Settings: bone size and hints.
 - **Texture packer**: strip whitespace, rotate, Linear / Nearest filter, padding, power-of-two, page size; export settings are remembered and can be saved to / loaded from a file.
 - Playback, loop, frame stepping. **Onion skin** (faded poses before and after the playhead), **Clean Up** (removes the keys that change nothing), **Alt-drag a key** to shift the keys after it too, an Animations window with folders (`emotes/wave`).
+- **Several skeletons in one project**: pick, add, duplicate or delete a skeleton at the top of the Hierarchy; the pictures are shared, each skeleton exports on its own (or all of them, a folder each).
+- **Key Edited** (K): keys only the channels you changed (Auto-key off); Ctrl+Shift+L keys all channels of the selected bones. **Floating windows** (Windows → Floating: Slot color, Mesh tools, Weights) hover over the viewport and can be dragged anywhere.
+- **Backups** (History window): copies of the project are kept in the browser (every few minutes, before opening another file, by hand) and can be restored.
 - **Preview window** (Windows → Preview): plays an animation the way a game would, crossfading to the next one by the **mix table** (a default time and times for pairs; saved in the project, not exported). Events show as chips and play the sound files you load there.
 
 **Files**

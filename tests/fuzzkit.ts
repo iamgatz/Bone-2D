@@ -26,6 +26,8 @@ import { validateProject } from '../src/core/validate';
 import * as A from '../src/store/actions';
 import { docStore } from '../src/store/doc';
 import * as FO from '../src/store/folderActions';
+import * as SK from '../src/store/skeletonActions';
+import { skeletonCount } from '../src/core/skeletons';
 import * as I from '../src/store/ikActions';
 import * as MX from '../src/store/mixActions';
 import * as M from '../src/store/meshActions';
@@ -285,6 +287,11 @@ export const ops: Op[] = [
   { name: 'selectAnimation', run: (c) => { const a = c.pick(doc().animations); if (a) A.selectAnimation(a.id); } },
   { name: 'duplicateAnimation', run: (c) => { const a = c.pick(doc().animations); if (a) A.duplicateAnimation(a.id); } },
   { name: 'renameAnimation', run: (c) => { const a = c.pick(doc().animations); if (a) A.renameAnimation(a.id, c.pick(NAMES)!); } },
+  { name: 'createSkeleton', run: (c) => { if (skeletonCount(docStore.get()) < 4 && c.chance(0.3)) SK.createSkeleton(c.chance(0.5) ? 'extra' : 'x'); } },
+  { name: 'copySkeleton', run: (c) => { if (skeletonCount(docStore.get()) < 4 && c.chance(0.3)) SK.copySkeleton(); } },
+  { name: 'switchSkeleton', run: (c) => { const n = skeletonCount(docStore.get()); if (n > 1 && c.chance(0.5)) SK.switchToSkeleton(Math.floor(c.r() * n)); } },
+  { name: 'deleteSkeleton', run: (c) => { const n = skeletonCount(docStore.get()); if (n > 1 && c.chance(0.25)) SK.deleteSkeletonAt(Math.floor(c.r() * n)); } },
+  { name: 'renameSkeleton', run: (c) => { const n = skeletonCount(docStore.get()); if (n > 1 && c.chance(0.4)) SK.renameSkeletonAt(Math.floor(c.r() * n), c.chance(0.5) ? 'hero' : 'same'); } },
   { name: 'setDefaultMix', run: (c) => { MX.setDefaultMix(c.chance(0.3) ? 0 : c.num(0, 1.5)); } },
   { name: 'setMixPair', run: (c) => { const a = c.pick(doc().animations); const b = c.pick(doc().animations); if (a && b) MX.setMixPair(a.id, b.id, c.chance(0.3) ? 0 : c.num(0, 2)); } },
   { name: 'deleteAnimation', run: (c) => { const a = c.pick(doc().animations); if (a) A.deleteAnimation(a.id); } },

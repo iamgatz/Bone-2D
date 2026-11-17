@@ -157,7 +157,8 @@ export function packAtlas(inputs: PackInput[], options: PackOptions = {}): Atlas
     const area = remaining.reduce((s, i) => s + (i.width + pad * 2) * (i.height + pad * 2), 0);
     const widest = Math.max(...remaining.map((i) => i.width + pad * 2));
     const tallest = Math.max(...remaining.map((i) => i.height + pad * 2));
-    let side = Math.max(nextPow2(Math.ceil(Math.sqrt(area))), nextPow2(widest), nextPow2(tallest), 16);
+    // never start above the page limit: a page that holds everything but is bigger than maxSize is not allowed
+    let side = Math.min(maxSize, Math.max(nextPow2(Math.ceil(Math.sqrt(area))), nextPow2(widest), nextPow2(tallest), 16));
     let result: { placed: PackedRegion[]; rest: PackInput[] } | null = null;
     let w = 0;
     let h = 0;

@@ -1866,3 +1866,56 @@ a.btn {
 .event-edit {
   padding: 4px 8px 8px 24px;
 }
+
+/* ---------------------------------------------------------------- floating tool windows */
+.float-win {
+  position: fixed;
+  max-height: calc(100vh - 80px);
+  display: flex;
+  flex-direction: column;
+  background: var(--panel-2);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+}
+.float-head {
+  height: var(--h-panel-head);
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 6px 0 12px;
+  cursor: grab;
+  user-select: none;
+  touch-action: none;
+  font-weight: var(--fw-heading);
+  font-size: var(--fs-sm);
+  text-transform: uppercase;
+  letter-spacing: 0.7px;
+  color: var(--muted);
+  border-bottom: 1px solid var(--border);
+}
+.float-head:active {
+  cursor: grabbing;
+}
+.float-head .title {
+  flex: 1;
+}
+.float-body {
+  overflow: auto;
+  min-height: 0;
+}
+
+/* the skeleton picker at the top of the Hierarchy */
+.skel-bar {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  margin: 0 8px 6px;
+}
+.skel-bar .field {
+  flex: 1;
+  min-width: 0;
+}

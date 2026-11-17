@@ -17,6 +17,8 @@ import { Timeline } from './timeline/Timeline';
 import { Button, Dialog, IconButton, Menu, MenuItem, Splitter } from './ui/controls';
 import { Segmented } from './ui/Segmented';
 import { TooltipHost } from './ui/Tooltip';
+import { FloatingPanels } from './panels/FloatingPanels';
+import { FLOAT_LIST, toggleFloat, useFloats } from '@/store/floats';
 import { Viewport, viewportApi } from './viewport/Viewport';
 import { ExportDialog } from './ExportDialog';
 import { FeedbackDialog } from './Feedback';
@@ -56,6 +58,7 @@ function TopBar() {
   const mode = useUi((s) => s.mode);
   const view = useUi((s) => s.view);
   const views = useUi((s) => s.views);
+  const floats = useFloats((s) => s.open);
   const updatesOpen = useUi((s) => s.updatesOpen); // the dot goes out once the window has been opened
   const [, force] = useState(0);
   useEffect(() => {
@@ -139,6 +142,12 @@ function TopBar() {
             {VIEW_LIST.map((v) => (
               <MenuItem key={v.id} close={close} checked={views[v.id]} onClick={() => toggleView(v.id)}>
                 {v.label}
+              </MenuItem>
+            ))}
+            <div className="menu-sep" />
+            {FLOAT_LIST.map((w) => (
+              <MenuItem key={w.id} close={close} checked={floats[w.id]} onClick={() => toggleFloat(w.id)}>
+                {`Floating: ${w.label}`}
               </MenuItem>
             ))}
             <div className="menu-sep" />
@@ -484,6 +493,7 @@ export function App() {
       {settingsOpen && <SettingsDialog />}
       {welcomeOpen && <WelcomeDialog />}
       {paletteOpen && <Palette />}
+      <FloatingPanels />
       <Toast />
       <TooltipHost />
     </div>

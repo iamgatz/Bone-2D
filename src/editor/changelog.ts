@@ -12,6 +12,26 @@ export interface Release {
 
 export const CHANGELOG: Release[] = [
   {
+    version: '0.40',
+    date: '2026-11-18',
+    en: [
+      "Several skeletons in one project: at the top of the Hierarchy pick the skeleton to edit, add an empty one, duplicate or delete the edited one. The pictures are shared (an image another skeleton shows counts as used, a rename follows into all of them); the pose library and the mix table belong to each skeleton. Export has a Skeleton choice (the edited one, any, or all in one ZIP, a folder each); the command line writes a file for every skeleton (--skeleton picks one).",
+      "Key Edited (K): keys only the channels you changed since the last key, for example only the rotation after you turned a bone; with nothing pending it keys everything of the selected bones. Ctrl+Shift+L always keys all channels (Key Shown in Spine).",
+      "Floating windows (Windows → Floating: Slot color, Mesh tools, Weights): the same controls as in the Inspector in windows that hover over the viewport, can be dragged and stay where you leave them. While one is open the Inspector does not repeat its controls.",
+      "Backups (History window, Backups): the editor keeps copies of the project in the browser, every five minutes of work, before you open another file or start a new project, and when you press Back up now. Restore brings one back (what was open is backed up first), the trash button deletes one.",
+      "Command line: export --atlas packs the pictures into the atlas and PNG pages with the same packer as the editor (--max-size, --padding, --no-pot, --trim, --rotate, --filter, and --scale for smaller pictures). PNG only; other picture formats are left out with a note.",
+      "Fixed: the atlas packer could make a page bigger than the page size limit when there were many pictures; the deform keys of a linked mesh that has its own deform no longer break when the weights of its source change."
+    ],
+    ru: [
+      "Несколько скелетов в одном проекте: вверху иерархии выберите скелет для правки, добавьте пустой, дублируйте или удалите редактируемый. Картинки общие (картинка, которую показывает другой скелет, считается используемой, переименование доходит до всех); библиотека поз и таблица переходов у каждого скелета свои. В экспорте есть выбор скелета (редактируемый, любой или все в одном ZIP, по папке на каждый); командная строка пишет файл для каждого скелета (--skeleton выбирает один).",
+      "Key Edited (K): ключ только на те каналы, что вы изменили с прошлого ключа, например только на поворот после поворота кости; когда ничего не менялось, ключует всё у выбранных костей. Ctrl+Shift+L всегда ключует все каналы (Key Shown в Spine).",
+      "Плавающие окна (Окна → Плавающее: цвет слота, инструменты меша, веса): те же элементы, что в Инспекторе, в окнах над вьюпортом; их можно перетаскивать, и они остаются там, где вы их оставили. Пока окно открыто, Инспектор не повторяет его элементы.",
+      "Резервные копии (окно History, раздел Backups): редактор хранит копии проекта в браузере, каждые пять минут работы, перед открытием другого файла или новым проектом и по кнопке «Сделать копию сейчас». «Вернуть» возвращает копию (открытое сперва тоже сохраняется), корзина удаляет копию.",
+      "Командная строка: export --atlas пакует картинки в атлас и страницы PNG тем же упаковщиком, что и редактор (--max-size, --padding, --no-pot, --trim, --rotate, --filter, а --scale даёт уменьшенные картинки). Только PNG; другие форматы картинок остаются за атласом с пометкой.",
+      "Исправлено: упаковщик атласа мог сделать страницу больше предельного размера, когда картинок много; ключи деформации связанного меша со своей деформацией больше не ломаются, когда меняются веса его источника."
+    ],
+  },
+  {
     version: '0.39',
     date: '2026-11-17',
     en: ['Draw order folders (new in Spine 4.3): put slots into a folder (Inspector, slot, Folder) and the draw order of the folder is keyed on its own. In Animate mode, dragging a slot of a folder in the Hierarchy keys the folder only: its slots swap places among the seats they hold, the other slots stay where they are. Every folder with keys gets its own row in the dopesheet. Export (JSON and binary) and import of Spine files with draw order folders work and are checked against the official runtime; before, imported folder timelines were dropped.'],

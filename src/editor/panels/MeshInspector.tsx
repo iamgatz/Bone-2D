@@ -5,6 +5,7 @@ import { linkSource } from '@/core/links';
 import { linkMeshTo, setAttachmentProps, setLinkDeform, setTool, unlinkMesh } from '@/store/actions';
 import { autoWeightMesh, bindMeshToBones, clearMeshEdges, toggleMeshEdge, convertToMesh, copyVertexWeights, pasteVertexWeights, mirrorMeshWeights, pruneMeshWeights, regenerateMesh, removeBoneFromMesh, retriangulateMesh, smoothMeshWeights, swapMeshWeights, unbindMeshFromBones, updateMeshBindings, weldMeshWeights, weldTargets } from '@/store/meshActions';
 import { useProject } from '@/store/doc';
+import { useFloats } from '@/store/floats';
 import { uiStore, useUi } from '@/store/ui';
 import { boneCss, boundBones } from '../viewport/weightColors';
 import { Button, ColorSwatch, IconButton, NumberField, SelectField, Toggle } from '../ui/controls';
@@ -80,7 +81,15 @@ export function LinkedMeshFields({ skinId, slotId, name, mesh }: { skinId: Id; s
 
 const EMPTY: number[] = [];
 
-export function MeshGroup({ slotId, att }: { slotId: Id; att: MeshAttachment }) {
+/**
+ * The mesh sections of the Inspector: the mesh itself (`main`) and its weights (`weights`). In a floating window only the part that window is for
+ * shows (`part`); in the Inspector a part is left out while its floating window is open.
+ */
+export function MeshGroup({ slotId, att, part }: { slotId: Id; att: MeshAttachment; part?: 'main' | 'weights' }) {
+  const toolsFloating = useFloats((s) => s.open.meshTools);
+  const weightsFloating = useFloats((s) => s.open.weights);
+  const showMain = part ? part === 'main' : !toolsFloating;
+  const showWeights = part ? part === 'weights' : !weightsFloating;
   const project = useProject();
   const tool = useUi((s) => s.tool);
   const brush = useUi((s) => s.brush);
@@ -114,7 +123,7 @@ export function MeshGroup({ slotId, att }: { slotId: Id; att: MeshAttachment }) 
 
   return (
     <>
-      <Section id="mesh.main" title={`Mesh · ${att.path}`} icon={Hexagon}>
+      {showMain && <Section id="mesh.main" title={`Mesh · ${att.path}`} icon={Hexagon}>
         <div className="hstack wrap mb">
           <span className="chip">{`${att.uvs.length / 2} vertices`}</span>
           <span className="chip">{`${att.triangles.length / 3} triangles`}</span>
@@ -184,9 +193,9 @@ export function MeshGroup({ slotId, att }: { slotId: Id; att: MeshAttachment }) 
             </div>
           </>
         )}
-      </Section>
+      </Section>}
 
-      {setup && !linked && (
+      {showWeights && setup && !linked && (
         <Section id="mesh.weights" title="Weights" icon={Link2}>
           {!weighted ? (
             <>

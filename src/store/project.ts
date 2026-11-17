@@ -2,8 +2,10 @@
 import { emptyProject, migrateProject } from '@/core/model';
 import type { Project } from '@/core/model';
 import { repairProject } from '@/core/validate';
+import type { BackupWhy } from '@/core/backups';
 import { assets, blobToDataURL, dataURLToBlob } from './assets';
 import type { ImageAsset } from './assets';
+import { describeProject, hasContent, maybeAutoBackup, readBackupText, saveBackup } from './backups';
 import { docStore } from './doc';
 import { LEGACY_DB, idbGet, idbSet } from './idb';
 import { forgetRecent, recentHandle, rememberRecent } from './recent';
@@ -22,8 +24,7 @@ interface ProjectFile {
 
 const dataUrlCache = new Map<string, string>();
 
-async function assetDataURL(name: string): Promise<string | null> {
-  const a = assets.get(name);
+async function assetDataURL(name: string, a: ImageAsset | undefined = assets.get(name)): Promise<string | null> {
   if (!a) return null;
   const key = `${name}@${a.version}`;
   let url = dataUrlCache.get(key);
@@ -36,9 +37,11 @@ async function assetDataURL(name: string): Promise<string | null> {
 
 export async function serializeProject(): Promise<string> {
   const project = docStore.get();
+  // the pictures are taken now, before the first await: the caller may replace them as soon as it gets control back
+  const held = project.images.map((img) => ({ name: img.name, asset: assets.get(img.name) }));
   const images: Record<string, string> = {};
-  for (const img of project.images) {
-    const url = await assetDataURL(img.name);
+  for (const img of held) {
+    const url = await assetDataURL(img.name, img.asset);
     if (url) images[img.name] = url;
   }
   const file: ProjectFile = { bone2d: 1, project, images, ui: { camera: uiStore.get().camera } };
@@ -52,7 +55,34 @@ export interface LoadReport {
   failedImages: string[];
 }
 
+/** Takes a backup copy of the open project (the History window lists it); resolves to whether one was added. */
+export function backupCurrent(why: BackupWhy): Promise<boolean> {
+  if (!hasContent()) return Promise.resolve(false);
+  const info = describeProject();
+  return serializeProject().then((text) => saveBackup(text, why, info), () => false);
+}
+
+/** Brings a backup copy back as the open project; what was open is backed up first, so the restore can be taken back too. */
+export async function restoreBackup(id: string): Promise<boolean> {
+  const text = await readBackupText(id);
+  if (!text) {
+    toast('That backup could not be read', 'error');
+    return false;
+  }
+  await backupCurrent('restore');
+  try {
+    await loadProjectText(text);
+    docStore.dirty = true;
+    toast('Backup restored', 'ok');
+    return true;
+  } catch (e) {
+    toast(`Could not restore the backup: ${(e as Error).message}`, 'error');
+    return false;
+  }
+}
+
 export async function loadProjectText(text: string): Promise<LoadReport> {
+  if (docStore.dirty) void backupCurrent('open'); // unsaved work is not lost by opening something else
   const file = JSON.parse(text) as ProjectFile;
   if ((file.bone2d !== 1 && file.marrow !== 1) || !file.project?.skeleton) throw new Error('Not a Bone 2D project file');
   // Everything that can fail happens BEFORE the open project is touched: a damaged file must never wipe the session.
@@ -86,6 +116,7 @@ export async function loadProjectText(text: string): Promise<LoadReport> {
 }
 
 export function newProject(name = 'untitled') {
+  if (docStore.dirty) void backupCurrent('new');
   currentHandle = null;
   assets.clear();
   docStore.replace(emptyProject(name));
@@ -247,7 +278,9 @@ export function startAutosave(): () => void {
     timer = setTimeout(async () => {
       if (!settingsStore.get().autosave) return;
       try {
-        await idbSet('autosave', await serializeProject());
+        const text = await serializeProject();
+        await idbSet('autosave', text);
+        void maybeAutoBackup(text);
       } catch (e) {
         console.warn('autosave failed', e);
       }

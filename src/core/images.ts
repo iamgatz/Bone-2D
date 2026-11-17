@@ -4,6 +4,7 @@
  */
 import type { Project, SkeletonDoc } from './model';
 import { attachmentPictures } from './sequence';
+import { skeletonList } from './skeletons';
 
 /** The folder part of an image name ("hero/arm" -> "hero"), or "" for an image in the root. */
 export function folderOf(name: string): string {
@@ -31,8 +32,9 @@ export function imageUsage(doc: SkeletonDoc): Map<string, number> {
 
 /** Names of the images that no attachment shows. */
 export function unusedImages(project: Project): string[] {
-  const uses = imageUsage(project.skeleton);
-  return project.images.filter((i) => !uses.has(i.name)).map((i) => i.name);
+  const used = new Set<string>();
+  for (const doc of skeletonList(project)) for (const name of imageUsage(doc).keys()) used.add(name); // an image another skeleton of the project shows is in use
+  return project.images.filter((i) => !used.has(i.name)).map((i) => i.name);
 }
 
 /** Cleans a name typed by the user: trimmed, no empty folder parts, no leading or trailing "/". Empty when nothing is left. */
@@ -70,13 +72,16 @@ export function renameImage(project: Project, from: string, rawTo: string): Rena
   if (!image) return { ok: false, reason: 'missing' };
   if (to === from) return { ok: true, name: to };
   if (project.images.some((i) => i.name === to)) return { ok: false, reason: 'taken' };
-  if (sequenceFrameOwner(project.skeleton, from)) return { ok: false, reason: 'frame' };
+  const docs = skeletonList(project);
+  if (docs.some((d) => sequenceFrameOwner(d, from))) return { ok: false, reason: 'frame' };
   image.name = to;
-  for (const skin of project.skeleton.skins) {
-    for (const slot of Object.values(skin.attachments)) {
-      for (const att of Object.values(slot)) {
-        // (the path of a sequence is the start of the names of its frames, not a picture)
-        if ((att.type === 'region' || att.type === 'mesh') && att.path === from && !att.sequence) att.path = to;
+  for (const doc of docs) {
+    for (const skin of doc.skins) {
+      for (const slot of Object.values(skin.attachments)) {
+        for (const att of Object.values(slot)) {
+          // (the path of a sequence is the start of the names of its frames, not a picture)
+          if ((att.type === 'region' || att.type === 'mesh') && att.path === from && !att.sequence) att.path = to;
+        }
       }
     }
   }

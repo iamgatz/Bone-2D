@@ -2,7 +2,7 @@ import { settingsStore, setSettings } from '@/store/settings';
 import { TOOLS, hotkeyOf, setToolKey } from './tools';
 
 export type KeyId =
-  | 'undo' | 'redo' | 'save' | 'saveAs' | 'open' | 'export' | 'copy' | 'paste' | 'selectAll' | 'frame' | 'mode' | 'play' | 'key' | 'delete' | 'help' | 'hideViews' | 'settings' | 'duplicate' | 'palette' | 'mirror' | 'showAll' | 'isolate' | 'frameSelection' | 'zoom100' | 'parent';
+  | 'undo' | 'redo' | 'save' | 'saveAs' | 'open' | 'export' | 'copy' | 'paste' | 'selectAll' | 'frame' | 'mode' | 'play' | 'key' | 'delete' | 'help' | 'hideViews' | 'settings' | 'duplicate' | 'palette' | 'mirror' | 'showAll' | 'isolate' | 'frameSelection' | 'zoom100' | 'parent' | 'keyShown';
 
 export interface Binding {
   id: KeyId;
@@ -35,7 +35,8 @@ export const BINDINGS: Binding[] = [
   { id: 'zoom100', label: 'Zoom to 100%', combo: 'Shift+Z' },
   { id: 'mode', label: 'Setup ⇄ Animate', combo: 'Tab' },
   { id: 'play', label: 'Play / pause', combo: 'Space' },
-  { id: 'key', label: 'Key selected bone', combo: 'K' },
+  { id: 'key', label: 'Key edited channels', combo: 'K' },
+  { id: 'keyShown', label: 'Key all channels of the selected bones', combo: 'Ctrl+Shift+L' },
   { id: 'delete', label: 'Delete selection / keys', combo: 'Del', fixed: true },
   { id: 'help', label: 'Shortcuts', combo: '?' },
   { id: 'hideViews', label: 'Hide / show all windows', combo: 'F9' },
@@ -151,6 +152,7 @@ export const hotkeyGroups = (): HotkeyGroup[] => [
       { label: 'Step 10 frames', keys: ['Shift+←', 'Shift+→'] },
       { label: 'Go to the start', keys: ['Home'] },
       row('key'),
+      row('keyShown'),
     ],
   },
   {

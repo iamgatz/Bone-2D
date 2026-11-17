@@ -64,11 +64,26 @@ export const KNOWN_DIFFS = /\.hullLength:|\.edges:|darkColor\.a:|\.endSlot: null
 /** Without editor-only data the binary keeps the loader's defaults for colors and sizes that the JSON loader fills in itself. */
 const ESSENTIAL_ONLY = /\.color\.|\.(width|height): |\.max: /;
 
+/**
+ * A skeleton with no attachments at all: the JSON loader keeps the (empty) default skin, the binary reader returns none for a default skin with no
+ * slots. Nothing can be looked up in either, so it is not a difference that matters.
+ */
+function emptyDefaultSkin(fromJson: any) {
+  const empty = !!fromJson.defaultSkin && fromJson.defaultSkin.attachments.every((a: unknown) => !a || Object.keys(a as object).length === 0);
+  return (d: string) => {
+    if (!empty) return false;
+    const m = /^skeleton\.skins: length (\d+) vs (\d+)$/.exec(d);
+    return (!!m && Number(m[1]) - Number(m[2]) === 1) || /^skeleton\.defaultSkin: .* vs null$/.test(d);
+  };
+}
+
 /** A physics constraint with a scale mode but no scale: the mode has nothing to act on and is not written. */
 function idleScaleMode(fromJson: any) {
   return (d: string) => {
     const m = /^skeleton\.constraints\[(\d+)\]\._scaleYMode: \d vs 0$/.exec(d);
-    return !!m && fromJson.constraints[Number(m[1])].scaleX === 0;
+    if (m) return fromJson.constraints[Number(m[1])].scaleX === 0;
+    // the same constraint seen through the list of a skin that needs it (which place it has in the skeleton's list is not in the message)
+    return /^skeleton\.skins\[\d+\]\.constraints\[\d+\]\._scaleYMode: \d vs 0$/.test(d) && fromJson.constraints.some((c: { scaleX?: number; _scaleYMode?: number }) => c.scaleX === 0 && c._scaleYMode);
   };
 }
 
@@ -79,7 +94,8 @@ export function compare(project: Project, options: { nonessential?: boolean } = 
   const fromJson = loadOfficial(json, atlas);
   const fromBinary = loadOfficialBinary(bytes, atlas);
   const idle = idleScaleMode(fromJson);
-  const diffs = diffGraphs(fromJson, fromBinary, 'skeleton').filter((d) => !KNOWN_DIFFS.test(d) && !idle(d) && !(options.nonessential === false && ESSENTIAL_ONLY.test(d)));
+  const noSkin = emptyDefaultSkin(fromJson);
+  const diffs = diffGraphs(fromJson, fromBinary, 'skeleton').filter((d) => !KNOWN_DIFFS.test(d) && !idle(d) && !noSkin(d) && !(options.nonessential === false && ESSENTIAL_ONLY.test(d)));
   return { diffs, bytes, json, fromJson, fromBinary };
 }
 

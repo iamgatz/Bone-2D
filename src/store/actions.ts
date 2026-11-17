@@ -23,6 +23,7 @@ import { isPsd, layerCenter, readPsdFile } from '@/core/import/psd';
 import type { PsdLayer, PsdPixels } from '@/core/import/psd';
 import { fitRegion, planPsdSync } from '@/core/import/psdSync';
 import { cleanImageName, renameImage, sequenceFrameOwner, unusedImages } from '@/core/images';
+import { skeletonList } from '@/core/skeletons';
 import type { Animation, Bone, Id, ImageRef, Inherit, Key, PlaySettings, Project, RGB, RGBA, Slot } from '@/core/model';
 import { getScene, getSetupSkeleton } from '@/editor/scene';
 import { assets } from './assets';
@@ -373,6 +374,52 @@ export function setBonePose(updates: { id: Id; props: PoseProps }[], label = 'Ed
 
 export function extendDuration(a: Draft<Animation>, time: number) {
   if (time > a.duration) a.duration = time;
+}
+
+type Channel = 'rotate' | 'translate' | 'scale' | 'shear';
+
+/** The transform channels a temporary pose edit touched (an override holds only the properties that were changed). */
+export function editedChannels(o: PoseProps | undefined): Set<Channel> {
+  const out = new Set<Channel>();
+  if (o) for (const k of Object.keys(o) as (keyof PoseProps)[]) if (o[k] !== undefined) out.add(POSE_TIMELINE[k]);
+  return out;
+}
+
+/**
+ * Key Edited (Spine's K): keys only the channels that were changed since the last key, for the bones that have such edits (with Auto-key off an edit
+ * is a pending pose until keyed). Rotating a bone keys its rotation and leaves translate, scale and shear alone. With nothing pending it keys
+ * every channel of the selected bones, like Key Shown, so the key still does something when Auto-key has already keyed everything.
+ */
+export function keyEditedBones() {
+  const ui = uiStore.get();
+  if (!currentAnimation() || ui.mode !== 'animate') return;
+  const pending = Object.keys(ui.overrides).filter((id) => editedChannels(ui.overrides[id]).size > 0);
+  if (!pending.length) {
+    keySelectedBones();
+    return;
+  }
+  keyBonesChannels(pending.map((id) => ({ id, channels: editedChannels(ui.overrides[id]) })), 'Key edited');
+}
+
+function keyBonesChannels(list: { id: Id; channels: Set<Channel> }[], label: string) {
+  const ui = uiStore.get();
+  const anim = currentAnimation();
+  if (!anim || ui.mode !== 'animate') return;
+  const time = ui.time;
+  const prepared = list
+    .map(({ id, channels }) => {
+      const cur = currentPose(id);
+      return cur ? { id, channels, pose: { ...cur, ...ui.overrides[id] } } : null;
+    })
+    .filter((x): x is NonNullable<typeof x> => x !== null);
+  if (!prepared.length) return;
+  docStore.update(label, (d) => {
+    const a = d.skeleton.animations.find((x) => x.id === anim.id);
+    if (!a) return;
+    for (const p of prepared) keyBoneInDraft(d, a, p.id, p.pose, p.channels, time, ui.defaultCurve);
+    extendDuration(a, time);
+  });
+  uiStore.patch({ overrides: {} });
 }
 
 /** Keys the current pose of the selected bones (all four transform timelines or a subset). */
@@ -1197,7 +1244,7 @@ export function renameImageAction(from: string, raw: string): string | null {
     return null;
   }
   if (to === from) return from;
-  if (sequenceFrameOwner(project().skeleton, from)) {
+  if (skeletonList(project()).some((d) => sequenceFrameOwner(d, from))) {
     toast('This picture is a frame of a sequence: its name is the sequence path and a number, so it is renamed there', 'error');
     return null;
   }
