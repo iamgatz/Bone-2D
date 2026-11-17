@@ -11,7 +11,8 @@ import { createSlider } from '@/store/sliderActions';
 import { useUi } from '@/store/ui';
 import { showAll } from '@/store/visibilityActions';
 import { getScene } from '../scene';
-import { IconButton } from '../ui/controls';
+import { IconButton, NumberField, TextField } from '../ui/controls';
+import { Field } from '../ui/Field';
 
 function InlineName({ value, editing, onDone }: { value: string; editing: boolean; onDone: (v: string | null) => void }) {
   if (!editing) return <span className="label">{value}</span>;
@@ -45,6 +46,7 @@ export function TreePanel() {
   const [editing, setEditing] = useState<string | null>(null);
   const [dropOn, setDropOn] = useState<string | null>(null);
   const [query, setQuery] = useState('');
+  const [openEvent, setOpenEvent] = useState<string | null>(null);
   const match = useMemo(() => filterTree(doc, query), [doc, query]);
 
   const childrenOf = useMemo(() => {
@@ -314,7 +316,8 @@ export function TreePanel() {
               <IconButton icon={Plus} title="New event" small onClick={() => createEvent()} />
             </div>
             {doc.events.filter((ev) => !match.active || match.events.has(ev.id)).map((ev) => (
-              <div key={ev.id} className="row" style={{ paddingLeft: 14 }} onDoubleClick={() => setEditing('e:' + ev.id)}>
+              <div key={ev.id}>
+              <div className={`row${openEvent === ev.id ? ' selected' : ''}`} style={{ paddingLeft: 14 }} onClick={() => setOpenEvent((o) => (o === ev.id ? null : ev.id))} onDoubleClick={() => setEditing('e:' + ev.id)}>
                 <span className="ico">
                   <Zap size={13} />
                 </span>
@@ -327,9 +330,36 @@ export function TreePanel() {
                   }}
                 />
                 <span className="actions pinned">
-                  <IconButton icon={Diamond} title="Fire this event at the playhead" small onClick={() => keyEvent(ev.id)} />
-                  <IconButton icon={Trash2} title="Delete event" small onClick={() => deleteEvent(ev.id)} />
+                  <IconButton icon={Diamond} title="Fire this event at the playhead" small onClick={(e) => (e.stopPropagation(), keyEvent(ev.id))} />
+                  <IconButton icon={Trash2} title="Delete event" small onClick={(e) => (e.stopPropagation(), deleteEvent(ev.id))} />
                 </span>
+              </div>
+              {openEvent === ev.id && (
+                <div className="event-edit">
+                  <Field label="Int" title="The whole number the event carries by default">
+                    <NumberField label="#" value={ev.int} step={1} precision={0} onChange={(v) => updateEvent(ev.id, { int: v })} />
+                  </Field>
+                  <Field label="Float" title="The decimal number the event carries by default">
+                    <NumberField label="f" value={ev.float} step={0.1} precision={3} onChange={(v) => updateEvent(ev.id, { float: v })} />
+                  </Field>
+                  <Field label="Text" title="The text the event carries by default">
+                    <TextField value={ev.string} onCommit={(v) => updateEvent(ev.id, { string: v })} wide />
+                  </Field>
+                  <Field label="Sound" title="The path of the sound file for the engine (kept in the export; the editor does not play it)">
+                    <TextField value={ev.audio ?? ''} onCommit={(v) => updateEvent(ev.id, { audio: v })} wide />
+                  </Field>
+                  {ev.audio && (
+                    <>
+                      <Field label="Volume" title="0 is silent, 1 is full">
+                        <NumberField label="v" value={ev.volume ?? 1} step={0.05} precision={2} min={0} max={1} onChange={(v) => updateEvent(ev.id, { volume: v })} />
+                      </Field>
+                      <Field label="Balance" title="-1 is the left speaker, 1 the right">
+                        <NumberField label="b" value={ev.balance ?? 0} step={0.05} precision={2} min={-1} max={1} onChange={(v) => updateEvent(ev.id, { balance: v })} />
+                      </Field>
+                    </>
+                  )}
+                </div>
+              )}
               </div>
             ))}
           </>

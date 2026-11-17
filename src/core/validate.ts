@@ -415,6 +415,19 @@ function repairEvents(doc: SkeletonDoc, note: Note) {
     if (!finite(e.int)) e.int = 0;
     if (!finite(e.float)) e.float = 0;
     if (!isString(e.string)) e.string = '';
+    if (e.audio !== undefined && (!isString(e.audio) || !e.audio)) {
+      delete e.audio;
+      delete e.volume;
+      delete e.balance;
+      note(`event "${e.name}": its sound was not a path and was removed`);
+    }
+    if (e.audio === undefined) {
+      delete e.volume;
+      delete e.balance;
+    } else {
+      if (e.volume !== undefined && (!finite(e.volume) || e.volume < 0 || e.volume > 1)) e.volume = finite(e.volume) ? Math.min(1, Math.max(0, e.volume)) : 1;
+      if (e.balance !== undefined && (!finite(e.balance) || e.balance < -1 || e.balance > 1)) e.balance = finite(e.balance) ? Math.min(1, Math.max(-1, e.balance)) : 0;
+    }
   }
 }
 

@@ -281,6 +281,11 @@ export function exportSpineJson(doc: SkeletonDoc, options: SpineExportOptions = 
     setIf(o, 'int', e.int, 0);
     setIf(o, 'float', r5(e.float), 0);
     if (e.string) o.string = e.string;
+    if (e.audio) {
+      o.audio = e.audio;
+      setIf(o, 'volume', r5(e.volume ?? 1), 1);
+      setIf(o, 'balance', r5(e.balance ?? 0), 0);
+    }
     events[e.name] = o;
   }
 
@@ -694,6 +699,7 @@ function exportAnimation(doc: SkeletonDoc, a: Animation, n: Names): Json {
   // events
   if (a.events.length) {
     const evName = (id: Id) => doc.events.find((e) => e.id === id)?.name;
+    const evDef = (id: Id) => doc.events.find((e) => e.id === id);
     out.events = a.events
       .filter((k) => evName(k.event))
       .map((k) => {
@@ -703,6 +709,12 @@ function exportAnimation(doc: SkeletonDoc, a: Animation, n: Names): Json {
         if (k.int !== undefined) e.int = k.int;
         if (k.float !== undefined) e.float = k.float;
         if (k.string !== undefined) e.string = k.string;
+        const def = evDef(k.event);
+        if (def?.audio) {
+          // always both, written out: the official 4.3.13 JSON loader takes the VOLUME of the definition as the default balance of a key
+          e.volume = r5(k.volume ?? def.volume ?? 1);
+          e.balance = r5(k.balance ?? def.balance ?? 0);
+        }
         return e;
       });
   }

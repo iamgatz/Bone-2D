@@ -389,6 +389,12 @@ export interface EventDef {
   int: number;
   float: number;
   string: string;
+  /** The sound that goes with the event (a path the engine resolves). The editor keeps it for the export; it does not play it. */
+  audio?: string;
+  /** 0..1, default 1; only with `audio`. */
+  volume?: number;
+  /** -1 (left) .. 1 (right), default 0; only with `audio`. */
+  balance?: number;
 }
 
 // ---------------------------------------------------------------- animation
@@ -427,6 +433,9 @@ export interface EventKey {
   int?: number;
   float?: number;
   string?: string;
+  /** Overrides of the definition's volume and balance (an event with audio). */
+  volume?: number;
+  balance?: number;
 }
 
 /** Slider timelines. value = [seconds] / [mix]. */
