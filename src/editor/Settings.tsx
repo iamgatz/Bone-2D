@@ -62,6 +62,7 @@ export function SettingsDialog() {
   const lang = useLang();
   const [tab, setTab] = useState<Tab>('general');
   const autosave = useSettings((s) => s.autosave);
+  const showWelcome = useSettings((s) => s.showWelcome);
   const bg = useSettings((s) => s.viewportBg);
   const smoothing = useSettings((s) => s.smoothing);
   const zoomToMouse = useSettings((s) => s.zoomToMouse);
@@ -103,6 +104,9 @@ export function SettingsDialog() {
           <>
             <Row label="Language">
               <Segmented className="lang" label="Language" value={lang} onChange={setLang} options={(['en', 'ru'] as const).map((l) => ({ value: l, label: l.toUpperCase() }))} />
+            </Row>
+            <Row label="Welcome window" hint="Shown when the editor starts with an empty project">
+              <Toggle on={showWelcome} onChange={(v) => setSettings({ showWelcome: v })} title="Welcome window" />
             </Row>
             <Row label="Autosave" hint="Keeps the open project in this browser a moment after every change">
               <Toggle on={autosave} onChange={(v) => setSettings({ autosave: v })} title="Autosave" />
