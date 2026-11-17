@@ -33,7 +33,7 @@ export function buildCommands(): Command[] {
     { id: 'file.open', group: 'File', title: 'Open…', keys: KEYS.open, run: () => void openProjectFile() },
     { id: 'file.save', group: 'File', title: 'Save', keys: KEYS.save, run: () => void saveProjectFile() },
     { id: 'file.export', group: 'File', title: 'Export', keys: KEYS.export, run: open('exportOpen') },
-    { id: 'file.import', group: 'File', title: 'Import Spine JSON (4.0–4.3)…', run: () => openSpineImport() },
+    { id: 'file.import', group: 'File', title: 'Import Spine data (JSON 4.0–4.3, binary 4.3)…', run: () => openSpineImport() },
     { id: 'file.demo', group: 'File', title: 'Load demo rig (Kit)', run: () => loadSample() },
     { id: 'file.welcome', group: 'File', title: 'Welcome screen', run: open('welcomeOpen') },
     { id: 'edit.undo', group: 'Edit', title: 'Undo', keys: KEYS.undo, run: () => docStore.undo() },

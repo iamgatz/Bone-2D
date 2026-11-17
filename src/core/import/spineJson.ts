@@ -365,10 +365,13 @@ export function importSpineJson(input: unknown, name = 'imported'): SpineImportR
   }
   // linked meshes share their parent's geometry; Bone 2D has no such link, so each one becomes an independent copy
   for (const l of linked) {
+    // 4.3 files name the source mesh `source` (older ones `parent`) and may keep it in another slot
+    const sourceName = String(l.map.source ?? l.map.parent);
+    const sourceSlot = typeof l.map.slot === 'string' ? (slotId(l.map.slot) ?? l.slot) : l.slot;
     const parentSkin = typeof l.map.skin === 'string' ? skinByName.get(l.map.skin) : l.skin;
-    const parent = parentSkin?.attachments[l.slot]?.[String(l.map.parent)] ?? skinByName.get('default')?.attachments[l.slot]?.[String(l.map.parent)];
+    const parent = parentSkin?.attachments[sourceSlot]?.[sourceName] ?? skinByName.get('default')?.attachments[sourceSlot]?.[sourceName];
     if (!parent || parent.type !== 'mesh') {
-      warn(`linked mesh "${l.key}" was skipped: its parent mesh "${String(l.map.parent)}" does not exist`);
+      warn(`linked mesh "${l.key}" was skipped: its parent mesh "${sourceName}" does not exist`);
       continue;
     }
     const path = str(l.map.path, str(l.map.name, l.key));
