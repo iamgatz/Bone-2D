@@ -8,6 +8,7 @@ import { validateProject } from '@/core/validate';
 import { deleteAnimation } from '@/store/actions';
 import { docStore } from '@/store/doc';
 import { setDefaultMix, setMixPair } from '@/store/mixActions';
+import { hasSound, playEventSound } from '@/store/sounds';
 
 const rot = (anim: Animation, bone: string, a: number, b: number) => {
   anim.bones[bone] = { rotate: [{ time: 0, value: [a] }, { time: anim.duration, value: [b] }] };
@@ -110,6 +111,19 @@ describe('player', () => {
     pl.play(a);
     pl.advance(0.25);
     expect(pl.time).toBeCloseTo(0.5, 9);
+  });
+});
+
+describe('event sounds', () => {
+  it('an event without a sound, or with a sound nobody loaded, plays nothing', () => {
+    const defs = [
+      { id: 'a', name: 'a', int: 0, float: 0, string: '' },
+      { id: 'b', name: 'b', int: 0, float: 0, string: '', audio: 'sfx/none.ogg' },
+    ];
+    expect(playEventSound(defs, { time: 0, event: 'a' })).toBe(false);
+    expect(playEventSound(defs, { time: 0, event: 'b' })).toBe(false);
+    expect(playEventSound(defs, { time: 0, event: 'zz' })).toBe(false);
+    expect(hasSound('sfx/none.ogg')).toBe(false);
   });
 });
 
