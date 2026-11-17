@@ -10,12 +10,12 @@
  *   - undoing everything restores the starting document exactly, and redoing everything restores the final one.
  */
 import { expect } from 'vitest';
-import { applyAnimation } from '../src/core/animate';
+import { applyAnimation, applyPhysicsResets } from '../src/core/animate';
 import { exportSpineJson } from '../src/core/export/spineJson';
 import { deformProp } from '../src/core/keyrefs';
 import type { KeyRef } from '../src/core/keyrefs';
 import { meshWorldPositions } from '../src/core/mesh';
-import { BLEND_MODES, INHERIT_MODES, PATH_POSITION_MODES, PATH_ROTATE_MODES, PATH_SPACING_MODES, TRANSFORM_PROPS, pathNodeCount, polygonVertexCount } from '../src/core/model';
+import { BLEND_MODES, GLOBAL_PHYSICS, INHERIT_MODES, PATH_POSITION_MODES, PATH_ROTATE_MODES, PATH_SPACING_MODES, PHYSICS_PARAMS, TRANSFORM_PROPS, pathNodeCount, polygonVertexCount } from '../src/core/model';
 import type { Animation, Project } from '../src/core/model';
 import { compileSkeleton, createSkeleton, meshWorldVertices, pointWorld } from '../src/core/skeleton';
 import { validateProject } from '../src/core/validate';
@@ -25,6 +25,7 @@ import * as I from '../src/store/ikActions';
 import * as M from '../src/store/meshActions';
 import * as PA from '../src/store/pathActions';
 import * as PC from '../src/store/pathConstraintActions';
+import * as PH from '../src/store/physicsActions';
 import * as P from '../src/store/polygonActions';
 import * as SL from '../src/store/sliderActions';
 import * as T from '../src/store/transformActions';
@@ -32,6 +33,7 @@ import { emptySelection, uiStore } from '../src/store/ui';
 import { getScene } from '../src/editor/scene';
 import { addAttachmentRig, buildFixture } from './fixture';
 import { addPathRig } from './pathrig';
+import { addPhysicsRig } from './physicsrig';
 import { S, exportAndLoad, loadOfficial, startLikeOfficial } from './official';
 
 // ------------------------------------------------------------------ tiny deterministic RNG
@@ -114,6 +116,7 @@ function allKeyRefs(a: Animation): KeyRef[] {
   for (const id in a.transform) for (const k of a.transform[id]) out.push({ kind: 'transform', target: id, prop: '', time: k.time });
   for (const id in a.slider) for (const prop of Object.keys(a.slider[id])) for (const k of (a.slider[id] as Record<string, { time: number }[]>)[prop]) out.push({ kind: 'slider', target: id, prop, time: k.time });
   for (const id in a.path) for (const prop of Object.keys(a.path[id])) for (const k of (a.path[id] as Record<string, { time: number }[]>)[prop]) out.push({ kind: 'path', target: id, prop, time: k.time });
+  for (const id in a.physics) for (const prop of Object.keys(a.physics[id])) for (const k of (a.physics[id] as Record<string, { time: number }[]>)[prop]) out.push({ kind: 'physics', target: id, prop, time: k.time });
   for (const skinId in a.deform) for (const slotId in a.deform[skinId]) for (const att in a.deform[skinId][slotId]) for (const k of a.deform[skinId][slotId][att]) out.push({ kind: 'deform', target: slotId, prop: deformProp(skinId, att), time: k.time });
   for (const k of a.drawOrder) out.push({ kind: 'drawOrder', target: '', prop: '', time: k.time });
   for (const k of a.events) out.push({ kind: 'event', target: '', prop: '', time: k.time });
@@ -165,6 +168,11 @@ export const ops: Op[] = [
   { name: 'createPathConstraint', run: (c) => { const p = c.pick(paths()); if (!p) return; A.setSelection({ slot: p.slotId, attachment: p.name, bones: Array.from({ length: 1 + Math.floor(c.r() * 3) }, () => c.pick(doc().bones)!.id) }); PC.createPathConstraint(); } },
   { name: 'updatePathConstraint', run: (c) => { const k = c.pick(doc().constraints.filter((x) => x.type === 'path')); if (k) PC.updatePathConstraint(k.id, (x) => { x.positionMode = c.pick(PATH_POSITION_MODES)!; x.spacingMode = c.pick(PATH_SPACING_MODES)!; x.rotateMode = c.pick(PATH_ROTATE_MODES)!; x.offsetRotation = c.num(-90, 90); x.mix = { rotate: c.r(), x: c.r(), y: c.r() }; if (c.chance(0.3)) x.target = c.pick(doc().slots)!.id; }); } },
   { name: 'setPathValues', run: (c) => { const k = c.pick(doc().constraints.filter((x) => x.type === 'path')); if (k) PC.setPathValues(k.id, { position: c.chance(0.5) ? c.num(-0.5, 1.5) : c.num(-100, 400), spacing: c.num(-20, 60), ...(c.chance(0.5) ? { mix: { rotate: c.r(), x: c.r(), y: c.r() } } : {}) }); } },
+  // ---- physics constraints
+  { name: 'createPhysicsConstraint', run: (c) => { A.selectBone(c.pick(doc().bones)!.id); PH.createPhysicsConstraint(); } },
+  { name: 'updatePhysicsConstraint', run: (c) => { const k = c.pick(doc().constraints.filter((x) => x.type === 'physics')); if (k) PH.updatePhysicsConstraint(k.id, (x) => { x.x = c.chance(0.5) ? c.r() : 0; x.y = c.chance(0.5) ? c.r() : 0; x.rotate = c.chance(0.6) ? c.r() : 0; x.scaleX = c.chance(0.3) ? c.r() : 0; x.shearX = c.chance(0.3) ? c.r() : 0; x.scaleY = c.pick(['none', 'uniform', 'volume'] as const)!; x.limit = c.chance(0.3) ? c.num(0, 100) : 5000; x.fps = c.pick([15, 30, 60, 120] as const)!; x.global[c.pick(PHYSICS_PARAMS)!] = c.chance(0.5); if (c.chance(0.2)) x.bone = c.pick(doc().bones)!.id; }); } },
+  { name: 'setPhysicsValue', run: (c) => { const k = c.pick(doc().constraints.filter((x) => x.type === 'physics')); if (k) { const p = c.pick(PHYSICS_PARAMS)!; const range: Record<typeof p, [number, number]> = { inertia: [0, 1], strength: [0, 200], damping: [0, 1], mass: [0.3, 10], wind: [-40, 40], gravity: [-40, 40], mix: [0, 1.2] }; PH.setPhysicsValue(k.id, p, c.num(range[p][0], range[p][1])); } } },
+  { name: 'addPhysicsReset', run: (c) => { const k = c.pick(doc().constraints.filter((x) => x.type === 'physics')); if (k) { A.setMode('animate'); PH.addPhysicsReset(c.chance(0.2) ? GLOBAL_PHYSICS : k.id); } } },
   // ---- skins / events
   { name: 'createSkin', run: (c) => { A.createSkin(c.pick(NAMES)); } },
   { name: 'renameSkin', run: (c) => { const s = c.pick(doc().skins)!; A.renameSkin(s.id, c.pick(NAMES)!); } },
@@ -214,8 +222,8 @@ export const ops: Op[] = [
   { name: 'moveKeysBy', run: (c) => { const a = A.currentAnimation(); if (!a) return; const refs = allKeyRefs(a); const k = c.pick(refs); if (k) A.moveKeysBy(refs.filter((r) => r.kind === k.kind && r.target === k.target && r.prop === k.prop && c.chance(0.6)).concat(k), c.num(-1, 1)); } },
   { name: 'deleteKeys', run: (c) => { const a = A.currentAnimation(); if (!a) return; const refs = allKeyRefs(a); A.deleteKeys(refs.filter(() => c.chance(0.15))); } },
   { name: 'setKeysCurve', run: (c) => { const a = A.currentAnimation(); if (!a) return; const refs = allKeyRefs(a).filter((r) => r.kind !== 'drawOrder' && r.kind !== 'event' && r.prop !== 'attachment'); const k = c.pick(refs); if (k) A.setKeysCurve([k], c.pick(['linear', 'stepped', 'bezier', [0.1, 0.2, 0.9, 0.8]] as const)! as 'linear'); } },
-  { name: 'setKeyChannelValue', run: (c) => { const a = A.currentAnimation(); if (!a) return; const refs = allKeyRefs(a).filter((r) => r.kind === 'bone' || r.kind === 'ik' || r.kind === 'slider' || r.kind === 'transform' || r.kind === 'path'); const k = c.pick(refs); if (k) A.setKeyChannelValue(k, 0, c.num(-50, 50)); } },
-  { name: 'setKeyCurveHandle', run: (c) => { const a = A.currentAnimation(); if (!a) return; const refs = allKeyRefs(a).filter((r) => r.kind === 'bone' || r.kind === 'ik' || r.kind === 'deform' || r.kind === 'transform' || r.kind === 'path'); const k = c.pick(refs); if (k) A.setKeyCurveHandle(k, 0, c.chance(0.5) ? 1 : 2, c.r(), c.num(-1, 2)); } },
+  { name: 'setKeyChannelValue', run: (c) => { const a = A.currentAnimation(); if (!a) return; const refs = allKeyRefs(a).filter((r) => r.kind === 'bone' || r.kind === 'ik' || r.kind === 'slider' || r.kind === 'transform' || r.kind === 'path' || (r.kind === 'physics' && r.prop !== 'reset')); const k = c.pick(refs); if (k) A.setKeyChannelValue(k, 0, c.num(-50, 50)); } },
+  { name: 'setKeyCurveHandle', run: (c) => { const a = A.currentAnimation(); if (!a) return; const refs = allKeyRefs(a).filter((r) => r.kind === 'bone' || r.kind === 'ik' || r.kind === 'deform' || r.kind === 'transform' || r.kind === 'path' || (r.kind === 'physics' && r.prop !== 'reset')); const k = c.pick(refs); if (k) A.setKeyCurveHandle(k, 0, c.chance(0.5) ? 1 : 2, c.r(), c.num(-1, 2)); } },
   { name: 'copyPasteKeys', run: (c) => { const a = A.currentAnimation(); if (!a) return; const refs = allKeyRefs(a).filter((r) => r.kind !== 'drawOrder'); const k = c.pick(refs); if (!k) return; A.copyKeys([k]); A.pasteKeys(c.num(0, 2)); } },
   // ---- history
   { name: 'undo', run: () => docStore.undo() },
@@ -259,25 +267,6 @@ function ambiguousBones(ours: ReturnType<typeof createSkeleton>, official: any):
       if (o && Math.abs(o.appliedPose.time - c.time) > 1e-2) for (const i of c.data.animatedBones) mark(ours.bones[i]);
     }
   }
-  // What follows an ambiguous bone is ambiguous too: a path constraint moves its bones along a path that sits on the slot's bone
-  // (or on the bones the path is skinned to), and an IK / transform constraint reads its target / source.
-  for (let changed = true; changed; ) {
-    changed = false;
-    for (const c of ours.constraints) {
-      let reads: (typeof ours.bones)[number][] = [];
-      if (c.kind === 'path') {
-        const att = ours.slotAttachment(c.slot);
-        reads = [c.slot.bone];
-        if (att && att.kind === 'path' && att.bones) for (const i of influencingBones(att.bones, att.vertexCount)) reads.push(ours.bones[i]);
-      } else if (c.kind === 'ik') reads = [c.target];
-      else if (c.kind === 'transform') reads = [c.source];
-      else if (c.kind === 'slider' && c.bone) reads = [c.bone];
-      if (!reads.some((b) => out.has(b.data.index))) continue;
-      const before = out.size;
-      for (const b of c.kind === 'slider' ? c.data.animatedBones.map((i) => ours.bones[i]) : c.bones) mark(b);
-      if (out.size !== before) changed = true;
-    }
-  }
   // A path constraint that follows the path with `chain` / `chainScale` points each bone at the next one. When bones sit on the
   // same spot (a closed path and a spacing of 4 whole path lengths, spaces that wrap to the same point) there is no direction:
   // the angle is the atan2 of float noise, which differs between two runtimes (one gets an exact 0, the other 1e-14).
@@ -293,6 +282,26 @@ function ambiguousBones(ours: ReturnType<typeof createSkeleton>, official: any):
     const mine = ours.constraints.find((c) => c.kind === 'path' && c.data.name === o.data.name);
     if (mine && mine.kind === 'path') for (const b of mine.bones) mark(b);
   }
+  // What follows an ambiguous bone is ambiguous too: a path constraint moves its bones along a path that sits on the slot's bone
+  // (or on the bones the path is skinned to), and an IK / transform constraint reads its target / source.
+  for (let changed = true; changed; ) {
+    changed = false;
+    for (const c of ours.constraints) {
+      let reads: (typeof ours.bones)[number][] = [];
+      if (c.kind === 'path') {
+        const att = ours.slotAttachment(c.slot);
+        reads = [c.slot.bone];
+        if (att && att.kind === 'path' && att.bones) for (const i of influencingBones(att.bones, att.vertexCount)) reads.push(ours.bones[i]);
+      } else if (c.kind === 'ik') reads = [c.target];
+      else if (c.kind === 'transform') reads = [c.source];
+      else if (c.kind === 'slider' && c.bone) reads = [c.bone];
+      else if (c.kind === 'physics') continue; // it only reads and moves its own bone
+      if (!reads.some((b) => out.has(b.data.index))) continue;
+      const before = out.size;
+      for (const b of c.kind === 'slider' ? c.data.animatedBones.map((i) => ours.bones[i]) : c.bones) mark(b);
+      if (out.size !== before) changed = true;
+    }
+  }
   return out;
 }
 
@@ -303,6 +312,21 @@ export interface Mismatch {
   official: number;
   animation: string;
   time: number;
+}
+
+/** The official runtime after a game loop of `dts` frames (state.update, state.apply, skeleton.update, updateWorldTransform(Physics.update)). */
+function officialPlayed(skeletonData: unknown, animation: string, dts: number[]) {
+  const official = new S.Skeleton(skeletonData);
+  official.setupPose();
+  const state = new S.AnimationState(new S.AnimationStateData(skeletonData));
+  state.setAnimation(0, animation, false);
+  for (const dt of dts) {
+    state.update(dt);
+    state.apply(official);
+    official.update(dt);
+    official.updateWorldTransform(S.Physics.update);
+  }
+  return official;
 }
 
 /** The official runtime at time `t` of an animation: the first update of a fresh skeleton, like our side of the comparison. */
@@ -338,8 +362,17 @@ function jitterNumbers(value: unknown, absolute: number, relative: number, state
 
 /** A difference between the runtimes is let through when it is at most this many times what the official runtime moves by itself. */
 const NOISE_FACTOR = 10;
-/** Size of the nudges: the exporter rounds to 5 decimals (5e-6), the official runtime keeps animation data in float32 (6e-8 relative); these are a few times that. */
+/**
+ * Size of the nudges: the exporter rounds to 5 decimals (5e-6), the official runtime keeps animation data in float32 (6e-8
+ * relative); these are a few times that. Several runs, because some poses sit on a knife-edge (a slider whose time lands exactly on
+ * a key time: float32 decides whether the key counts) and each run falls on either side with probability 1/2; they are made only
+ * when a difference has to be judged.
+ */
 const NUDGES: [number, number][] = [
+  [2e-5, 2e-6],
+  [2e-5, 2e-6],
+  [2e-5, 2e-6],
+  [2e-5, 2e-6],
   [2e-5, 2e-6],
   [2e-5, 2e-6],
 ];
@@ -347,14 +380,14 @@ const NUDGES: [number, number][] = [
 type OfficialSkeleton = ReturnType<typeof officialAt>;
 
 /** The same pose from exports whose numbers are nudged by about the size of the exporter's rounding (made on first use). */
-function nudgedRuns(json: unknown, atlasText: string, animation: string, t: number): () => OfficialSkeleton[] {
+function nudgedRuns(json: unknown, atlasText: string, make: (skeletonData: unknown) => OfficialSkeleton): () => OfficialSkeleton[] {
   let runs: OfficialSkeleton[] | undefined;
   return () => {
     if (!runs) {
       runs = [];
       NUDGES.forEach(([absolute, relative], i) => {
         try {
-          runs!.push(officialAt(loadOfficial(jitterNumbers(json, absolute, relative, { n: 12345 + i * 7919 }), atlasText), animation, t));
+          runs!.push(make(loadOfficial(jitterNumbers(json, absolute, relative, { n: 12345 + i * 7919 }), atlasText)));
         } catch {
           /* a nudged export the loader refuses tells nothing */
         }
@@ -382,6 +415,48 @@ function judgeBy(official: OfficialSkeleton, runs: () => OfficialSkeleton[]): Ju
 }
 
 /**
+ * Physics keeps state, so a single pose says nothing about it (the first frame of a simulation is at rest): a document with
+ * physics constraints is also PLAYED for a few frames in both runtimes, and the bones where the simulation ended are compared.
+ */
+function physicsMismatch(p: Project, sd: any, json: unknown, atlasText: string, data: ReturnType<typeof compileSkeleton>): Mismatch | null {
+  if (!p.skeleton.constraints.some((c) => c.type === 'physics')) return null;
+  const anim = p.skeleton.animations.find((a) => a.duration > 0.05 && sd.findAnimation(a.name));
+  if (!anim) return null;
+  const dts = Array.from({ length: 40 }, (_, i) => (i < 28 ? 1 / 60 : 0.009 + (i % 3) * 0.013));
+  const official = officialPlayed(sd, anim.name, dts);
+  const judge = judgeBy(official, nudgedRuns(json, atlasText, (nudgedData) => officialPlayed(nudgedData, anim.name, dts)));
+  const ours = createSkeleton(data);
+  startLikeOfficial(ours);
+  let last = -1;
+  let time = 0;
+  for (const dt of dts) {
+    time += dt;
+    applyAnimation(ours, anim, time);
+    applyPhysicsResets(ours, anim, last, time);
+    last = time;
+    ours.update(dt);
+    ours.updateWorldTransform('update');
+  }
+  const ambiguous = ambiguousBones(ours, official);
+  for (const ob of official.bones) {
+    const id = p.skeleton.bones.find((b) => b.name === ob.data.name)!.id;
+    const mine = ours.bones[data.boneIndex.get(id)!];
+    if (ambiguous.has(mine.data.index)) continue;
+    const q = ob.appliedPose;
+    const mag = Math.max(Math.abs(q.a), Math.abs(q.b), Math.abs(q.c), Math.abs(q.d));
+    const parentMag = ob.parent ? Math.max(Math.abs(ob.parent.appliedPose.a), Math.abs(ob.parent.appliedPose.b), Math.abs(ob.parent.appliedPose.c), Math.abs(ob.parent.appliedPose.d)) : 1;
+    const wscale = 0.004 * (Math.abs(mine.ax) + Math.abs(mine.ay)) * parentMag;
+    const pairs: [string, number, number, number][] = [['a', mine.a, q.a, mag], ['b', mine.b, q.b, mag], ['c', mine.c, q.c, mag], ['d', mine.d, q.d, mag], ['worldX', mine.worldX, q.worldX, wscale], ['worldY', mine.worldY, q.worldY, wscale]];
+    for (const [what, x, y, scale] of pairs) {
+      if (Math.abs(x - y) <= 5e-3 * Math.max(1, Math.abs(x), Math.abs(y), scale)) continue;
+      if (judge((sk) => sk.bones.find((b: { data: { name: string } }) => b.data.name === ob.data.name)?.appliedPose[what] ?? NaN, x - y)) continue;
+      return { bone: ob.data.name, what, ours: x, official: y, animation: `${anim.name} (played ${dts.length} frames)`, time };
+    }
+  }
+  return null;
+}
+
+/**
  * First difference between our solver and the official runtime on what the editor would export right now.
  *
  * Some random documents are ill-conditioned: a path constraint at a position of 27.6 path lengths multiplies the 1e-5 relative
@@ -403,11 +478,11 @@ export function parityMismatch(p: Project): Mismatch | null {
     for (const t of [0, end * 0.37 + 0.00137, end * 0.8 + 0.00137, end - 0.00137]) {
       if (t < 0 || t > end) continue;
       const official = officialAt(sd, anim.name, t);
-      const judge = judgeBy(official, nudgedRuns(json, atlasText, anim.name, t));
+      const judge = judgeBy(official, nudgedRuns(json, atlasText, (nudgedData) => officialAt(nudgedData, anim.name, t)));
       const ours = createSkeleton(data);
       startLikeOfficial(ours);
       applyAnimation(ours, anim, t);
-      ours.updateWorldTransform();
+      ours.updateWorldTransform('update');
       const ambiguous = ambiguousBones(ours, official);
       for (const ob of official.bones) {
         const id = p.skeleton.bones.find((b) => b.name === ob.data.name)!.id;
@@ -437,7 +512,7 @@ export function parityMismatch(p: Project): Mismatch | null {
       if (shapes) return { ...shapes, animation: anim.name, time: t };
     }
   }
-  return null;
+  return physicsMismatch(p, sd, json, atlasText, data);
 }
 
 /**
@@ -600,6 +675,7 @@ export function freshSession() {
   const f = buildFixture();
   addAttachmentRig(f.project); // clipping / bounding boxes (also weighted) / a point, so edits meet them from the first step
   addPathRig(f.project); // paths (open, closed, weighted) and path constraints in every mode
+  addPhysicsRig(f.project); // physics constraints of every flavour, animated
   docStore.replace(f.project);
   uiStore.patch({ mode: 'setup', tool: 'select', animationId: f.project.skeleton.animations[0].id, skinId: null, time: 0, selection: emptySelection, overrides: {}, autoKey: true, playing: false, defaultCurve: 'bezier' });
   return f;

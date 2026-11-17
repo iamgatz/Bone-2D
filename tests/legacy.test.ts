@@ -129,9 +129,11 @@ describe('constraints', () => {
     expect(p.target).toBeUndefined();
   });
 
-  it('physics constraints are kept as they are (the importer decides what to do with them)', () => {
-    const doc = { bones: [{ name: 'root' }], physics: [{ name: 'hair', bone: 'root', order: 0, mass: 2 }] };
-    expect(upgradeLegacySpineJson(doc).root.constraints).toEqual([{ type: 'physics', name: 'hair', bone: 'root', order: 0, mass: 2 }]);
+  it('physics constraints keep their keys, and the 4.2 defaults (inertia 1, damping 1) are written down', () => {
+    const doc = { bones: [{ name: 'root' }], physics: [{ name: 'hair', bone: 'root', order: 0, mass: 2, damping: 0.9 }] };
+    const up = upgradeLegacySpineJson(doc);
+    expect(up.root.constraints).toEqual([{ type: 'physics', name: 'hair', bone: 'root', order: 0, mass: 2, inertia: 1, damping: 0.9 }]);
+    expect(up.warnings.some((w) => w.includes('physics'))).toBe(true);
   });
 
   it('report a local, absolute scale on a bone whose scale is not 1 (4.2 computes it differently)', () => {
@@ -241,13 +243,17 @@ describe('import', () => {
     expect(parityMismatch(project)).toBeNull();
   });
 
-  it('physics constraints and their timelines are skipped with a warning', () => {
+  it('a 4.2 physics constraint and its timelines are imported with the 4.2 defaults', () => {
     const doc = load();
-    doc.physics = [{ name: 'hair', order: 10, bone: 'head', mass: 2 }];
-    doc.animations.idle.physics = { hair: { mix: [{ time: 0, value: 1 }] } };
+    doc.physics = [{ name: 'hair', order: 10, bone: 'head', mass: 2, rotate: 1 }];
+    doc.animations.idle.physics = { hair: { mix: [{ time: 0, value: 1 }, { time: 1, value: 0.5 }], reset: [{ time: 0.5 }] } };
     const { project, warnings } = importSpineJson(doc, 'x');
-    expect(project.skeleton.constraints.some((c) => c.name === 'hair')).toBe(false);
-    expect(warnings.some((w) => w.includes('hair'))).toBe(true);
+    const hair = project.skeleton.constraints.find((c) => c.name === 'hair');
+    expect(hair).toMatchObject({ type: 'physics', rotate: 1, mass: 2, inertia: 1, damping: 1, fps: 60, strength: 100, mix: 1 });
+    const idle = project.skeleton.animations.find((a) => a.name === 'idle')!;
+    expect(Object.values(idle.physics)[0].mix).toHaveLength(2);
+    expect(Object.values(idle.physics)[0].reset).toHaveLength(1);
+    expect(warnings.some((w) => w.includes('4.3 simulation'))).toBe(true);
   });
 
   it('a 4.3 file is not touched by the conversion', () => {

@@ -307,12 +307,52 @@ export interface PathConstraint {
   skinRequired: boolean;
 }
 
-export type Constraint = IkConstraint | TransformConstraint | SliderConstraint | PathConstraint;
+/** Which animatable parameters of a physics constraint are driven by the animation's GLOBAL physics timelines. */
+export type PhysicsParam = 'inertia' | 'strength' | 'damping' | 'mass' | 'wind' | 'gravity' | 'mix';
+export const PHYSICS_PARAMS: PhysicsParam[] = ['inertia', 'strength', 'damping', 'mass', 'wind', 'gravity', 'mix'];
+
+/**
+ * Spine 4.2+ physics constraint: a spring simulation that moves, rotates, scales or shears ONE bone as if it hung on the
+ * bone's own movement. The simulation advances in steps of `1 / fps` seconds and only runs while an animation plays.
+ */
+export interface PhysicsConstraint {
+  id: Id;
+  type: 'physics';
+  name: string;
+  bone: Id;
+  /** How much the simulation moves / rotates / scales / shears the bone, 0..1 (0 = not at all). */
+  x: number;
+  y: number;
+  rotate: number;
+  scaleX: number;
+  shearX: number;
+  /** How scaleY follows scaleX. */
+  scaleY: 'none' | 'uniform' | 'volume';
+  /** Movement beyond this many units per second makes no more effect. */
+  limit: number;
+  /** Simulation steps per second. */
+  fps: number;
+  /** Setup values of the animatable parameters. */
+  inertia: number;
+  strength: number;
+  damping: number;
+  /** The mass; the runtime stores 1 / mass. */
+  mass: number;
+  wind: number;
+  gravity: number;
+  mix: number;
+  /** Parameters taken from the global physics timelines of the animation instead of the constraint's own. */
+  global: Record<PhysicsParam, boolean>;
+  skinRequired: boolean;
+}
+
+export type Constraint = IkConstraint | TransformConstraint | SliderConstraint | PathConstraint | PhysicsConstraint;
 
 export function constraintBoneIds(c: Constraint): Id[] {
   if (c.type === 'ik') return [...c.bones, c.target];
   if (c.type === 'transform') return [...c.bones, c.source];
   if (c.type === 'path') return [...c.bones];
+  if (c.type === 'physics') return [c.bone];
   return c.bone ? [c.bone] : [];
 }
 
@@ -375,6 +415,21 @@ export interface PathTimelines {
   mix?: Timeline;
 }
 
+/** The key of `Animation.physics` that holds the GLOBAL timelines (the file stores them under an empty constraint name). */
+export const GLOBAL_PHYSICS = '*';
+
+/** Physics constraint timelines, one value per key (the mass is NOT inverted). `reset` keys restart the simulation; their value is ignored. */
+export interface PhysicsTimelines {
+  inertia?: Timeline;
+  strength?: Timeline;
+  damping?: Timeline;
+  mass?: Timeline;
+  wind?: Timeline;
+  gravity?: Timeline;
+  mix?: Timeline;
+  reset?: Timeline;
+}
+
 export interface BoneTimelines {
   /** value = [degrees] relative to setup */
   rotate?: Timeline;
@@ -411,6 +466,8 @@ export interface Animation {
   slider: Record<Id, SliderTimelines>;
   /** Path constraint position / spacing / mixes over time, by constraint id. */
   path: Record<Id, PathTimelines>;
+  /** Physics constraint parameters over time, by constraint id (`GLOBAL_PHYSICS` = the global timelines). */
+  physics: Record<Id, PhysicsTimelines>;
   /** skin id -> slot id -> attachment name -> keys; Key.value = per vertex deltas (x,y pairs; per influence for weighted meshes). */
   deform: Record<Id, Record<Id, Record<string, Timeline>>>;
   drawOrder: DrawOrderKey[];
@@ -422,6 +479,8 @@ export interface Animation {
 export interface SkeletonDoc {
   name: string;
   fps: number;
+  /** Size that wind and gravity of the physics constraints are measured against (Spine's default is 100). */
+  referenceScale?: number;
   bones: Bone[];
   slots: Slot[];
   skins: Skin[];
@@ -488,7 +547,7 @@ export function newSkin(name: string): Skin {
 }
 
 export function newAnimation(name: string, duration = 1): Animation {
-  return { id: uid(), name, duration, bones: {}, slots: {}, ik: {}, transform: {}, slider: {}, path: {}, deform: {}, drawOrder: [], events: [] };
+  return { id: uid(), name, duration, bones: {}, slots: {}, ik: {}, transform: {}, slider: {}, path: {}, physics: {}, deform: {}, drawOrder: [], events: [] };
 }
 
 export function newPathConstraint(partial: Partial<PathConstraint> & { name: string; bones: Id[]; target: Id }): PathConstraint {
@@ -502,6 +561,31 @@ export function newPathConstraint(partial: Partial<PathConstraint> & { name: str
     position: 0,
     spacing: 0,
     mix: { rotate: 1, x: 1, y: 1 },
+    skinRequired: false,
+    ...partial,
+  };
+}
+
+export function newPhysicsConstraint(partial: Partial<PhysicsConstraint> & { name: string; bone: Id }): PhysicsConstraint {
+  return {
+    id: uid(),
+    type: 'physics',
+    x: 0,
+    y: 0,
+    rotate: 1,
+    scaleX: 0,
+    shearX: 0,
+    scaleY: 'none',
+    limit: 5000,
+    fps: 60,
+    inertia: 0.5,
+    strength: 100,
+    damping: 0.85,
+    mass: 1,
+    wind: 0,
+    gravity: 0,
+    mix: 1,
+    global: { inertia: false, strength: false, damping: false, mass: false, wind: false, gravity: false, mix: false },
     skinRequired: false,
     ...partial,
   };
@@ -551,6 +635,7 @@ export function migrateProject(p: Project): Project {
     if (!a.transform) a.transform = {};
     if (!a.slider) a.slider = {};
     if (!a.path) a.path = {};
+    if (!a.physics) a.physics = {};
   }
   return p;
 }

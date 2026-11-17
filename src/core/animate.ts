@@ -1,7 +1,8 @@
 /** Applies an animation (bone, slot, IK, deform, draw order timelines) to a skeleton pose at a given time. */
 import { deformProgress, findKeyIndex, sampleKeys } from './curve';
+import { GLOBAL_PHYSICS, PHYSICS_PARAMS } from './model';
 import type { Animation, Id, Key, Timeline } from './model';
-import type { Skeleton, Slot } from './skeleton';
+import type { PhysicsConstraintRT, Skeleton, Slot } from './skeleton';
 
 const tmp: number[] = [0, 0, 0, 0, 0, 0, 0];
 
@@ -17,6 +18,30 @@ function mixColor(slot: Slot, v: number[], alpha: number, dark: boolean) {
   if (!dark || !slot.dark) return;
   if (alpha === 1) slot.dark = [clamp01(v[4]), clamp01(v[5]), clamp01(v[6])];
   else for (let j = 0; j < 3; j++) slot.dark[j] = clamp01(slot.dark[j] + (v[4 + j] - slot.dark[j]) * alpha);
+}
+
+/** The constraints a physics timeline writes to: its own constraint, or every one that is driven globally for this parameter. */
+function physicsTargets(skeleton: Skeleton, id: Id, param: (typeof PHYSICS_PARAMS)[number]): PhysicsConstraintRT[] {
+  if (id === GLOBAL_PHYSICS) return skeleton.physicsConstraints.filter((c) => c.active && c.data.global[param]);
+  const c = skeleton.physicsById(id);
+  return c && c.active ? [c] : [];
+}
+
+/**
+ * Spine's physics reset timeline: restarts the simulation of the constraints that have a reset key in (lastTime, time]. The
+ * caller owns the time (a looping animation passes the two parts of a wrap separately). A key at the very start of an animation
+ * counts when `lastTime` is before it, which is what Spine does when an animation starts (it begins at -1).
+ */
+export function applyPhysicsResets(skeleton: Skeleton, anim: Animation, lastTime: number, time: number) {
+  for (const cid in anim.physics ?? {}) {
+    const keys = anim.physics[cid].reset;
+    if (!keys?.some((k) => k.time > lastTime && k.time <= time)) continue;
+    if (cid === GLOBAL_PHYSICS) for (const c of skeleton.physicsConstraints) c.active && c.reset();
+    else {
+      const c = skeleton.physicsById(cid);
+      if (c && c.active) c.reset();
+    }
+  }
 }
 
 /** Last key time of an animation (or 0). */
@@ -49,6 +74,7 @@ export function animationEndTime(anim: Animation): number {
     scan(anim.path[id].spacing);
     scan(anim.path[id].mix);
   }
+  for (const id in anim.physics ?? {}) for (const p of [...PHYSICS_PARAMS, 'reset'] as const) scan(anim.physics[id][p]);
   for (const skin in anim.deform) for (const slot in anim.deform[skin]) for (const att in anim.deform[skin][slot]) scan(anim.deform[skin][slot][att]);
   scan(anim.drawOrder);
   scan(anim.events);
@@ -133,6 +159,15 @@ export function applyAnimation(skeleton: Skeleton, anim: Animation | null, time:
     if (tl.position?.length && sampleKeys(tl.position, time, tmp)) c.position = tmp[0];
     if (tl.spacing?.length && sampleKeys(tl.spacing, time, tmp)) c.spacing = tmp[0];
     if (tl.mix?.length && sampleKeys(tl.mix, time, tmp)) c.mix = [tmp[0], tmp[1], tmp[2]];
+  }
+
+  for (const cid in anim.physics ?? {}) {
+    const tl = anim.physics[cid];
+    for (const p of PHYSICS_PARAMS) {
+      const keys = tl[p];
+      if (!keys?.length || !sampleKeys(keys, time, tmp)) continue;
+      for (const c of physicsTargets(skeleton, cid, p)) c.setParam(p, tmp[0]);
+    }
   }
 
   if (anim.drawOrder.length) {
@@ -259,6 +294,20 @@ export function applyAnimationOnto(skeleton: Skeleton, anim: Animation, time: nu
     if (tl.position?.length && sampleKeys(tl.position, time, tmp)) c.position += (additive ? tmp[0] : tmp[0] - c.position) * alpha;
     if (tl.spacing?.length && sampleKeys(tl.spacing, time, tmp)) c.spacing += (tmp[0] - c.spacing) * alpha; // Spine never adds spacing
     if (tl.mix?.length && sampleKeys(tl.mix, time, tmp)) for (let j = 0; j < 3; j++) c.mix[j] += (additive ? tmp[j] : tmp[j] - c.mix[j]) * alpha;
+  }
+
+  for (const cid in anim.physics ?? {}) {
+    const tl = anim.physics[cid];
+    for (const p of PHYSICS_PARAMS) {
+      const keys = tl[p];
+      if (!keys?.length || !sampleKeys(keys, time, tmp)) continue;
+      // only wind and gravity can be added (Spine's timelines say so); the others are always blended
+      const add = additive && (p === 'wind' || p === 'gravity');
+      for (const c of physicsTargets(skeleton, cid, p)) {
+        const cur = c.getParam(p);
+        c.setParam(p, cur + (add ? tmp[0] : tmp[0] - cur) * alpha);
+      }
+    }
   }
 
   if (anim.drawOrder.length) {

@@ -14,10 +14,12 @@ import {
   DEFAULT_CLIPPING_COLOR,
   DEFAULT_PATH_COLOR,
   DEFAULT_POINT_COLOR,
+  GLOBAL_PHYSICS,
   INHERIT_MODES,
   PATH_POSITION_MODES,
   PATH_ROTATE_MODES,
   PATH_SPACING_MODES,
+  PHYSICS_PARAMS,
   TRANSFORM_PROPS,
   newBone,
   newSkin,
@@ -319,14 +321,36 @@ function repairConstraints(doc: SkeletonDoc, note: Note) {
   const keep = doc.constraints.filter((c) => {
     const problem = constraintProblem(c, boneById, slotIds);
     if (problem) note(`constraint "${c.name}" removed (${problem})`);
+    else if (c.type === 'physics') repairPhysics(c, note);
     return !problem;
   });
   if (keep.length !== doc.constraints.length) doc.constraints = keep;
   dedupeNames(doc.constraints, 'constraint', 'constraint', note);
 }
 
+/** Values the simulation cannot run with (a step of 0 seconds, a negative mass or damping) are put back to something it can. */
+function repairPhysics(c: Extract<SkeletonDoc['constraints'][number], { type: 'physics' }>, note: Note) {
+  const fix = (what: string, ok: boolean, set: () => void) => {
+    if (ok) return;
+    set();
+    note(`constraint "${c.name}": invalid ${what} reset`);
+  };
+  fix('fps', c.fps > 0, () => (c.fps = 60));
+  fix('mass', c.mass > 0, () => (c.mass = 1));
+  fix('damping', c.damping >= 0 && c.damping <= 1, () => (c.damping = Math.min(1, Math.max(0, c.damping))));
+  fix('limit', c.limit >= 0, () => (c.limit = 5000));
+  if (!c.global || typeof c.global !== 'object') c.global = { inertia: false, strength: false, damping: false, mass: false, wind: false, gravity: false, mix: false };
+  for (const p of PHYSICS_PARAMS) c.global[p] = c.global[p] === true;
+}
+
 function constraintProblem(c: SkeletonDoc['constraints'][number], boneById: Map<Id, SkeletonDoc['bones'][number]>, slotIds: Set<Id>): string | null {
-  if (!c || (c.type !== 'ik' && c.type !== 'transform' && c.type !== 'slider' && c.type !== 'path')) return 'unknown type';
+  if (!c || (c.type !== 'ik' && c.type !== 'transform' && c.type !== 'slider' && c.type !== 'path' && c.type !== 'physics')) return 'unknown type';
+  if (c.type === 'physics') {
+    if (!boneById.has(c.bone)) return 'bone does not exist';
+    if (c.scaleY !== 'none' && c.scaleY !== 'uniform' && c.scaleY !== 'volume') return 'unknown mode';
+    if (![c.x, c.y, c.rotate, c.scaleX, c.shearX, c.limit, c.fps, c.inertia, c.strength, c.damping, c.mass, c.wind, c.gravity, c.mix].every(finite)) return 'a value is not a number';
+    return null;
+  }
   if (c.type === 'slider') {
     if (c.bone !== null && !boneById.has(c.bone)) return 'driver bone does not exist';
     if (!TRANSFORM_PROPS.includes(c.property)) return 'unknown property';
@@ -427,6 +451,7 @@ function repairAnimations(doc: SkeletonDoc, note: Note) {
     a.transform ??= {};
     a.slider ??= {};
     a.path ??= {};
+    a.physics ??= {};
     a.deform ??= {};
     a.drawOrder ??= [];
     a.events ??= [];
@@ -540,6 +565,28 @@ function repairAnimations(doc: SkeletonDoc, note: Note) {
           delete tl[prop];
           note(`${where}: invalid path timeline removed`);
         } else if (cleanKeys(keys, spec[prop], spec[prop])) note(`${where}: path ${prop} keys repaired`);
+      }
+    }
+
+    for (const id of Object.keys(a.physics)) {
+      const c = constraints.get(id);
+      const tl = a.physics[id];
+      if ((id !== GLOBAL_PHYSICS && (!c || c.type !== 'physics')) || !tl || typeof tl !== 'object') {
+        delete a.physics[id];
+        note(`${where}: physics timeline of a missing constraint removed`);
+        continue;
+      }
+      for (const prop of Object.keys(tl) as (keyof typeof tl)[]) {
+        const keys = tl[prop];
+        if (!(prop === 'reset' || (PHYSICS_PARAMS as string[]).includes(prop)) || !Array.isArray(keys)) {
+          delete tl[prop];
+          note(`${where}: invalid physics timeline removed`);
+          continue;
+        }
+        if (cleanKeys(keys, 1, 1)) note(`${where}: physics ${prop} keys repaired`);
+        // the simulation divides by the mass and raises the damping to a power
+        if (prop === 'mass') for (const k of keys) k.value[0] = Math.max(k.value[0], 1e-4);
+        if (prop === 'damping') for (const k of keys) k.value[0] = Math.min(1, Math.max(k.value[0], 0));
       }
     }
 

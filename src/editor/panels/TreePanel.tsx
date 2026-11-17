@@ -1,10 +1,11 @@
 import { useMemo, useState } from 'react';
 import type { ReactElement } from 'react';
-import { Bone as BoneIcon, BoxSelect, ChevronDown, ChevronRight, Crosshair, Diamond, Eye, EyeOff, Image as ImageIcon, Layers, Link2, Lock, Plus, Scissors, Shirt, Spline, Trash2, Unlock, Zap } from 'lucide-react';
+import { Bone as BoneIcon, BoxSelect, ChevronDown, ChevronRight, Crosshair, Diamond, Eye, EyeOff, Image as ImageIcon, Layers, Link2, Lock, Plus, Scissors, Shirt, Spline, Trash2, Unlock, Waves, Zap } from 'lucide-react';
 import type { Bone, Id, Slot } from '@/core/model';
 import { createEvent, createSkin, deleteBones, deleteEvent, deleteSkin, deleteSlots, keyEvent, moveSlot, renameBone, renameSkin, renameSlot, reparentBone, selectBone, selectSlot, setActiveSkin, setBoneProps, setSelection, setSlotBone, setSlotProps, updateEvent } from '@/store/actions';
 import { useProject } from '@/store/doc';
 import { createPathConstraint } from '@/store/pathConstraintActions';
+import { createPhysicsConstraint } from '@/store/physicsActions';
 import { createSlider } from '@/store/sliderActions';
 import { useUi } from '@/store/ui';
 import { getScene } from '../scene';
@@ -238,13 +239,14 @@ export function TreePanel() {
             <div className="section-label" style={{ display: 'flex', alignItems: 'center' }}>
               <span style={{ flex: 1 }}>Constraints</span>
               <IconButton icon={Spline} title="New path constraint (the selected bones follow a path)" small onClick={() => createPathConstraint()} />
+              <IconButton icon={Waves} title="New physics constraint (the selected bone swings while an animation plays)" small onClick={() => createPhysicsConstraint()} />
               <IconButton icon={Plus} title="New slider (applies an animation by hand or driven by a bone)" small onClick={() => createSlider(selection.bones[0] ?? null)} />
             </div>
             {doc.constraints.map((c) => (
               <div key={c.id} className={`row${selection.constraint === c.id ? ' selected' : ''}`} style={{ paddingLeft: 14 }} onClick={() => setSelection({ constraint: c.id })}>
-                <span className="ico">{c.type === 'path' ? <Spline size={13} /> : <Link2 size={13} />}</span>
+                <span className="ico">{c.type === 'path' ? <Spline size={13} /> : c.type === 'physics' ? <Waves size={13} /> : <Link2 size={13} />}</span>
                 <span className="label">{c.name}</span>
-                <span className="chip" style={c.type === 'transform' ? { color: '#b38cff' } : c.type === 'slider' ? { color: '#4cc9f0' } : c.type === 'path' ? { color: '#ff7f00' } : undefined}>{c.type === 'ik' ? 'IK' : c.type === 'transform' ? 'TC' : c.type === 'path' ? 'PC' : 'SL'}</span>
+                <span className="chip" style={c.type === 'transform' ? { color: '#b38cff' } : c.type === 'slider' ? { color: '#4cc9f0' } : c.type === 'path' ? { color: '#ff7f00' } : c.type === 'physics' ? { color: '#4cc9a8' } : undefined}>{c.type === 'ik' ? 'IK' : c.type === 'transform' ? 'TC' : c.type === 'path' ? 'PC' : c.type === 'physics' ? 'PH' : 'SL'}</span>
               </div>
             ))}
           </>

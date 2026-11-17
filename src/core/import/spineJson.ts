@@ -15,19 +15,22 @@ import {
   DEFAULT_CLIPPING_COLOR,
   DEFAULT_PATH_COLOR,
   DEFAULT_POINT_COLOR,
+  GLOBAL_PHYSICS,
   INHERIT_MODES,
   PATH_POSITION_MODES,
   PATH_ROTATE_MODES,
   PATH_SPACING_MODES,
+  PHYSICS_PARAMS,
   TRANSFORM_PROPS,
   attachmentImage,
   emptyProject,
   newAnimation,
   newBone,
+  newPhysicsConstraint,
   newSkin,
   newSlot,
 } from '../model';
-import type { Animation, Attachment, BlendMode, Bone, Constraint, Curve, Id, Influence, Key, MeshAttachment, PathTimelines, Project, RGB, RGBA, SkeletonDoc, Timeline, TransformFrom, TransformProp } from '../model';
+import type { Animation, Attachment, BlendMode, Bone, Constraint, Curve, Id, Influence, Key, MeshAttachment, PathTimelines, PhysicsTimelines, Project, RGB, RGBA, SkeletonDoc, Timeline, TransformFrom, TransformProp } from '../model';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 type J = Record<string, any>;
@@ -128,6 +131,7 @@ export function importSpineJson(input: unknown, name = 'imported'): SpineImportR
   const project = emptyProject(name);
   const doc: SkeletonDoc = project.skeleton;
   doc.fps = num(header.fps, 30) || 30;
+  if (typeof header.referenceScale === 'number' && header.referenceScale > 0 && header.referenceScale !== 100) doc.referenceScale = header.referenceScale;
   doc.bones = [];
   doc.skins = [];
 
@@ -291,6 +295,37 @@ export function importSpineJson(input: unknown, name = 'imported'): SpineImportR
       };
       constraintByName.set(cname, c);
       doc.constraints.push(c);
+    } else if (type === 'physics') {
+      const bone = boneId(cm.bone);
+      if (!bone) {
+        warn(`physics constraint "${cname}" was skipped: its bone "${str(cm.bone, '?')}" does not exist`);
+        continue;
+      }
+      const fps = num(cm.fps, 60);
+      const mass = num(cm.mass, 1);
+      const c: Constraint = newPhysicsConstraint({
+        name: cname,
+        bone,
+        x: num(cm.x, 0),
+        y: num(cm.y, 0),
+        rotate: num(cm.rotate, 0),
+        scaleX: num(cm.scaleX, 0),
+        shearX: num(cm.shearX, 0),
+        scaleY: cm.scaleY === 'uniform' || cm.scaleY === 'volume' ? cm.scaleY : 'none',
+        limit: num(cm.limit, 5000),
+        fps: fps > 0 ? fps : 60,
+        inertia: num(cm.inertia, 0.5),
+        strength: num(cm.strength, 100),
+        damping: Math.max(0, num(cm.damping, 0.85)),
+        mass: mass > 0 ? mass : 1,
+        wind: num(cm.wind, 0),
+        gravity: num(cm.gravity, 0),
+        mix: num(cm.mix, 1),
+        global: Object.fromEntries(PHYSICS_PARAMS.map((p) => [p, bool(cm[`${p}Global`], false)])) as Record<(typeof PHYSICS_PARAMS)[number], boolean>,
+        skinRequired,
+      });
+      constraintByName.set(cname, c);
+      doc.constraints.push(c);
     } else {
       warn(`${type || 'unknown'} constraint "${cname}" is not supported by Bone 2D and was skipped`);
     }
@@ -307,7 +342,7 @@ export function importSpineJson(input: unknown, name = 'imported'): SpineImportR
     const skin = newSkin(uniqueName(str(sm.name, 'skin'), new Set(skinByName.keys())));
     skinByName.set(skin.name, skin);
     skin.bones = arr(sm.bones).map(boneId).filter((b): b is Id => !!b);
-    for (const list of ['ik', 'transform', 'slider', 'path'] as const) {
+    for (const list of ['ik', 'transform', 'slider', 'path', 'physics'] as const) {
       for (const cn of arr(sm[list])) {
         const c = constraintByName.get(String(cn));
         if (c && c.type === list) skin.constraints.push(c.id);
@@ -489,6 +524,16 @@ export function importSpineJson(input: unknown, name = 'imported'): SpineImportR
         });
       }
       if (Object.keys(tl).length) a.path[c.id] = tl;
+    }
+    // physics constraint parameters; the global timelines have an empty constraint name
+    for (const [cn, tm] of Object.entries(obj(am.physics))) {
+      const c = cn === '' ? null : constraintByName.get(cn);
+      if (cn !== '' && (!c || c.type !== 'physics')) continue;
+      const t = obj(tm);
+      const tl: PhysicsTimelines = {};
+      for (const p of PHYSICS_PARAMS) if (t[p]) tl[p] = timeline(t[p], 1, single('value', p === 'mix' ? 1 : 0));
+      if (Array.isArray(t.reset) && t.reset.length) tl.reset = arr(t.reset).map(obj).map((k) => ({ time: num(k.time, 0), value: [1] }));
+      if (Object.keys(tl).length) a.physics[c ? c.id : GLOBAL_PHYSICS] = tl;
     }
     // deform
     for (const [skinName, perSkin] of Object.entries(obj(am.attachments))) {

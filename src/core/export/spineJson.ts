@@ -5,7 +5,7 @@
 import { curveToAbsolute } from '../curve';
 import { deformLength } from '../mesh';
 import type { Animation, Attachment, Id, IkKey, Influence, Key, SkeletonDoc, Timeline } from '../model';
-import { polygonVertexCount } from '../model';
+import { GLOBAL_PHYSICS, PHYSICS_PARAMS, polygonVertexCount } from '../model';
 import { animationEndTime } from '../animate';
 import { compileSkeleton, createSkeleton } from '../skeleton';
 
@@ -93,7 +93,7 @@ export function exportSpineJson(doc: SkeletonDoc, options: SpineExportOptions = 
     y: r5(bounds[1]),
     width: r5(bounds[2]),
     height: r5(bounds[3]),
-    referenceScale: 100,
+    referenceScale: doc.referenceScale ?? 100,
   };
   if (options.nonessential !== false) {
     skeleton.fps = doc.fps;
@@ -223,6 +223,29 @@ export function exportSpineJson(doc: SkeletonDoc, options: SpineExportOptions = 
       setIf(o, 'mixX', r5(c.mix.x), 1);
       o.mixY = r5(c.mix.y); // always explicit: the loader defaults mixY to the X mix
       constraints.push(o);
+    } else if (c.type === 'physics') {
+      const bone = boneById.get(c.bone);
+      if (!bone) continue;
+      const o: Json = { type: 'physics', name: c.name, bone: bone.name };
+      if (c.skinRequired) o.skin = true;
+      // the loader's defaults: x / y / rotate / scaleX / shearX 0, limit 5000, fps 60, inertia 0.5, strength 100, damping 0.85, mass 1, mix 1
+      setIf(o, 'x', rs(c.x), 0);
+      setIf(o, 'y', rs(c.y), 0);
+      setIf(o, 'rotate', rs(c.rotate), 0);
+      setIf(o, 'scaleX', rs(c.scaleX), 0);
+      if (c.scaleY !== 'none') o.scaleY = c.scaleY;
+      setIf(o, 'shearX', rs(c.shearX), 0);
+      setIf(o, 'limit', rs(c.limit), 5000);
+      setIf(o, 'fps', rs(c.fps), 60);
+      setIf(o, 'inertia', rs(c.inertia), 0.5);
+      setIf(o, 'strength', rs(c.strength), 100);
+      setIf(o, 'damping', rs(c.damping), 0.85);
+      setIf(o, 'mass', rs(c.mass), 1);
+      setIf(o, 'wind', rs(c.wind), 0);
+      setIf(o, 'gravity', rs(c.gravity), 0);
+      setIf(o, 'mix', rs(c.mix), 1);
+      for (const p of PHYSICS_PARAMS) if (c.global[p]) o[`${p}Global`] = true;
+      constraints.push(o);
     }
   }
 
@@ -231,7 +254,7 @@ export function exportSpineJson(doc: SkeletonDoc, options: SpineExportOptions = 
     const o: Json = { name: s.name };
     if (s.bones.length) o.bones = s.bones.map(boneName);
     const listed = s.constraints.map((id) => doc.constraints.find((c) => c.id === id));
-    for (const type of ['ik', 'transform', 'slider', 'path'] as const) {
+    for (const type of ['ik', 'transform', 'slider', 'path', 'physics'] as const) {
       const names = listed.filter((c) => c && c.type === type && (type !== 'slider' || exportedSliders.has(c.id))).map((c) => c!.name);
       if (names.length) o[type] = names;
     }
@@ -537,6 +560,36 @@ function exportAnimation(doc: SkeletonDoc, a: Animation, n: Names): Json {
   }
   if (Object.keys(path).length) out.path = path;
 
+  // physics constraint parameters; the global timelines sit under an empty constraint name
+  const physics: Json = {};
+  for (const cid in a.physics ?? {}) {
+    const c = ikById.get(cid);
+    if (cid !== GLOBAL_PHYSICS && (!c || c.type !== 'physics')) continue;
+    const tl = a.physics[cid];
+    const o: Json = {};
+    for (const p of PHYSICS_PARAMS) {
+      const keys = tl[p];
+      if (!keys || !keys.length) continue;
+      o[p] = keys.map((k, i) => {
+        const e: Json = {};
+        withTime(e, k.time);
+        e.value = rs(k.value[0]);
+        const cv = curveOf(k, keys[i + 1], 1);
+        if (cv !== undefined) e.curve = cv;
+        return e;
+      });
+    }
+    if (tl.reset?.length) {
+      o.reset = tl.reset.map((k) => {
+        const e: Json = {};
+        withTime(e, k.time);
+        return e;
+      });
+    }
+    if (Object.keys(o).length) physics[cid === GLOBAL_PHYSICS ? '' : c!.name] = o;
+  }
+  if (Object.keys(physics).length) out.physics = physics;
+
   // deform -> animations.attachments[skin][slot][attachment].deform
   const attachments: Json = {};
   for (const skinId in a.deform) {
@@ -666,6 +719,15 @@ function padDuration(out: Json, duration: number, _names: Names) {
     }
     return null;
   };
+  // a reset key is an event: it is never padded
+  const physicsKeys = (): Json[] | null => {
+    for (const per of Object.values((out.physics ?? {}) as Json))
+      for (const label in per as Json) {
+        const keys = (per as Json)[label];
+        if (label !== 'reset' && Array.isArray(keys) && keys.length) return keys as Json[];
+      }
+    return null;
+  };
   const deformKeys = (): Json[] | null => {
     for (const skin of Object.values((out.attachments ?? {}) as Json))
       for (const slot of Object.values(skin as Json)) for (const att of Object.values(slot as Json)) {
@@ -674,7 +736,7 @@ function padDuration(out: Json, duration: number, _names: Names) {
       }
     return null;
   };
-  const keys = firstKeys(out.bones as Json | undefined) ?? firstKeys(out.slots as Json | undefined) ?? firstKeys(out.ik as Json | undefined) ?? firstKeys(out.transform as Json | undefined) ?? firstKeys(out.slider as Json | undefined) ?? firstKeys(out.path as Json | undefined) ?? deformKeys() ?? (Array.isArray(out.drawOrder) && out.drawOrder.length ? (out.drawOrder as Json[]) : null);
+  const keys = firstKeys(out.bones as Json | undefined) ?? firstKeys(out.slots as Json | undefined) ?? firstKeys(out.ik as Json | undefined) ?? firstKeys(out.transform as Json | undefined) ?? firstKeys(out.slider as Json | undefined) ?? firstKeys(out.path as Json | undefined) ?? physicsKeys() ?? deformKeys() ?? (Array.isArray(out.drawOrder) && out.drawOrder.length ? (out.drawOrder as Json[]) : null);
   if (!keys) return;
   const last = { ...keys[keys.length - 1] };
   delete last.curve;

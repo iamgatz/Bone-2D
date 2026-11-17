@@ -2,6 +2,7 @@
 import { KEY_EPS } from '@/core/edit';
 import type { KeyRef } from '@/core/keyrefs';
 import { deformProp } from '@/core/keyrefs';
+import { PHYSICS_PARAMS } from '@/core/model';
 import type { Animation, Id, SkeletonDoc } from '@/core/model';
 
 export interface RowKeyInfo {
@@ -124,6 +125,19 @@ export function buildRows(doc: SkeletonDoc, anim: Animation | null, selectedBone
       const open = isOpen(id, false);
       const keys: RowKeyInfo[] = [];
       for (const p of props) merge(keys, p.keys.map((k) => ({ kind: 'path' as const, target: c.id, prop: p.prop, time: k.time })));
+      keys.sort((a, b) => a.time - b.time);
+      ikRows.push({ id, label: c.name, type: 'entity', depth: 1, expandable: true, expanded: open, keys, target: { kind: 'ik', id: c.id }, tone: 'ik' });
+      if (open) ikRows.push(...propRows(id, 2, props, 'ik'));
+      continue;
+    }
+    if (c.type === 'physics') {
+      const tl = anim.physics?.[c.id];
+      const props = ([...PHYSICS_PARAMS, 'reset'] as const).filter((p) => tl?.[p]?.length).map((p) => ({ prop: p, kind: 'physics' as const, target: c.id, keys: tl![p]! }));
+      if (!props.length) continue;
+      const id = `physics:${c.id}`;
+      const open = isOpen(id, false);
+      const keys: RowKeyInfo[] = [];
+      for (const p of props) merge(keys, p.keys.map((k) => ({ kind: 'physics' as const, target: c.id, prop: p.prop, time: k.time })));
       keys.sort((a, b) => a.time - b.time);
       ikRows.push({ id, label: c.name, type: 'entity', depth: 1, expandable: true, expanded: open, keys, target: { kind: 'ik', id: c.id }, tone: 'ik' });
       if (open) ikRows.push(...propRows(id, 2, props, 'ik'));

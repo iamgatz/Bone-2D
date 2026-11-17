@@ -228,6 +228,7 @@ export function drawConstraints(o: OverlayInput) {
       ctx.restore();
       continue;
     }
+    if (c.kind !== 'ik') continue;
     const t = c.target;
     const last = c.bones[c.bones.length - 1];
     const [tx, ty] = worldToScreen(cam, w, h, t.worldX, t.worldY);
