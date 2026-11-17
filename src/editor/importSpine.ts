@@ -1,6 +1,7 @@
-/** "Import Spine JSON…": a skeleton .json plus (optionally) its .atlas and page images, picked together. */
+/** "Import Spine data…": a skeleton .json or binary .skel plus (optionally) its .atlas and page images, picked together. */
 import { parseAtlas } from '@/core/import/atlas';
 import type { ParsedPage, ParsedRegion } from '@/core/import/atlas';
+import { binaryToJson } from '@/core/import/spineBinary';
 import { importSpineJson } from '@/core/import/spineJson';
 import { migrateProject } from '@/core/model';
 import { repairProject } from '@/core/validate';
@@ -40,10 +41,11 @@ async function sliceRegion(page: ImageBitmap, r: ParsedRegion): Promise<Blob> {
 
 /** Opens a skeleton .json (+ .atlas + page images selected together) as a new project. */
 export async function importSpineFiles(files: File[]): Promise<void> {
-  const json = files.find((f) => /\.json$/i.test(f.name));
-  if (!json) throw new Error('Select a Spine skeleton (.json) — optionally together with its .atlas and image files');
+  const json = files.find((f) => /\.(json|skel)$/i.test(f.name));
+  if (!json) throw new Error('Select a Spine skeleton (.json or .skel) — optionally together with its .atlas and image files');
   const atlasFile = files.find((f) => /\.atlas$/i.test(f.name));
-  const result = importSpineJson(JSON.parse(await json.text()), stem(json.name));
+  const skeleton: unknown = /\.skel$/i.test(json.name) ? binaryToJson(new Uint8Array(await json.arrayBuffer())) : JSON.parse(await json.text());
+  const result = importSpineJson(skeleton, stem(json.name));
   const warnings = [...result.warnings];
 
   const decoded: ImageAsset[] = [];
@@ -89,7 +91,7 @@ export function openSpineImport() {
   const input = document.createElement('input');
   input.type = 'file';
   input.multiple = true;
-  input.accept = '.json,.atlas,.png,.jpg,.jpeg,.webp';
+  input.accept = '.json,.skel,.atlas,.png,.jpg,.jpeg,.webp';
   input.onchange = async () => {
     const files = [...(input.files ?? [])];
     if (!files.length) return;

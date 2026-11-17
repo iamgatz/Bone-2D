@@ -36,6 +36,7 @@ import { addAttachmentRig, buildFixture } from './fixture';
 import { addPathRig } from './pathrig';
 import { addPhysicsRig } from './physicsrig';
 import { S, exportAndLoad, loadOfficial, startLikeOfficial } from './official';
+import { compare as compareBinary, compareReadBack } from './binarykit';
 
 // ------------------------------------------------------------------ tiny deterministic RNG
 
@@ -716,6 +717,11 @@ export function playSession(seed: number, steps: number, opts: { parity?: boolea
   if (opts.parity !== false) {
     try {
       parity(docStore.get(), `seed ${seed} final state`);
+      // the binary export must load as the same skeleton as the JSON
+      const bin = compareBinary(docStore.get());
+      if (bin.diffs.length) throw new Error(`seed ${seed} final state: binary differs from JSON: ${bin.diffs.slice(0, 5).join('; ')}`);
+      const back = compareReadBack(docStore.get());
+      if (back.length) throw new Error(`seed ${seed} final state: the binary reads back differently: ${back.slice(0, 5).join('; ')}`);
     } catch (e) {
       throw new Error(`${(e as Error).message}\nsteps: ${log.join(', ')}`);
     }

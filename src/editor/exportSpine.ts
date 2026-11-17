@@ -1,4 +1,5 @@
 /** Builds a Spine 4.3 export bundle: skeleton JSON + texture atlas (.atlas + PNG pages), zipped. */
+import { jsonToBinary } from '@/core/export/spineBinary';
 import { exportSpineJson } from '@/core/export/spineJson';
 import { packAtlas, writeAtlas } from '@/core/export/atlas';
 import type { AtlasPage } from '@/core/export/atlas';
@@ -9,6 +10,8 @@ import { assets } from '@/store/assets';
 import { docStore } from '@/store/doc';
 
 export interface ExportOptions {
+  /** The skeleton file: Spine JSON, or the smaller binary .skel. */
+  format?: 'json' | 'binary';
   maxSize: number;
   padding: number;
   pretty: boolean;
@@ -82,10 +85,10 @@ function bytesToBase64(bytes: Uint8Array): string {
 }
 
 /** A single-file preview page using the official Spine 4.3 web player (script from a CDN, data embedded as data URIs). */
-function previewHtml(base: string, json: string, atlas: string, pngs: { name: string; data: Uint8Array }[], animation: string | null, title: string): string {
+function previewHtml(base: string, skeleton: { file: string; data: Uint8Array; binary: boolean }, atlas: string, pngs: { name: string; data: Uint8Array }[], animation: string | null, title: string): string {
   const utf8 = (s: string) => bytesToBase64(new TextEncoder().encode(s));
   const uris: Record<string, string> = {
-    [`${base}.json`]: `data:application/json;base64,${utf8(json)}`,
+    [skeleton.file]: `data:${skeleton.binary ? 'application/octet-stream' : 'application/json'};base64,${bytesToBase64(skeleton.data)}`,
     [`${base}.atlas`]: `data:text/plain;base64,${utf8(atlas)}`,
   };
   for (const p of pngs) uris[p.name] = `data:image/png;base64,${bytesToBase64(p.data)}`;
@@ -100,7 +103,7 @@ function previewHtml(base: string, json: string, atlas: string, pngs: { name: st
 <script>
 // Exported by Bone 2D. Rendered by the OFFICIAL Spine runtime — if it plays here, it plays in your engine.
 new spine.SpinePlayer("player", {
-  skeleton: ${JSON.stringify(`${base}.json`)},
+  ${skeleton.binary ? 'binary' : 'skeleton'}: ${JSON.stringify(skeleton.file)},
   atlas: ${JSON.stringify(`${base}.atlas`)},
   rawDataURIs: ${JSON.stringify(uris)},
   ${animation ? `animation: ${JSON.stringify(animation)},` : ''}
@@ -122,9 +125,11 @@ export async function buildSpineExport(opts: ExportOptions): Promise<ExportResul
 
   const enc = new TextEncoder();
   const files: ZipEntry[] = [];
+  const binary = opts.format === 'binary';
   const json = exportSpineJson(doc, { nonessential: opts.nonessential, imagesPath: './images/' });
-  const jsonText = JSON.stringify(json, null, opts.pretty ? 2 : 0);
-  files.push({ name: `${base}.json`, data: enc.encode(jsonText) });
+  const skeletonFile = binary ? `${base}.skel` : `${base}.json`;
+  const skeletonData = binary ? jsonToBinary(json) : enc.encode(JSON.stringify(json, null, opts.pretty ? 2 : 0));
+  files.push({ name: skeletonFile, data: skeletonData });
 
   let pages: AtlasPage[] = [];
   let preview: string | undefined;
@@ -141,13 +146,13 @@ export async function buildSpineExport(opts: ExportOptions): Promise<ExportResul
     }
     if (opts.includePreview ?? true) {
       const firstAnim = doc.animations[0]?.name ?? null;
-      preview = previewHtml(base, jsonText, atlasText, pngs, firstAnim, doc.name || base);
+      preview = previewHtml(base, { file: skeletonFile, data: skeletonData, binary }, atlasText, pngs, firstAnim, doc.name || base);
       files.push({ name: `${base}-preview.html`, data: enc.encode(preview) });
     }
   }
   files.push({
     name: 'README.txt',
-    data: enc.encode(`Exported from Bone 2D.\n\n${base}.json          Spine 4.3 skeleton data\n${base}.atlas         texture atlas (straight alpha, pma:false)\n${base}-preview.html  open in a browser: plays the animations with the official Spine 4.3 web player (needs internet for the player script)\n\nLoad with the official Spine 4.3 runtimes (spine-ts, Unity, Godot, ...).\n`),
+    data: enc.encode(`Exported from Bone 2D.\n\n${skeletonFile.padEnd(base.length + 5)}  Spine 4.3 skeleton data (${binary ? 'binary' : 'JSON'})\n${base}.atlas         texture atlas (straight alpha, pma:false)\n${base}-preview.html  open in a browser: plays the animations with the official Spine 4.3 web player (needs internet for the player script)\n\nLoad with the official Spine 4.3 runtimes (spine-ts, Unity, Godot, ...).\n`),
   });
   const zip = createZip(files);
   return { zip, files: files.map((f) => ({ name: f.name, size: f.data.length })), pages: pages.length, missing, json, preview };

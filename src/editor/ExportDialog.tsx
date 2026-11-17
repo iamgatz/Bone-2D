@@ -12,6 +12,7 @@ import { ExportAnimation } from './ExportAnimation';
 export function ExportDialog() {
   const project = useProject();
   const doc = project.skeleton;
+  const [format, setFormat] = useState<'json' | 'binary'>('json');
   const [maxSize, setMaxSize] = useState('2048');
   const [padding, setPadding] = useState('2');
   const [pretty, setPretty] = useState(false);
@@ -29,14 +30,14 @@ export function ExportDialog() {
     if (tab !== 'data') return;
     setBusy(true);
     setError(null);
-    buildSpineExport({ maxSize: +maxSize, padding: +padding, pretty, nonessential, pot, includePreview, excludeAnimations: excluded })
+    buildSpineExport({ format, maxSize: +maxSize, padding: +padding, pretty, nonessential, pot, includePreview, excludeAnimations: excluded })
       .then((r) => alive && setResult(r))
       .catch((e: Error) => alive && (setError(e.message), setResult(null)))
       .finally(() => alive && setBusy(false));
     return () => {
       alive = false;
     };
-  }, [maxSize, padding, pretty, nonessential, pot, includePreview, excluded, tab]);
+  }, [format, maxSize, padding, pretty, nonessential, pot, includePreview, excluded, tab]);
 
   const close = () => uiStore.patch({ exportOpen: false });
   const base = (doc.name || 'skeleton').replace(/[^\w\-]+/g, '_');
@@ -71,7 +72,7 @@ export function ExportDialog() {
         value={tab}
         onChange={setTab}
         options={[
-          { value: 'data', label: 'Spine 4.3 data', tone: 'plain', title: 'Skeleton JSON, texture atlas and a preview page' },
+          { value: 'data', label: 'Spine 4.3 data', tone: 'plain', title: 'Skeleton data (JSON or binary), texture atlas and a preview page' },
           { value: 'animation', label: 'Animation (GIF / PNG / video)', tone: 'plain', title: 'Render an animation to pictures' },
         ]}
       />
@@ -80,17 +81,23 @@ export function ExportDialog() {
       ) : (
         <>
       <p className="hint-text flush">
-        Produces <b>.json + .atlas + .png</b> that load in the official Spine 4.3 runtimes (spine-ts, Unity, Godot, Pixi, Phaser…).
+        Produces <b>{format === 'binary' ? '.skel' : '.json'} + .atlas + .png</b> that load in the official Spine 4.3 runtimes (spine-ts, Unity, Godot, Pixi, Phaser…).
       </p>
       <div className="kv">
+        <label>Skeleton file</label>
+        <SelectField value={format} options={[{ value: 'json', label: 'JSON (.json)' }, { value: 'binary', label: 'Binary (.skel), smaller' }]} onChange={setFormat} />
         <label>Atlas page size</label>
         <SelectField value={maxSize} options={['1024', '2048', '4096'].map((v) => ({ value: v, label: `${v} px` }))} onChange={setMaxSize} />
         <label>Padding</label>
         <SelectField value={padding} options={['0', '1', '2', '4'].map((v) => ({ value: v, label: `${v} px` }))} onChange={setPadding} />
         <label>Editor data</label>
         <Toggle on={nonessential} onChange={setNonessential} title="Bone colors, fps, image path" />
-        <label>Pretty JSON</label>
-        <Toggle on={pretty} onChange={setPretty} />
+        {format === 'json' && (
+          <>
+            <label>Pretty JSON</label>
+            <Toggle on={pretty} onChange={setPretty} />
+          </>
+        )}
         <label>Power-of-two pages</label>
         <Toggle on={pot} onChange={setPot} title="Atlas page sizes are powers of two" />
         <label>Preview page</label>

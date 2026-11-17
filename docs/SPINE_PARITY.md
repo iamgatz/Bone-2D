@@ -67,12 +67,12 @@
 | Spine | Bone 2D | Что сделать | Прио |
 |---|---|---|---|
 | JSON 4.3 | ✅ | — | |
-| **Binary `.skel`** | ❌ | экспорт и импорт (блок E) | **P1** |
+| **Binary `.skel`** | ✅ 4.3 (бинарные 4.0–4.2 нет) | — | |
 | Texture Packer: padding, POT, макс. размер, rotation, whitespace strip, scale, filter, alias, bleed | ◐ MaxRects фиксированный | настройки упаковки с предпросмотром страниц | **P1** |
 | Export: Skeletons / Animations / Skins выбор, флаг Export на элементе, Nonessential, Clean up, Pretty print, Minimal | ◐ только zip | диалог по образцу Spine | **P1** |
 | **GIF, PNG-последовательность, APNG, JPEG, видео (WebM / MP4)** | ❌ | рендер анимации в WebGL → кадры → GIF / PNG-zip / WebM (MediaRecorder) | **P1** |
 | Save / Load export settings (JSON) | ❌ | | P2 |
-| Import: Spine JSON ✅, Spine binary, PSD, папка с картинками, Spine «Import data» | ◐ | PSD (слои → слоты), `.skel`, папка | P2 |
+| Import: Spine JSON ✅, Spine binary 4.3 ✅, PSD, папка с картинками, Spine «Import data» | ◐ | PSD (слои → слоты), папка | P2 |
 | Несколько скелетов в проекте | ❌ | | P3 |
 | Версионирование проекта, бэкапы | ◐ автосохранение | история бэкапов | P3 |
 | CLI | ❌ | `npx bone2d export` | P3 |
@@ -121,4 +121,6 @@
 
 Окно **Skins** со скоупом (замок «только для скинов» на костях и констрейнтах, галочки по скинам, свои копии вложений, дубль скина; `src/core/skins.ts`, `tests/skins.test.ts`, ops в fuzz) тоже сделано; фаззер при этом нашёл два расхождения с официальным рантаймом (неактивные кости в порядке обновления, анимация неактивных слотов и констрейнтов) — исправлены.
 
-Осталось из таблиц выше: недавние проекты, Offset keys (Ctrl+Alt), Key Shown, Zoom Keys, папки Images, Preview-окно, редактор остальных горячих клавиш, binary `.skel`, PSD, linked mesh, sequences, спрайт-лист.
+**Бинарный `.skel`** (экспорт и импорт 4.3) тоже сделан: `src/core/export/spineBinary.ts` (JSON → бинарь), `src/core/import/spineBinary.ts` (бинарь → JSON для существующего импортёра), `tests/binary.test.ts`, `tests/binaryexotic.test.ts` и сверка в fuzz. Судья — официальный `SkeletonBinary`: наш файл и наш JSON загружаются в одинаковый `SkeletonData`.
+
+Осталось из таблиц выше: недавние проекты, Offset keys (Ctrl+Alt), Key Shown, Zoom Keys, папки Images, Preview-окно, редактор остальных горячих клавиш, PSD, linked mesh, sequences, спрайт-лист.

@@ -58,3 +58,12 @@ export function exportAndLoad(project: Project, options: Parameters<typeof expor
   const atlasText = writeAtlas(pages, (i) => `atlas${i}.png`);
   return { json, skeletonData: loadOfficial(json, atlasText), atlasText };
 }
+
+/** Loads binary data (.skel) with the official `SkeletonBinary`. */
+export function loadOfficialBinary(bytes: Uint8Array, atlasText: string) {
+  const atlas = new S.TextureAtlas(atlasText);
+  for (const page of atlas.pages) page.setTexture(new FakeTexture({ width: page.width, height: page.height }));
+  const loader = new S.AtlasAttachmentLoader(atlas);
+  const sb = new S.SkeletonBinary(loader);
+  return sb.readSkeletonData(bytes);
+}
