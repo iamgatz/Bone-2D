@@ -10,6 +10,7 @@ import { uid, uniqueName } from './ids';
 import { deformLength } from './mesh';
 import { syncLinkedMeshes } from './links';
 import { cleanSequence, cleanSequenceKey } from './sequence';
+import { cleanPlay } from './playback';
 import { cleanGuides } from './snap';
 import { repairPoses } from './poses';
 import {
@@ -504,6 +505,11 @@ function repairAnimations(doc: SkeletonDoc, note: Note) {
     a.deform ??= {};
     a.drawOrder ??= [];
     a.events ??= [];
+    if (a.play !== undefined) {
+      const clean = cleanPlay(a.play, a.duration);
+      if (JSON.stringify(clean) !== JSON.stringify(a.play)) note(`${where}: playback settings repaired`);
+      a.play = clean;
+    }
 
     for (const id of Object.keys(a.bones)) {
       const tl = a.bones[id];

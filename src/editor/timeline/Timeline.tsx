@@ -4,7 +4,7 @@ import { GraphEditor } from './GraphEditor';
 import { CURVE_PRESETS } from '@/core/curve';
 import { decodeKey, encodeKey } from '@/core/keyrefs';
 import type { KeyRef } from '@/core/keyrefs';
-import { cleanUpKeys, copyKeys, createAnimation, currentAnimation, deleteAnimation, deleteKeys, duplicateAnimation, pasteKeys, renameAnimation, selectAnimation, selectBone, selectSlot, setAnimationDuration, setKeysCurve, setMode, setSelection, setTime, togglePlay } from '@/store/actions';
+import { cleanUpKeys, copyKeys, createAnimation, currentAnimation, deleteAnimation, deleteKeys, duplicateAnimation, pasteKeys, renameAnimation, selectAnimation, selectBone, selectSlot, setAnimationDuration, setKeysCurve, setMode, setPlay, setSelection, setTime, togglePlay } from '@/store/actions';
 import { useProject } from '@/store/doc';
 import { useSettings } from '@/store/settings';
 import { uiStore, useUi } from '@/store/ui';
@@ -176,7 +176,7 @@ export function Timeline() {
         <IconButton icon={SkipBack} title="Go to start" onClick={() => jump(0)} disabled={!anim} />
         <IconButton icon={playing ? Pause : Play} title={playing ? 'Pause' : 'Play'} hotkey={KEYS.play} active={playing} animate onClick={() => togglePlay()} disabled={!anim} />
         <IconButton icon={SkipForward} title="Go to end" onClick={() => anim && jump(anim.duration)} disabled={!anim} />
-        <IconButton icon={Repeat} title="Loop" active={loop} onClick={() => uiStore.patch({ loop: !loop })} />
+        <IconButton icon={Repeat} title="Loop" active={loop} onClick={() => setPlay({ loop: !loop })} />
         <FrameField fps={doc.fps} time={time} />
         <span className="sep" />
         <IconButton icon={KeyRound} title="Auto-key: pose edits create keys at the playhead" active={autoKey} animate onClick={() => uiStore.patch({ autoKey: !autoKey })} />

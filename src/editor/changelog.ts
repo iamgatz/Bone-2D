@@ -12,6 +12,12 @@ export interface Release {
 
 export const CHANGELOG: Release[] = [
   {
+    version: '0.25',
+    date: '2026-11-17',
+    en: ['Every animation now has its own playback settings: Loop, Ping-pong and the play range (Playback window and the loop button of the timeline). They are saved with the project and not exported, so a walk can loop while a jump plays once, and the range you set on one animation no longer leaks into the others.'],
+    ru: ['У каждой анимации теперь свои настройки воспроизведения: цикл, пинг-понг и диапазон (окно «Воспроизведение» и кнопка цикла в таймлайне). Они сохраняются в проекте и не попадают в экспорт: ходьба может идти по кругу, а прыжок играть один раз, и диапазон одной анимации больше не переходит на другие.'],
+  },
+  {
     version: '0.24',
     date: '2026-11-17',
     en: ['Linked meshes: a skin can dress a mesh in another picture and keep its shape, weights and deform. Pick a picture for a mesh in the "In skin" field of the Inspector (with a skin selected) and the skin gets a linked mesh of the same name that follows the mesh of the default skin. The shape of a linked mesh is always the shape of its source (edit the source, every linked mesh follows; the Unlink button cuts one loose), the deform animation of the source moves it too (Share deform), and the file carries the link: Spine JSON and binary files write and read real linkedmesh attachments, also from another slot or skin. Before, a linked mesh of an imported file became an independent copy.', 'View: Shift+F frames the selected bones (or the bone of the selected slot), Shift+Z sets the zoom to 100% (one scene unit per screen pixel). Both are in the View menu and the command palette, and can be moved in Settings.', 'Deform: in Animate mode the vertices that the current pose has moved are drawn in orange in the Mesh tool, so it is clear where a deform already is.'],

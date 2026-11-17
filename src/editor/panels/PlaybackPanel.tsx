@@ -1,6 +1,6 @@
 import { ChevronLeft, ChevronRight, Pause, Play } from 'lucide-react';
 import { playSpan } from '@/core/playback';
-import { currentAnimation, setTime, togglePlay } from '@/store/actions';
+import { currentAnimation, setPlay, setTime, togglePlay } from '@/store/actions';
 import { useProject } from '@/store/doc';
 import { uiStore, useUi } from '@/store/ui';
 import { KEYS } from '../hotkeys';
@@ -20,13 +20,14 @@ export function PlaybackPanel() {
   const setRange = (start: number, end: number) => {
     const a = Math.max(0, Math.min(start, duration));
     const b = Math.max(0, Math.min(end, duration));
-    uiStore.patch({ range: b - a >= 1 / Math.max(1, fps) ? [a, b] : null });
+    setPlay({ range: b - a >= 1 / Math.max(1, fps) ? [a, b] : null });
   };
 
   return (
     <div className="panel grow" style={{ minHeight: 160 }}>
       <div className="panel-head">
         <span className="title">Playback</span>
+        <span className="dim row-meta">{anim ? anim.name : ''}</span>
       </div>
       <div className="panel-body pad">
         <div className="hstack mb">
@@ -48,10 +49,10 @@ export function PlaybackPanel() {
         </div>
 
         <Field label="Loop" title="Start again when the end is reached">
-          <Toggle on={loop} onChange={(v) => uiStore.patch({ loop: v })} title="Loop" />
+          <Toggle on={loop} onChange={(v) => setPlay({ loop: v })} title="Loop" />
         </Field>
         <Field label="Ping-pong" title="Play forward, then backward, instead of jumping back to the start">
-          <Toggle on={pingPong} onChange={(v) => uiStore.patch({ pingPong: v })} title="Ping-pong" />
+          <Toggle on={pingPong} onChange={(v) => setPlay({ pingPong: v })} title="Ping-pong" />
         </Field>
 
         <div className="section-label flush">Play range</div>
@@ -69,7 +70,7 @@ export function PlaybackPanel() {
           <Button small ghost disabled={!anim} onClick={() => setRange(range ? lo : 0, time)}>
             End here
           </Button>
-          <Button small ghost disabled={!range} onClick={() => uiStore.patch({ range: null })}>
+          <Button small ghost disabled={!range} onClick={() => setPlay({ range: null })}>
             Whole animation
           </Button>
         </div>

@@ -527,6 +527,15 @@ export interface Animation {
   sequence?: Record<Id, Record<Id, Record<string, SequenceKey[]>>>;
   drawOrder: DrawOrderKey[];
   events: EventKey[];
+  /** How the editor plays this animation (loop, ping-pong, play range). Editor metadata: not part of the Spine export. Absent = looping, whole animation. */
+  play?: PlaySettings;
+}
+
+export interface PlaySettings {
+  loop: boolean;
+  pingPong: boolean;
+  /** Seconds [start, end] to play instead of the whole animation, or null. */
+  range: [number, number] | null;
 }
 
 // ---------------------------------------------------------------- project
