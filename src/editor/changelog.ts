@@ -12,6 +12,12 @@ export interface Release {
 
 export const CHANGELOG: Release[] = [
   {
+    version: '0.39',
+    date: '2026-11-17',
+    en: ['Draw order folders (new in Spine 4.3): put slots into a folder (Inspector, slot, Folder) and the draw order of the folder is keyed on its own. In Animate mode, dragging a slot of a folder in the Hierarchy keys the folder only: its slots swap places among the seats they hold, the other slots stay where they are. Every folder with keys gets its own row in the dopesheet. Export (JSON and binary) and import of Spine files with draw order folders work and are checked against the official runtime; before, imported folder timelines were dropped.'],
+    ru: ['Папки порядка отрисовки (новое в Spine 4.3): положите слоты в папку (Инспектор, слот, «Папка»), и порядок отрисовки папки ключуется отдельно. В режиме Animate перетаскивание слота папки в иерархии ставит ключ только папки: её слоты меняются местами на тех местах, что они занимают, остальные слоты остаются на месте. У каждой папки с ключами свой ряд в доупшите. Экспорт (JSON и binary) и импорт файлов Spine с такими папками работают и сверены с официальным рантаймом; раньше импортированные таймлайны папок отбрасывались.'],
+  },
+  {
     version: '0.38',
     date: '2026-11-17',
     en: ['Command line: `npm run cli -- export project.bone2d out/` writes the Spine 4.3 skeleton data (JSON or binary, scale, pretty, without editor-only data) and the pictures of the project without opening the editor, for a build step or CI; `info` counts what a project holds, `check` lists what is damaged (exit code 1). The atlas is still packed by the editor.'],

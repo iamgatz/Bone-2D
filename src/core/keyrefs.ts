@@ -2,7 +2,7 @@
 import { KEY_EPS, sortKeys } from './edit';
 import type { Animation, Id } from './model';
 
-export type KeyKind = 'bone' | 'slot' | 'ik' | 'deform' | 'sequence' | 'drawOrder' | 'event' | 'slider' | 'transform' | 'path' | 'physics';
+export type KeyKind = 'bone' | 'slot' | 'ik' | 'deform' | 'sequence' | 'drawOrder' | 'drawOrderFolder' | 'event' | 'slider' | 'transform' | 'path' | 'physics';
 
 export interface KeyRef {
   kind: KeyKind;
@@ -51,6 +51,8 @@ export function resolveKeys(anim: Animation, ref: Pick<KeyRef, 'kind' | 'target'
       return (anim.physics?.[ref.target] as Record<string, AnyKeys | undefined> | undefined)?.[ref.prop];
     case 'drawOrder':
       return anim.drawOrder;
+    case 'drawOrderFolder':
+      return anim.drawOrderFolder?.[ref.target];
     case 'event':
       return anim.events;
   }
@@ -166,6 +168,8 @@ export function pruneEmpty(anim: Animation) {
     if (Object.keys(per).length === 0) delete anim.sequence![skin];
   }
   if (anim.sequence && Object.keys(anim.sequence).length === 0) delete anim.sequence;
+  for (const id in anim.drawOrderFolder ?? {}) if (anim.drawOrderFolder![id].length === 0) delete anim.drawOrderFolder![id];
+  if (anim.drawOrderFolder && Object.keys(anim.drawOrderFolder).length === 0) delete anim.drawOrderFolder;
   for (const skin in anim.deform) {
     for (const slot in anim.deform[skin]) {
       for (const att in anim.deform[skin][slot]) if (anim.deform[skin][slot][att].length === 0) delete anim.deform[skin][slot][att];

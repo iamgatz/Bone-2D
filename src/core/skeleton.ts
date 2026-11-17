@@ -294,6 +294,8 @@ export interface SkeletonData {
   deformFollowers: Map<AttachmentData, number[]>;
   /** Token that changes whenever the bone id order changes (invalidates weighted attachment caches). */
   boneOrderKey: string;
+  /** The draw order folders: id and the setup indices of their slots in setup order. */
+  folders: { id: Id; slots: number[] }[];
 }
 
 // ------------------------------------------------------------------ compile
@@ -658,6 +660,7 @@ export function compileSkeleton(doc: SkeletonDoc): SkeletonData {
     deformSource: new Map(),
     deformFollowers: new Map(),
     boneOrderKey,
+    folders: (doc.drawOrderFolders ?? []).map((f) => ({ id: f.id, slots: f.slots.map((s) => slotIndex.get(s)).filter((i): i is number => i !== undefined).sort((a, b) => a - b) })),
   };
   if (hasLinkedMeshes(doc)) resolveLinkedMeshes(doc, data);
   if (pathEntries.length) fillPathLengths(data, pathEntries);

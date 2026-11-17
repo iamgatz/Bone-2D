@@ -908,7 +908,27 @@ export function jsonToBinary(json: J): Uint8Array {
         out2.varint(o.offset, true);
       }
     }
-    out2.varint(0, true); // draw order folders
+    // draw order folders: the slots of the folder (global indices), then keys whose offsets index the folder's own list
+    const folders: J[] = a.drawOrderFolder ?? [];
+    out2.varint(folders.length, true);
+    if (folders.length > 0) count += folders.length;
+    for (const f of folders) {
+      const members: string[] = f.slots ?? [];
+      out2.varint(members.length, true);
+      for (const name of members) out2.varint(slot(name), true);
+      const keys: J[] = f.keys ?? [];
+      out2.varint(keys.length, true);
+      for (const k of keys) {
+        out2.float(num(k.time, 0));
+        const offsets: J[] = (k.offsets ?? []).map((o: J) => ({ index: members.indexOf(o.slot), offset: o.offset }));
+        offsets.sort((x, y) => x.index - y.index);
+        out2.varint(offsets.length, true);
+        for (const o of offsets) {
+          out2.varint(o.index, true);
+          out2.varint(o.offset, true);
+        }
+      }
+    }
 
     // events
     const events: J[] = a.events ?? [];

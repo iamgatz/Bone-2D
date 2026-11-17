@@ -438,6 +438,13 @@ export interface IkKey extends Key {
   stretch: boolean;
 }
 
+/** A group of slots whose draw order can be keyed on its own (Spine 4.3 "draw order folder"): the slots swap places among the seats they hold. */
+export interface DrawOrderFolder {
+  id: Id;
+  name: string;
+  slots: Id[];
+}
+
 export interface DrawOrderKey {
   time: number;
   /** Complete slot id order (bottom to top). */
@@ -526,6 +533,8 @@ export interface Animation {
   /** skin id -> slot id -> attachment name -> sequence keys (only for a region or mesh that has a `sequence`). Absent in older projects. */
   sequence?: Record<Id, Record<Id, Record<string, SequenceKey[]>>>;
   drawOrder: DrawOrderKey[];
+  /** Draw order keys of the folders (SkeletonDoc.drawOrderFolders), by folder id; each key's `order` lists the slots of that folder. */
+  drawOrderFolder?: Record<Id, DrawOrderKey[]>;
   events: EventKey[];
   /** How the editor plays this animation (loop, ping-pong, play range). Editor metadata: not part of the Spine export. Absent = looping, whole animation. */
   play?: PlaySettings;
@@ -551,6 +560,8 @@ export interface SkeletonDoc {
   constraints: Constraint[];
   events: EventDef[];
   animations: Animation[];
+  /** Groups of slots with a draw order of their own (absent = none). */
+  drawOrderFolders?: DrawOrderFolder[];
 }
 
 export interface ImageRef {
