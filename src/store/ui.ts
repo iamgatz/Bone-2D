@@ -1,5 +1,7 @@
 import type { Id } from '@/core/model';
 import { createStore, useStore } from './store';
+import { DEFAULT_VIEWS, loadLayout } from './layout';
+import type { Views } from './layout';
 
 export type Mode = 'setup' | 'animate';
 export type Tool = 'select' | 'create' | 'translate' | 'rotate' | 'scale' | 'mesh' | 'weights' | 'ik' | 'clipping' | 'boundingbox' | 'point' | 'path';
@@ -82,6 +84,8 @@ export interface UiState {
   brush: WeightBrush;
   toast: { id: number; text: string; kind: 'info' | 'error' | 'ok' } | null;
   panel: { left: number; right: number; bottom: number };
+  /** Which windows are open (see layout.ts). */
+  views: Views;
   exportOpen: boolean;
   helpOpen: boolean;
   updatesOpen: boolean;
@@ -89,6 +93,8 @@ export interface UiState {
 }
 
 export const emptySelection: Selection = { bones: [], slot: null, attachment: null, constraint: null, vertices: [] };
+
+const saved = loadLayout();
 
 export const uiStore = createStore<UiState>({
   mode: 'setup',
@@ -112,7 +118,8 @@ export const uiStore = createStore<UiState>({
   expanded: {},
   brush: { size: 40, strength: 0.5, mode: 'add', bone: null },
   toast: null,
-  panel: typeof window !== 'undefined' && window.innerWidth < 1150 ? { left: 210, right: 240, bottom: 250 } : { left: 270, right: 300, bottom: 300 },
+  panel: saved.panel ?? (typeof window !== 'undefined' && window.innerWidth < 1150 ? { left: 210, right: 240, bottom: 250 } : { left: 270, right: 300, bottom: 300 }),
+  views: saved.views ?? DEFAULT_VIEWS,
   exportOpen: false,
   helpOpen: false,
   updatesOpen: false,

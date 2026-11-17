@@ -1423,3 +1423,63 @@ a.btn {
   gap: 10px;
   color: var(--text-dim);
 }
+
+/* ---------------------------------------------------------------- animations and metrics windows */
+.row-meta {
+  font-size: var(--fs-xs);
+  font-variant-numeric: tabular-nums;
+  flex: none;
+  color: var(--muted);
+}
+.row.folder {
+  color: var(--text);
+  font-weight: var(--fw-heading);
+}
+.metric-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(92px, 1fr));
+  gap: 6px;
+  padding: 10px 12px 4px;
+}
+.metric {
+  display: flex;
+  flex-direction: column;
+  padding: 6px 8px;
+  background: var(--sunken-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+.metric-value {
+  font-size: var(--fs-xl);
+  font-weight: var(--fw-bold);
+  font-variant-numeric: tabular-nums;
+}
+.metric-label {
+  font-size: var(--fs-xs);
+  color: var(--muted);
+}
+.warn {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  padding: 4px 12px;
+  color: var(--text-dim);
+  line-height: 1.4;
+}
+.warn svg {
+  flex: none;
+  margin-top: 2px;
+  color: var(--animate);
+}
+.warn.ok svg {
+  color: var(--accent);
+}
+.warn b {
+  margin-left: auto;
+  font-weight: var(--fw-bold);
+  color: var(--text);
+  max-width: 45%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
