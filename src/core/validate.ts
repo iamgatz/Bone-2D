@@ -8,6 +8,7 @@ import { animationEndTime } from './animate';
 import { normalizeBoneOrder } from './edit';
 import { uid, uniqueName } from './ids';
 import { deformLength } from './mesh';
+import { repairPoses } from './poses';
 import {
   BLEND_MODES,
   DEFAULT_BOUNDING_BOX_COLOR,
@@ -74,6 +75,14 @@ export function repairProject(project: Project): string[] {
     const kept = (skin.constraints ?? []).filter((id) => constraintIds.has(id));
     if (kept.length !== (skin.constraints ?? []).length) note(`skin "${skin.name}": dropped unknown constraints`);
     skin.constraints = kept;
+  }
+
+  if (project.poses !== undefined) {
+    const fixed = repairPoses(project.poses);
+    if (fixed.notes.length) {
+      project.poses = fixed.poses;
+      for (const n of fixed.notes) note(n);
+    }
   }
 
   const imageNames = new Set<string>();

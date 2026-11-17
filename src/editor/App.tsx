@@ -34,6 +34,7 @@ import { useSettings } from '@/store/settings';
 import { AnimationsPanel } from './panels/AnimationsPanel';
 import { SkinsPanel } from './panels/SkinsPanel';
 import { AnimationToolsPanel } from './panels/AnimationToolsPanel';
+import { PosesPanel } from './panels/PosesPanel';
 import { PlaybackPanel } from './panels/PlaybackPanel';
 import { MetricsPanel } from './panels/MetricsPanel';
 import { HistoryPanel } from './panels/HistoryPanel';
@@ -407,7 +408,7 @@ export function App() {
     uiStore.patch({ panel: { ...p, [key]: Math.min(max, Math.max(min, p[key] + sign * d)) } });
   };
 
-  const leftOn = views.tree || views.images || views.animations || views.skins || views.playback || views.tools || views.metrics || views.history;
+  const leftOn = views.tree || views.images || views.animations || views.skins || views.playback || views.tools || views.poses || views.metrics || views.history;
 
   return (
     <div className="app">
@@ -421,6 +422,7 @@ export function App() {
               {views.skins && <SkinsPanel />}
               {views.playback && <PlaybackPanel />}
               {views.tools && <AnimationToolsPanel />}
+              {views.poses && <PosesPanel />}
               {views.metrics && <MetricsPanel />}
               {views.history && <HistoryPanel />}
               {views.images && <AssetsPanel />}

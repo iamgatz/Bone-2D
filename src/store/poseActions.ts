@@ -1,5 +1,6 @@
 import { duplicateBones } from '@/core/duplicate';
-import type { Id } from '@/core/model';
+import type { BonePose, Id, PoseEntry } from '@/core/model';
+import { blendPose, newPose, newPoseName } from '@/core/poses';
 import { currentPose, setBonePose, setSelection } from './actions';
 import type { PoseProps } from './actions';
 import { docStore } from './doc';
@@ -98,4 +99,80 @@ export function duplicateSelection(mirror: boolean) {
   }
   setSelection({ bones: made.bones });
   toast('Copied with the slots and images. Constraints and animation keys are not copied');
+}
+
+// ---------------------------------------------------------------- the pose library (kept in the project file, not exported)
+
+/** The pose of the selected bones (all bones when none is selected) as it is shown now, by bone name. */
+function capture(): Record<string, BonePose> {
+  const doc = docStore.get().skeleton;
+  const out: Record<string, BonePose> = {};
+  for (const id of targets()) {
+    const pose = currentPose(id);
+    const bone = doc.bones.find((b) => b.id === id);
+    if (pose && bone) out[bone.name] = pose;
+  }
+  return out;
+}
+
+/** Keeps the pose of the selected bones (all when none is selected) in the library under a name. Returns it. */
+export function savePose(name?: string): PoseEntry | null {
+  const bones = capture();
+  if (!Object.keys(bones).length) {
+    toast('There is no bone to keep a pose of');
+    return null;
+  }
+  const entry = newPose(docStore.get().poses ?? [], bones, name);
+  docStore.update('Save pose', (d) => {
+    (d.poses ??= []).push(entry);
+  });
+  toast(`Pose "${entry.name}" kept: ${Object.keys(bones).length} bones`, 'ok');
+  return entry;
+}
+
+/** Puts a kept pose on the selected bones (all when none is selected) that it knows by name; amount 0..1 goes part of the way from the current pose. */
+export function applyPose(id: Id, amount = 1): number {
+  const entry = (docStore.get().poses ?? []).find((p) => p.id === id);
+  if (!entry) return 0;
+  const doc = docStore.get().skeleton;
+  const updates = targets().flatMap((boneId) => {
+    const bone = doc.bones.find((b) => b.id === boneId);
+    const target = bone && entry.bones[bone.name];
+    const cur = currentPose(boneId);
+    return target && cur ? [{ id: boneId, props: blendPose(cur, target, amount) }] : [];
+  });
+  if (!updates.length) {
+    toast('No selected bone is in this pose');
+    return 0;
+  }
+  setBonePose(updates, `Apply pose "${entry.name}"`);
+  return updates.length;
+}
+
+/** Replaces the bones of a kept pose with the pose of the selected bones (all when none is selected). */
+export function overwritePose(id: Id) {
+  const bones = capture();
+  if (!Object.keys(bones).length) return;
+  docStore.update('Update pose', (d) => {
+    const p = d.poses?.find((x) => x.id === id);
+    if (p) p.bones = bones;
+  });
+}
+
+export function renamePose(id: Id, name: string) {
+  const list = docStore.get().poses ?? [];
+  const entry = list.find((p) => p.id === id);
+  const wanted = name.trim();
+  if (!entry || !wanted || wanted === entry.name) return;
+  const next = newPoseName(list.filter((p) => p.id !== id), wanted);
+  docStore.update('Rename pose', (d) => {
+    const p = d.poses?.find((x) => x.id === id);
+    if (p) p.name = next;
+  });
+}
+
+export function deletePose(id: Id) {
+  docStore.update('Delete pose', (d) => {
+    if (d.poses) d.poses = d.poses.filter((p) => p.id !== id);
+  });
 }
