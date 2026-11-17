@@ -4,10 +4,23 @@
   "version": "0.1.0",
   "description": "Open-source browser-based 2D skeletal animation editor with Spine 4.3 compatible export",
   "license": "MIT",
-  "keywords": ["2d", "animation", "skeletal-animation", "spine", "editor", "webgl", "gamedev"],
+  "keywords": [
+    "2d",
+    "animation",
+    "skeletal-animation",
+    "spine",
+    "editor",
+    "webgl",
+    "gamedev"
+  ],
   "homepage": "https://iamgatz.github.io/Bone-2D/",
-  "repository": { "type": "git", "url": "git+https://github.com/iamgatz/Bone-2D.git" },
-  "bugs": { "url": "https://github.com/iamgatz/Bone-2D/issues" },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/iamgatz/Bone-2D.git"
+  },
+  "bugs": {
+    "url": "https://github.com/iamgatz/Bone-2D/issues"
+  },
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -18,6 +31,7 @@
   },
   "dependencies": {
     "@fontsource-variable/inter": "^5.3.0",
+    "ag-psd": "^34.2.1",
     "delaunator": "^5.1.0",
     "immer": "^11.2.10",
     "lucide-react": "^1.73.0",

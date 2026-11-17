@@ -116,8 +116,8 @@ export function AssetsPanel() {
       <div className="panel-head">
         <span className="title">Images</span>
         <IconButton icon={Eraser} title="Remove the images no attachment shows" small disabled={unused === 0} onClick={() => removeUnusedImages()} />
-        <IconButton icon={ImagePlus} title="Import images" small onClick={() => fileRef.current?.click()} />
-        <input ref={fileRef} type="file" accept="image/*" multiple hidden onChange={async (e) => (await importImageFiles([...(e.target.files ?? [])]), (e.target.value = ''))} />
+        <IconButton icon={ImagePlus} title="Import images (or a PSD file: every layer becomes a picture and a slot)" small onClick={() => fileRef.current?.click()} />
+        <input ref={fileRef} type="file" accept="image/*,.psd" multiple hidden onChange={async (e) => (await importImageFiles([...(e.target.files ?? [])]), (e.target.value = ''))} />
         <input
           ref={replaceRef}
           type="file"
@@ -142,7 +142,7 @@ export function AssetsPanel() {
       >
         {project.images.length === 0 ? (
           <div className="drop-hint" onClick={() => fileRef.current?.click()}>
-            Drop PNG / WebP images here
+            Drop PNG / WebP images or a PSD file here
             <br />
             or click to browse
           </div>

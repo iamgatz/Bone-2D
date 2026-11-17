@@ -17,8 +17,10 @@ import { RAD2DEG, atan2Deg, matInvert, matMul } from '@/core/math';
 import type { Mat } from '@/core/math';
 import { newAnimation, newBone, newSkin, newSlot } from '@/core/model';
 import { cleanPlay, playOf, playSpan, samePlay } from '@/core/playback';
+import { isPsd, layerCenter, readPsdFile } from '@/core/import/psd';
+import type { PsdPixels } from '@/core/import/psd';
 import { cleanImageName, renameImage, sequenceFrameOwner, unusedImages } from '@/core/images';
-import type { Animation, Bone, Id, Inherit, PlaySettings, Project, RGB, RGBA, Slot } from '@/core/model';
+import type { Animation, Bone, Id, ImageRef, Inherit, PlaySettings, Project, RGB, RGBA, Slot } from '@/core/model';
 import { getScene, getSetupSkeleton } from '@/editor/scene';
 import { assets } from './assets';
 import { docStore } from './doc';
@@ -399,6 +401,10 @@ export function keySelectedBones(which: ('rotate' | 'translate' | 'scale' | 'she
 export async function importImageFiles(files: File[]): Promise<string[]> {
   const added: string[] = [];
   for (const f of files) {
+    if (isPsd(f)) {
+      await importPsd(f);
+      continue;
+    }
     if (!/^image\/(png|jpeg|webp|gif)/.test(f.type) && !/\.(png|jpe?g|webp|gif)$/i.test(f.name)) continue;
     try {
       const ref = await assets.addFile(f);
@@ -413,6 +419,74 @@ export async function importImageFiles(files: File[]): Promise<string[]> {
   }
   if (added.length) toast(`Imported ${added.length} image${added.length > 1 ? 's' : ''}`, 'ok');
   return added;
+}
+
+function pixelsToPng(px: PsdPixels): Promise<Blob> {
+  const canvas = document.createElement('canvas');
+  canvas.width = px.width;
+  canvas.height = px.height;
+  canvas.getContext('2d')!.putImageData(new ImageData(new Uint8ClampedArray(px.data), px.width, px.height), 0, 0);
+  return new Promise((resolve, reject) => canvas.toBlob((b) => (b ? resolve(b) : reject(new Error('could not encode the layer'))), 'image/png'));
+}
+
+/**
+ * Imports a Photoshop file: every visible layer becomes a picture (groups are folders) and a slot with a region attachment, bottom layer
+ * first, so the stack of the file is the draw order. The slots go on the selected bone (the first one, or a new root when there is none).
+ * One step in the history. Returns the number of layers imported.
+ */
+export async function importPsd(file: File): Promise<number> {
+  let psd;
+  try {
+    psd = await readPsdFile(await file.arrayBuffer());
+  } catch (e) {
+    toast(`Could not read ${file.name}`, 'error');
+    console.error(e);
+    return 0;
+  }
+  if (!psd.layers.length) {
+    toast(`${file.name} has no visible pixel layers`, 'info');
+    return 0;
+  }
+  const refs: { ref: ImageRef; layer: (typeof psd.layers)[number] }[] = [];
+  for (const layer of psd.layers) {
+    try {
+      refs.push({ ref: await assets.addFile(await pixelsToPng(layer.pixels), layer.name), layer });
+    } catch (e) {
+      toast(`Could not read the layer "${layer.name}"`, 'error');
+      console.error(e);
+    }
+  }
+  const doc = skeletonDoc();
+  const selected = uiStore.get().selection.bones[0] ?? doc.bones[0]?.id;
+  const setup = getSetupSkeleton();
+  const live = selected ? setup.boneById(selected) : undefined;
+  const root = live ? null : newBone({ name: freshName('root', doc.bones) });
+  const boneId = live ? live.data.id : root!.id;
+  const slotIds: Id[] = [];
+  docStore.update('Import PSD', (d) => {
+    if (root) d.skeleton.bones.push(root);
+    const skin = d.skeleton.skins[0];
+    for (const { ref, layer } of refs) {
+      const [wx, wy] = layerCenter(psd, layer);
+      let lx = wx;
+      let ly = wy;
+      let rotation = 0;
+      if (live) {
+        [lx, ly] = live.worldToLocal(wx, wy);
+        const det = live.a * live.d - live.b * live.c;
+        const rot = det < 0 ? atan2Deg(live.c, live.a) : -atan2Deg(live.c, live.a);
+        rotation = det < 0 ? -rot : rot;
+      }
+      const slot = newSlot({ name: freshName(ref.name.split('/').pop() ?? ref.name, d.skeleton.slots), bone: boneId, attachment: ref.name, color: [1, 1, 1, layer.opacity], blend: layer.blend });
+      d.images.push(ref);
+      d.skeleton.slots.push(slot);
+      skin.attachments[slot.id] = { [ref.name]: { type: 'region', name: ref.name, path: ref.name, x: lx, y: ly, rotation, scaleX: 1, scaleY: 1, width: ref.width, height: ref.height, color: [1, 1, 1, 1] } };
+      slotIds.push(slot.id);
+    }
+  });
+  if (slotIds.length) setSelection({ slot: slotIds[slotIds.length - 1], bones: [boneId] });
+  toast(psd.skipped.hidden ? `Imported layers: ${slotIds.length} from ${file.name} (${psd.skipped.hidden} hidden skipped)` : `Imported layers: ${slotIds.length} from ${file.name}`, 'ok');
+  return slotIds.length;
 }
 
 /** Creates a slot + region attachment for an image, centered at the given world position (setup pose). */

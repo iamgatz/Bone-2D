@@ -121,9 +121,11 @@ export const RU: Record<string, string> = {
   'px': 'px',
 
   // ---------------------------------------------------------------- images panel
-  'Drop PNG / WebP images here': 'Перетащи сюда PNG / WebP',
+  'Drop PNG / WebP images or a PSD file here': 'Перетащи сюда PNG / WebP или файл PSD',
   'or click to browse': 'или нажми, чтобы выбрать',
   'Import images': 'Импорт картинок',
+  'Import PSD': 'Импорт PSD',
+  'Import images (or a PSD file: every layer becomes a picture and a slot)': 'Импорт картинок (или файла PSD: каждый слой станет картинкой и слотом)',
   'Remove image': 'Удалить картинку',
   '{} — drag into the viewport, or double-click to add at the center': '{} — перетащи во вьюпорт или кликни дважды, чтобы добавить в центр',
   '"{}" is used by an attachment': '«{}» используется аттачментом',
@@ -406,6 +408,10 @@ export const RU: Record<string, string> = {
   'Imported {#} image': 'Импортировано картинок: {}',
   'Imported {#} images': 'Импортировано картинок: {}',
   'Could not read {}': 'Не удалось прочитать {}',
+  'Could not read the layer "{}"': 'Не удалось прочитать слой «{}»',
+  '{} has no visible pixel layers': 'В {} нет видимых пиксельных слоёв',
+  'Imported layers: {#} from {} ({#} hidden skipped)': 'Импортировано слоёв: {1} из {2} (скрытых пропущено: {3})',
+  'Imported layers: {#} from {}': 'Импортировано слоёв: {1} из {2}',
   'Copied {#} key': 'Скопировано ключей: {}',
   'Copied {#} keys': 'Скопировано ключей: {}',
   'Saved {}': 'Сохранено: {}',
