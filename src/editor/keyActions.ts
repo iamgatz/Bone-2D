@@ -3,6 +3,7 @@ import { docStore } from '@/store/doc';
 import { duplicateSelection } from '@/store/poseActions';
 import { openProjectFile, saveProjectFile } from '@/store/project';
 import { uiStore } from '@/store/ui';
+import { isolateSelection, showAll } from '@/store/visibilityActions';
 import { toggleAllViews } from '@/store/viewActions';
 import type { KeyId } from './hotkeys';
 import { viewportApi } from './viewport/Viewport';
@@ -51,6 +52,14 @@ export const KEY_ACTIONS: Partial<Record<KeyId, (e: KeyboardEvent) => void>> = {
   selectAll: (e) => {
     e.preventDefault();
     setSelection({ bones: docStore.get().skeleton.bones.map((b) => b.id) });
+  },
+  showAll: (e) => {
+    e.preventDefault();
+    showAll();
+  },
+  isolate: (e) => {
+    e.preventDefault();
+    isolateSelection();
   },
   frame: () => viewportApi.frame(),
   key: () => keySelectedBones(),

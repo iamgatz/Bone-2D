@@ -1,17 +1,31 @@
-/** MaxRects texture atlas packer + Spine atlas text writer. Pure logic; pixels are composed by the caller. */
+/** MaxRects texture atlas packer + Spine atlas text writer. Pure logic; pixels are composed by composePage. */
 
 export interface PackInput {
   name: string;
+  /** The size that is packed: the picture without its empty border when it was trimmed. */
   width: number;
   height: number;
+  /** A trimmed picture: where the packed part sits in the whole one (offsetY from the bottom, as the atlas file says it) and the whole size. */
+  offsetX?: number;
+  offsetY?: number;
+  originalWidth?: number;
+  originalHeight?: number;
 }
 
 export interface PackedRegion {
   name: string;
+  /** The top left corner of the region on the page. A turned region takes height × width there. */
   x: number;
   y: number;
+  /** The size of the region as it is in the picture (before turning). */
   width: number;
   height: number;
+  /** Turned a quarter turn (rotate:90 in the atlas file) to fit better. */
+  rotated: boolean;
+  offsetX: number;
+  offsetY: number;
+  originalWidth: number;
+  originalHeight: number;
 }
 
 export interface AtlasPage {
@@ -27,6 +41,8 @@ export interface PackOptions {
   padding?: number;
   /** Power-of-two page sizes (default true). */
   pot?: boolean;
+  /** Allow a quarter turn of a region when it fits better. */
+  rotate?: boolean;
 }
 
 interface Rect {
@@ -45,20 +61,24 @@ class MaxRects {
     this.free = [{ x: 0, y: 0, w: width, h: height }];
   }
 
-  insert(w: number, h: number): Rect | null {
-    let best: Rect | null = null;
+  /** Best short side fit; with `turn` the quarter-turned size is tried too (the rect then is h × w and `turned` is set). */
+  insert(w: number, h: number, turn = false): (Rect & { turned: boolean }) | null {
+    let best: (Rect & { turned: boolean }) | null = null;
     let bestShort = Infinity;
     let bestLong = Infinity;
-    for (const f of this.free) {
-      if (f.w >= w && f.h >= h) {
-        const lw = f.w - w;
-        const lh = f.h - h;
-        const short = Math.min(lw, lh);
-        const long = Math.max(lw, lh);
-        if (short < bestShort || (short === bestShort && long < bestLong)) {
-          best = { x: f.x, y: f.y, w, h };
-          bestShort = short;
-          bestLong = long;
+    const sizes: [number, number, boolean][] = turn && w !== h ? [[w, h, false], [h, w, true]] : [[w, h, false]];
+    for (const [rw, rh, turned] of sizes) {
+      for (const f of this.free) {
+        if (f.w >= rw && f.h >= rh) {
+          const lw = f.w - rw;
+          const lh = f.h - rh;
+          const short = Math.min(lw, lh);
+          const long = Math.max(lw, lh);
+          if (short < bestShort || (short === bestShort && long < bestLong)) {
+            best = { x: f.x, y: f.y, w: rw, h: rh, turned };
+            bestShort = short;
+            bestLong = long;
+          }
         }
       }
     }
@@ -90,14 +110,29 @@ function nextPow2(v: number): number {
   return p;
 }
 
-function tryPack(items: PackInput[], size: [number, number], pad: number): { placed: PackedRegion[]; rest: PackInput[] } {
+/** The width and height a region takes on its page. */
+export const footprint = (r: Pick<PackedRegion, 'width' | 'height' | 'rotated'>): [number, number] => (r.rotated ? [r.height, r.width] : [r.width, r.height]);
+
+function tryPack(items: PackInput[], size: [number, number], pad: number, rotate: boolean): { placed: PackedRegion[]; rest: PackInput[] } {
   const packer = new MaxRects(size[0], size[1]);
   const placed: PackedRegion[] = [];
   const rest: PackInput[] = [];
   for (const it of items) {
-    const r = packer.insert(it.width + pad * 2, it.height + pad * 2);
-    if (r) placed.push({ name: it.name, x: r.x + pad, y: r.y + pad, width: it.width, height: it.height });
-    else rest.push(it);
+    const r = packer.insert(it.width + pad * 2, it.height + pad * 2, rotate);
+    if (r) {
+      placed.push({
+        name: it.name,
+        x: r.x + pad,
+        y: r.y + pad,
+        width: it.width,
+        height: it.height,
+        rotated: r.turned,
+        offsetX: it.offsetX ?? 0,
+        offsetY: it.offsetY ?? 0,
+        originalWidth: it.originalWidth ?? it.width,
+        originalHeight: it.originalHeight ?? it.height,
+      });
+    } else rest.push(it);
   }
   return { placed, rest };
 }
@@ -106,11 +141,13 @@ export function packAtlas(inputs: PackInput[], options: PackOptions = {}): Atlas
   const maxSize = options.maxSize ?? 2048;
   const pad = options.padding ?? 2;
   const pot = options.pot ?? true;
+  const rotate = options.rotate ?? false;
   const items = inputs
     .slice()
     .sort((a, b) => Math.max(b.width, b.height) - Math.max(a.width, a.height) || b.width * b.height - a.width * a.height);
   for (const it of items) {
-    if (it.width + pad * 2 > maxSize || it.height + pad * 2 > maxSize) {
+    const fits = (w: number, h: number) => w + pad * 2 <= maxSize && h + pad * 2 <= maxSize;
+    if (!fits(it.width, it.height) && !(rotate && fits(it.height, it.width))) {
       throw new Error(`Image "${it.name}" (${it.width}x${it.height}) does not fit the ${maxSize}px atlas page`);
     }
   }
@@ -133,7 +170,7 @@ export function packAtlas(inputs: PackInput[], options: PackOptions = {}): Atlas
         : [[side, side]];
       let done = false;
       for (const s of sizes) {
-        const r = tryPack(remaining, s, pad);
+        const r = tryPack(remaining, s, pad, rotate);
         if (r.rest.length === 0) {
           result = r;
           w = s[0];
@@ -144,7 +181,7 @@ export function packAtlas(inputs: PackInput[], options: PackOptions = {}): Atlas
       }
       if (done) break;
       if (side >= maxSize) {
-        const r = tryPack(remaining, [maxSize, maxSize], pad);
+        const r = tryPack(remaining, [maxSize, maxSize], pad, rotate);
         result = r;
         w = maxSize;
         h = maxSize;
@@ -153,13 +190,13 @@ export function packAtlas(inputs: PackInput[], options: PackOptions = {}): Atlas
       side <<= 1;
     }
     const r = result!;
+    const usedW = Math.max(...r.placed.map((p) => p.x + footprint(p)[0] + pad));
+    const usedH = Math.max(...r.placed.map((p) => p.y + footprint(p)[1] + pad));
     if (!pot) {
       // shrink to used bounds
-      w = Math.max(...r.placed.map((p) => p.x + p.width + pad));
-      h = Math.max(...r.placed.map((p) => p.y + p.height + pad));
+      w = usedW;
+      h = usedH;
     } else {
-      const usedW = Math.max(...r.placed.map((p) => p.x + p.width + pad));
-      const usedH = Math.max(...r.placed.map((p) => p.y + p.height + pad));
       w = Math.min(w, nextPow2(usedW));
       h = Math.min(h, nextPow2(usedH));
     }
@@ -169,19 +206,89 @@ export function packAtlas(inputs: PackInput[], options: PackOptions = {}): Atlas
   return pages;
 }
 
+export type AtlasFilter = 'Linear' | 'Nearest';
+
 /** Spine 4.x atlas text for the given pages. `pageFile(i)` supplies each page's image file name. */
-export function writeAtlas(pages: AtlasPage[], pageFile: (index: number) => string, opts: { pma?: boolean } = {}): string {
+export function writeAtlas(pages: AtlasPage[], pageFile: (index: number) => string, opts: { pma?: boolean; filter?: AtlasFilter } = {}): string {
   const lines: string[] = [];
+  const filter = opts.filter ?? 'Linear';
   for (const p of pages) {
     lines.push(pageFile(p.index));
     lines.push(`size:${p.width},${p.height}`);
-    lines.push('filter:Linear,Linear');
+    lines.push(`filter:${filter},${filter}`);
     lines.push(`pma:${opts.pma ? 'true' : 'false'}`);
     for (const r of p.regions) {
       lines.push(r.name);
       lines.push(`bounds:${r.x},${r.y},${r.width},${r.height}`);
+      if (r.offsetX || r.offsetY || r.originalWidth !== r.width || r.originalHeight !== r.height) lines.push(`offsets:${r.offsetX},${r.offsetY},${r.originalWidth},${r.originalHeight}`);
+      if (r.rotated) lines.push('rotate:90');
     }
     lines.push('');
   }
   return lines.join('\n');
+}
+
+// ---- trimming and the pixels of a page
+
+/** The part of a picture that is not transparent: left, top, width and height. A picture with nothing in it keeps one pixel, so it still has a region. */
+export function trimBounds(rgba: ArrayLike<number>, width: number, height: number): { x: number; y: number; w: number; h: number } {
+  let x0 = width;
+  let y0 = height;
+  let x1 = -1;
+  let y1 = -1;
+  for (let y = 0; y < height; y++) {
+    for (let x = 0; x < width; x++) {
+      if (rgba[(y * width + x) * 4 + 3] > 0) {
+        if (x < x0) x0 = x;
+        if (x > x1) x1 = x;
+        if (y < y0) y0 = y;
+        y1 = y;
+      }
+    }
+  }
+  if (x1 < 0) return { x: 0, y: 0, w: 1, h: 1 };
+  return { x: x0, y: y0, w: x1 - x0 + 1, h: y1 - y0 + 1 };
+}
+
+/** The pixels a region is made of: straight RGBA, row by row, width × height of the region as it is in the picture. */
+export interface RegionPixels {
+  data: ArrayLike<number>;
+}
+
+/**
+ * The pixels of one page: every region put where the atlas file says (a turned one as rotate:90 means: its top edge runs up the left
+ * side), with the padding filled by the region's own edge pixels so smoothing never picks up transparent black. Returns RGBA, row by row.
+ */
+export function composePage(page: AtlasPage, pixels: (name: string) => RegionPixels | undefined, padding: number): Uint8ClampedArray {
+  const out = new Uint8ClampedArray(page.width * page.height * 4);
+  const pad = Math.min(Math.max(0, padding), 4);
+  for (const r of page.regions) {
+    const src = pixels(r.name);
+    if (!src) continue;
+    const [pw, ph] = footprint(r);
+    // the region as laid on the page, before it is copied
+    const patch = new Uint8ClampedArray(pw * ph * 4);
+    for (let iy = 0; iy < r.height; iy++) {
+      for (let ix = 0; ix < r.width; ix++) {
+        const px = r.rotated ? iy : ix;
+        const py = r.rotated ? r.width - 1 - ix : iy;
+        const from = (iy * r.width + ix) * 4;
+        const to = (py * pw + px) * 4;
+        for (let k = 0; k < 4; k++) patch[to + k] = src.data[from + k];
+      }
+    }
+    for (let y = -pad; y < ph + pad; y++) {
+      for (let x = -pad; x < pw + pad; x++) {
+        const dx = r.x + x;
+        const dy = r.y + y;
+        if (dx < 0 || dy < 0 || dx >= page.width || dy >= page.height) continue;
+        const sx = Math.min(pw - 1, Math.max(0, x));
+        const sy = Math.min(ph - 1, Math.max(0, y));
+        const from = (sy * pw + sx) * 4;
+        const to = (dy * page.width + dx) * 4;
+        for (let k = 0; k < 4; k++) out[to + k] = patch[from + k];
+      }
+    }
+  }
+  return out;
 }

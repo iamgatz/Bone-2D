@@ -2,7 +2,7 @@ import { settingsStore, setSettings } from '@/store/settings';
 import { TOOLS, hotkeyOf, setToolKey } from './tools';
 
 export type KeyId =
-  | 'undo' | 'redo' | 'save' | 'saveAs' | 'open' | 'export' | 'copy' | 'paste' | 'selectAll' | 'frame' | 'mode' | 'play' | 'key' | 'delete' | 'help' | 'hideViews' | 'settings' | 'duplicate' | 'palette' | 'mirror';
+  | 'undo' | 'redo' | 'save' | 'saveAs' | 'open' | 'export' | 'copy' | 'paste' | 'selectAll' | 'frame' | 'mode' | 'play' | 'key' | 'delete' | 'help' | 'hideViews' | 'settings' | 'duplicate' | 'palette' | 'mirror' | 'showAll' | 'isolate';
 
 export interface Binding {
   id: KeyId;
@@ -41,6 +41,8 @@ export const BINDINGS: Binding[] = [
   { id: 'duplicate', label: 'Duplicate bones', combo: 'Ctrl+D' },
   { id: 'palette', label: 'Command palette', combo: 'Ctrl+K' },
   { id: 'mirror', label: 'Mirror bones', combo: 'Ctrl+Shift+D' },
+  { id: 'showAll', label: 'Show everything hidden', combo: 'Ctrl+H' },
+  { id: 'isolate', label: 'Show only the selection', combo: 'Ctrl+Shift+H' },
 ];
 
 const BIND = Object.fromEntries(BINDINGS.map((b) => [b.id, b])) as Record<KeyId, Binding>;
@@ -170,6 +172,8 @@ export const hotkeyGroups = (): HotkeyGroup[] => [
     rows: [
       row('frame'),
       row('hideViews'),
+      row('showAll'),
+      row('isolate'),
       { label: 'Pan viewport', keys: ['Mid drag', 'Right drag', 'Alt+drag'] },
       { label: 'Zoom', keys: ['Wheel'] },
       { label: 'Timeline zoom', keys: ['Ctrl+Wheel'] },

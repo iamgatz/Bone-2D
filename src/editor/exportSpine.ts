@@ -2,8 +2,8 @@
 import { jsonToBinary } from '@/core/export/spineBinary';
 import { scaleSpineJson } from '@/core/export/scale';
 import { exportSpineJson } from '@/core/export/spineJson';
-import { packAtlas, writeAtlas } from '@/core/export/atlas';
-import type { AtlasPage } from '@/core/export/atlas';
+import { composePage, packAtlas, trimBounds, writeAtlas } from '@/core/export/atlas';
+import type { AtlasFilter, AtlasPage, PackInput } from '@/core/export/atlas';
 import { attachmentImage } from '@/core/model';
 import { createZip } from '@/core/export/zip';
 import type { ZipEntry } from '@/core/export/zip';
@@ -21,6 +21,12 @@ export interface ExportOptions {
   nonessential: boolean;
   /** Power-of-two atlas pages (older GPUs and some engines want them). */
   pot?: boolean;
+  /** Cut the empty border off every picture (not those a mesh uses); the atlas file tells the runtime where it was. */
+  trim?: boolean;
+  /** Turn a picture a quarter turn on the page when it fits better. */
+  rotate?: boolean;
+  /** How the engine should smooth the atlas: Linear, or Nearest for pixel art. */
+  filter?: AtlasFilter;
   /** Write the single-file preview page that plays the export. */
   includePreview?: boolean;
   /** Animations left out of the export (an animation a slider uses always stays). */
@@ -38,50 +44,41 @@ export interface ExportResult {
   preview?: string;
 }
 
-function usedImageNames(): string[] {
-  const used = new Set<string>();
+/** The images the skeleton uses; `mesh` marks those a mesh uses too (a mesh can sample outside the opaque part, so such a picture is never trimmed). */
+function usedImages(): { name: string; mesh: boolean }[] {
+  const used = new Map<string, boolean>();
   for (const skin of docStore.get().skeleton.skins) {
     for (const slot of Object.values(skin.attachments)) {
       for (const att of Object.values(slot)) {
         const image = attachmentImage(att);
-        if (image) used.add(image);
+        if (image) used.set(image, (used.get(image) ?? false) || att.type === 'mesh');
       }
     }
   }
-  return [...used];
+  return [...used].map(([name, mesh]) => ({ name, mesh }));
 }
 
-async function pageToPng(page: AtlasPage, padding: number): Promise<Uint8Array> {
+/** The picture at the size it is exported at (a smaller one is drawn from the full picture with smoothing), as straight RGBA. */
+function scaledPixels(name: string, w: number, h: number): ImageData {
+  const img = assets.get(name)!.bitmap;
+  const canvas = document.createElement('canvas');
+  canvas.width = w;
+  canvas.height = h;
+  const ctx = canvas.getContext('2d', { willReadFrequently: true })!;
+  const resized = w !== img.width || h !== img.height;
+  ctx.imageSmoothingEnabled = resized;
+  if (resized) ctx.imageSmoothingQuality = 'high';
+  ctx.drawImage(img, 0, 0, img.width, img.height, 0, 0, w, h);
+  return ctx.getImageData(0, 0, w, h);
+}
+
+async function pageToPng(page: AtlasPage, pixels: Map<string, Uint8ClampedArray>, padding: number): Promise<Uint8Array> {
   const canvas = document.createElement('canvas');
   canvas.width = page.width;
   canvas.height = page.height;
   const ctx = canvas.getContext('2d')!;
-  for (const r of page.regions) {
-    const a = assets.get(r.name);
-    if (!a) continue;
-    const img = a.bitmap;
-    // the region has the size it is exported at; a smaller one is drawn from the full picture with smoothing
-    const { x, y, width: w, height: h } = r;
-    const sw = img.width;
-    const sh = img.height;
-    const resized = w !== sw || h !== sh;
-    ctx.imageSmoothingEnabled = resized;
-    if (resized) ctx.imageSmoothingQuality = 'high';
-    ctx.drawImage(img, 0, 0, sw, sh, x, y, w, h);
-    const p = Math.min(padding, 4);
-    if (p > 0) {
-      // extrude the edge pixels into the padding so bilinear filtering never samples transparent black
-      ctx.imageSmoothingEnabled = false;
-      ctx.drawImage(img, 0, 0, sw, 1, x, y - p, w, p);
-      ctx.drawImage(img, 0, sh - 1, sw, 1, x, y + h, w, p);
-      ctx.drawImage(img, 0, 0, 1, sh, x - p, y, p, h);
-      ctx.drawImage(img, sw - 1, 0, 1, sh, x + w, y, p, h);
-      ctx.drawImage(img, 0, 0, 1, 1, x - p, y - p, p, p);
-      ctx.drawImage(img, sw - 1, 0, 1, 1, x + w, y - p, p, p);
-      ctx.drawImage(img, 0, sh - 1, 1, 1, x - p, y + h, p, p);
-      ctx.drawImage(img, sw - 1, sh - 1, 1, 1, x + w, y + h, p, p);
-    }
-  }
+  const data = composePage(page, (n) => (pixels.has(n) ? { data: pixels.get(n)! } : undefined), padding);
+  ctx.putImageData(new ImageData(data as Uint8ClampedArray<ArrayBuffer>, page.width, page.height), 0, 0);
   const blob: Blob = await new Promise((resolve, reject) => canvas.toBlob((b) => (b ? resolve(b) : reject(new Error('PNG encode failed'))), 'image/png'));
   return new Uint8Array(await blob.arrayBuffer());
 }
@@ -128,10 +125,27 @@ export async function buildSpineExport(opts: ExportOptions): Promise<ExportResul
   const keep = new Set(full.constraints.flatMap((c) => (c.type === 'slider' && c.animation ? [c.animation] : [])));
   const doc = opts.excludeAnimations?.length ? { ...full, animations: full.animations.filter((a) => keep.has(a.id) || !opts.excludeAnimations!.includes(a.id)) } : full;
   const base = (opts.baseName ?? doc.name ?? 'skeleton').replace(/[^\w\-]+/g, '_') || 'skeleton';
-  const names = usedImageNames();
-  const missing = names.filter((n) => !assets.has(n));
+  const images = usedImages();
+  const missing = images.filter((i) => !assets.has(i.name)).map((i) => i.name);
   const scale = opts.scale && opts.scale > 0 ? opts.scale : 1;
-  const inputs = names.filter((n) => assets.has(n)).map((n) => ({ name: n, width: Math.max(1, Math.round(assets.get(n)!.width * scale)), height: Math.max(1, Math.round(assets.get(n)!.height * scale)) }));
+  // the pixels of every region (the part of the picture that is packed) and what the packer is told about them
+  const pixels = new Map<string, Uint8ClampedArray>();
+  const inputs: PackInput[] = [];
+  for (const { name, mesh } of images) {
+    const a = assets.get(name);
+    if (!a) continue;
+    const width = Math.max(1, Math.round(a.width * scale));
+    const height = Math.max(1, Math.round(a.height * scale));
+    const full = scaledPixels(name, width, height);
+    const b = opts.trim && !mesh ? trimBounds(full.data, width, height) : { x: 0, y: 0, w: width, h: height };
+    if (b.w === width && b.h === height) pixels.set(name, full.data);
+    else {
+      const part = new Uint8ClampedArray(b.w * b.h * 4);
+      for (let y = 0; y < b.h; y++) part.set(full.data.subarray(((b.y + y) * width + b.x) * 4, ((b.y + y) * width + b.x + b.w) * 4), y * b.w * 4);
+      pixels.set(name, part);
+    }
+    inputs.push({ name, width: b.w, height: b.h, offsetX: b.x, offsetY: height - (b.y + b.h), originalWidth: width, originalHeight: height });
+  }
 
   const enc = new TextEncoder();
   const files: ZipEntry[] = [];
@@ -144,13 +158,13 @@ export async function buildSpineExport(opts: ExportOptions): Promise<ExportResul
   let pages: AtlasPage[] = [];
   let preview: string | undefined;
   if (inputs.length) {
-    pages = packAtlas(inputs, { maxSize: opts.maxSize, padding: opts.padding, pot: opts.pot ?? true });
+    pages = packAtlas(inputs, { maxSize: opts.maxSize, padding: opts.padding, pot: opts.pot ?? true, rotate: opts.rotate ?? false });
     const pageFile = (i: number) => (pages.length === 1 ? `${base}.png` : `${base}-${i + 1}.png`);
-    const atlasText = writeAtlas(pages, pageFile, { pma: false });
+    const atlasText = writeAtlas(pages, pageFile, { pma: false, filter: opts.filter ?? 'Linear' });
     files.push({ name: `${base}.atlas`, data: enc.encode(atlasText) });
     const pngs: { name: string; data: Uint8Array }[] = [];
     for (const p of pages) {
-      const data = await pageToPng(p, opts.padding);
+      const data = await pageToPng(p, pixels, opts.padding);
       pngs.push({ name: pageFile(p.index), data });
       files.push({ name: pageFile(p.index), data });
     }

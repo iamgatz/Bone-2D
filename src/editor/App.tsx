@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Bone, BoxSelect, Download, Eye, FilePlus2, FolderOpen, Grid3x3, Bell, Search, Home, Layers, ClipboardCopy, ClipboardPaste, Copy, FlipHorizontal2, RotateCcw, SlidersHorizontal, Image as ImageIcon, CircleHelp, MessageSquareText, Link2, Maximize, Play, Redo2, Route, Save, Sparkles, Type, Undo2 } from 'lucide-react';
+import { Bone, BoxSelect, Download, Eye, EyeOff, FilePlus2, FolderOpen, Grid3x3, Bell, Search, Home, Layers, ClipboardCopy, ClipboardPaste, Copy, FlipHorizontal2, RotateCcw, SlidersHorizontal, Image as ImageIcon, CircleHelp, MessageSquareText, Link2, Maximize, Play, Redo2, Route, Save, Sparkles, Type, Undo2 } from 'lucide-react';
 import { decodeKey } from '@/core/keyrefs';
 import { clearSelection, copyKeys, deleteBones, deleteKeys, keySelectedBones, pasteKeys, sanitizeSelection, setMode, setSelection, setTime, setTool, togglePlay } from '@/store/actions';
 import { docStore, useProject } from '@/store/doc';
@@ -30,6 +30,7 @@ import { WelcomeDialog } from './Welcome';
 import { Palette } from './Palette';
 import { settingsStore } from '@/store/settings';
 import { copyPose, duplicateSelection, pastePose, resetPose } from '@/store/poseActions';
+import { isolateSelection, showAll } from '@/store/visibilityActions';
 import { useSettings } from '@/store/settings';
 import { AnimationsPanel } from './panels/AnimationsPanel';
 import { SkinsPanel } from './panels/SkinsPanel';
@@ -105,6 +106,13 @@ function TopBar() {
             </MenuItem>
             <MenuItem icon={FlipHorizontal2} close={close} hotkey={KEYS.mirror} disabled={mode !== 'setup'} onClick={() => duplicateSelection(true)}>
               Mirror bones
+            </MenuItem>
+            <div className="menu-sep" />
+            <MenuItem icon={Eye} close={close} hotkey={KEYS.showAll} onClick={() => showAll()}>
+              Show everything hidden
+            </MenuItem>
+            <MenuItem icon={EyeOff} close={close} hotkey={KEYS.isolate} onClick={() => isolateSelection()}>
+              Show only the selection
             </MenuItem>
             <div className="menu-sep" />
             <MenuItem icon={RotateCcw} close={close} disabled={mode !== 'animate'} onClick={() => resetPose()}>

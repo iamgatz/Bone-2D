@@ -1,13 +1,15 @@
 import { useMemo, useState } from 'react';
 import type { ReactElement } from 'react';
-import { Bone as BoneIcon, BoxSelect, ChevronDown, ChevronRight, Crosshair, Diamond, Eye, EyeOff, Image as ImageIcon, Layers, Link2, Lock, Plus, Scissors, Shirt, Spline, Trash2, Unlock, Waves, Zap } from 'lucide-react';
+import { Bone as BoneIcon, BoxSelect, ChevronDown, ChevronRight, Crosshair, Diamond, Eye, EyeOff, Image as ImageIcon, Layers, Link2, Lock, Plus, Scissors, Shirt, Search, Spline, Trash2, Unlock, Waves, X, Zap } from 'lucide-react';
 import type { Bone, Id, Slot } from '@/core/model';
 import { createEvent, createSkin, deleteBones, deleteEvent, deleteSkin, deleteSlots, keyEvent, moveSlot, renameBone, renameSkin, renameSlot, reparentBone, selectBone, selectSlot, setActiveSkin, setBoneProps, setSelection, setSlotBone, setSlotProps, updateEvent } from '@/store/actions';
+import { filterTree } from '@/core/treeFilter';
 import { useProject } from '@/store/doc';
 import { createPathConstraint } from '@/store/pathConstraintActions';
 import { createPhysicsConstraint } from '@/store/physicsActions';
 import { createSlider } from '@/store/sliderActions';
 import { useUi } from '@/store/ui';
+import { showAll } from '@/store/visibilityActions';
 import { getScene } from '../scene';
 import { IconButton } from '../ui/controls';
 
@@ -42,6 +44,8 @@ export function TreePanel() {
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
   const [editing, setEditing] = useState<string | null>(null);
   const [dropOn, setDropOn] = useState<string | null>(null);
+  const [query, setQuery] = useState('');
+  const match = useMemo(() => filterTree(doc, query), [doc, query]);
 
   const childrenOf = useMemo(() => {
     const m = new Map<Id | null, Bone[]>();
@@ -67,7 +71,7 @@ export function TreePanel() {
     const selected = selection.slot === slot.id;
     const atts = doc.skins[0]?.attachments[slot.id] ?? {};
     const attNames = Object.keys(atts);
-    const open = !collapsed['s:' + slot.id] && selected;
+    const open = !collapsed['s:' + slot.id] && (selected || (match.active && match.slots.has(slot.id)));
     return (
       <div key={slot.id}>
         <div
@@ -117,11 +121,12 @@ export function TreePanel() {
     );
   };
 
-  const renderBone = (bone: Bone, depth: number): ReactElement => {
-    const kids = childrenOf.get(bone.id) ?? [];
-    const slots = slotsOf.get(bone.id) ?? [];
+  const renderBone = (bone: Bone, depth: number): ReactElement | null => {
+    if (match.active && !match.bones.has(bone.id)) return null;
+    const kids = (childrenOf.get(bone.id) ?? []).filter((k) => !match.active || match.bones.has(k.id));
+    const slots = (slotsOf.get(bone.id) ?? []).filter((s) => !match.active || match.slots.has(s.id));
     const hasKids = kids.length + slots.length > 0;
-    const open = !collapsed['b:' + bone.id];
+    const open = match.active || !collapsed['b:' + bone.id];
     const selected = selection.bones.includes(bone.id) && !selection.slot;
     return (
       <div key={bone.id}>
@@ -186,7 +191,21 @@ export function TreePanel() {
     <div className="panel grow" style={{ minHeight: 120 }}>
       <div className="panel-head">
         <span className="title">Hierarchy</span>
+        <IconButton icon={Eye} title="Show everything hidden" small onClick={() => showAll()} />
         <IconButton icon={Trash2} title="Delete selected" small disabled={!selection.bones.length && !selection.slot} onClick={() => (selection.slot && !selection.bones.length ? deleteSlots([selection.slot]) : deleteBones(selection.bones))} />
+      </div>
+      <div className="tree-filter">
+        <Search size={13} />
+        <input
+          value={query}
+          placeholder="Filter by name"
+          onChange={(e) => setQuery(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Escape') setQuery('');
+            e.stopPropagation();
+          }}
+        />
+        {query && <IconButton icon={X} title="Clear the filter" small onClick={() => setQuery('')} />}
       </div>
       <div
         className="panel-body"
@@ -195,12 +214,15 @@ export function TreePanel() {
       >
         {roots.map((r) => renderBone(r, 0))}
 
-        {doc.slots.length > 1 && (
+        {match.active && !match.bones.size && !match.constraints.size && !match.skins.size && !match.events.size && <div className="empty">Nothing matches</div>}
+
+        {doc.slots.length > 1 && (!match.active || match.slots.size > 0) && (
           <>
             <div className="section-label">Draw order{mode === 'animate' ? ' · keyed at playhead' : ''}</div>
             {orderedSlots
               .map((s, i) => ({ s, i }))
               .reverse()
+              .filter(({ s }) => !match.active || match.slots.has(s.id))
               .map(({ s, i }) => (
                 <div
                   key={s.id}
@@ -234,7 +256,7 @@ export function TreePanel() {
           </>
         )}
 
-        {(doc.constraints.length > 0 || doc.bones.length > 0) && (
+        {(doc.constraints.length > 0 || doc.bones.length > 0) && (!match.active || match.constraints.size > 0) && (
           <>
             <div className="section-label bar">
               <span className="grow">Constraints</span>
@@ -242,7 +264,7 @@ export function TreePanel() {
               <IconButton icon={Waves} title="New physics constraint (the selected bone swings while an animation plays)" small onClick={() => createPhysicsConstraint()} />
               <IconButton icon={Plus} title="New slider (applies an animation by hand or driven by a bone)" small onClick={() => createSlider(selection.bones[0] ?? null)} />
             </div>
-            {doc.constraints.map((c) => (
+            {doc.constraints.filter((c) => !match.active || match.constraints.has(c.id)).map((c) => (
               <div key={c.id} className={`row${selection.constraint === c.id ? ' selected' : ''}`} style={{ paddingLeft: 14 }} onClick={() => setSelection({ constraint: c.id })}>
                 <span className="ico">{c.type === 'path' ? <Spline size={13} /> : c.type === 'physics' ? <Waves size={13} /> : <Link2 size={13} />}</span>
                 <span className="label">{c.name}</span>
@@ -252,13 +274,14 @@ export function TreePanel() {
           </>
         )}
 
-        {doc.slots.length > 0 && (
+        {doc.slots.length > 0 && (!match.active || match.skins.size > 0) && (
           <>
             <div className="section-label bar">
               <span className="grow">Skins</span>
               <IconButton icon={Plus} title="New skin" small onClick={() => createSkin()} />
             </div>
             {doc.skins.map((s, i) => {
+              if (match.active && !match.skins.has(s.id)) return null;
               const active = (skinId ?? doc.skins[0].id) === s.id;
               return (
                 <div key={s.id} className={`row${active ? ' selected' : ''}`} style={{ paddingLeft: 14 }} onClick={() => setActiveSkin(i === 0 ? null : s.id)} onDoubleClick={() => i > 0 && setEditing('k:' + s.id)}>
@@ -284,13 +307,13 @@ export function TreePanel() {
           </>
         )}
 
-        {(doc.events.length > 0 || doc.slots.length > 0) && (
+        {(doc.events.length > 0 || doc.slots.length > 0) && (!match.active || match.events.size > 0) && (
           <>
             <div className="section-label bar">
               <span className="grow">Events</span>
               <IconButton icon={Plus} title="New event" small onClick={() => createEvent()} />
             </div>
-            {doc.events.map((ev) => (
+            {doc.events.filter((ev) => !match.active || match.events.has(ev.id)).map((ev) => (
               <div key={ev.id} className="row" style={{ paddingLeft: 14 }} onDoubleClick={() => setEditing('e:' + ev.id)}>
                 <span className="ico">
                   <Zap size={13} />
