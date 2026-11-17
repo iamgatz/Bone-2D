@@ -1001,7 +1001,10 @@ export function setAnimationDuration(id: Id, duration: number) {
   const d0 = Math.max(1 / skeletonDoc().fps, duration, end);
   docStore.update('Animation length', (d) => {
     const a = d.skeleton.animations.find((x) => x.id === id);
-    if (a) a.duration = d0;
+    if (a) {
+      a.duration = d0;
+      for (const m of a.markers ?? []) m.time = Math.min(m.time, d0); // a marker never lies beyond the end
+    }
   });
   if (uiStore.get().time > d0) uiStore.patch({ time: d0 });
 }

@@ -19,6 +19,7 @@ import { Segmented } from './ui/Segmented';
 import { TooltipHost } from './ui/Tooltip';
 import { FloatingPanels } from './panels/FloatingPanels';
 import { KeyDialogHost } from './timeline/KeyDialog';
+import { MarkerDialogHost } from './timeline/MarkerDialog';
 import { FLOAT_LIST, toggleFloat, useFloats } from '@/store/floats';
 import { Viewport, viewportApi } from './viewport/Viewport';
 import { ExportDialog } from './ExportDialog';
@@ -496,6 +497,7 @@ export function App() {
       {paletteOpen && <Palette />}
       <FloatingPanels />
       <KeyDialogHost />
+      <MarkerDialogHost />
       <Toast />
       <TooltipHost />
     </div>

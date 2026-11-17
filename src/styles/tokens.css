@@ -80,6 +80,13 @@
   --key-deform: #9fd6ff;
   --key-order: #e6dd9f;
   --key-event: #ffd0e6;
+  /* the colours a timeline marker can have (a position in the palette is saved, not the colour) */
+  --marker-1: #ff6b6b;
+  --marker-2: #ffb454;
+  --marker-3: #f2e45c;
+  --marker-4: #5fd39a;
+  --marker-5: #5ab6ff;
+  --marker-6: #c792ff;
   --key-outline: rgba(10, 12, 16, 0.9);
 
   /* ------------------------------------------------------------ timeline and graph canvases */

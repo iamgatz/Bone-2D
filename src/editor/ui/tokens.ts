@@ -57,3 +57,6 @@ export function alpha(name: `--${string}`, a: number): string {
 
 // A stylesheet replaced by hot reload must reach the canvases without a page reload.
 (import.meta as ImportMeta & { hot?: { on(event: string, cb: () => void): void } }).hot?.on('vite:afterUpdate', refreshTokens);
+
+/** The design tokens of the marker colours, in palette order (a marker saves its position in this list). */
+export const MARKER_TOKENS = ['--marker-1', '--marker-2', '--marker-3', '--marker-4', '--marker-5', '--marker-6'] as const;

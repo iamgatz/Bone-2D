@@ -8,13 +8,21 @@
 import { DEG2RAD } from './math';
 import type { Bone, Id, SkeletonDoc } from './model';
 import { newBone } from './model';
-import { freshName, normalizeBoneOrder } from './edit';
+import { freshName, normalizeBoneOrder, reconcileDeform } from './edit';
+import { normalizeInfluences } from './mesh';
+import type { Influence, MeshAttachment } from './model';
 
 export const MAX_SPLIT = 32;
 
 export interface SplitOptions {
   nested: boolean;
   fibonacci: boolean;
+  /**
+   * What happens to the vertices of meshes that follow the bone: `keep` leaves all their weight on the first part (Spine), `split` gives each
+   * vertex to the part it lies on (by its position along the bone), `blend` also shares the weight between neighbours around each cut, so the
+   * mesh bends smoothly there. Absent = `keep`.
+   */
+  weights?: 'keep' | 'split' | 'blend';
 }
 
 /** Lengths of `count` parts that add up to `total`. Fibonacci: the longest first (…5, 3, 2, 1, 1). */
@@ -49,6 +57,14 @@ export function splitBoneInDoc(doc: SkeletonDoc, id: Id, count: number, opts: Sp
     at += l;
   }
   const originalChildren = doc.bones.filter((b) => b.parent === id);
+  if (opts.nested) {
+    // a two-bone IK chain needs its second bone to stay a child of the first: it cannot move on to a later part
+    for (const c of doc.constraints) {
+      if (c.type !== 'ik' || c.bones.length !== 2 || c.bones[0] !== id) continue;
+      const second = originalChildren.find((b) => b.id === c.bones[1]);
+      if (second && offsets.some((o, i) => i > 0 && second.x >= o - 1e-9)) return { error: `"${bone.name}" is the first bone of the IK constraint "${c.name}": the second bone would end up under a later part. Split it side by side, or remove the constraint first` };
+    }
+  }
   const parts: Bone[] = [];
   const baseName = bone.name;
   for (let i = 1; i < n; i++) {
@@ -91,5 +107,77 @@ export function splitBoneInDoc(doc: SkeletonDoc, id: Id, count: number, opts: Sp
   const at0 = doc.bones.findIndex((b) => b.id === id);
   doc.bones.splice(at0 + 1, 0, ...parts);
   normalizeBoneOrder(doc);
+  if (opts.weights === 'split' || opts.weights === 'blend') redistributeWeights(doc, id, [id, ...parts.map((p) => p.id)], offsets, lens, opts.weights === 'blend');
   return { ids: parts.map((p) => p.id) };
+}
+
+/**
+ * The share of a vertex at `x` (along the original bone) that each part gets. The part it lies on takes all; with `blend` the two parts at a cut
+ * trade weight across a band around it (half way through at the cut itself), the width of half of the shorter neighbour.
+ */
+export function partShares(x: number, offsets: number[], lens: number[], blend: boolean): number[] {
+  const n = offsets.length;
+  const shares = new Array<number>(n).fill(0);
+  let k = 0;
+  for (let i = 1; i < n; i++) if (x >= offsets[i] - 1e-9) k = i;
+  shares[k] = 1;
+  if (!blend) return shares;
+  const band = (a: number, b: number) => Math.max(1e-9, Math.min(lens[a], lens[b]) / 2);
+  if (k > 0) {
+    const h = band(k - 1, k);
+    const d = x - offsets[k];
+    if (d < h) {
+      const t = 0.5 + d / (2 * h);
+      shares[k] = t;
+      shares[k - 1] = 1 - t;
+    }
+  }
+  if (k < n - 1) {
+    const h = band(k, k + 1);
+    const d = offsets[k + 1] - x;
+    if (d < h) {
+      const t = 0.5 + d / (2 * h);
+      shares[k] = Math.min(shares[k], t);
+      shares[k + 1] = 1 - t;
+      if (k > 0 && shares[k - 1] > 0) shares[k] = Math.max(0, 1 - shares[k - 1] - shares[k + 1]); // a part shorter than the two bands
+    }
+  }
+  return shares;
+}
+
+/** The weighted meshes of the default skin that follow `id` hand its vertices to the parts (see `SplitOptions.weights`); deform keys follow their influences. */
+function redistributeWeights(doc: SkeletonDoc, id: Id, partIds: Id[], offsets: number[], lens: number[], blend: boolean) {
+  const skin = doc.skins[0];
+  if (!skin) return;
+  for (const slotId of Object.keys(skin.attachments)) {
+    for (const [name, att] of Object.entries(skin.attachments[slotId])) {
+      if (att.type !== 'mesh' || !att.weights || att.link) continue;
+      if (!att.weights.some((list) => list.some((inf) => inf[0] === id))) continue;
+      const before = att;
+      const weights = att.weights.map((list) => {
+        if (!list.some((inf) => inf[0] === id)) return list;
+        const out: Influence[] = [];
+        for (const inf of list) {
+          if (inf[0] !== id) {
+            out.push(inf);
+            continue;
+          }
+          const shares = partShares(inf[1], offsets, lens, blend);
+          shares.forEach((share, i) => {
+            if (share > 1e-9) out.push([partIds[i], inf[1] - offsets[i], inf[2], inf[3] * share]);
+          });
+        }
+        // the same bone twice (a part that was already an influence) adds up
+        const merged = new Map<Id, Influence>();
+        for (const inf of out) {
+          const had = merged.get(inf[0]);
+          merged.set(inf[0], had ? [inf[0], had[1], had[2], had[3] + inf[3]] : [...inf]);
+        }
+        return normalizeInfluences([...merged.values()]);
+      });
+      const after: MeshAttachment = { ...before, weights };
+      skin.attachments[slotId][name] = after;
+      reconcileDeform(doc, slotId, name, before, after, null);
+    }
+  }
 }

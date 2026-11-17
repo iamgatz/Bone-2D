@@ -15,6 +15,8 @@ export interface ExportSettings {
   /** Turn pictures a quarter turn on the pages when it saves room. */
   rotate: boolean;
   filter: AtlasFilter;
+  /** Write the mix table (crossfades between animations) as a file next to the skeleton, for the game's animation state. */
+  mixes: boolean;
 }
 
 export const EXPORT_SCALES = [0.25, 0.5, 0.75, 1, 2] as const;
@@ -33,6 +35,7 @@ export const DEFAULT_EXPORT_SETTINGS: ExportSettings = {
   trim: false,
   rotate: false,
   filter: 'Linear',
+  mixes: true,
 };
 
 const oneOf = <T,>(v: unknown, list: readonly T[], fallback: T): T => (list.includes(v as T) ? (v as T) : fallback);
@@ -54,6 +57,7 @@ export function readExportSettings(raw: unknown): ExportSettings {
     trim: flag(o.trim, d.trim),
     rotate: flag(o.rotate, d.rotate),
     filter: oneOf(o.filter, ['Linear', 'Nearest'] as const, d.filter),
+    mixes: flag(o.mixes, d.mixes),
   };
 }
 

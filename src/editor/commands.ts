@@ -4,6 +4,8 @@
  */
 import { closeCurrentLoop, keyEditedBones, keySelectedBones, selectAnimation, setMode, setTool, togglePlay } from '@/store/actions';
 import { setAxesSplit } from '@/store/axisActions';
+import { hideUnkeyedBones, mirrorCurrentCycle } from '@/store/animToolActions';
+import { addMarkerAtPlayhead, goToMarker, splitAtMarkersAction } from '@/store/markerActions';
 import { decodeKey } from '@/core/keyrefs';
 import { docStore } from '@/store/doc';
 import { openKeyDialog } from '@/store/keyDialog';
@@ -65,6 +67,12 @@ export function buildCommands(): Command[] {
     { id: 'mode.toggle', group: 'Animation', title: 'Setup ⇄ Animate', keys: KEYS.mode, run: () => setMode(uiStore.get().mode === 'setup' ? 'animate' : 'setup') },
     { id: 'anim.keyedited', group: 'Animation', title: 'Key edited channels', keys: KEYS.key, run: () => keyEditedBones() },
     { id: 'anim.keyshown', group: 'Animation', title: 'Key all channels of the selected bones', keys: KEYS.keyShown, run: () => keySelectedBones() },
+    { id: 'anim.marker.add', group: 'Animation', title: 'Add a marker at the playhead', run: () => void addMarkerAtPlayhead() },
+    { id: 'anim.marker.next', group: 'Animation', title: 'Go to the next marker', run: () => goToMarker(1) },
+    { id: 'anim.marker.prev', group: 'Animation', title: 'Go to the previous marker', run: () => goToMarker(-1) },
+    { id: 'anim.marker.split', group: 'Animation', title: 'Split the animation at its markers', run: () => void splitAtMarkersAction() },
+    { id: 'anim.mirrorcycle', group: 'Animation', title: 'Make a full cycle from the half cycle (swap left and right)', run: () => void mirrorCurrentCycle({ flipCentre: true }) },
+    { id: 'anim.hideunkeyed', group: 'Animation', title: 'Hide bones without keys in this animation', run: () => void hideUnkeyedBones() },
     { id: 'anim.editkey', group: 'Animation', title: 'Edit the selected key…', run: () => editSelectedKey() },
     { id: 'anim.split.translate', group: 'Animation', title: 'Split position keys of the selected bones into X / Y', run: () => setAxesSplit(uiStore.get().selection.bones, 'translate', true) },
     { id: 'anim.merge.translate', group: 'Animation', title: 'Merge position X / Y keys of the selected bones', run: () => setAxesSplit(uiStore.get().selection.bones, 'translate', false) },

@@ -22,6 +22,7 @@ import { SPINE_VERSION, exportSpineJson } from '@/core/export/spineJson';
 import { migrateProject } from '@/core/model';
 import type { Project } from '@/core/model';
 import { countKeys } from '@/core/stats';
+import { mixesToText } from '@/core/export/mixes';
 import { skeletonList } from '@/core/skeletons';
 import { repairProject } from '@/core/validate';
 import { decodePng, encodePng, resizePixels } from './png';
@@ -39,6 +40,7 @@ const HELP = `Bone 2D command line
       --pretty                indented JSON
       --no-nonessential       leave out names, colours and other editor-only data
       --no-images             do not write the pictures
+      --no-mixes              do not write <name>.mixes.json (the crossfade times between animations, when the project has any)
       --skeleton <name|n>     only this skeleton of the project (default: all of them, one file each)
       --atlas                 pack the pictures into <name>.atlas and PNG pages instead of writing them one by one
       --max-size <n>          largest atlas page in pixels (default 2048)
@@ -148,6 +150,11 @@ function exportCommand(p: Parsed, io: Io): number {
     const bytes = format === 'binary' ? jsonToBinary(json) : Buffer.from(JSON.stringify(json, null, p.flags.has('pretty') ? 2 : 0));
     writeFileSync(join(outDir, skeletonFile), bytes);
     io.out(`${skeletonFile}  ${bytes.length} bytes  (Spine ${SPINE_VERSION}${format === 'binary' ? ', binary' : ''}${scale !== 1 ? `, scale ${scale}` : ''})\n`);
+    const mixText = p.flags.has('no-mixes') ? null : mixesToText(doc.animations, doc === project.skeleton ? project.mixes : doc.aside?.mixes);
+    if (mixText) {
+      writeFileSync(join(outDir, `${base}.mixes.json`), mixText);
+      io.out(`${base}.mixes.json  crossfade times between animations\n`);
+    }
     if (p.flags.has('atlas')) {
       const r = atlasStep(p, file, doc, base, scale, outDir, io);
       if (r === 2) return 2;

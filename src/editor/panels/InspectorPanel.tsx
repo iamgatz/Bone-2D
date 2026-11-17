@@ -139,6 +139,7 @@ function SplitSection({ id, rootBone }: { id: Id; rootBone: boolean }) {
   const [count, setCount] = useState(3);
   const [nested, setNested] = useState(true);
   const [fibonacci, setFibonacci] = useState(false);
+  const [weights, setWeights] = useState<'keep' | 'split' | 'blend'>('blend');
   return (
     <Section id="bone.split" title="Split" icon={Scissors}>
       <p className="hint-text mb">Cut this bone into shorter bones along its length: a chain for a tail, a spine or a tentacle.</p>
@@ -151,7 +152,18 @@ function SplitSection({ id, rootBone }: { id: Id; rootBone: boolean }) {
       <Field label="Fibonacci">
         <Toggle on={fibonacci} onChange={setFibonacci} title="Each bone is shorter than the one before it (5 3 2 1 1). Off: equal lengths" />
       </Field>
-      <Button icon={Scissors} onClick={() => splitBone(id, count, { nested: nested || rootBone, fibonacci })}>
+      <Field label="Mesh weights" title="Meshes that follow this bone: keep all their weight on the first part, give each vertex to the part it lies on, or share it smoothly around each cut">
+        <SelectField<'keep' | 'split' | 'blend'>
+          value={weights}
+          options={[
+            { value: 'blend', label: 'Blend at the cuts' },
+            { value: 'split', label: 'By position' },
+            { value: 'keep', label: 'Keep on the first' },
+          ]}
+          onChange={setWeights}
+        />
+      </Field>
+      <Button icon={Scissors} onClick={() => splitBone(id, count, { nested: nested || rootBone, fibonacci, weights })}>
         Split bone
       </Button>
     </Section>

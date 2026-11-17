@@ -37,3 +37,19 @@ describe('export settings', () => {
     vi.unstubAllGlobals();
   });
 });
+
+describe('the mix table file', () => {
+  const anims = [{ id: 'a', name: 'walk' }, { id: 'b', name: 'run' }, { id: 'c', name: 'idle' }];
+  it('names the animations, drops pairs with a missing one, and says nothing for an empty table', async () => {
+    const { mixesToText } = await import('../src/core/export/mixes');
+    const text = mixesToText(anims, { default: 0.2, pairs: [{ from: 'a', to: 'b', time: 0.35 }, { from: 'a', to: 'zzz', time: 1 }] })!;
+    expect(JSON.parse(text)).toMatchObject({ defaultMix: 0.2, mixes: [{ from: 'walk', to: 'run', duration: 0.35 }] });
+    expect(mixesToText(anims, { default: 0, pairs: [] })).toBeNull();
+    expect(mixesToText(anims, undefined)).toBeNull();
+    expect(mixesToText(anims, { default: 0, pairs: [{ from: 'a', to: 'zzz', time: 1 }] })).toBeNull();
+  });
+  it('is a setting that defaults on', () => {
+    expect(DEFAULT_EXPORT_SETTINGS.mixes).toBe(true);
+    expect(readExportSettings({ mixes: false }).mixes).toBe(false);
+  });
+});

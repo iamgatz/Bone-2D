@@ -11,6 +11,7 @@ import { pruneFolders } from './folders';
 import { deformLength } from './mesh';
 import { syncLinkedMeshes } from './links';
 import { cleanSequence, cleanSequenceKey } from './sequence';
+import { cleanMarkers } from './markers';
 import { cleanPlay } from './playback';
 import { cleanGuides } from './snap';
 import { repairPoses } from './poses';
@@ -573,6 +574,12 @@ function repairAnimations(doc: SkeletonDoc, note: Note) {
     a.deform ??= {};
     a.drawOrder ??= [];
     a.events ??= [];
+    if (a.markers !== undefined) {
+      const clean = cleanMarkers(a.markers, a.duration);
+      if (JSON.stringify(clean) !== JSON.stringify(a.markers)) note(`${where}: markers repaired`);
+      if (clean.length) a.markers = clean;
+      else delete a.markers;
+    }
     if (a.play !== undefined) {
       const clean = cleanPlay(a.play, a.duration);
       if (JSON.stringify(clean) !== JSON.stringify(a.play)) note(`${where}: playback settings repaired`);
