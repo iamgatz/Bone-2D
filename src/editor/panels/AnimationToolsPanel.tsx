@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { DEFAULT_TOLERANCE, DEFAULT_BAKE, countSimplifiable, scaleTolerance } from '@/core/bake';
 import type { Animation } from '@/core/model';
-import { bakeCurrentAnimation, currentAnimation, simplifyCurrentAnimation } from '@/store/actions';
+import { bakeCurrentAnimation, closeCurrentLoop, currentAnimation, simplifyCurrentAnimation } from '@/store/actions';
 import { useProject } from '@/store/doc';
 import { useUi } from '@/store/ui';
 import { Field } from '../ui/Field';
@@ -32,6 +32,8 @@ export function AnimationToolsPanel() {
   const [step, setStep] = useState(1);
   const [mute, setMute] = useState(DEFAULT_BAKE.mute);
   const [simplify, setSimplify] = useState(true);
+  const [loopKeep, setLoopKeep] = useState<'first' | 'last'>('first');
+  const [loopSelected, setLoopSelected] = useState(false);
 
   const picked = selectedOnly ? selection.bones : undefined;
   const total = anim ? boneKeyCount(anim) : 0;
@@ -57,6 +59,18 @@ export function AnimationToolsPanel() {
         <p className="hint-text">{anim ? `${removable} of ${total} keys can go.` : ''}</p>
         <Button small primary disabled={!anim || removable === 0 || (selectedOnly && selection.bones.length === 0)} onClick={() => simplifyCurrentAnimation(strength, selectedOnly)}>
           Simplify
+        </Button>
+
+        <div className="section-label">Close the loop</div>
+        <p className="hint-text">Makes the end of the animation the same as its start, so a cycle repeats without a jump. A timeline that ends before the end of the animation gets a key there.</p>
+        <Field label="Which end wins" title="Which end wins: the value of the first key goes to the last key, or the other way round">
+          <SelectField<'first' | 'last'> value={loopKeep} options={[{ value: 'first', label: 'The start' }, { value: 'last', label: 'The end' }]} onChange={setLoopKeep} />
+        </Field>
+        <Field label="Selected only" title="Only the timelines of the bones that are selected">
+          <Toggle on={loopSelected} onChange={setLoopSelected} title="Selected bones only" />
+        </Field>
+        <Button small primary disabled={!anim || (loopSelected && selection.bones.length === 0)} onClick={() => closeCurrentLoop(loopKeep, loopSelected)}>
+          Close the loop
         </Button>
 
         <div className="section-label">Bake constraints</div>

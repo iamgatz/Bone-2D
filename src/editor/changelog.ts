@@ -12,6 +12,12 @@ export interface Release {
 
 export const CHANGELOG: Release[] = [
   {
+    version: '0.19',
+    date: '2026-11-17',
+    en: ['Close the loop (Animation tools window and the command palette): makes the end of the animation the same as its start, so a walk or an idle repeats without a jump. Every number timeline gets the value of its first key on its last key (or the other way round), and one that ends early gets a key at the end. Works on the selected bones or on the whole animation.'],
+    ru: ['Замкнуть петлю (окно «Инструменты анимации» и палитра команд): делает конец анимации таким же, как начало, чтобы ходьба или покой повторялись без скачка. Каждая дорожка получает на последнем ключе значение первого (или наоборот), а дорожка, которая кончается раньше, получает ключ в конце. Работает на выбранных костях или на всей анимации.'],
+  },
+  {
     version: '0.18',
     date: '2026-11-17',
     en: ['Texture packer options in the Export window: Strip whitespace (cuts the empty border off pictures, the atlas file records where it was; pictures a mesh uses stay whole), Rotate pictures (a quarter turn on the page when that saves room) and Texture filter (Linear, or Nearest for pixel art). The atlas is read back by the official Spine runtime in the tests, and every point of every region has to land on the right pixel. Export settings are remembered, and Save settings / Load settings keep them in a small JSON file to share with a team.'],

@@ -2,7 +2,7 @@
  * Every action of the editor by name, for the command palette (Ctrl+K): type a few letters of what you want. Spine has no such thing.
  * The titles are English strings like the rest of the interface and get translated where they are shown.
  */
-import { selectAnimation, setMode, setTool, togglePlay } from '@/store/actions';
+import { closeCurrentLoop, selectAnimation, setMode, setTool, togglePlay } from '@/store/actions';
 import { docStore } from '@/store/doc';
 import { LAYOUTS, VIEW_LIST } from '@/store/layout';
 import { copyPose, duplicateSelection, pastePose, resetPose } from '@/store/poseActions';
@@ -42,6 +42,7 @@ export function buildCommands(): Command[] {
     { id: 'edit.redo', group: 'Edit', title: 'Redo', keys: KEYS.redo, run: () => docStore.redo() },
     { id: 'edit.duplicate', group: 'Edit', title: 'Duplicate bones', keys: KEYS.duplicate, run: () => duplicateSelection(false) },
     { id: 'edit.mirror', group: 'Edit', title: 'Mirror bones', keys: KEYS.mirror, run: () => duplicateSelection(true) },
+    { id: 'anim.closeloop', group: 'Animation', title: 'Close the loop (end = start)', run: () => void closeCurrentLoop('first', false) },
     { id: 'view.showall', group: 'View', title: 'Show everything hidden', keys: KEYS.showAll, run: () => void showAll() },
     { id: 'view.isolate', group: 'View', title: 'Show only the selection', keys: KEYS.isolate, run: () => void isolateSelection() },
     { id: 'edit.reset', group: 'Edit', title: 'Reset pose', run: () => resetPose() },

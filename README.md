@@ -58,6 +58,7 @@ $env:FUZZ_SEEDS='300'; $env:FUZZ_STEPS='100'; npx vitest run tests/fuzz.test.ts
 - **Hotkeys**: every command's key combination can be moved in Settings → Hotkeys (not only the tool letters); conflicts with another command, a tool or the browser are refused by name.
 - **Poses** window: a library of poses kept by name; one click puts a pose on the selected bones (setup pose in Setup mode, keys at the playhead in Animate mode), optionally only part of the way. Saved in the project file, not exported.
 - **Hierarchy filter** by name, **Ctrl+H** shows everything hidden, **Ctrl+Shift+H** shows only the selection.
+- **Close the loop**: the end of an animation takes the value of its start, for seamless cycles.
 - **Texture packer**: strip whitespace, rotate, Linear / Nearest filter, padding, power-of-two, page size; export settings are remembered and can be saved to / loaded from a file.
 - Playback, loop, frame stepping. **Onion skin** (faded poses before and after the playhead), **Clean Up** (removes the keys that change nothing), **Alt-drag a key** to shift the keys after it too, an Animations window with folders (`emotes/wave`).
 
