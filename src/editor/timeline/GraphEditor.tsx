@@ -12,6 +12,7 @@ import { uiStore } from '@/store/ui';
 import type { Selection } from '@/store/ui';
 import { tr, useLang } from '@/i18n';
 import { IconButton } from '../ui/controls';
+import { alpha, token } from '../ui/tokens';
 
 interface Curve {
   id: string;
@@ -23,7 +24,8 @@ interface Curve {
   keys: Key[];
 }
 
-const COLORS = ['#ff6b6b', '#6ee18c', '#6aa8ff', '#c9ccd6'];
+/** The colour of channel `c` of a curve: x / r, y / g, z / b, w / a. */
+const curveColor = (c: number) => token(`--curve-${(c % 4) + 1}` as `--${string}`);
 const CHANNEL_NAMES: Record<string, string[]> = {
   rotate: ['rotation'],
   translate: ['x', 'y'],
@@ -58,7 +60,7 @@ export function buildCurves(doc: SkeletonDoc, anim: Animation | null, selection:
     seen.add(id);
     const channels = keys[0].value.length;
     for (let c = 0; c < channels; c++) {
-      out.push({ id: `${id}|${c}`, label: `${title} · ${names[c] ?? c}`, color: COLORS[c % COLORS.length], ref: { kind, target, prop }, channel: c, channels, keys });
+      out.push({ id: `${id}|${c}`, label: `${title} · ${names[c] ?? c}`, color: curveColor(c), ref: { kind, target, prop }, channel: c, channels, keys });
     }
   };
   const addBone = (boneId: Id, only?: string) => {
@@ -171,12 +173,12 @@ export function GraphEditor({ anim, doc, selection, selectedKeys, fps }: { anim:
       const dpr = window.devicePixelRatio || 1;
       if (state.current.view.auto) fit();
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-      ctx.fillStyle = '#10131a';
+      ctx.fillStyle = token('--sunken-2');
       ctx.fillRect(0, 0, w, h);
       const ui = uiStore.get();
       const { fps } = state.current;
       // time grid
-      ctx.strokeStyle = 'rgba(255,255,255,0.05)';
+      ctx.strokeStyle = token('--tl-grid');
       ctx.beginPath();
       for (let s = Math.floor(ui.tlScroll); tx(s) < w; s++) {
         const x = Math.round(tx(s)) + 0.5;
@@ -198,7 +200,7 @@ export function GraphEditor({ anim, doc, selection, selectedKeys, fps }: { anim:
         ctx.moveTo(0, y);
         ctx.lineTo(w, y);
         ctx.stroke();
-        ctx.fillStyle = 'rgba(180,188,205,0.75)';
+        ctx.fillStyle = alpha('--text-dim', 0.75);
         ctx.fillText(String(Math.round(v * 1000) / 1000), 4, y - 7);
       }
       const selectedSet = new Set(ui.selectedKeys);
@@ -253,12 +255,12 @@ export function GraphEditor({ anim, doc, selection, selectedKeys, fps }: { anim:
               ctx.beginPath();
               ctx.arc(hp[0], hp[1], 4.5, 0, Math.PI * 2);
               ctx.fill();
-              ctx.strokeStyle = '#0d0f13';
+              ctx.strokeStyle = token('--bg');
               ctx.stroke();
             }
           }
-          ctx.fillStyle = sel ? '#31d0aa' : c.color;
-          ctx.strokeStyle = '#0d0f13';
+          ctx.fillStyle = sel ? token('--accent') : c.color;
+          ctx.strokeStyle = token('--bg');
           ctx.lineWidth = 1.5;
           ctx.beginPath();
           ctx.rect(x - 4.5, y - 4.5, 9, 9);
@@ -268,7 +270,7 @@ export function GraphEditor({ anim, doc, selection, selectedKeys, fps }: { anim:
       }
       // playhead
       const px = Math.round(tx(ui.time)) + 0.5;
-      ctx.strokeStyle = 'rgba(255,159,67,0.9)';
+      ctx.strokeStyle = alpha('--animate', 0.9);
       ctx.lineWidth = 1;
       ctx.beginPath();
       ctx.moveTo(px, 0);
@@ -276,7 +278,7 @@ export function GraphEditor({ anim, doc, selection, selectedKeys, fps }: { anim:
       ctx.stroke();
       void fps;
       if (!visible().length) {
-        ctx.fillStyle = 'rgba(139,147,161,0.9)';
+        ctx.fillStyle = alpha('--muted', 0.9);
         ctx.textAlign = 'center';
         ctx.font = '12px Inter Variable, system-ui, sans-serif';
         ctx.fillText(tr('Select keys or a keyed bone to edit its curves'), w / 2, h / 2);
@@ -498,7 +500,7 @@ function GraphRuler() {
       const ui = uiStore.get();
       const fps = docStore.get().skeleton.fps;
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-      ctx.fillStyle = '#12151b';
+      ctx.fillStyle = token('--tl-ruler');
       ctx.fillRect(0, 0, w, 28);
       const px = ui.tlZoom / fps;
       const step = [1, 2, 5, 10, 15, 30, 60, 120, 300].find((n) => n * px >= 54) ?? 600;
@@ -511,11 +513,11 @@ function GraphRuler() {
         ctx.moveTo(x, 28);
         ctx.lineTo(x, f % fps === 0 ? 8 : 14);
         ctx.stroke();
-        ctx.fillStyle = f % fps === 0 ? '#cfd6e3' : '#7d8696';
+        ctx.fillStyle = f % fps === 0 ? token('--tl-label-strong') : token('--tl-label');
         ctx.fillText(f % fps === 0 ? `${f / fps}s` : String(f), x + 4, 11);
       }
       const x = (ui.time - ui.tlScroll) * ui.tlZoom;
-      ctx.fillStyle = '#ff9f43';
+      ctx.fillStyle = token('--animate');
       ctx.beginPath();
       ctx.moveTo(x - 6, 18);
       ctx.lineTo(x + 6, 18);

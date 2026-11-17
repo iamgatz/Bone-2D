@@ -11,6 +11,7 @@ import type { Scene } from '../scene';
 import { slotWorldVertices } from './hit';
 import { COLORS } from './overlay';
 import type { OverlayInput } from './overlay';
+import { alpha, token } from '../ui/tokens';
 
 export interface ActivePolygon {
   slotId: Id;
@@ -291,8 +292,8 @@ export class PolygonTool {
             const on = sel.has(i);
             const hov = i === this.hoverVertex;
             const r = on || hov ? 5 : 4;
-            ctx.fillStyle = on ? COLORS.accent : hov ? '#ffffff' : '#e6e9ef';
-            ctx.strokeStyle = 'rgba(8,10,14,0.95)';
+            ctx.fillStyle = on ? COLORS.accent : hov ? token('--handle-hover') : token('--text');
+            ctx.strokeStyle = token('--handle-outline');
             ctx.lineWidth = 1.3;
             ctx.beginPath();
             ctx.rect(x - r, y - r, r * 2, r * 2);
@@ -322,7 +323,7 @@ export class PolygonTool {
     const { ctx, w, h, cam } = o;
     const pts = d.points.map(([x, y]) => worldToScreen(cam, w, h, x, y));
     const cur = worldToScreen(cam, w, h, d.cursor[0], d.cursor[1]);
-    const color = d.kind === 'clipping' ? 'rgba(206,58,58,0.95)' : 'rgba(97,240,0,0.95)';
+    const color = d.kind === 'clipping' ? alpha('--kind-clipping', 0.95) : alpha('--kind-boundingbox', 0.95);
     ctx.strokeStyle = color;
     ctx.lineWidth = 1.8;
     ctx.beginPath();
@@ -340,8 +341,8 @@ export class PolygonTool {
     ctx.setLineDash([]);
     pts.forEach(([x, y], i) => {
       const closable = i === 0 && pts.length >= 3 && Math.hypot(cur[0] - x, cur[1] - y) < 10;
-      ctx.fillStyle = closable ? '#ffffff' : color;
-      ctx.strokeStyle = 'rgba(8,10,14,0.95)';
+      ctx.fillStyle = closable ? token('--handle-hover') : color;
+      ctx.strokeStyle = token('--handle-outline');
       ctx.lineWidth = 1.2;
       ctx.beginPath();
       ctx.rect(x - (closable ? 6 : 4), y - (closable ? 6 : 4), closable ? 12 : 8, closable ? 12 : 8);

@@ -69,7 +69,7 @@ export function ExportDialog() {
         <label>Pretty JSON</label>
         <Toggle on={pretty} onChange={setPretty} />
       </div>
-      <div style={{ background: '#10131a', border: '1px solid var(--border)', borderRadius: 10, padding: 12 }}>
+      <div style={{ background: 'var(--sunken-2)', border: '1px solid var(--border)', borderRadius: 10, padding: 12 }}>
         {busy && <span className="hint-text">Packing atlas…</span>}
         {error && <span style={{ color: 'var(--danger)' }}>{error}</span>}
         {result && !busy && (

@@ -7,10 +7,11 @@ import { docStore } from '@/store/doc';
 
 // ---------------------------------------------------------------- buttons
 
-export function IconButton(props: { icon: LucideIcon; title: string; onClick?: (e: React.MouseEvent) => void; active?: boolean; animate?: boolean; disabled?: boolean; small?: boolean; size?: number; hotkey?: string; style?: CSSProperties }) {
+/** An icon-only button: its title is its accessible name and its tooltip, with the hotkey as a key cap. */
+export function IconButton(props: { icon: LucideIcon; title: string; onClick?: (e: React.MouseEvent) => void; active?: boolean; animate?: boolean; disabled?: boolean; small?: boolean; size?: number; hotkey?: string; tipPlace?: 'top' | 'bottom' | 'left' | 'right'; style?: CSSProperties }) {
   const Icon = props.icon;
   return (
-    <button className={`icon-btn${props.active ? ' on' : ''}${props.animate ? ' animate' : ''}${props.small ? ' sm' : ''}`} title={props.hotkey ? `${props.title} (${props.hotkey})` : props.title} onClick={props.onClick} disabled={props.disabled} style={props.style}>
+    <button type="button" className={`icon-btn${props.active ? ' on' : ''}${props.animate ? ' animate' : ''}${props.small ? ' sm' : ''}`} aria-label={props.title} aria-pressed={props.active} data-tip={props.title} data-tip-key={props.hotkey} data-tip-place={props.tipPlace} onClick={props.onClick} disabled={props.disabled} style={props.style}>
       <Icon size={props.size ?? (props.small ? 14 : 17)} strokeWidth={1.9} />
       {props.hotkey && <span className="kbd-tip">{props.hotkey}</span>}
     </button>
@@ -20,7 +21,7 @@ export function IconButton(props: { icon: LucideIcon; title: string; onClick?: (
 export function Button(props: { children: ReactNode; onClick?: () => void; primary?: boolean; ghost?: boolean; danger?: boolean; disabled?: boolean; title?: string; icon?: LucideIcon }) {
   const Icon = props.icon;
   return (
-    <button className={`btn${props.primary ? ' primary' : ''}${props.ghost ? ' ghost' : ''}${props.danger ? ' danger' : ''}`} onClick={props.onClick} disabled={props.disabled} title={props.title}>
+    <button type="button" className={`btn${props.primary ? ' primary' : ''}${props.ghost ? ' ghost' : ''}${props.danger ? ' danger' : ''}`} onClick={props.onClick} disabled={props.disabled} data-tip={props.title}>
       {Icon && <Icon size={15} strokeWidth={1.9} />}
       {props.children}
     </button>
@@ -28,7 +29,7 @@ export function Button(props: { children: ReactNode; onClick?: () => void; prima
 }
 
 export function Toggle({ on, onChange, title }: { on: boolean; onChange: (v: boolean) => void; title?: string }) {
-  return <button className={`toggle${on ? ' on' : ''}`} onClick={() => onChange(!on)} title={title} role="switch" aria-checked={on} />;
+  return <button type="button" className={`toggle${on ? ' on' : ''}`} onClick={() => onChange(!on)} aria-label={title} data-tip={title} role="switch" aria-checked={on} />;
 }
 
 // ---------------------------------------------------------------- number field
@@ -88,7 +89,7 @@ export function NumberField(props: {
   };
 
   return (
-    <div className={`field${props.keyed ? ' keyed' : ''}${props.wide ? ' wide' : ''}`} title={props.title} style={props.disabled ? { opacity: 0.45, pointerEvents: 'none' } : undefined}>
+    <div className={`field${props.keyed ? ' keyed' : ''}${props.wide ? ' wide' : ''}${props.disabled ? ' disabled' : ''}`} data-tip={props.title} data-tip-place="top">
       <span className="flabel" onPointerDown={onDown} onPointerMove={onMove} onPointerUp={onUp} onPointerCancel={onUp}>
         {props.label}
       </span>
@@ -184,8 +185,8 @@ export function hexToRgb(hex: string): [number, number, number] {
 
 export function ColorSwatch({ value, onChange, title }: { value: ArrayLike<number>; onChange: (rgb: [number, number, number]) => void; title?: string }) {
   return (
-    <span className="swatch" title={title} style={{ background: rgbaToHex(value) }}>
-      <input type="color" value={rgbaToHex(value)} onChange={(e) => onChange(hexToRgb(e.target.value))} />
+    <span className="swatch" data-tip={title} style={{ background: rgbaToHex(value) }}>
+      <input type="color" aria-label={title ?? 'Color'} value={rgbaToHex(value)} onChange={(e) => onChange(hexToRgb(e.target.value))} />
     </span>
   );
 }

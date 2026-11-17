@@ -48,7 +48,7 @@ export function TransformInspector({ id }: { id: Id }) {
     <>
       <div className="group">
         <div className="group-title">
-          <Link2 size={14} color="#b38cff" />
+          <Link2 size={14} className="k-transform" />
           <span>Transform constraint</span>
           <span className="spacer" />
           <IconButton icon={ArrowUp} title="Apply earlier" small disabled={index <= 0} onClick={() => moveConstraint(id, -1)} />
@@ -92,7 +92,7 @@ export function TransformInspector({ id }: { id: Id }) {
         </div>
         {c.properties.map((f, fi) =>
           f.to.map((t, ti) => (
-            <div key={`${fi}-${ti}`} style={{ border: '1px solid var(--border)', borderRadius: 8, padding: 8, marginBottom: 8, background: '#10131a' }}>
+            <div key={`${fi}-${ti}`} style={{ border: '1px solid var(--border)', borderRadius: 8, padding: 8, marginBottom: 8, background: 'var(--sunken-2)' }}>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 16px 1fr 22px', gap: 6, alignItems: 'center', marginBottom: 6 }}>
                 <SelectField value={f.prop} options={propOptions} onChange={(v) => updateTransform(id, (x) => void (x.properties[fi].prop = v))} />
                 <ArrowRight size={14} color="var(--muted)" />
