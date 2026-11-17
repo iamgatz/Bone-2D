@@ -674,4 +674,18 @@ export const RU: Record<string, string> = {
   'Physics {} is global': 'Physics: «{}» — глобальный',
   'Physics {} is its own': 'Physics: «{}» — собственный',
   'Remove the inertia key at the playhead': 'Убрать ключ инерции в текущем кадре',
+  // ---------------------------------------------------------------- the shortcuts window (hotkeys.ts)
+  'Tools': 'Инструменты',
+  'Edit': 'Правка',
+  'Step 10 frames': 'Шаг на 10 кадров',
+  'Go to the start': 'В начало',
+  'Select all bones': 'Выделить все кости',
+  'Copy keys': 'Копировать ключи',
+  'Finish a polygon or path': 'Закончить полигон или путь',
+  'Cancel / clear the selection': 'Отмена / снять выделение',
+  'Open': 'Открыть',
+  'Shortcuts': 'Горячие клавиши',
+  'Mid drag': 'Средняя кн.',
+  'Right drag': 'Правая кн.',
+  'drag': 'мышь',
 };

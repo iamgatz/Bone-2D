@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Bone, BoxSelect, Brush, Crosshair, Download, Eye, FilePlus2, FolderOpen, Grid3x3, Image as ImageIcon, CircleHelp, Link2, Maximize, MousePointer2, Move, PenTool, Play, Redo2, RotateCw, Save, Scaling, Scissors, Sparkles, Triangle, Type, Undo2 } from 'lucide-react';
+import { Bone, BoxSelect, Download, Eye, FilePlus2, FolderOpen, Grid3x3, Image as ImageIcon, CircleHelp, Link2, Maximize, Play, Redo2, Save, Sparkles, Type, Undo2 } from 'lucide-react';
 import { decodeKey } from '@/core/keyrefs';
 import { clearSelection, copyKeys, deleteBones, deleteKeys, keySelectedBones, pasteKeys, sanitizeSelection, setMode, setSelection, setTime, setTool, togglePlay } from '@/store/actions';
 import { docStore, useProject } from '@/store/doc';
@@ -8,7 +8,6 @@ import { openSpineImport } from './importSpine';
 import { deleteConstraint } from '@/store/ikActions';
 import { loadSample } from '@/store/sample';
 import { toast, uiStore, useUi } from '@/store/ui';
-import type { Tool } from '@/store/ui';
 import { setLang, useLang } from '@/i18n';
 import { startPlaybackLoop } from './playback';
 import { AssetsPanel } from './panels/AssetsPanel';
@@ -21,36 +20,8 @@ import { TooltipHost } from './ui/Tooltip';
 import { Viewport, viewportApi } from './viewport/Viewport';
 import { ExportDialog } from './ExportDialog';
 import { focusArea, setFocusArea } from './focus';
-
-const TOOLS: { tool: Tool; icon: typeof Bone; title: string; hotkey: string; setupOnly?: boolean }[] = [
-  { tool: 'select', icon: MousePointer2, title: 'Pose / select', hotkey: 'V' },
-  { tool: 'create', icon: Bone, title: 'Create bone', hotkey: 'B', setupOnly: true },
-  { tool: 'translate', icon: Move, title: 'Translate', hotkey: 'T' },
-  { tool: 'rotate', icon: RotateCw, title: 'Rotate', hotkey: 'R' },
-  { tool: 'scale', icon: Scaling, title: 'Scale', hotkey: 'S' },
-  { tool: 'mesh', icon: Triangle, title: 'Edit mesh / deform', hotkey: 'M' },
-  { tool: 'weights', icon: Brush, title: 'Paint weights', hotkey: 'W', setupOnly: true },
-  { tool: 'ik', icon: Link2, title: 'IK constraint', hotkey: 'I', setupOnly: true },
-  { tool: 'clipping', icon: Scissors, title: 'Clipping polygon', hotkey: 'C', setupOnly: true },
-  { tool: 'boundingbox', icon: BoxSelect, title: 'Bounding box', hotkey: 'X', setupOnly: true },
-  { tool: 'point', icon: Crosshair, title: 'Point', hotkey: 'P', setupOnly: true },
-  { tool: 'path', icon: PenTool, title: 'Path', hotkey: 'N', setupOnly: true },
-];
-
-const HINTS: Record<Tool, string> = {
-  select: 'Click a bone or image to select · drag a bone to rotate it · drag an IK target to move it',
-  create: 'Drag to create a bone · it attaches to the selected bone · start from a bone tip to chain',
-  translate: 'Drag to move the selected bone (or grab an axis) · Shift = add to selection',
-  rotate: 'Drag anywhere to rotate the selected bones around their origins',
-  scale: 'Drag to scale · Shift = X only · Alt = Y only',
-  mesh: 'Drag vertices · Ctrl-click or double-click adds a vertex · Del removes · in Animate mode dragging keys a deform',
-  weights: 'Paint over the mesh · click a bone to switch the brush bone · adjust size and strength in the Inspector',
-  ik: 'Drag from the end of a bone chain to a target bone (or empty space to create one)',
-  clipping: 'Click to place polygon points · click the first point, double-click or Enter to finish · Esc cancels · it is created on the selected bone',
-  boundingbox: 'Click to place polygon points · click the first point, double-click or Enter to finish · Esc cancels · it is created on the selected bone',
-  point: 'Click to place a point attachment on the selected bone · set its rotation in the Inspector',
-  path: 'Click to place a node · drag to pull its handles · click the first node, double-click or Enter to finish · Esc cancels · it is created on the selected bone',
-};
+import { HOTKEY_GROUPS, KEYS } from './hotkeys';
+import { HINTS, TOOLS, toolForKey } from './tools';
 
 function LangToggle() {
   const lang = useLang();
@@ -86,10 +57,10 @@ function TopBar() {
         {(close) => (
           <>
             <MenuItem icon={FilePlus2} close={close} onClick={() => newProject()}>New project</MenuItem>
-            <MenuItem icon={FolderOpen} close={close} hotkey="Ctrl O" onClick={() => openProjectFile()}>Open…</MenuItem>
-            <MenuItem icon={Save} close={close} hotkey="Ctrl S" onClick={() => saveProjectFile()}>Save</MenuItem>
+            <MenuItem icon={FolderOpen} close={close} hotkey={KEYS.open} onClick={() => openProjectFile()}>Open…</MenuItem>
+            <MenuItem icon={Save} close={close} hotkey={KEYS.save} onClick={() => saveProjectFile()}>Save</MenuItem>
             <div className="menu-sep" />
-            <MenuItem icon={Download} close={close} hotkey="Ctrl E" onClick={() => uiStore.patch({ exportOpen: true })}>Export for Spine 4.3…</MenuItem>
+            <MenuItem icon={Download} close={close} hotkey={KEYS.export} onClick={() => uiStore.patch({ exportOpen: true })}>Export for Spine 4.3…</MenuItem>
             <MenuItem icon={FolderOpen} close={close} onClick={() => openSpineImport()}>Import Spine JSON (4.0–4.3)…</MenuItem>
             <div className="menu-sep" />
             <MenuItem icon={Sparkles} close={close} onClick={() => loadSample()}>Load demo rig (Bolt)</MenuItem>
@@ -99,14 +70,14 @@ function TopBar() {
       <Menu label="View">
         {(close) => (
           <>
-            <MenuItem close={close} icon={Grid3x3} onClick={() => uiStore.patch({ view: { ...view, grid: !view.grid } })}>{view.grid ? '✓ ' : ''}Grid</MenuItem>
-            <MenuItem close={close} icon={Type} onClick={() => uiStore.patch({ view: { ...view, names: !view.names } })}>{view.names ? '✓ ' : ''}Bone names</MenuItem>
-            <MenuItem close={close} icon={ImageIcon} onClick={() => uiStore.patch({ view: { ...view, images: !view.images } })}>{view.images ? '✓ ' : ''}Images</MenuItem>
-            <MenuItem close={close} icon={Bone} onClick={() => uiStore.patch({ view: { ...view, bones: !view.bones } })}>{view.bones ? '✓ ' : ''}Bones</MenuItem>
-            <MenuItem close={close} icon={Link2} onClick={() => uiStore.patch({ view: { ...view, constraints: !view.constraints } })}>{view.constraints ? '✓ ' : ''}Constraints</MenuItem>
-            <MenuItem close={close} icon={BoxSelect} onClick={() => uiStore.patch({ view: { ...view, outlines: !view.outlines } })}>{view.outlines ? '✓ ' : ''}Clips, boxes &amp; points</MenuItem>
+            <MenuItem close={close} icon={Grid3x3} checked={view.grid} onClick={() => uiStore.patch({ view: { ...view, grid: !view.grid } })}>Grid</MenuItem>
+            <MenuItem close={close} icon={Type} checked={view.names} onClick={() => uiStore.patch({ view: { ...view, names: !view.names } })}>Bone names</MenuItem>
+            <MenuItem close={close} icon={ImageIcon} checked={view.images} onClick={() => uiStore.patch({ view: { ...view, images: !view.images } })}>Images</MenuItem>
+            <MenuItem close={close} icon={Bone} checked={view.bones} onClick={() => uiStore.patch({ view: { ...view, bones: !view.bones } })}>Bones</MenuItem>
+            <MenuItem close={close} icon={Link2} checked={view.constraints} onClick={() => uiStore.patch({ view: { ...view, constraints: !view.constraints } })}>Constraints</MenuItem>
+            <MenuItem close={close} icon={BoxSelect} checked={view.outlines} onClick={() => uiStore.patch({ view: { ...view, outlines: !view.outlines } })}>Clips, boxes &amp; points</MenuItem>
             <div className="menu-sep" />
-            <MenuItem close={close} icon={Maximize} hotkey="F" onClick={() => viewportApi.frame()}>Frame skeleton</MenuItem>
+            <MenuItem close={close} icon={Maximize} hotkey={KEYS.frame} onClick={() => viewportApi.frame()}>Frame skeleton</MenuItem>
           </>
         )}
       </Menu>
@@ -121,11 +92,11 @@ function TopBar() {
         ]}
       />
       <span className="spacer" />
-      <IconButton icon={Undo2} title={docStore.undoLabel ? `Undo ${docStore.undoLabel}` : 'Undo'} hotkey="Ctrl Z" disabled={!docStore.canUndo} onClick={() => docStore.undo()} />
-      <IconButton icon={Redo2} title="Redo" hotkey="Ctrl Y" disabled={!docStore.canRedo} onClick={() => docStore.redo()} />
+      <IconButton icon={Undo2} title={docStore.undoLabel ? `Undo ${docStore.undoLabel}` : 'Undo'} hotkey={KEYS.undo} disabled={!docStore.canUndo} onClick={() => docStore.undo()} />
+      <IconButton icon={Redo2} title="Redo" hotkey={KEYS.redo} disabled={!docStore.canRedo} onClick={() => docStore.redo()} />
       <span className="sep" />
       <LangToggle />
-      <IconButton icon={CircleHelp} title="Shortcuts & help" hotkey="?" onClick={() => uiStore.patch({ helpOpen: true })} />
+      <IconButton icon={CircleHelp} title="Shortcuts & help" hotkey={KEYS.help} onClick={() => uiStore.patch({ helpOpen: true })} />
       <Button primary icon={Download} onClick={() => uiStore.patch({ exportOpen: true })}>Export</Button>
     </div>
   );
@@ -155,7 +126,7 @@ function ViewportHud() {
       <Toolbox />
       <div className="vp-top-right">
         <span className="chip plain">{Math.round(zoom * 100)}%</span>
-        <IconButton icon={Maximize} title="Frame skeleton" hotkey="F" small onClick={() => viewportApi.frame()} />
+        <IconButton icon={Maximize} title="Frame skeleton" hotkey={KEYS.frame} small onClick={() => viewportApi.frame()} />
         <IconButton icon={Eye} title="Toggle names" small onClick={() => uiStore.patch({ view: { ...uiStore.get().view, names: !uiStore.get().view.names } })} />
       </div>
       {empty && (
@@ -177,35 +148,43 @@ function ViewportHud() {
   );
 }
 
-function HelpDialog() {
-  const rows: [string, string][] = [
-    ['Pose / select', 'V'],
-    ['Create bone', 'B'],
-    ['Translate · Rotate · Scale', 'T · R · S'],
-    ['Setup ⇄ Animate', 'Tab'],
-    ['Play / pause', 'Space'],
-    ['Step frame', '← →'],
-    ['Key selected bone', 'K'],
-    ['Undo / redo', 'Ctrl Z / Y'],
-    ['Delete selection / keys', 'Del'],
-    ['Copy / paste keys', 'Ctrl C / V'],
-    ['Frame skeleton', 'F'],
-    ['Pan viewport', 'Mid / Right drag · Alt drag'],
-    ['Zoom', 'Wheel'],
-    ['Timeline zoom', 'Ctrl + wheel'],
-    ['Save · Open · Export', 'Ctrl S · O · E'],
-  ];
+/** A combination such as "Ctrl+Shift+Z" as key caps. */
+function Keys({ combo }: { combo: string }) {
   return (
-    <Dialog title="Bone 2D — shortcuts" onClose={() => uiStore.patch({ helpOpen: false })} width={600}>
-      <p className="hint-text flush">
+    <>
+      {combo.split('+').map((k, i) => (
+        <kbd key={i} className="kbd">
+          {k}
+        </kbd>
+      ))}
+    </>
+  );
+}
+
+function HelpDialog() {
+  return (
+    <Dialog title="Bone 2D — shortcuts" onClose={() => uiStore.patch({ helpOpen: false })} width={720}>
+      <p className="hint-text flush mb">
         Bone 2D is a browser-based 2D skeletal animation editor. Build a rig in <b>Setup</b>, pose and key it in <b>Animate</b>, then export a Spine 4.3 compatible skeleton + atlas.
       </p>
-      <div className="shortcuts">
-        {rows.map(([a, b]) => (
-          <div key={a}>
-            <span>{a}</span>
-            <span className="kbd">{b}</span>
-          </div>
+      <div className="hotkeys">
+        {HOTKEY_GROUPS.map((g) => (
+          <section key={g.title} className="hk-group">
+            <h3 className="section-label">{g.title}</h3>
+            {g.rows.map((r) => (
+              <div key={r.label} className="hk-row">
+                <span>{r.label}</span>
+                <span className="hk-keys">
+                  {r.keys.map((combo, i) => (
+                    <span key={combo} className="hk-combo">
+                      {i > 0 && <span className="muted">/</span>}
+                      <Keys combo={combo} />
+                    </span>
+                  ))}
+                </span>
+              </div>
+            ))}
+          </section>
         ))}
       </div>
     </Dialog>
@@ -242,6 +221,11 @@ export function App() {
       const ctrl = e.ctrlKey || e.metaKey;
       const ui = uiStore.get();
       const key = e.key.toLowerCase();
+      if (el?.closest?.('[role=menu]')) return; // the keys of a menu belong to the menu
+      // a control that the keyboard has focused keeps Tab, Space and Enter (a click leaves no focus ring, so after a click Space still plays)
+      if (key === 'tab' || key === ' ' || key === 'enter') {
+        if (el?.closest?.('button, a, [role=menuitem], [role=radio], [role=switch]') && el.matches(':focus-visible')) return;
+      }
       if (ctrl) {
         if (key === 'z') {
           e.preventDefault();
@@ -272,19 +256,12 @@ export function App() {
         }
         return;
       }
+      const tool = toolForKey(key);
+      if (tool) {
+        setTool(tool);
+        return;
+      }
       switch (key) {
-        case 'v': setTool('select'); break;
-        case 'b': setTool('create'); break;
-        case 't': setTool('translate'); break;
-        case 'r': setTool('rotate'); break;
-        case 's': setTool('scale'); break;
-        case 'm': setTool('mesh'); break;
-        case 'w': setTool('weights'); break;
-        case 'i': setTool('ik'); break;
-        case 'c': setTool('clipping'); break;
-        case 'x': setTool('boundingbox'); break;
-        case 'p': setTool('point'); break;
-        case 'n': setTool('path'); break;
         case 'f': viewportApi.frame(); break;
         case 'enter':
           if (viewportApi.controller?.polygonTool.commit() || viewportApi.controller?.pathTool.commit()) e.preventDefault();
