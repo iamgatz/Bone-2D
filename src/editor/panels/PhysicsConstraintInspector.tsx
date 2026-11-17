@@ -99,7 +99,7 @@ export function PhysicsConstraintInspector({ id }: { id: Id }) {
     <>
       <div className="group">
         <div className="group-title">
-          <Waves size={14} color="#4cc9a8" />
+          <Waves size={14} className="k-physics" />
           <span>Physics constraint</span>
           <span className="spacer" />
           <IconButton icon={ArrowUp} title="Apply earlier" small disabled={index <= 0} onClick={() => moveConstraint(id, -1)} />

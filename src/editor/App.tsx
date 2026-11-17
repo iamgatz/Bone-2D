@@ -16,6 +16,8 @@ import { InspectorPanel } from './panels/InspectorPanel';
 import { TreePanel } from './panels/TreePanel';
 import { Timeline } from './timeline/Timeline';
 import { Button, Dialog, IconButton, Menu, MenuItem, Splitter } from './ui/controls';
+import { Segmented } from './ui/Segmented';
+import { TooltipHost } from './ui/Tooltip';
 import { Viewport, viewportApi } from './viewport/Viewport';
 import { ExportDialog } from './ExportDialog';
 import { focusArea, setFocusArea } from './focus';
@@ -52,15 +54,7 @@ const HINTS: Record<Tool, string> = {
 
 function LangToggle() {
   const lang = useLang();
-  return (
-    <div className="seg lang" title="Language">
-      {(['en', 'ru'] as const).map((l) => (
-        <button key={l} className={lang === l ? 'active plain' : ''} onClick={() => setLang(l)}>
-          {l.toUpperCase()}
-        </button>
-      ))}
-    </div>
-  );
+  return <Segmented className="lang" label="Language" value={lang} onChange={setLang} options={(['en', 'ru'] as const).map((l) => ({ value: l, label: l.toUpperCase() }))} />;
 }
 
 function TopBar() {
@@ -78,16 +72,16 @@ function TopBar() {
       <div className="brand">
         <span className="brand-mark">
           <svg width="16" height="16" viewBox="0 0 32 32">
-            <path d="M9 22 L16 10 L23 22" stroke="#31d0aa" strokeWidth="3" fill="none" strokeLinecap="round" strokeLinejoin="round" />
-            <circle cx="9" cy="22" r="2.6" fill="#31d0aa" />
-            <circle cx="16" cy="10" r="2.6" fill="#31d0aa" />
-            <circle cx="23" cy="22" r="2.6" fill="#31d0aa" />
+            <path d="M9 22 L16 10 L23 22" stroke="currentColor" strokeWidth="3" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+            <circle cx="9" cy="22" r="2.6" fill="currentColor" />
+            <circle cx="16" cy="10" r="2.6" fill="currentColor" />
+            <circle cx="23" cy="22" r="2.6" fill="currentColor" />
           </svg>
         </span>
         Bone 2D
       </div>
-      <input className="project-name" value={project.name} spellCheck={false} onChange={(e) => docStore.update('Rename project', (d) => void (d.name = e.target.value))} title="Project name" />
-      {docStore.dirty && <span className="dirty-dot" title="Unsaved changes" />}
+      <input className="project-name" value={project.name} spellCheck={false} onChange={(e) => docStore.update('Rename project', (d) => void (d.name = e.target.value))} aria-label="Project name" data-tip="Project name" />
+      {docStore.dirty && <span className="dirty-dot" role="status" aria-label="Unsaved changes" data-tip="Unsaved changes" />}
       <Menu label="File">
         {(close) => (
           <>
@@ -117,14 +111,15 @@ function TopBar() {
         )}
       </Menu>
       <span className="spacer" />
-      <div className="seg">
-        <button className={`setup${mode === 'setup' ? ' active' : ''}`} onClick={() => setMode('setup')} title="Setup: build the rig (Tab)">
-          <Bone size={14} /> Setup
-        </button>
-        <button className={`animate${mode === 'animate' ? ' active' : ''}`} onClick={() => setMode('animate')} title="Animate: pose and key (Tab)">
-          <Play size={14} /> Animate
-        </button>
-      </div>
+      <Segmented
+        label="Mode"
+        value={mode}
+        onChange={setMode}
+        options={[
+          { value: 'setup', label: 'Setup', icon: Bone, tone: 'setup', title: 'Setup: build the rig (Tab)' },
+          { value: 'animate', label: 'Animate', icon: Play, tone: 'animate', title: 'Animate: pose and key (Tab)' },
+        ]}
+      />
       <span className="spacer" />
       <IconButton icon={Undo2} title={docStore.undoLabel ? `Undo ${docStore.undoLabel}` : 'Undo'} hotkey="Ctrl Z" disabled={!docStore.canUndo} onClick={() => docStore.undo()} />
       <IconButton icon={Redo2} title="Redo" hotkey="Ctrl Y" disabled={!docStore.canRedo} onClick={() => docStore.redo()} />
@@ -142,7 +137,7 @@ function Toolbox() {
   return (
     <div className="toolbox">
       {TOOLS.map((t) => (
-        <IconButton key={t.tool} icon={t.icon} title={t.title} hotkey={t.hotkey} active={tool === t.tool} animate={mode === 'animate'} disabled={!!t.setupOnly && mode !== 'setup'} onClick={() => setTool(t.tool)} />
+        <IconButton key={t.tool} icon={t.icon} title={t.title} hotkey={t.hotkey} tipPlace="right" active={tool === t.tool} animate={mode === 'animate'} disabled={!!t.setupOnly && mode !== 'setup'} onClick={() => setTool(t.tool)} />
       ))}
     </div>
   );
@@ -388,6 +383,7 @@ export function App() {
       {exportOpen && <ExportDialog />}
       {helpOpen && <HelpDialog />}
       <Toast />
+      <TooltipHost />
     </div>
   );
 }

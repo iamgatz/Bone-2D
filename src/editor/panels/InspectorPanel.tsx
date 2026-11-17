@@ -132,7 +132,7 @@ function TransformCreate({ boneIds }: { boneIds: Id[] }) {
   return (
     <div className="group">
       <div className="group-title">
-        <Link2 size={14} color="#b38cff" />
+        <Link2 size={14} className="k-transform" />
         <span>Transform constraint</span>
       </div>
       <p className="hint-text" style={{ margin: '0 0 8px' }}>

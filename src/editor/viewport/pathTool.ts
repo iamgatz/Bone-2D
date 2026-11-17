@@ -19,6 +19,7 @@ import { getScene, worldToScreen } from '../scene';
 import type { Scene } from '../scene';
 import { COLORS } from './overlay';
 import type { OverlayInput } from './overlay';
+import { alpha, token } from '../ui/tokens';
 
 export interface ActivePath {
   slotId: Id;
@@ -345,7 +346,7 @@ export class PathTool {
         const screen = (p: number) => worldToScreen(cam, w, h, geo.pts[p * 2], geo.pts[p * 2 + 1]);
         const grab = new Set(grabbable(att));
         ctx.lineWidth = 1;
-        ctx.strokeStyle = 'rgba(230,233,239,0.55)';
+        ctx.strokeStyle = alpha('--text', 0.55);
         ctx.beginPath();
         for (let k = 0; k < n; k++) {
           for (const hp of [k * 3, k * 3 + 2]) {
@@ -361,8 +362,8 @@ export class PathTool {
           const [x, y] = screen(p);
           const on = sel.has(p);
           const hov = p === this.hoverPoint;
-          ctx.fillStyle = on ? COLORS.accent : hov ? '#ffffff' : p % 3 === 1 ? '#e6e9ef' : '#ffd479';
-          ctx.strokeStyle = 'rgba(8,10,14,0.95)';
+          ctx.fillStyle = on ? COLORS.accent : hov ? token('--handle-hover') : p % 3 === 1 ? token('--text') : token('--handle-tangent');
+          ctx.strokeStyle = token('--handle-outline');
           ctx.lineWidth = 1.3;
           ctx.beginPath();
           if (p % 3 === 1) {
@@ -393,7 +394,7 @@ export class PathTool {
     if (!d || o.ui.tool !== 'path') return;
     const { ctx, w, h, cam } = o;
     const s = (x: number, y: number) => worldToScreen(cam, w, h, x, y);
-    const color = 'rgba(255,127,0,0.95)';
+    const color = alpha('--kind-path', 0.95);
     ctx.strokeStyle = color;
     ctx.lineWidth = 1.8;
     ctx.beginPath();
@@ -429,19 +430,19 @@ export class PathTool {
       const closable = i === 0 && d.nodes.length >= 3 && Math.hypot(curX - x, curY - y) < 10;
       for (const [hx, hy] of [s(n.inX, n.inY), s(n.outX, n.outY)]) {
         if (Math.hypot(hx - x, hy - y) < 1) continue;
-        ctx.strokeStyle = 'rgba(230,233,239,0.55)';
+        ctx.strokeStyle = alpha('--text', 0.55);
         ctx.lineWidth = 1;
         ctx.beginPath();
         ctx.moveTo(x, y);
         ctx.lineTo(hx, hy);
         ctx.stroke();
-        ctx.fillStyle = '#ffd479';
+        ctx.fillStyle = token('--handle-tangent');
         ctx.beginPath();
         ctx.arc(hx, hy, 3.4, 0, Math.PI * 2);
         ctx.fill();
       }
-      ctx.fillStyle = closable ? '#ffffff' : color;
-      ctx.strokeStyle = 'rgba(8,10,14,0.95)';
+      ctx.fillStyle = closable ? token('--handle-hover') : color;
+      ctx.strokeStyle = token('--handle-outline');
       ctx.lineWidth = 1.2;
       const r = closable ? 6 : 4;
       ctx.beginPath();

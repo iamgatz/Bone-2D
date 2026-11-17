@@ -246,7 +246,7 @@ export function TreePanel() {
               <div key={c.id} className={`row${selection.constraint === c.id ? ' selected' : ''}`} style={{ paddingLeft: 14 }} onClick={() => setSelection({ constraint: c.id })}>
                 <span className="ico">{c.type === 'path' ? <Spline size={13} /> : c.type === 'physics' ? <Waves size={13} /> : <Link2 size={13} />}</span>
                 <span className="label">{c.name}</span>
-                <span className="chip" style={c.type === 'transform' ? { color: '#b38cff' } : c.type === 'slider' ? { color: '#4cc9f0' } : c.type === 'path' ? { color: '#ff7f00' } : c.type === 'physics' ? { color: '#4cc9a8' } : undefined}>{c.type === 'ik' ? 'IK' : c.type === 'transform' ? 'TC' : c.type === 'path' ? 'PC' : c.type === 'physics' ? 'PH' : 'SL'}</span>
+                <span className={`chip k-${c.type}`}>{c.type === 'ik' ? 'IK' : c.type === 'transform' ? 'TC' : c.type === 'path' ? 'PC' : c.type === 'physics' ? 'PH' : 'SL'}</span>
               </div>
             ))}
           </>

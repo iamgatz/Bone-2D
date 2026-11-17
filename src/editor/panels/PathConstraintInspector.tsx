@@ -67,7 +67,7 @@ export function PathConstraintInspector({ id }: { id: Id }) {
     <>
       <div className="group">
         <div className="group-title">
-          <Spline size={14} color="#ff7f00" />
+          <Spline size={14} className="k-path" />
           <span>Path constraint</span>
           <span className="spacer" />
           <IconButton icon={ArrowUp} title="Apply earlier" small disabled={index <= 0} onClick={() => moveConstraint(id, -1)} />

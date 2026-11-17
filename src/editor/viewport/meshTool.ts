@@ -10,6 +10,7 @@ import type { Scene } from '../scene';
 import { COLORS } from './overlay';
 import type { OverlayInput } from './overlay';
 import { slotWorldVertices } from './hit';
+import { alpha, token } from '../ui/tokens';
 
 type Drag =
   | { kind: 'vertices'; moves: Map<number, [number, number]>; p0: [number, number]; base: number[] | null }
@@ -231,7 +232,7 @@ export class MeshTool {
     const tri = am.mesh.triangles;
     const P = (i: number) => worldToScreen(cam, w, h, v[i * 2], v[i * 2 + 1]);
     ctx.lineWidth = 1;
-    ctx.strokeStyle = edit ? 'rgba(49,208,170,0.55)' : 'rgba(49,208,170,0.22)';
+    ctx.strokeStyle = edit ? alpha('--accent', 0.55) : alpha('--accent', 0.22);
     ctx.beginPath();
     for (let t = 0; t < tri.length; t += 3) {
       const a = P(tri[t]);
@@ -244,7 +245,7 @@ export class MeshTool {
     }
     ctx.stroke();
     // outline
-    ctx.strokeStyle = edit ? '#31d0aa' : 'rgba(49,208,170,0.5)';
+    ctx.strokeStyle = edit ? token('--accent') : alpha('--accent', 0.5);
     ctx.lineWidth = edit ? 1.8 : 1.2;
     ctx.beginPath();
     for (let i = 0; i < am.mesh.hull; i++) {
@@ -277,8 +278,8 @@ export class MeshTool {
       const hovered = i === this.hoverVertex;
       const hullV = i < am.mesh.hull;
       const r = selected || hovered ? 5 : hullV ? 4 : 3.6;
-      ctx.fillStyle = selected ? COLORS.accent : hovered ? '#ffffff' : hullV ? '#bff5e8' : '#e6e9ef';
-      ctx.strokeStyle = 'rgba(8,10,14,0.95)';
+      ctx.fillStyle = selected ? COLORS.accent : hovered ? token('--handle-hover') : hullV ? token('--accent-glow') : token('--text');
+      ctx.strokeStyle = token('--handle-outline');
       ctx.lineWidth = 1.3;
       ctx.beginPath();
       ctx.rect(x - r, y - r, r * 2, r * 2);

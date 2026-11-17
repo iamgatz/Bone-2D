@@ -6,17 +6,37 @@ import type { Camera, UiState } from '@/store/ui';
 import { worldToScreen } from '../scene';
 import type { Scene } from '../scene';
 import { slotWorldVertices } from './hit';
+import { alpha, token } from '../ui/tokens';
 
+/** The colours of the overlay: getters, because they are read from the design tokens when drawing (the stylesheet is not there yet when this module loads). */
 export const COLORS = {
-  accent: '#31d0aa',
-  accentSoft: 'rgba(49,208,170,0.18)',
-  animate: '#ff9f43',
-  hover: '#9fe9d6',
-  text: '#e6e9ef',
-  muted: '#8b93a1',
-  axisX: 'rgba(255,100,100,0.45)',
-  axisY: 'rgba(110,225,140,0.45)',
-  ik: '#ff7a59',
+  get accent() {
+    return token('--accent');
+  },
+  get accentSoft() {
+    return alpha('--accent', 0.18);
+  },
+  get animate() {
+    return token('--animate');
+  },
+  get hover() {
+    return token('--hover-accent');
+  },
+  get text() {
+    return token('--text');
+  },
+  get muted() {
+    return token('--muted');
+  },
+  get axisX() {
+    return alpha('--axis-x', 0.45);
+  },
+  get axisY() {
+    return alpha('--axis-y', 0.45);
+  },
+  get ik() {
+    return token('--kind-ik');
+  },
 };
 
 export interface Interaction {
@@ -85,8 +105,8 @@ export function drawGrid(o: OverlayInput) {
 }
 
 function boneColor(bone: Bone, o: OverlayInput, selected: boolean, hovered: boolean): { fill: string; stroke: string } {
-  if (selected) return { fill: 'rgba(49,208,170,0.55)', stroke: COLORS.accent };
-  if (hovered) return { fill: 'rgba(159,233,214,0.5)', stroke: COLORS.hover };
+  if (selected) return { fill: alpha('--accent', 0.55), stroke: COLORS.accent };
+  if (hovered) return { fill: alpha('--hover-accent', 0.5), stroke: COLORS.hover };
   const c = bone.data.color;
   const r = Math.round(c[0] * 255);
   const g = Math.round(c[1] * 255);
@@ -134,9 +154,9 @@ export function drawBone(o: OverlayInput, bone: Bone, selected: boolean, hovered
   // origin joint
   ctx.beginPath();
   ctx.arc(ox, oy, selected ? 3.6 : 3, 0, Math.PI * 2);
-  ctx.fillStyle = selected ? COLORS.accent : 'rgba(235,238,245,0.95)';
+  ctx.fillStyle = selected ? COLORS.accent : alpha('--text', 0.95);
   ctx.fill();
-  ctx.strokeStyle = 'rgba(10,12,16,0.9)';
+  ctx.strokeStyle = token('--key-outline');
   ctx.lineWidth = 1;
   ctx.stroke();
 }
@@ -162,7 +182,7 @@ export function drawBones(o: OverlayInput) {
       const [sx, sy] = worldToScreen(cam, w, h, mx, my);
       const label = bone.data.name;
       const tw = ctx.measureText(label).width;
-      ctx.fillStyle = 'rgba(13,15,19,0.72)';
+      ctx.fillStyle = alpha('--bg', 0.72);
       ctx.fillRect(sx - tw / 2 - 4, sy - 16, tw + 8, 15);
       ctx.fillStyle = sel.has(bone.data.id) ? COLORS.accent : COLORS.text;
       ctx.fillText(label, sx - tw / 2, sy - 8.5);
@@ -179,8 +199,8 @@ export function drawConstraints(o: OverlayInput) {
       if (!c.bone) continue;
       const [bx, by] = worldToScreen(cam, w, h, c.bone.worldX, c.bone.worldY);
       ctx.save();
-      ctx.strokeStyle = '#4cc9f0';
-      ctx.fillStyle = 'rgba(76,201,240,0.2)';
+      ctx.strokeStyle = token('--kind-slider');
+      ctx.fillStyle = alpha('--kind-slider', 0.2);
       ctx.lineWidth = 1.5;
       ctx.beginPath();
       ctx.moveTo(bx, by - 8);
@@ -199,7 +219,7 @@ export function drawConstraints(o: OverlayInput) {
       const [sx, sy] = worldToScreen(cam, w, h, s.worldX, s.worldY);
       ctx.save();
       ctx.setLineDash([2, 4]);
-      ctx.strokeStyle = '#b38cff';
+      ctx.strokeStyle = token('--kind-transform');
       ctx.globalAlpha = 0.7;
       ctx.lineWidth = 1.5;
       for (const b of c.bones) {
@@ -215,8 +235,8 @@ export function drawConstraints(o: OverlayInput) {
     if (c.kind === 'path') {
       // path constraint: a dot on every constrained bone, in the color of paths
       ctx.save();
-      ctx.fillStyle = 'rgba(255,127,0,0.9)';
-      ctx.strokeStyle = 'rgba(8,10,14,0.9)';
+      ctx.fillStyle = alpha('--kind-path', 0.9);
+      ctx.strokeStyle = token('--handle-outline');
       ctx.lineWidth = 1.2;
       for (const b of c.bones) {
         const [bx, by] = worldToScreen(cam, w, h, b.worldX, b.worldY);
@@ -252,7 +272,7 @@ export function drawConstraints(o: OverlayInput) {
     // target marker
     const selected = o.ui.selection.bones.includes(t.data.id);
     ctx.strokeStyle = selected ? COLORS.accent : COLORS.ik;
-    ctx.fillStyle = selected ? 'rgba(49,208,170,0.25)' : 'rgba(255,122,89,0.22)';
+    ctx.fillStyle = selected ? alpha('--accent', 0.25) : alpha('--kind-ik', 0.22);
     ctx.lineWidth = 2;
     ctx.beginPath();
     ctx.arc(tx, ty, 9, 0, Math.PI * 2);
@@ -324,8 +344,8 @@ export function drawGizmo(o: OverlayInput) {
   ctx.lineWidth = 2;
   if (ui.tool === 'translate') {
     const L = 54;
-    ctx.strokeStyle = '#ff6464';
-    ctx.fillStyle = '#ff6464';
+    ctx.strokeStyle = token('--axis-x');
+    ctx.fillStyle = token('--axis-x');
     ctx.beginPath();
     ctx.moveTo(x, y);
     ctx.lineTo(x + L, y);
@@ -336,8 +356,8 @@ export function drawGizmo(o: OverlayInput) {
     ctx.lineTo(x + L - 1, y + 5);
     ctx.closePath();
     ctx.fill();
-    ctx.strokeStyle = '#6ee18c';
-    ctx.fillStyle = '#6ee18c';
+    ctx.strokeStyle = token('--axis-y');
+    ctx.fillStyle = token('--axis-y');
     ctx.beginPath();
     ctx.moveTo(x, y);
     ctx.lineTo(x, y - L);
@@ -351,18 +371,18 @@ export function drawGizmo(o: OverlayInput) {
     ctx.fillStyle = 'rgba(255,255,255,0.18)';
     ctx.fillRect(x + 10, y - 22, 14, 14);
   } else if (ui.tool === 'rotate') {
-    ctx.strokeStyle = 'rgba(255,200,90,0.9)';
+    ctx.strokeStyle = alpha('--gizmo-rotate', 0.9);
     ctx.beginPath();
     ctx.arc(x, y, 46, 0, Math.PI * 2);
     ctx.stroke();
-    ctx.fillStyle = 'rgba(255,200,90,0.95)';
+    ctx.fillStyle = alpha('--gizmo-rotate', 0.95);
     const a = -bone.worldRotationX * (Math.PI / 180);
     ctx.beginPath();
     ctx.arc(x + Math.cos(a) * 46, y + Math.sin(a) * 46, 5, 0, Math.PI * 2);
     ctx.fill();
   } else if (ui.tool === 'scale') {
-    ctx.strokeStyle = 'rgba(120,170,255,0.95)';
-    ctx.fillStyle = 'rgba(120,170,255,0.95)';
+    ctx.strokeStyle = alpha('--gizmo-scale', 0.95);
+    ctx.fillStyle = alpha('--gizmo-scale', 0.95);
     ctx.beginPath();
     ctx.moveTo(x, y);
     ctx.lineTo(x + 40, y);
@@ -414,7 +434,7 @@ export function drawInteraction(o: OverlayInput) {
     ctx.lineTo(x1, y1);
     ctx.stroke();
     ctx.restore();
-    ctx.fillStyle = 'rgba(255,122,89,0.22)';
+    ctx.fillStyle = alpha('--kind-ik', 0.22);
     ctx.strokeStyle = COLORS.ik;
     ctx.lineWidth = 2;
     ctx.beginPath();

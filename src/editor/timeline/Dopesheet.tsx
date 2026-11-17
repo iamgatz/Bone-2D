@@ -5,16 +5,18 @@ import { moveKeysBy, setTime } from '@/store/actions';
 import { docStore } from '@/store/doc';
 import { uiStore } from '@/store/ui';
 import type { Row } from './rows';
+import { alpha, token } from '../ui/tokens';
 
 export const ROW_H = 24;
 
-const TONES: Record<NonNullable<Row['tone']>, string> = {
-  bone: '#c9d4e6',
-  slot: '#d9c7f0',
-  ik: '#ffb08f',
-  deform: '#9fd6ff',
-  order: '#e6dd9f',
-  event: '#ffd0e6',
+/** The design token of the key colour for each kind of row. */
+const TONES: Record<NonNullable<Row['tone']>, `--${string}`> = {
+  bone: '--key-bone',
+  slot: '--key-slot',
+  ik: '--key-ik',
+  deform: '--key-deform',
+  order: '--key-order',
+  event: '--key-event',
 };
 
 export interface TimelineMenuRequest {
@@ -108,7 +110,7 @@ export function Dopesheet({ rows, duration, fps, onMenu }: Props) {
       // ------------------------------------------------ ruler
       rctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       rctx.clearRect(0, 0, w, 28);
-      rctx.fillStyle = '#12151b';
+      rctx.fillStyle = token('--tl-ruler');
       rctx.fillRect(0, 0, w, 28);
       const pxPerFrame = zoom / fps;
       const step = frameStep(pxPerFrame);
@@ -118,12 +120,12 @@ export function Dopesheet({ rows, duration, fps, onMenu }: Props) {
       for (let f = firstFrame; timeToX(f / fps, scroll, zoom) < w + 40; f += step) {
         const x = Math.round(timeToX(f / fps, scroll, zoom)) + 0.5;
         const isSecond = f % fps === 0;
-        rctx.strokeStyle = isSecond ? 'rgba(255,255,255,0.34)' : 'rgba(255,255,255,0.2)';
+        rctx.strokeStyle = isSecond ? token('--tl-tick-strong') : token('--tl-tick');
         rctx.beginPath();
         rctx.moveTo(x, 28);
         rctx.lineTo(x, isSecond ? 8 : 14);
         rctx.stroke();
-        rctx.fillStyle = isSecond ? '#cfd6e3' : '#7d8696';
+        rctx.fillStyle = isSecond ? token('--tl-label-strong') : token('--tl-label');
         rctx.fillText(isSecond ? `${f / fps}s` : String(f), x + 4, 11);
         if (pxPerFrame >= 7 && step === 1 && !isSecond) {
           rctx.strokeStyle = 'rgba(255,255,255,0.08)';
@@ -146,7 +148,7 @@ export function Dopesheet({ rows, duration, fps, onMenu }: Props) {
         rctx.fillRect(Math.max(0, endX), 0, w, 28);
       }
       const px = timeToX(ui.time, scroll, zoom);
-      rctx.fillStyle = '#ff9f43';
+      rctx.fillStyle = token('--animate');
       rctx.beginPath();
       rctx.moveTo(px - 6, 18);
       rctx.lineTo(px + 6, 18);
@@ -158,24 +160,24 @@ export function Dopesheet({ rows, duration, fps, onMenu }: Props) {
       // ------------------------------------------------ keys
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       ctx.clearRect(0, 0, cw, ch);
-      ctx.fillStyle = '#10131a';
+      ctx.fillStyle = token('--sunken-2');
       ctx.fillRect(0, 0, cw, ch);
       for (let i = 0; i < rows.length; i++) {
         const r = rows[i];
         const y = i * ROW_H;
         if (r.type === 'group') {
-          ctx.fillStyle = 'rgba(255,255,255,0.045)';
+          ctx.fillStyle = token('--tl-row-group');
           ctx.fillRect(0, y, cw, ROW_H);
         } else if (r.selected) {
-          ctx.fillStyle = 'rgba(49,208,170,0.09)';
+          ctx.fillStyle = token('--tl-row-selected');
           ctx.fillRect(0, y, cw, ROW_H);
         } else if (i % 2 === 1) {
-          ctx.fillStyle = 'rgba(255,255,255,0.018)';
+          ctx.fillStyle = token('--tl-row-alt');
           ctx.fillRect(0, y, cw, ROW_H);
         }
       }
       // vertical grid (every second, and every frame when zoomed in)
-      ctx.strokeStyle = 'rgba(255,255,255,0.05)';
+      ctx.strokeStyle = token('--tl-grid');
       ctx.beginPath();
       const s0 = Math.floor(scroll);
       for (let s = s0; timeToX(s, scroll, zoom) < cw; s++) {
@@ -185,7 +187,7 @@ export function Dopesheet({ rows, duration, fps, onMenu }: Props) {
       }
       ctx.stroke();
       if (pxPerFrame >= 9) {
-        ctx.strokeStyle = 'rgba(255,255,255,0.025)';
+        ctx.strokeStyle = token('--tl-grid-frame');
         ctx.beginPath();
         for (let f = Math.floor(scroll * fps); timeToX(f / fps, scroll, zoom) < cw; f++) {
           const x = Math.round(timeToX(f / fps, scroll, zoom)) + 0.5;
@@ -196,9 +198,9 @@ export function Dopesheet({ rows, duration, fps, onMenu }: Props) {
       }
       // beyond the end
       if (endX < cw) {
-        ctx.fillStyle = 'rgba(0,0,0,0.35)';
+        ctx.fillStyle = token('--tl-after-end');
         ctx.fillRect(Math.max(0, endX), 0, cw, ch);
-        ctx.fillStyle = 'rgba(255,159,67,0.5)';
+        ctx.fillStyle = alpha('--animate', 0.5);
         ctx.fillRect(Math.round(endX), 0, 1, ch);
       }
       // keys
@@ -218,23 +220,23 @@ export function Dopesheet({ rows, duration, fps, onMenu }: Props) {
           ctx.lineTo(x, cy + size);
           ctx.lineTo(x - size, cy);
           ctx.closePath();
-          ctx.fillStyle = selected ? '#31d0aa' : TONES[r.tone ?? 'bone'];
+          ctx.fillStyle = selected ? token('--accent') : token(TONES[r.tone ?? 'bone']);
           if (r.type === 'prop' && !selected) ctx.globalAlpha = 0.82;
           ctx.fill();
           ctx.globalAlpha = 1;
-          ctx.strokeStyle = selected ? '#bff5e8' : 'rgba(10,12,16,0.9)';
+          ctx.strokeStyle = selected ? token('--accent-glow') : token('--key-outline');
           ctx.lineWidth = 1.2;
           ctx.stroke();
         }
       }
       // playhead
-      ctx.fillStyle = 'rgba(255,159,67,0.9)';
+      ctx.fillStyle = alpha('--animate', 0.9);
       ctx.fillRect(Math.round(px), 0, 1, ch);
       // marquee
       const d = drag.current;
       if (d?.kind === 'marquee') {
-        ctx.fillStyle = 'rgba(49,208,170,0.12)';
-        ctx.strokeStyle = '#31d0aa';
+        ctx.fillStyle = alpha('--accent', 0.12);
+        ctx.strokeStyle = token('--accent');
         ctx.lineWidth = 1;
         const x = Math.min(d.x0, d.x1);
         const y = Math.min(d.y0, d.y1);
