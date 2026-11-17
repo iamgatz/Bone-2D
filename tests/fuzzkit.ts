@@ -528,6 +528,10 @@ function physicsMismatch(p: Project, sd: any, json: unknown, atlasText: string, 
     last = time;
     ours.update(dt);
     ours.updateWorldTransform('update');
+    // A bone of a chain / chainScale path constraint with no size at all (a, c = 0) gives its neighbour a spacing that is 0 in one
+    // runtime and 1e-17 in the other, and the exact test `spaces[i + 1] === 0` then picks another angle for one frame. The physics
+    // of the bone remembers that frame for the rest of the run, so a run where it happens says nothing about the physics.
+    for (const c of ours.constraints) if (c.kind === 'path' && c.data.rotateMode !== 'tangent' && c.bones.some((b) => Math.hypot(b.a, b.c) < 1e-6)) return null;
   }
   const ambiguous = ambiguousBones(ours, official);
   for (const ob of official.bones) {
