@@ -1,0 +1,63 @@
+/**
+ * Close the loop: makes the end of an animation the same as its start, so a cycle (a walk, an idle) repeats without a jump.
+ * Every timeline of numbers with two keys or more gets the value of its first key on its last key (or the other way round); a timeline
+ * whose last key is before the end of the animation gets a key at the end. Keys that are not numbers (attachments, events, draw order) stay.
+ */
+import type { Animation, Id, Key } from './model';
+
+const EPS = 1e-6;
+
+const isNumberKey = (k: unknown): k is Key => !!k && typeof k === 'object' && typeof (k as Key).time === 'number' && Array.isArray((k as Key).value);
+const same = (a: number[], b: number[]) => a.length === b.length && a.every((v, i) => Math.abs(v - b[i]) <= EPS);
+
+export interface CloseLoopOptions {
+  /** Which end is the one to keep: the first key's value is copied to the end (default), or the last key's value to the start. */
+  keep?: 'first' | 'last';
+  /** Only the timelines of these bones. Without it the whole animation is closed (slots, deform and the constraints too). */
+  bones?: readonly Id[];
+}
+
+/** Closes one timeline; true when a key changed or was added. */
+function closeTimeline(keys: Key[], duration: number, keep: 'first' | 'last'): boolean {
+  if (keys.length < 2) return false;
+  const first = keys[0];
+  const last = keys[keys.length - 1];
+  if (keep === 'last') {
+    if (same(first.value, last.value)) return false;
+    first.value = [...last.value];
+    return true;
+  }
+  if (last.time < duration - EPS) {
+    if (same(first.value, last.value)) return false; // already at rest on the value of the start
+    keys.push({ time: duration, value: [...first.value] });
+    return true;
+  }
+  if (same(first.value, last.value)) return false;
+  last.value = [...first.value];
+  return true;
+}
+
+/** Closes the loop of an animation in place. Returns how many timelines were changed. */
+export function closeLoop(anim: Animation, options: CloseLoopOptions = {}): number {
+  const keep = options.keep ?? 'first';
+  let changed = 0;
+  const walk = (v: unknown) => {
+    if (Array.isArray(v)) {
+      if (v.length && v.every(isNumberKey)) {
+        if (closeTimeline(v as Key[], anim.duration, keep)) changed++;
+      } else v.forEach(walk);
+    } else if (v && typeof v === 'object') for (const x of Object.values(v)) walk(x);
+  };
+  if (options.bones) {
+    for (const id of options.bones) walk(anim.bones[id]);
+    return changed;
+  }
+  walk(anim.bones);
+  walk(anim.slots);
+  walk(anim.deform);
+  walk(anim.transform);
+  walk(anim.slider);
+  walk(anim.path);
+  walk(anim.physics);
+  return changed;
+}

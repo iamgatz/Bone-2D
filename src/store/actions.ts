@@ -4,6 +4,7 @@ import { animationEndTime } from '@/core/animate';
 import { DEFAULT_TOLERANCE, bakeAnimation, scaleTolerance, simplifyAnimation } from '@/core/bake';
 import type { BakeOptions } from '@/core/bake';
 import { cleanUpAnimation } from '@/core/cleanup';
+import { closeLoop } from '@/core/loops';
 import { findAnimation, freshName, makeCurve, normalizeBoneOrder, purgeAttachment, removeBones, removeSlots, rgbaToRgba2, setSlotDarkColor, snapTime, upsertKey, decompose } from '@/core/edit';
 import type { BoneMats } from '@/core/mesh';
 import { moveKeys, removeKeys, resolveKeys } from '@/core/keyrefs';
@@ -617,6 +618,20 @@ export function cleanUpKeys(id: Id): number {
   uiStore.patch({ selectedKeys: [] });
   toast(removed ? `Removed ${removed} keys that change nothing` : 'Nothing to clean up: every key does something', removed ? 'ok' : 'info');
   return removed;
+}
+
+/** Makes the end of the current animation the same as its start (or the start the same as the end). Returns how many timelines changed. */
+export function closeCurrentLoop(keep: 'first' | 'last', selectedOnly: boolean): number {
+  const anim = currentAnimation();
+  if (!anim) return 0;
+  const bones = selectedOnly ? uiStore.get().selection.bones : undefined;
+  let changed = 0;
+  docStore.update('Close the loop', (d) => {
+    const a = d.skeleton.animations.find((x) => x.id === anim.id);
+    if (a) changed = closeLoop(a, { keep, bones });
+  });
+  toast(changed ? `Closed the loop on ${changed} timelines` : 'The end already matches the start', changed ? 'ok' : 'info');
+  return changed;
 }
 
 /** Drops the keys of the bone timelines that a curve does not need (`strength` scales the tolerance). Returns how many keys went. */
