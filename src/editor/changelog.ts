@@ -12,6 +12,12 @@ export interface Release {
 
 export const CHANGELOG: Release[] = [
   {
+    version: '0.15',
+    date: '2026-11-17',
+    en: ['Every key of the editor can be moved: Settings → Hotkeys now has a button for each command (Undo, Save, Frame skeleton, Play…), not only the tool letters. Press it, then the new combination (Ctrl, Alt, Shift and a key, F-keys, Tab, Space). A combination that another command, a tool letter or the browser already has is refused with the name of the owner; Reset puts the default back. The tooltips, menus, shortcuts window and command palette show the keys as you set them.'],
+    ru: ['Теперь можно переназначить любую клавишу редактора: в «Настройки → Горячие клавиши» у каждой команды (Отменить, Сохранить, Показать весь скелет, Воспроизведение…) есть кнопка, не только у букв инструментов. Нажмите её и затем новое сочетание (Ctrl, Alt, Shift и клавиша, F-клавиши, Tab, Space). Сочетание, которое уже занято другой командой, буквой инструмента или браузером, не принимается, и сообщение называет, чем оно занято; «Сбросить» возвращает исходное. Подсказки, меню, окно горячих клавиш и палитра команд показывают клавиши так, как вы их задали.'],
+  },
+  {
     version: '0.14',
     date: '2026-11-17',
     en: [

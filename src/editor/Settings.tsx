@@ -5,7 +5,8 @@ import { DEFAULT_SETTINGS, resetSettings, setSettings, useSettings } from '@/sto
 import { toast, uiStore } from '@/store/ui';
 import { Button, ColorSwatch, Dialog, SelectField, Toggle } from './ui/controls';
 import { Segmented } from './ui/Segmented';
-import { hotkeyGroups } from './hotkeys';
+import { assignToolKey, comboOf, hotkeyGroups, isDefaultBinding, resetBinding, setBinding } from './hotkeys';
+import type { HotkeyRow, KeyId } from './hotkeys';
 import { TOOLS, hotkeyOf, setToolKey } from './tools';
 
 type Tab = 'general' | 'viewport' | 'hotkeys';
@@ -34,8 +35,8 @@ function ToolKey({ tool, title }: { tool: (typeof TOOLS)[number]['tool']; title:
       e.stopPropagation();
       if (e.key === 'Escape') return setListening(false);
       if (!/^[a-z]$/i.test(e.key) || e.ctrlKey || e.metaKey || e.altKey) return;
-      const clash = setToolKey(tool, e.key);
-      if (clash) toast(`Key ${e.key.toUpperCase()} is already used by ${TOOLS.find((t) => t.tool === clash)!.title}`, 'error');
+      const clash = assignToolKey(tool, e.key);
+      if (clash) toast(`Key ${e.key.toUpperCase()} is already used by ${clash}`, 'error');
       setListening(false);
     };
     window.addEventListener('keydown', on, true);
@@ -58,6 +59,45 @@ function ToolKey({ tool, title }: { tool: (typeof TOOLS)[number]['tool']; title:
   );
 }
 
+/** One command: press the button, then the new combination. */
+function CommandKey({ id, row }: { id: KeyId; row: HotkeyRow }) {
+  const [listening, setListening] = useState(false);
+  const combo = row.keys[0];
+  const rest = row.keys.slice(1);
+  const isDefault = isDefaultBinding(id);
+  useEffect(() => {
+    if (!listening) return;
+    const on = (e: KeyboardEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      if (e.key === 'Escape') return setListening(false);
+      const next = comboOf(e);
+      if (!next) return; // a modifier on its own, an arrow…: wait for the rest of the combination
+      const clash = setBinding(id, next);
+      if (clash) toast(`Key ${next} is already used by ${clash}`, 'error');
+      setListening(false);
+    };
+    window.addEventListener('keydown', on, true);
+    return () => window.removeEventListener('keydown', on, true);
+  }, [listening, id]);
+  return (
+    <div className="set-row">
+      <div className="set-label">{row.label}</div>
+      <div className="set-control">
+        {rest.length > 0 && <span className="muted">{rest.join('  /  ')}</span>}
+        <button type="button" className={`keycap wide${listening ? ' listening' : ''}${isDefault ? '' : ' changed'}`} onClick={() => setListening(!listening)} aria-label={`${row.label}: key`} data-tip="Click, then press the new combination (Esc cancels)">
+          {listening ? '…' : combo}
+        </button>
+        {!isDefault && (
+          <Button small ghost onClick={() => resetBinding(id)}>
+            Reset
+          </Button>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export function SettingsDialog() {
   const lang = useLang();
   const [tab, setTab] = useState<Tab>('general');
@@ -70,6 +110,7 @@ export function SettingsDialog() {
   const onionAfter = useSettings((s) => s.onionAfter);
   const onionGap = useSettings((s) => s.onionGap);
   useSettings((s) => s.toolKeys);
+  useSettings((s) => s.keyMap);
   const close = () => uiStore.patch({ settingsOpen: false });
   const others = hotkeyGroups().slice(1);
 
@@ -142,7 +183,7 @@ export function SettingsDialog() {
         )}
         {tab === 'hotkeys' && (
           <>
-            <p className="hint-text flush mb">The letters of the tools can be changed. The other keys are listed for reference.</p>
+            <p className="hint-text flush mb">Click a key and press the new one to change it. What the mouse does is listed for reference.</p>
             <h3 className="section-label flush">Tools</h3>
             {TOOLS.map((t) => (
               <ToolKey key={t.tool} tool={t.tool} title={t.title} />
@@ -150,12 +191,16 @@ export function SettingsDialog() {
             {others.map((g) => (
               <section key={g.title}>
                 <h3 className="section-label flush mt">{g.title}</h3>
-                {g.rows.map((r) => (
-                  <div key={r.label} className="set-row">
-                    <div className="set-label">{r.label}</div>
-                    <div className="set-control muted">{r.keys.join('  /  ')}</div>
-                  </div>
-                ))}
+                {g.rows.map((r) =>
+                  r.id ? (
+                    <CommandKey key={r.label} id={r.id} row={r} />
+                  ) : (
+                    <div key={r.label} className="set-row">
+                      <div className="set-label">{r.label}</div>
+                      <div className="set-control muted">{r.keys.join('  /  ')}</div>
+                    </div>
+                  ),
+                )}
               </section>
             ))}
           </>

@@ -1,6 +1,6 @@
 /** Preferences: what is read back from storage, and the tool letters that can be changed. */
 import { afterEach, describe, expect, it } from 'vitest';
-import { hotkeyGroups } from '../src/editor/hotkeys';
+import { assignToolKey, hotkeyGroups, setBinding } from '../src/editor/hotkeys';
 import { TOOLS, hotkeyOf, setToolKey, toolForKey } from '../src/editor/tools';
 import { DEFAULT_SETTINGS, readSettings, resetSettings } from '../src/store/settings';
 
@@ -21,6 +21,21 @@ describe('settings', () => {
   it('drop tool letters that are not one capital letter or that two tools share', () => {
     const s = readSettings(JSON.stringify({ toolKeys: { select: 'Q', create: 'Q', rotate: 'ab', scale: '5' } }));
     expect(s.toolKeys).toEqual({ select: 'Q' });
+  });
+});
+
+describe('key combinations of the commands', () => {
+  it('drop a combination that is not written the way the editor writes it or that two commands share', () => {
+    const s = readSettings(JSON.stringify({ keyMap: { undo: 'Ctrl+U', redo: 'Ctrl+U', save: 'Ctrl+Shift+Alt+S', open: 'ctrl+o', export: 5, frame: 'G' } }));
+    expect(s.keyMap).toEqual({ undo: 'Ctrl+U', frame: 'G' });
+  });
+
+  it('and a tool letter cannot take the key of a command, nor the other way round', () => {
+    expect(assignToolKey('rotate', 'k')).toBe('Key selected bone');
+    expect(hotkeyOf('rotate')).toBe('R');
+    setBinding('frame', 'G');
+    expect(assignToolKey('rotate', 'f')).toBeNull(); // F is free now
+    expect(hotkeyOf('rotate')).toBe('F');
   });
 });
 

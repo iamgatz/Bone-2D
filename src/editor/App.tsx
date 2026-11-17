@@ -22,7 +22,8 @@ import { ExportDialog } from './ExportDialog';
 import { FeedbackDialog } from './Feedback';
 import { UpdatesDialog, hasUnseenUpdate } from './Updates';
 import { focusArea, setFocusArea } from './focus';
-import { hotkeyGroups, KEYS } from './hotkeys';
+import { comboOf, hotkeyGroups, keyIdOf, KEYS } from './hotkeys';
+import { KEY_ACTIONS } from './keyActions';
 import { HINTS, TOOLS, hotkeyOf, toolForKey } from './tools';
 import { SettingsDialog } from './Settings';
 import { WelcomeDialog } from './Welcome';
@@ -45,6 +46,7 @@ function LangToggle() {
 }
 
 function TopBar() {
+  useSettings((s) => s.keyMap); // the combinations can be changed in Settings
   const project = useProject();
   const mode = useUi((s) => s.mode);
   const view = useUi((s) => s.view);
@@ -195,6 +197,7 @@ function Toolbox() {
 }
 
 function ViewportHud() {
+  useSettings((s) => s.keyMap);
   const tool = useUi((s) => s.tool);
   const mode = useUi((s) => s.mode);
   const zoom = useUi((s) => s.camera.zoom);
@@ -246,6 +249,7 @@ function Keys({ combo }: { combo: string }) {
 
 function HelpDialog() {
   useSettings((s) => s.toolKeys);
+  useSettings((s) => s.keyMap);
   return (
     <Dialog title="Bone 2D — shortcuts" onClose={() => uiStore.patch({ helpOpen: false })} width={720}>
       <p className="hint-text flush mb">
@@ -320,39 +324,22 @@ export function App() {
       if (key === 'tab' || key === ' ' || key === 'enter') {
         if (el?.closest?.('button, a, [role=menuitem], [role=radio], [role=switch]') && el.matches(':focus-visible')) return;
       }
+      // the commands whose combination can be moved in Settings (hotkeys.ts); what each does is in keyActions.ts
+      const combo = comboOf(e);
+      const bound = combo ? keyIdOf(combo) : null;
+      const action = bound ? KEY_ACTIONS[bound] : undefined;
+      if (action) {
+        action(e);
+        return;
+      }
       if (ctrl) {
-        if (key === 'z') {
-          e.preventDefault();
-          if (e.shiftKey) docStore.redo();
-          else docStore.undo();
-        } else if (key === 'y') {
-          e.preventDefault();
-          docStore.redo();
-        } else if (key === 's') {
-          e.preventDefault();
-          saveProjectFile(e.shiftKey);
-        } else if (key === 'o') {
-          e.preventDefault();
-          openProjectFile();
-        } else if (key === 'e') {
-          e.preventDefault();
-          uiStore.patch({ exportOpen: true });
-        } else if (key === 'c' && ui.selectedKeys.length) {
+        if (key === 'c' && ui.selectedKeys.length) {
           e.preventDefault();
           copyKeys(ui.selectedKeys.map(decodeKey));
         } else if (key === 'v' && ui.mode === 'animate') {
           e.preventDefault();
           const refs = pasteKeys(ui.time);
           if (refs.length) uiStore.patch({ selectedKeys: refs.map((r) => JSON.stringify([r.kind, r.target, r.prop, Math.round(r.time * 10000) / 10000])) });
-        } else if (key === 'k') {
-          e.preventDefault();
-          uiStore.patch({ paletteOpen: !ui.paletteOpen });
-        } else if (key === 'd') {
-          e.preventDefault();
-          duplicateSelection(e.shiftKey);
-        } else if (key === 'a') {
-          e.preventDefault();
-          setSelection({ bones: docStore.get().skeleton.bones.map((b) => b.id) });
         }
         return;
       }
@@ -362,27 +349,8 @@ export function App() {
         return;
       }
       switch (key) {
-        case 'f': viewportApi.frame(); break;
-        case 'f12':
-          e.preventDefault();
-          uiStore.patch({ settingsOpen: !ui.settingsOpen });
-          break;
-        case 'f9':
-          e.preventDefault();
-          toggleAllViews();
-          break;
         case 'enter':
           if (viewportApi.controller?.polygonTool.commit() || viewportApi.controller?.pathTool.commit()) e.preventDefault();
-          break;
-        case 'k': keySelectedBones(); break;
-        case 'tab':
-          e.preventDefault();
-          setMode(ui.mode === 'setup' ? 'animate' : 'setup');
-          break;
-        case ' ':
-          e.preventDefault();
-          if (ui.mode === 'animate') togglePlay();
-          viewportApi.controller && (viewportApi.controller.spaceDown = false);
           break;
         case 'arrowleft':
         case 'arrowright':
@@ -414,9 +382,6 @@ export function App() {
           if (viewportApi.controller?.polygonTool.cancel() || viewportApi.controller?.pathTool.cancel()) break; // an unfinished polygon or path is dropped first
           clearSelection();
           uiStore.patch({ selectedKeys: [] });
-          break;
-        case '?':
-          uiStore.patch({ helpOpen: true });
           break;
       }
     };
