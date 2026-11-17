@@ -2,7 +2,7 @@ import { settingsStore, setSettings } from '@/store/settings';
 import { TOOLS, hotkeyOf, setToolKey } from './tools';
 
 export type KeyId =
-  | 'undo' | 'redo' | 'save' | 'saveAs' | 'open' | 'export' | 'copy' | 'paste' | 'selectAll' | 'frame' | 'mode' | 'play' | 'key' | 'delete' | 'help' | 'hideViews' | 'settings' | 'duplicate' | 'palette' | 'mirror' | 'showAll' | 'isolate';
+  | 'undo' | 'redo' | 'save' | 'saveAs' | 'open' | 'export' | 'copy' | 'paste' | 'selectAll' | 'frame' | 'mode' | 'play' | 'key' | 'delete' | 'help' | 'hideViews' | 'settings' | 'duplicate' | 'palette' | 'mirror' | 'showAll' | 'isolate' | 'frameSelection' | 'zoom100';
 
 export interface Binding {
   id: KeyId;
@@ -31,6 +31,8 @@ export const BINDINGS: Binding[] = [
   { id: 'paste', label: 'Paste keys', combo: 'Ctrl+V', fixed: true },
   { id: 'selectAll', label: 'Select all bones', combo: 'Ctrl+A' },
   { id: 'frame', label: 'Frame skeleton', combo: 'F' },
+  { id: 'frameSelection', label: 'Frame the selection', combo: 'Shift+F' },
+  { id: 'zoom100', label: 'Zoom to 100%', combo: 'Shift+Z' },
   { id: 'mode', label: 'Setup ⇄ Animate', combo: 'Tab' },
   { id: 'play', label: 'Play / pause', combo: 'Space' },
   { id: 'key', label: 'Key selected bone', combo: 'K' },
@@ -171,6 +173,8 @@ export const hotkeyGroups = (): HotkeyGroup[] => [
     title: 'View',
     rows: [
       row('frame'),
+      row('frameSelection'),
+      row('zoom100'),
       row('hideViews'),
       row('showAll'),
       row('isolate'),

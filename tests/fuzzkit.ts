@@ -14,6 +14,7 @@ import { bakeAnimation, constrainedBoneIndices, poseFrames } from '../src/core/b
 import { applyAnimation, applyPhysicsResets } from '../src/core/animate';
 import { exportSpineJson } from '../src/core/export/spineJson';
 import { deformProp } from '../src/core/keyrefs';
+import { makeLink } from '../src/core/links';
 import { resolveSequenceIndex, sequenceFrameNames } from '../src/core/sequence';
 import { uid } from '../src/core/ids';
 import type { KeyRef } from '../src/core/keyrefs';
@@ -82,6 +83,15 @@ function meshes() {
   const out: { slotId: string; name: string }[] = [];
   const skin = doc().skins[0];
   for (const slotId in skin.attachments) for (const name in skin.attachments[slotId]) if (skin.attachments[slotId][name].type === 'mesh') out.push({ slotId, name });
+  return out;
+}
+/** Every linked mesh of every skin. */
+function linkedMeshes() {
+  const out: { skinId: string; slotId: string; name: string }[] = [];
+  for (const skin of doc().skins) for (const slotId in skin.attachments) for (const name in skin.attachments[slotId]) {
+    const a = skin.attachments[slotId][name];
+    if (a.type === 'mesh' && a.link) out.push({ skinId: skin.id, slotId, name });
+  }
   return out;
 }
 function regions() {
@@ -196,6 +206,26 @@ export const ops: Op[] = [
   { name: 'renameSkin', run: (c) => { const s = c.pick(doc().skins)!; A.renameSkin(s.id, c.pick(NAMES)!); } },
   { name: 'deleteSkin', run: (c) => { A.deleteSkin(c.pick(doc().skins)!.id); } },
   { name: 'setSkinImage', run: (c) => { const s = c.pick(doc().skins.slice(1)); const r = c.pick(regions()); const img = c.pick(project().images); if (s && r && img) A.setSkinImage(s.id, r.slotId, r.name, img.name); } },
+  // a linked mesh: the skin picture of a mesh, and a mesh in another slot that follows one
+  { name: 'setSkinImageMesh', run: (c) => { const s = c.pick(doc().skins.slice(1)); const m = c.pick(meshes()); const img = c.pick(project().images); if (s && m && img) A.setSkinImage(s.id, m.slotId, m.name, img.name); } },
+  {
+    name: 'linkMeshAcrossSlots',
+    run: (c) => {
+      const m = c.pick(meshes());
+      const slot = c.pick(doc().slots);
+      const img = c.pick(project().images);
+      if (!m || !slot || !img) return;
+      const src = doc().skins[0].attachments[m.slotId][m.name];
+      if (src.type !== 'mesh' || src.link) return;
+      const name = `link${Math.floor(c.r() * 1000)}`;
+      if (doc().skins[0].attachments[slot.id]?.[name]) return;
+      const copy = { ...structuredClone(src), name, path: img.name, link: makeLink(doc(), slot.id, { skinId: doc().skins[0].id, slotId: m.slotId, name: m.name }, c.chance(0.7)) };
+      delete copy.sequence;
+      docStore.update('Link mesh', (d) => { (d.skeleton.skins[0].attachments[slot.id] ??= {})[name] = copy; });
+    },
+  },
+  { name: 'linkDeform', run: (c) => { const l = c.pick(linkedMeshes()); if (l) A.setLinkDeform(l.skinId, l.slotId, l.name, c.chance(0.5)); } },
+  { name: 'unlinkMesh', run: (c) => { const l = c.pick(linkedMeshes()); if (l) A.unlinkMesh(l.skinId, l.slotId, l.name); } },
   { name: 'removeSkinImage', run: (c) => { const s = c.pick(doc().skins.slice(1)); const r = c.pick(regions()); if (s && r) A.removeSkinImage(s.id, r.slotId, r.name); } },
   { name: 'duplicateSkin', run: (c) => { A.duplicateSkinAction(c.pick(doc().skins)!.id); } },
   { name: 'skinRequiredBone', run: (c) => { A.setSkinRequiredAction('bone', c.pick(doc().bones)!.id, c.chance(0.7)); } },

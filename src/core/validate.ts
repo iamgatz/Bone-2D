@@ -8,6 +8,7 @@ import { animationEndTime } from './animate';
 import { normalizeBoneOrder } from './edit';
 import { uid, uniqueName } from './ids';
 import { deformLength } from './mesh';
+import { syncLinkedMeshes } from './links';
 import { cleanSequence, cleanSequenceKey } from './sequence';
 import { cleanGuides } from './snap';
 import { repairPoses } from './poses';
@@ -292,6 +293,13 @@ function attachmentProblem(att: Attachment, boneIds: Set<Id>, slotIds: Set<Id>, 
     for (const k of ['x', 'y', 'rotation', 'scaleX', 'scaleY', 'width', 'height'] as const) if (!finite(att[k])) return `${k} is not a number`;
     return null;
   }
+  if (att.link !== undefined) {
+    const l = att.link as Partial<NonNullable<typeof att.link>> | null;
+    if (!l || typeof l !== 'object' || !isString(l.source) || !(l.slot === null || isString(l.slot)) || !(l.skin === null || isString(l.skin))) {
+      delete att.link;
+      fixed(`mesh "${att.name}": its link to a source mesh was not valid and was removed`);
+    } else att.link.deform = l.deform !== false;
+  }
   if (!finite(att.width) || !finite(att.height)) return 'size is not a number';
   const n = att.uvs.length / 2;
   if (!Number.isInteger(n) || n < 3 || !att.uvs.every(finite)) return 'invalid uvs';
@@ -335,6 +343,9 @@ function repairSkins(doc: SkeletonDoc, note: Note) {
       }
     }
   }
+  // a linked mesh has the shape of its source; one whose source is gone keeps its own copy
+  const synced = syncLinkedMeshes(doc);
+  if (synced) note(`linked meshes were brought in line with their source (${synced})`);
 }
 
 // ------------------------------------------------------------------ constraints / events

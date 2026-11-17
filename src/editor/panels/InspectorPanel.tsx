@@ -15,7 +15,7 @@ import { getScene } from '../scene';
 import { Button, ColorSwatch, IconButton, NumberField, SelectField, TextField, Toggle } from '../ui/controls';
 import { Field, KeyButton } from '../ui/Field';
 import { Section } from '../ui/Section';
-import { ConvertToMeshGroup, MeshGroup } from './MeshInspector';
+import { ConvertToMeshGroup, LinkedMeshFields, MeshGroup } from './MeshInspector';
 import { SequenceSection } from './SequenceSection';
 import { ConstraintInspector } from './ConstraintInspector';
 
@@ -158,6 +158,10 @@ function SlotInspector({ slotId, attachmentName }: { slotId: Id; attachmentName:
             />
           </Field>
         )}
+        {activeSkin && att && (() => {
+          const own = activeSkin.attachments[slotId]?.[att.name];
+          return own?.type === 'mesh' && own.link ? <LinkedMeshFields skinId={activeSkin.id} slotId={slotId} name={att.name} mesh={own} /> : null;
+        })()}
         <Field label="Blend">
           <SelectField value={slot.blend} options={BLEND_MODES.map((b) => ({ value: b, label: b }))} onChange={(v: BlendMode) => setSlotProps(slotId, { blend: v }, 'Blend mode')} />
         </Field>

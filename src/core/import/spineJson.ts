@@ -364,24 +364,45 @@ export function importSpineJson(input: unknown, name = 'imported'): SpineImportR
     }
     doc.skins.push(skin);
   }
-  // linked meshes share their parent's geometry; Bone 2D has no such link, so each one becomes an independent copy
-  for (const l of linked) {
-    // 4.3 files name the source mesh `source` (older ones `parent`) and may keep it in another slot
-    const sourceName = String(l.map.source ?? l.map.parent);
-    const sourceSlot = typeof l.map.slot === 'string' ? (slotId(l.map.slot) ?? l.slot) : l.slot;
-    const parentSkin = typeof l.map.skin === 'string' ? skinByName.get(l.map.skin) : l.skin;
-    const parent = parentSkin?.attachments[sourceSlot]?.[sourceName] ?? skinByName.get('default')?.attachments[sourceSlot]?.[sourceName];
-    if (!parent || parent.type !== 'mesh') {
-      warn(`linked mesh "${l.key}" was skipped: its parent mesh "${sourceName}" does not exist`);
-      continue;
+  // linked meshes keep a link to their source mesh (the shape is copied from it and kept equal to it, see core/links.ts)
+  const defaultSkinDoc = skinByName.get('default') ?? doc.skins[0];
+  let pending = linked;
+  while (pending.length) {
+    const rest: typeof linked = [];
+    for (const l of pending) {
+      // 4.3 files name the source mesh `source` (older ones `parent`) and may keep it in another slot or skin; no skin means the default skin
+      const sourceName = String(l.map.source ?? l.map.parent);
+      const sourceSlot = typeof l.map.slot === 'string' ? (slotId(l.map.slot) ?? l.slot) : l.slot;
+      const sourceSkin = typeof l.map.skin === 'string' ? skinByName.get(l.map.skin) : defaultSkinDoc;
+      const parent = sourceSkin?.attachments[sourceSlot]?.[sourceName] ?? defaultSkinDoc.attachments[sourceSlot]?.[sourceName];
+      if (!parent || parent.type !== 'mesh') {
+        // the source may itself be a linked mesh that is not read yet; the ones that are never found are reported below
+        rest.push(l);
+        continue;
+      }
+      const inSkin = sourceSkin?.attachments[sourceSlot]?.[sourceName] ? sourceSkin : defaultSkinDoc;
+      const path = str(l.map.path, str(l.map.name, l.key));
+      const copy: MeshAttachment = { ...structuredClone(parent), name: str(l.map.name, l.key), path, color: rgba(l.map.color, [1, 1, 1, 1]) };
+      const ownSequence = readSequenceDef(l.map.sequence);
+      if (ownSequence) copy.sequence = ownSequence;
+      else delete copy.sequence;
+      // a link to a linked mesh is a link to its source (the loader needs a source that is not linked)
+      const base = parent.link
+        ? { source: parent.link.source, slot: parent.link.slot ?? sourceSlot, skin: parent.link.skin ?? defaultSkinDoc.id }
+        : { source: sourceName, slot: sourceSlot, skin: inSkin!.id };
+      copy.link = {
+        source: base.source,
+        slot: base.slot === l.slot ? null : base.slot,
+        skin: base.skin === defaultSkinDoc.id ? null : base.skin,
+        deform: l.map.timelines !== false && (parent.link ? parent.link.deform : true),
+      };
+      l.skin.attachments[l.slot][l.key] = copy;
     }
-    const path = str(l.map.path, str(l.map.name, l.key));
-    const copy: MeshAttachment = { ...structuredClone(parent), name: str(l.map.name, l.key), path, color: rgba(l.map.color, [1, 1, 1, 1]) };
-    const ownSequence = readSequenceDef(l.map.sequence);
-    if (ownSequence) copy.sequence = ownSequence;
-    else delete copy.sequence;
-    l.skin.attachments[l.slot][l.key] = copy;
-    warn(`linked mesh "${l.key}" was imported as an independent mesh`);
+    if (rest.length === pending.length) {
+      for (const l of rest) warn(`linked mesh "${l.key}" was skipped: its source mesh "${String(l.map.source ?? l.map.parent)}" does not exist`);
+      break;
+    }
+    pending = rest;
   }
 
   function boneIdsByIndex(): Id[] {

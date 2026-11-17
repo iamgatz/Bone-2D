@@ -2,6 +2,7 @@
 import { makeCurve, reconcileDeform, upsertKey } from '@/core/edit';
 import { RAD2DEG } from '@/core/math';
 import type { Mat } from '@/core/math';
+import { deformHome } from '@/core/links';
 import { adjacency, autoWeights, bindMesh, generateMeshFromImage, locateInMesh, meshFromRegion, meshWorldPositions, mirrorWeights, normalizeInfluences, pruneWeights, removeMeshVertices, setBoneWeight, smoothWeights, triangulate, unbindMesh } from '@/core/mesh';
 import { mirrorName } from '@/core/duplicate';
 import type { BoneMats, TraceOptions, VertexMap } from '@/core/mesh';
@@ -31,6 +32,20 @@ export function setupMats(): { mats: BoneMats; slotMat: (slotId: Id) => Mat } {
 export function getMesh(slotId: Id, name: string): MeshAttachment | undefined {
   const a = docStore.get().skeleton.skins[0]?.attachments[slotId]?.[name];
   return a && a.type === 'mesh' ? a : undefined;
+}
+
+let lastLinkedToast = 0;
+
+/** The mesh to change the SHAPE of: a linked mesh has the shape of its source, so it is refused (the source is where the shape is edited). */
+function getShapeMesh(slotId: Id, name: string): MeshAttachment | undefined {
+  const mesh = getMesh(slotId, name);
+  if (mesh?.link) {
+    const now = Date.now();
+    if (now - lastLinkedToast > 1500) toast(`This mesh follows the shape of "${mesh.link.source}": edit that mesh, or unlink this one first`, 'error');
+    lastLinkedToast = now;
+    return undefined;
+  }
+  return mesh;
 }
 
 export function getRegion(slotId: Id, name: string): RegionAttachment | undefined {
@@ -72,7 +87,7 @@ export function convertToMesh(slotId: Id, name: string, kind: 'trace' | 'quad' =
 
 /** Re-traces an existing (unweighted) mesh from its image. */
 export function regenerateMesh(slotId: Id, name: string, opts: TraceOptions) {
-  const mesh = getMesh(slotId, name);
+  const mesh = getShapeMesh(slotId, name);
   if (!mesh) return;
   if (mesh.weights) {
     toast('Unbind the mesh before re-tracing it', 'error');
@@ -92,6 +107,7 @@ export function regenerateMesh(slotId: Id, name: string, opts: TraceOptions) {
 
 /** Moves vertices to world positions in the setup pose. */
 export function moveMeshVertices(slotId: Id, name: string, moves: { index: number; x: number; y: number }[]) {
+  if (!getShapeMesh(slotId, name)) return;
   const { mats, slotMat } = setupMats();
   const inv = matInvert(slotMat(slotId));
   docStore.update('Move vertices', (d) => {
@@ -115,7 +131,7 @@ export function moveMeshVertices(slotId: Id, name: string, moves: { index: numbe
 
 /** Adds a vertex at a world position (inside = interior vertex, outside = new outline vertex). */
 export function addMeshVertex(slotId: Id, name: string, wx: number, wy: number): number | null {
-  const mesh = getMesh(slotId, name);
+  const mesh = getShapeMesh(slotId, name);
   if (!mesh) return null;
   const { mats, slotMat } = setupMats();
   const sm = slotMat(slotId);
@@ -183,7 +199,7 @@ export function addMeshVertex(slotId: Id, name: string, wx: number, wy: number):
 }
 
 export function deleteMeshVertices(slotId: Id, name: string, indices: number[]) {
-  const mesh = getMesh(slotId, name);
+  const mesh = getShapeMesh(slotId, name);
   if (!mesh || !indices.length) return;
   const { mats, slotMat } = setupMats();
   const world = meshWorldPositions(mesh, slotMat(slotId), mats);
@@ -200,7 +216,7 @@ export function deleteMeshVertices(slotId: Id, name: string, indices: number[]) 
 
 /** Rebuilds the triangulation (Delaunay inside the outline). */
 export function retriangulateMesh(slotId: Id, name: string) {
-  const mesh = getMesh(slotId, name);
+  const mesh = getShapeMesh(slotId, name);
   if (!mesh) return;
   const { mats, slotMat } = setupMats();
   const world = meshWorldPositions(mesh, slotMat(slotId), mats);
@@ -221,7 +237,7 @@ export function boneSegments(boneIds: Id[]) {
 
 /** Binds (or re-binds) a mesh to the given bones using automatic weights. */
 export function bindMeshToBones(slotId: Id, name: string, boneIds: Id[]) {
-  const mesh = getMesh(slotId, name);
+  const mesh = getShapeMesh(slotId, name);
   if (!mesh) return;
   const { mats, slotMat } = setupMats();
   const doc = docStore.get().skeleton;
@@ -242,14 +258,14 @@ export function bindMeshToBones(slotId: Id, name: string, boneIds: Id[]) {
 }
 
 export function unbindMeshFromBones(slotId: Id, name: string) {
-  const mesh = getMesh(slotId, name);
+  const mesh = getShapeMesh(slotId, name);
   if (!mesh || !mesh.weights) return;
   const { mats, slotMat } = setupMats();
   writeMesh(slotId, name, unbindMesh(mesh, slotMat(slotId), mats), 'Unbind mesh');
 }
 
 export function autoWeightMesh(slotId: Id, name: string) {
-  const mesh = getMesh(slotId, name);
+  const mesh = getShapeMesh(slotId, name);
   if (!mesh || !mesh.weights) return;
   const ids = [...new Set(mesh.weights.flat().map((i) => i[0]))];
   const { mats, slotMat } = setupMats();
@@ -260,7 +276,7 @@ export function autoWeightMesh(slotId: Id, name: string) {
 }
 
 export function smoothMeshWeights(slotId: Id, name: string, passes = 1) {
-  const mesh = getMesh(slotId, name);
+  const mesh = getShapeMesh(slotId, name);
   if (!mesh || !mesh.weights) return;
   const { mats, slotMat } = setupMats();
   const world = meshWorldPositions(mesh, slotMat(slotId), mats);
@@ -281,7 +297,7 @@ export function smoothMeshWeights(slotId: Id, name: string, passes = 1) {
 
 /** Drops the faint influences of every vertex and keeps at most `max` bones per vertex (Spine's Prune). */
 export function pruneMeshWeights(slotId: Id, name: string, threshold = 0.05, max = 4) {
-  const mesh = getMesh(slotId, name);
+  const mesh = getShapeMesh(slotId, name);
   if (!mesh || !mesh.weights) return;
   const weights = pruneWeights(mesh.weights, threshold, max);
   writeMesh(slotId, name, { ...mesh, weights }, 'Prune weights');
@@ -292,7 +308,7 @@ export function pruneMeshWeights(slotId: Id, name: string, threshold = 0.05, max
  * its mirror twin (a bone named "arm L" for "arm R", "leftLeg" for "rightLeg"). Returns how many vertices were set.
  */
 export function mirrorMeshWeights(slotId: Id, name: string, fromLeft: boolean): number {
-  const mesh = getMesh(slotId, name);
+  const mesh = getShapeMesh(slotId, name);
   if (!mesh || !mesh.weights) return 0;
   const doc = docStore.get().skeleton;
   const byName = new Map(doc.bones.map((b) => [b.name, b.id] as const));
@@ -320,7 +336,7 @@ export interface BrushStroke {
 
 /** Paints weights for `bone` around a world position. */
 export function paintWeights(slotId: Id, name: string, stroke: BrushStroke, bone: Id) {
-  const mesh = getMesh(slotId, name);
+  const mesh = getShapeMesh(slotId, name);
   if (!mesh || !mesh.weights) return;
   const { brush } = uiStore.get();
   const { mats, slotMat } = setupMats();
@@ -421,10 +437,12 @@ export function setDeformKey(slotId: Id, name: string, base: number[], moves: { 
   }
   const doc = docStore.get().skeleton;
   const skinId = ui.skinId && scene.skeleton.skin?.attachments[slot.data.index]?.get(name) ? ui.skinId : doc.skins[0].id;
+  // a linked mesh that shares the deform of its source has no deform of its own: the keys go to the source
+  const home = deformHome(doc, skinId, slotId, name);
   docStore.update('Deform mesh', (d) => {
     const a = d.skeleton.animations.find((x) => x.id === anim.id);
     if (!a) return;
-    const keys = (((a.deform[skinId] ??= {})[slotId] ??= {})[name] ??= []);
+    const keys = (((a.deform[home.skinId] ??= {})[home.slotId] ??= {})[home.name] ??= []);
     const exist = keys.find((k) => Math.abs(k.time - ui.time) < 1e-4);
     if (exist) exist.value = next;
     else {

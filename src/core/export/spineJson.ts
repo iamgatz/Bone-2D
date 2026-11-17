@@ -3,6 +3,7 @@
  * (single `constraints` array with `type`, `inherit`, per channel bezier curves, etc).
  */
 import { curveToAbsolute } from '../curve';
+import { linkSource } from '../links';
 import { deformLength } from '../mesh';
 import type { Animation, Attachment, Id, IkKey, Influence, Key, SequenceDef, SkeletonDoc, Timeline } from '../model';
 import { GLOBAL_PHYSICS, PHYSICS_PARAMS, polygonVertexCount } from '../model';
@@ -266,7 +267,13 @@ export function exportSpineJson(doc: SkeletonDoc, options: SpineExportOptions = 
       const perSlot: Json = {};
       for (const key in s.attachments[slotId]) {
         const compiled = compiledSkin?.attachments[data.slotIndex.get(slotId) ?? -1]?.get(key);
-        perSlot[key] = exportAttachment(s.attachments[slotId][key], key, data.boneIndex, slotName, compiled?.kind === 'path' ? compiled.lengths : []);
+        const att = s.attachments[slotId][key];
+        const source = att.type === 'mesh' && att.link ? linkSource(doc, slotId, att) : null;
+        const linked: LinkJson | null =
+          source && att.type === 'mesh' && att.link
+            ? { source: att.link.source, slot: source.slotId !== slotId ? slotName(source.slotId) : '', skin: source.skin !== doc.skins[0] ? source.skin.name : '', deform: att.link.deform }
+            : null;
+        perSlot[key] = exportAttachment(att, key, data.boneIndex, slotName, compiled?.kind === 'path' ? compiled.lengths : [], linked);
       }
       attachments[sn] = perSlot;
     }
@@ -320,7 +327,15 @@ function exportVertices(att: { vertices: number[]; weights: Influence[][] | null
   return v;
 }
 
-function exportAttachment(att: Attachment, key: string, boneIndex: Map<Id, number>, slotName: (id: Id) => string, pathLengths: number[]): Json {
+/** Where a linked mesh takes its shape from, by the names the file uses (an empty slot / skin = its own slot / the default skin). */
+interface LinkJson {
+  source: string;
+  slot: string;
+  skin: string;
+  deform: boolean;
+}
+
+function exportAttachment(att: Attachment, key: string, boneIndex: Map<Id, number>, slotName: (id: Id) => string, pathLengths: number[], linked: LinkJson | null): Json {
   const o: Json = {};
   if (att.name !== key) o.name = att.name;
   if (att.type === 'path') {
@@ -365,6 +380,20 @@ function exportAttachment(att: Attachment, key: string, boneIndex: Map<Id, numbe
     o.height = r5(att.height);
     const col = hexColor(att.color, true);
     if (col !== 'ffffffff') o.color = col;
+    if (att.sequence) o.sequence = exportSequence(att.sequence);
+    return o;
+  }
+  if (linked) {
+    o.type = 'linkedmesh';
+    if (att.path !== att.name) o.path = att.path;
+    const lcol = hexColor(att.color, true);
+    if (lcol !== 'ffffffff') o.color = lcol;
+    o.width = r5(att.width);
+    o.height = r5(att.height);
+    o.source = linked.source;
+    if (linked.slot) o.slot = linked.slot;
+    if (linked.skin) o.skin = linked.skin;
+    if (!linked.deform) o.timelines = false; // the loader's default is true
     if (att.sequence) o.sequence = exportSequence(att.sequence);
     return o;
   }
@@ -622,6 +651,7 @@ function exportAnimation(doc: SkeletonDoc, a: Animation, n: Names): Json {
         // the official loader throws on a missing attachment and silently misreads keys of the wrong size
         const mesh = skin.attachments[slotId]?.[attName];
         if (!mesh || (mesh.type !== 'mesh' && mesh.type !== 'path')) continue;
+        if (mesh.type === 'mesh' && mesh.link?.deform && linkSource(doc, slotId, mesh)) continue; // the deform of the source moves it; keys of its own are never read
         const expected = deformLength(mesh, (id) => boneIds.has(id));
         if (keys.some((k) => k.value.length !== expected)) continue;
         perSlot[attName] = {

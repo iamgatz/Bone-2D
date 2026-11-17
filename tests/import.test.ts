@@ -164,7 +164,6 @@ describe('Spine JSON import: files made by Spine itself', () => {
     expect(w).toContain('wobble constraint "springy"');
     expect(w).not.toContain('boundingbox attachment'); // bounding boxes are imported now
     expect(w).toContain('slot "lost" was skipped');
-    expect(w).toContain('linked mesh "hatLinked" was imported as an independent mesh');
     expect(w).toContain('separate translatex');
     expect(w).not.toContain('audio'); // sounds are kept now
     expect(d.events.find((e) => e.name === 'footstep')?.audio).toBe('step.ogg');
@@ -196,6 +195,7 @@ describe('Spine JSON import: files made by Spine itself', () => {
     const body = d.skins[0].attachments[d.slots[0].id];
     expect(body.hatLinked.type).toBe('mesh');
     expect(attachmentImage(body.hatLinked)).toBe('hat2');
+    expect(body.hatLinked.type === 'mesh' && body.hatLinked.link).toEqual({ source: 'hat', slot: null, skin: null, deform: true }); // the link is kept
     expect(body.box.type).toBe('boundingbox');
     if (body.box.type === 'boundingbox') expect(body.box.vertices).toEqual([0, 0, 1, 0, 1, 1]);
     expect(d.skins[1].name).toBe('dark');

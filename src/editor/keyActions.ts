@@ -62,6 +62,8 @@ export const KEY_ACTIONS: Partial<Record<KeyId, (e: KeyboardEvent) => void>> = {
     isolateSelection();
   },
   frame: () => viewportApi.frame(),
+  frameSelection: () => viewportApi.frameSelection(),
+  zoom100: () => viewportApi.zoom100(),
   key: () => keySelectedBones(),
   mode: (e) => {
     e.preventDefault();

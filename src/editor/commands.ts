@@ -52,6 +52,8 @@ export function buildCommands(): Command[] {
     { id: 'mode.toggle', group: 'Animation', title: 'Setup ⇄ Animate', keys: KEYS.mode, run: () => setMode(uiStore.get().mode === 'setup' ? 'animate' : 'setup') },
     { id: 'anim.play', group: 'Animation', title: 'Play / pause', keys: KEYS.play, run: () => togglePlay() },
     { id: 'view.frame', group: 'View', title: 'Frame skeleton', keys: KEYS.frame, run: () => viewportApi.frame() },
+    { id: 'view.frameselection', group: 'View', title: 'Frame the selection', keys: KEYS.frameSelection, run: () => viewportApi.frameSelection() },
+    { id: 'view.zoom100', group: 'View', title: 'Zoom to 100%', keys: KEYS.zoom100, run: () => viewportApi.zoom100() },
     { id: 'view.trails', group: 'View', title: 'Motion trails', run: () => uiStore.patch({ view: { ...uiStore.get().view, trails: !uiStore.get().view.trails } }) },
     { id: 'view.onion', group: 'View', title: 'Onion skin', run: () => uiStore.patch({ view: { ...uiStore.get().view, onion: !uiStore.get().view.onion } }) },
     { id: 'view.rulers', group: 'View', title: 'Rulers and guides', run: () => uiStore.patch({ view: { ...uiStore.get().view, rulers: !uiStore.get().view.rulers } }) },
