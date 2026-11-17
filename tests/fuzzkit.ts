@@ -32,7 +32,7 @@ import { emptySelection, uiStore } from '../src/store/ui';
 import { getScene } from '../src/editor/scene';
 import { addAttachmentRig, buildFixture } from './fixture';
 import { addPathRig } from './pathrig';
-import { S, exportAndLoad, startLikeOfficial } from './official';
+import { S, exportAndLoad, loadOfficial, startLikeOfficial } from './official';
 
 // ------------------------------------------------------------------ tiny deterministic RNG
 
@@ -259,6 +259,40 @@ function ambiguousBones(ours: ReturnType<typeof createSkeleton>, official: any):
       if (o && Math.abs(o.appliedPose.time - c.time) > 1e-2) for (const i of c.data.animatedBones) mark(ours.bones[i]);
     }
   }
+  // What follows an ambiguous bone is ambiguous too: a path constraint moves its bones along a path that sits on the slot's bone
+  // (or on the bones the path is skinned to), and an IK / transform constraint reads its target / source.
+  for (let changed = true; changed; ) {
+    changed = false;
+    for (const c of ours.constraints) {
+      let reads: (typeof ours.bones)[number][] = [];
+      if (c.kind === 'path') {
+        const att = ours.slotAttachment(c.slot);
+        reads = [c.slot.bone];
+        if (att && att.kind === 'path' && att.bones) for (const i of influencingBones(att.bones, att.vertexCount)) reads.push(ours.bones[i]);
+      } else if (c.kind === 'ik') reads = [c.target];
+      else if (c.kind === 'transform') reads = [c.source];
+      else if (c.kind === 'slider' && c.bone) reads = [c.bone];
+      if (!reads.some((b) => out.has(b.data.index))) continue;
+      const before = out.size;
+      for (const b of c.kind === 'slider' ? c.data.animatedBones.map((i) => ours.bones[i]) : c.bones) mark(b);
+      if (out.size !== before) changed = true;
+    }
+  }
+  // A path constraint that follows the path with `chain` / `chainScale` points each bone at the next one. When bones sit on the
+  // same spot (a closed path and a spacing of 4 whole path lengths, spaces that wrap to the same point) there is no direction:
+  // the angle is the atan2 of float noise, which differs between two runtimes (one gets an exact 0, the other 1e-14).
+  for (const o of official.constraints) {
+    if (!(o instanceof S.PathConstraint) || o.data.rotateMode === S.RotateMode.Tangent) continue;
+    let coincident = false;
+    for (let i = 0; i < o.bones.length; i++) {
+      const dx = o.positions[3 * (i + 1)] - o.positions[3 * i];
+      const dy = o.positions[3 * (i + 1) + 1] - o.positions[3 * i + 1];
+      if (o.spaces[i + 1] !== 0 && Math.hypot(dx, dy) < 1e-3) coincident = true;
+    }
+    if (!coincident) continue;
+    const mine = ours.constraints.find((c) => c.kind === 'path' && c.data.name === o.data.name);
+    if (mine && mine.kind === 'path') for (const b of mine.bones) mark(b);
+  }
   return out;
 }
 
@@ -271,9 +305,94 @@ export interface Mismatch {
   time: number;
 }
 
-/** First difference between our solver and the official runtime on what the editor would export right now. */
+/** The official runtime at time `t` of an animation: the first update of a fresh skeleton, like our side of the comparison. */
+function officialAt(skeletonData: unknown, animation: string, t: number) {
+  const official = new S.Skeleton(skeletonData);
+  official.setupPose();
+  const state = new S.AnimationState(new S.AnimationStateData(skeletonData));
+  state.setAnimation(0, animation, false);
+  state.update(t);
+  state.apply(official);
+  official.updateWorldTransform(S.Physics.update);
+  return official;
+}
+
+/**
+ * Copy of an exported document with every non-integer number nudged by up to `absolute + relative * |x|` (deterministic).
+ * Integers are counts, indices and flags (vertex bone counts, triangles, hull lengths) and stay as they are.
+ */
+function jitterNumbers(value: unknown, absolute: number, relative: number, state: { n: number }): unknown {
+  if (typeof value === 'number') {
+    if (Number.isInteger(value)) return value;
+    state.n = (Math.imul(state.n, 1664525) + 1013904223) >>> 0;
+    return value + (absolute + relative * Math.abs(value)) * ((state.n / 4294967296) * 2 - 1);
+  }
+  if (Array.isArray(value)) return value.map((v) => jitterNumbers(v, absolute, relative, state));
+  if (value && typeof value === 'object') {
+    const out: Record<string, unknown> = {};
+    for (const [k, v] of Object.entries(value)) out[k] = jitterNumbers(v, absolute, relative, state);
+    return out;
+  }
+  return value;
+}
+
+/** A difference between the runtimes is let through when it is at most this many times what the official runtime moves by itself. */
+const NOISE_FACTOR = 10;
+/** Size of the nudges: the exporter rounds to 5 decimals (5e-6), the official runtime keeps animation data in float32 (6e-8 relative); these are a few times that. */
+const NUDGES: [number, number][] = [
+  [2e-5, 2e-6],
+  [2e-5, 2e-6],
+];
+
+type OfficialSkeleton = ReturnType<typeof officialAt>;
+
+/** The same pose from exports whose numbers are nudged by about the size of the exporter's rounding (made on first use). */
+function nudgedRuns(json: unknown, atlasText: string, animation: string, t: number): () => OfficialSkeleton[] {
+  let runs: OfficialSkeleton[] | undefined;
+  return () => {
+    if (!runs) {
+      runs = [];
+      NUDGES.forEach(([absolute, relative], i) => {
+        try {
+          runs!.push(officialAt(loadOfficial(jitterNumbers(json, absolute, relative, { n: 12345 + i * 7919 }), atlasText), animation, t));
+        } catch {
+          /* a nudged export the loader refuses tells nothing */
+        }
+      });
+    }
+    return runs;
+  };
+}
+
+/**
+ * Whether `difference` (ours minus official) is only what the official runtime moves by itself when its input is nudged:
+ * `read` pulls the compared number out of an official skeleton. A bug does not move with the input, noise does.
+ */
+type Judge = (read: (skeleton: OfficialSkeleton) => number, difference: number) => boolean;
+
+function judgeBy(official: OfficialSkeleton, runs: () => OfficialSkeleton[]): Judge {
+  return (read, difference) => {
+    const reference = read(official);
+    for (const run of runs()) {
+      const moved = Math.abs(read(run) - reference);
+      if (Number.isFinite(moved) && Math.abs(difference) <= NOISE_FACTOR * moved) return true;
+    }
+    return false;
+  };
+}
+
+/**
+ * First difference between our solver and the official runtime on what the editor would export right now.
+ *
+ * Some random documents are ill-conditioned: a path constraint at a position of 27.6 path lengths multiplies the 1e-5 relative
+ * noise of a slider output (float32 key values and the exporter's 5 decimals reach the official runtime, our side computes in
+ * doubles) by the length of the path, a chain of constraints turns a 1e-5 rotation error into a displacement along a lever
+ * arm. For those the official runtime ITSELF answers differently when every number of the export is nudged by the size of the
+ * exporter's rounding, and a difference between the runtimes that is within a tenth of that is not something the editor could
+ * ever be asked to reproduce. A bug is different: it does not move when the input is nudged.
+ */
 export function parityMismatch(p: Project): Mismatch | null {
-  const { skeletonData: sd } = exportAndLoad(p);
+  const { skeletonData: sd, json, atlasText } = exportAndLoad(p);
   const data = compileSkeleton(p.skeleton);
   for (const anim of p.skeleton.animations) {
     const exported = sd.findAnimation(anim.name);
@@ -283,13 +402,8 @@ export function parityMismatch(p: Project): Mismatch | null {
     // ambiguous. Probe slightly off the frame grid instead.
     for (const t of [0, end * 0.37 + 0.00137, end * 0.8 + 0.00137, end - 0.00137]) {
       if (t < 0 || t > end) continue;
-      const official = new S.Skeleton(sd);
-      official.setupPose();
-      const state = new S.AnimationState(new S.AnimationStateData(sd));
-      state.setAnimation(0, anim.name, false);
-      state.update(t);
-      state.apply(official);
-      official.updateWorldTransform(S.Physics.update);
+      const official = officialAt(sd, anim.name, t);
+      const judge = judgeBy(official, nudgedRuns(json, atlasText, anim.name, t));
       const ours = createSkeleton(data);
       startLikeOfficial(ours);
       applyAnimation(ours, anim, t);
@@ -309,12 +423,17 @@ export function parityMismatch(p: Project): Mismatch | null {
         const parentMag = ob.parent ? Math.max(Math.abs(ob.parent.appliedPose.a), Math.abs(ob.parent.appliedPose.b), Math.abs(ob.parent.appliedPose.c), Math.abs(ob.parent.appliedPose.d)) : 1;
         const wscale = 0.004 * (Math.abs(mine.ax) + Math.abs(mine.ay)) * parentMag;
         const pairs: [string, number, number, number][] = [['a', mine.a, q.a, mag], ['b', mine.b, q.b, mag], ['c', mine.c, q.c, mag], ['d', mine.d, q.d, mag], ['worldX', mine.worldX, q.worldX, wscale], ['worldY', mine.worldY, q.worldY, wscale]];
-        for (const [what, x, y, scale] of pairs) if (!(Math.abs(x - y) <= 5e-3 * Math.max(1, Math.abs(x), Math.abs(y), scale))) return { bone: ob.data.name, what, ours: x, official: y, animation: anim.name, time: t };
+        for (const [what, x, y, scale] of pairs) {
+          if (Math.abs(x - y) <= 5e-3 * Math.max(1, Math.abs(x), Math.abs(y), scale)) continue;
+          // ill-conditioned (see above)
+          if (judge((sk) => sk.bones.find((b: { data: { name: string } }) => b.data.name === ob.data.name)?.appliedPose[what] ?? NaN, x - y)) continue;
+          return { bone: ob.data.name, what, ours: x, official: y, animation: anim.name, time: t };
+        }
       }
       // (a slider whose driver sits on the 0/360 wrap applies its animation at time 0 in one runtime and at 360 in the other)
       const colors = ambiguous.size ? null : colorMismatch(p, ours, official);
       if (colors) return { ...colors, animation: anim.name, time: t };
-      const shapes = attachmentMismatch(p, ours, official, ambiguous);
+      const shapes = attachmentMismatch(p, ours, official, ambiguous, judge);
       if (shapes) return { ...shapes, animation: anim.name, time: t };
     }
   }
@@ -351,7 +470,7 @@ function influencingBones(bones: Int32Array, vertexCount: number): number[] {
 }
 
 /** Clipping polygons, bounding boxes and points: world geometry and flags against the official runtime. */
-function attachmentMismatch(p: Project, ours: ReturnType<typeof createSkeleton>, official: any, ambiguous: Set<number>): Omit<Mismatch, 'animation' | 'time'> | null {
+function attachmentMismatch(p: Project, ours: ReturnType<typeof createSkeleton>, official: any, ambiguous: Set<number>, judge: Judge): Omit<Mismatch, 'animation' | 'time'> | null {
   for (const os of official.slots) {
     const oa = os.appliedPose.attachment;
     const kind = oa instanceof S.ClippingAttachment ? 'clipping' : oa instanceof S.BoundingBoxAttachment ? 'boundingbox' : oa instanceof S.PointAttachment ? 'point' : oa instanceof S.PathAttachment ? 'path' : null;
@@ -375,14 +494,27 @@ function attachmentMismatch(p: Project, ours: ReturnType<typeof createSkeleton>,
       terms = Math.max(terms, Math.max(Math.abs(b.a), Math.abs(b.b), Math.abs(b.c), Math.abs(b.d)) * extent + Math.abs(b.worldX) + Math.abs(b.worldY));
     }
     const near = (x: number, y: number) => Math.abs(x - y) <= 5e-3 * Math.max(1, Math.abs(x), Math.abs(y), terms);
+    /** The same number read from another official skeleton (a nudged run), for `judge`. */
+    const slotOf = (sk: OfficialSkeleton) => sk.slots.find((s: { data: { name: string } }) => s.data.name === os.data.name);
     if (att.kind === 'point') {
       const pos = oa.computeWorldPosition(os.bone.appliedPose, new S.Vector2());
       const mine = pointWorld(att, slot.bone);
-      if (!near(mine.x, pos.x)) return { bone: label, what: 'x', ours: mine.x, official: pos.x };
-      if (!near(mine.y, pos.y)) return { bone: label, what: 'y', ours: mine.y, official: pos.y };
+      const pointOf = (sk: OfficialSkeleton) => {
+        const s = slotOf(sk);
+        const a = s?.appliedPose.attachment;
+        return a instanceof S.PointAttachment ? a.computeWorldPosition(s.bone.appliedPose, new S.Vector2()) : { x: NaN, y: NaN };
+      };
+      if (!near(mine.x, pos.x) && !judge((sk) => pointOf(sk).x, mine.x - pos.x)) return { bone: label, what: 'x', ours: mine.x, official: pos.x };
+      if (!near(mine.y, pos.y) && !judge((sk) => pointOf(sk).y, mine.y - pos.y)) return { bone: label, what: 'y', ours: mine.y, official: pos.y };
+      const rotationOf = (sk: OfficialSkeleton) => {
+        const s = slotOf(sk);
+        const a = s?.appliedPose.attachment;
+        return a instanceof S.PointAttachment ? a.computeWorldRotation(s.bone.appliedPose) : NaN;
+      };
       const rot = oa.computeWorldRotation(os.bone.appliedPose);
       const d = ((((mine.rotation - rot + 180) % 360) + 360) % 360) - 180;
-      if (Math.abs(d) > 0.1) return { bone: label, what: 'rotation', ours: mine.rotation, official: rot }; // 0.1° = 1.7e-3 rad: ill-conditioned matrices (see above)
+      // 0.1° = 1.7e-3 rad: ill-conditioned matrices (see above)
+      if (Math.abs(d) > 0.1 && !judge((sk) => ((((rotationOf(sk) - rot + 180) % 360) + 360) % 360) - 180, d)) return { bone: label, what: 'rotation', ours: mine.rotation, official: rot };
       continue;
     }
     const n = oa.worldVerticesLength;
@@ -391,7 +523,15 @@ function attachmentMismatch(p: Project, ours: ReturnType<typeof createSkeleton>,
     oa.computeWorldVertices(official, os, 0, n, out, 0, 2);
     const mine = new Float32Array(n);
     meshWorldVertices(ours, slot, att, att.kind === 'path' && slot.deform.length ? slot.deform : null, mine);
-    for (let i = 0; i < n; i++) if (!near(mine[i], out[i])) return { bone: label, what: `vertex[${i}]`, ours: mine[i], official: out[i] };
+    const vertexOf = (sk: OfficialSkeleton, i: number) => {
+      const s = slotOf(sk);
+      const a = s?.appliedPose.attachment;
+      if (!a || a.worldVerticesLength !== n) return NaN;
+      const w = new Array(n).fill(0);
+      a.computeWorldVertices(sk, s, 0, n, w, 0, 2);
+      return w[i];
+    };
+    for (let i = 0; i < n; i++) if (!near(mine[i], out[i]) && !judge((sk) => vertexOf(sk, i), mine[i] - out[i])) return { bone: label, what: `vertex[${i}]`, ours: mine[i], official: out[i] };
     if (att.kind === 'clipping') {
       const endName = att.end ? (p.skeleton.slots.find((s) => s.id === att.end)?.name ?? null) : null;
       if ((oa.endSlot?.name ?? null) !== endName) return { bone: label, what: `end slot (ours ${endName}, official ${oa.endSlot?.name ?? null})`, ours: 0, official: 1 };
