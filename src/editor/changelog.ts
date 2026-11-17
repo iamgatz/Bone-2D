@@ -12,6 +12,12 @@ export interface Release {
 
 export const CHANGELOG: Release[] = [
   {
+    version: '0.34',
+    date: '2026-11-17',
+    en: ['Weights view like in Spine: Pies draws a pie chart of the weights on every vertex while the Weights tool is on (the selected vertices larger), Overlay fills the mesh with the colours of its bones instead of the brush-bone heat map, Selected limits the pies to the selected vertices and the vertices weighted to selected bones and shows the other bones black in the overlay. Every bone keeps its own colour.'],
+    ru: ['Просмотр весов, как в Spine: «Круги» рисуют на каждой вершине круговую диаграмму весов, пока включён инструмент весов (у выбранных вершин крупнее), «Заливка» красит сетку цветами её костей вместо тепловой карты кости кисти, «Выбранные» оставляют круги только у выбранных вершин и вершин с весом на выбранных костях, а в заливке остальные кости делают чёрными. У каждой кости свой постоянный цвет.'],
+  },
+  {
     version: '0.33',
     date: '2026-11-17',
     en: ['Weights: Update bindings (after you moved bones in the setup pose, the stored bind positions are stale and weight edits shift the vertices; this makes the bind pose the pose the bones have now, the mesh does not move) and Weld (this mesh takes the weights of another weighted mesh where it lies over it, blended by position; both need the same two or more bones; Overlapping limits it to the vertices over the other mesh, All gives the vertices outside the weights of the nearest triangle). Both work on the selected vertices when some are selected, each is one step in the history.'],

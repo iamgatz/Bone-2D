@@ -81,6 +81,7 @@ export function MeshGroup({ slotId, att }: { slotId: Id; att: MeshAttachment }) 
   const project = useProject();
   const tool = useUi((s) => s.tool);
   const brush = useUi((s) => s.brush);
+  const weightView = useUi((s) => s.weightView);
   const mode = useUi((s) => s.mode);
   const selectedBones = useUi((s) => s.selection.bones);
   const pickedVertices = useUi((s) => (s.selection.slot === slotId && s.selection.attachment === att.name ? s.selection.vertices.length : 0));
@@ -231,6 +232,15 @@ export function MeshGroup({ slotId, att }: { slotId: Id; att: MeshAttachment }) 
                     );
                   })}
                 </div>
+              </Field>
+              <Field label="Pies">
+                <Toggle on={weightView.pies} onChange={(v) => uiStore.patch({ weightView: { ...weightView, pies: v } })} title="Draw a pie chart of the weights on every vertex while the Weights tool is on" />
+              </Field>
+              <Field label="Overlay">
+                <Toggle on={weightView.overlay} onChange={(v) => uiStore.patch({ weightView: { ...weightView, overlay: v } })} title="Fill the mesh with the colours of its bones instead of the heat map of the brush bone" />
+              </Field>
+              <Field label="Selected">
+                <Toggle on={weightView.selected} onChange={(v) => uiStore.patch({ weightView: { ...weightView, selected: v } })} title="Pies only for the selected vertices and the vertices weighted to selected bones; Overlay shows the other bones black" />
               </Field>
               <Field label="Bone">
                 <SelectField value={brush.bone ?? influencing[0]} options={influencing.map((id) => ({ value: id, label: boneName(id) }))} onChange={(v) => uiStore.patch({ brush: { ...brush, bone: v } })} />
