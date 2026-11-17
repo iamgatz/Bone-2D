@@ -13,6 +13,12 @@ export interface ExportOptions {
   padding: number;
   pretty: boolean;
   nonessential: boolean;
+  /** Power-of-two atlas pages (older GPUs and some engines want them). */
+  pot?: boolean;
+  /** Write the single-file preview page that plays the export. */
+  includePreview?: boolean;
+  /** Animations left out of the export (an animation a slider uses always stays). */
+  excludeAnimations?: string[];
   baseName?: string;
 }
 
@@ -106,7 +112,9 @@ new spine.SpinePlayer("player", {
 
 export async function buildSpineExport(opts: ExportOptions): Promise<ExportResult> {
   const project = docStore.get();
-  const doc = project.skeleton;
+  const full = project.skeleton;
+  const keep = new Set(full.constraints.flatMap((c) => (c.type === 'slider' && c.animation ? [c.animation] : [])));
+  const doc = opts.excludeAnimations?.length ? { ...full, animations: full.animations.filter((a) => keep.has(a.id) || !opts.excludeAnimations!.includes(a.id)) } : full;
   const base = (opts.baseName ?? doc.name ?? 'skeleton').replace(/[^\w\-]+/g, '_') || 'skeleton';
   const names = usedImageNames();
   const missing = names.filter((n) => !assets.has(n));
@@ -121,7 +129,7 @@ export async function buildSpineExport(opts: ExportOptions): Promise<ExportResul
   let pages: AtlasPage[] = [];
   let preview: string | undefined;
   if (inputs.length) {
-    pages = packAtlas(inputs, { maxSize: opts.maxSize, padding: opts.padding, pot: true });
+    pages = packAtlas(inputs, { maxSize: opts.maxSize, padding: opts.padding, pot: opts.pot ?? true });
     const pageFile = (i: number) => (pages.length === 1 ? `${base}.png` : `${base}-${i + 1}.png`);
     const atlasText = writeAtlas(pages, pageFile, { pma: false });
     files.push({ name: `${base}.atlas`, data: enc.encode(atlasText) });
@@ -131,9 +139,11 @@ export async function buildSpineExport(opts: ExportOptions): Promise<ExportResul
       pngs.push({ name: pageFile(p.index), data });
       files.push({ name: pageFile(p.index), data });
     }
-    const firstAnim = doc.animations[0]?.name ?? null;
-    preview = previewHtml(base, jsonText, atlasText, pngs, firstAnim, doc.name || base);
-    files.push({ name: `${base}-preview.html`, data: enc.encode(preview) });
+    if (opts.includePreview ?? true) {
+      const firstAnim = doc.animations[0]?.name ?? null;
+      preview = previewHtml(base, jsonText, atlasText, pngs, firstAnim, doc.name || base);
+      files.push({ name: `${base}-preview.html`, data: enc.encode(preview) });
+    }
   }
   files.push({
     name: 'README.txt',

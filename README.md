@@ -44,16 +44,23 @@ $env:FUZZ_SEEDS='300'; $env:FUZZ_STEPS='100'; npx vitest run tests/fuzz.test.ts
 - **Physics constraints** (Spine 4.2+; the wave button next to Constraints): a spring simulation on one bone — it swings (rotate), is pushed (x / y), stretches (scale X, with the scale Y mode `none` / `uniform` / `volume`) or shears — with inertia, strength, damping, mass, wind, gravity, mix, a limit and its own step rate. The simulation runs while an animation plays (scrubbing shows the pose without it); every parameter can be keyed, the global timelines and reset keys are supported.
 - Skins (swap the image in a slot), events, undo / redo (a gesture collapses into one step).
 
+**Workspace**
+- **Windows menu**: Hierarchy, Images, Animations, Metrics, Inspector and Timeline open and close on their own, ready layouts, `F9` hides everything; the arrangement is remembered. Metrics counts bones, meshes, vertices and keys and lists what looks forgotten before an export.
+- **Settings** (`F12`): language, autosave, viewport background, texture smoothing, zoom to mouse, onion skin frames, and the **letters of the tools** can be changed.
+- **Updates** (the bell) shows what is new and the live activity of the project; **Feedback** sends a bug report or an idea.
+- Tools: select / pose, bones, translate, rotate, scale, **shear** (`H`), mesh, weights, IK, clipping, bounding boxes, points, paths. Edit menu: **duplicate and mirror bones** (with children, slots and images), reset / copy / paste pose.
+
 **Animation (Animate mode)**
 - Auto-key (or manual keys + "Key all"); keys for rotate / translate / scale / shear, slot colors (light and dark), attachment changes, IK mix / bend, transform-constraint mixes, **path position / spacing / mixes**, **mesh and path deformation** (drag nodes in Animate mode), draw order, events.
 - Dopesheet: selection, box select, drag keys with frame snapping, copy / paste, interpolation (linear / stepped / bezier / ease).
 - **Graph editor**: per-channel curves, drag keys and Bézier handles.
-- Playback, loop, frame stepping.
+- Playback, loop, frame stepping. **Onion skin** (faded poses before and after the playhead), **Clean Up** (removes the keys that change nothing), **Alt-drag a key** to shift the keys after it too, an Animations window with folders (`emotes/wave`).
 
 **Files**
 - `.bone2d` project (images embedded), autosave to IndexedDB, File System Access API. Older `.marrow` files (the project's former working name) still open.
   A file is **validated and repaired** on open (dangling references, stale deform keys, NaN, duplicate names); a broken image never wipes the open session.
-- Export ZIP: Spine 4.3 JSON + atlas (MaxRects, edge extrusion) + `*-preview.html` (plays the export with the **official** Spine player).
+- Export ZIP: Spine 4.3 JSON + atlas (MaxRects, edge extrusion, page size, padding, power of two) + `*-preview.html` (plays the export with the **official** Spine player); choose which animations go in.
+- **Render an animation to a GIF** (transparent, own encoder), **a PNG sequence** (ZIP) or **a WebM video** — File → Export → Animation tab.
 - **Spine JSON import, 4.0 – 4.3** (File → Import…): pick the `.json` together with the `.atlas` and the page images — regions are cut out (trim offsets and rotation are honored).
   Files from Spine 4.0 / 4.1 / 4.2 (separate `ik` / `transform` / `path` lists, the old transform-constraint model) are converted to the 4.3 model on the way in; the two corners where 4.3 computes
   a transform constraint differently from 4.2 are reported. Whatever is not supported (sequences, …) is skipped and listed in the console. Export → import → export gives the same JSON, byte for byte.
@@ -89,13 +96,13 @@ Rationale for the choices is in [docs/PROMPT.md](docs/PROMPT.md); notes on the 4
 ## Hotkeys
 
 `V` select / pose · `B` bone · `T` `R` `S` translate / rotate / scale · `M` mesh / path nodes · `W` weights · `I` IK · `C` clipping · `X` bounding box · `P` point · `N` path · `Tab` Setup ⇄ Animate ·
-`Space` play · `←` / `→` frame · `K` key · `Ctrl+Z` / `Ctrl+Y` undo / redo · `Del` delete · `F` frame the skeleton · `Ctrl+S` / `Ctrl+O` / `Ctrl+E` save / open / export.
+`H` shear · `Space` play · `←` / `→` frame · `K` key · `Ctrl+Z` / `Ctrl+Y` undo / redo · `Del` delete · `F` frame the skeleton · `Ctrl+S` / `Ctrl+O` / `Ctrl+E` save / open / export · `Ctrl+D` / `Ctrl+Shift+D` duplicate / mirror bones · `F9` hide windows · `F12` settings.
 
 ## Not done yet
 
 Weights and deformation for clipping / bounding boxes (only moving vertices is supported),
 linked meshes (imported as copies), sequence atlases, draw-order folders, binary export (`.skel`),
-onion skin, collaboration.
+collaboration.
 
 Spine quirks we reproduce on purpose: angles go through float32 π (`180 / 3.1415927`), and reading a world rotation at the 0 / 360° boundary (the source of a transform
 constraint or a slider driver) gives 0 or 360 depending on ~1e-6° noise, so different runtimes can disagree on such an edge.
