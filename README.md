@@ -53,8 +53,9 @@ $env:FUZZ_SEEDS='300'; $env:FUZZ_STEPS='100'; npx vitest run tests/fuzz.test.ts
 - `.bone2d` project (images embedded), autosave to IndexedDB, File System Access API. Older `.marrow` files (the project's former working name) still open.
   A file is **validated and repaired** on open (dangling references, stale deform keys, NaN, duplicate names); a broken image never wipes the open session.
 - Export ZIP: Spine 4.3 JSON + atlas (MaxRects, edge extrusion) + `*-preview.html` (plays the export with the **official** Spine player).
-- **Spine 4.3 JSON import** (File → Import…): pick the `.json` together with the `.atlas` and the page images — regions are cut out (trim offsets and rotation are honored).
-  Whatever is not supported (physics constraints, sequences, …) is skipped and listed in the console. Export → import → export gives the same JSON, byte for byte.
+- **Spine JSON import, 4.0 – 4.3** (File → Import…): pick the `.json` together with the `.atlas` and the page images — regions are cut out (trim offsets and rotation are honored).
+  Files from Spine 4.0 / 4.1 / 4.2 (separate `ik` / `transform` / `path` lists, the old transform-constraint model) are converted to the 4.3 model on the way in; the two corners where 4.3 computes
+  a transform constraint differently from 4.2 are reported. Whatever is not supported (physics constraints, sequences, …) is skipped and listed in the console. Export → import → export gives the same JSON, byte for byte.
 
 ## Why the export can be trusted
 
@@ -92,7 +93,7 @@ Rationale for the choices is in [docs/PROMPT.md](docs/PROMPT.md); notes on the 4
 ## Not done yet
 
 Physics constraints, weights and deformation for clipping / bounding boxes (only moving vertices is supported),
-linked meshes (imported as copies), sequence atlases, draw-order folders, import of Spine 4.0–4.2 files (different constraint format), binary export (`.skel`),
+linked meshes (imported as copies), sequence atlases, draw-order folders, binary export (`.skel`),
 onion skin, collaboration.
 
 Spine quirks we reproduce on purpose: angles go through float32 π (`180 / 3.1415927`), and reading a world rotation at the 0 / 360° boundary (the source of a transform
