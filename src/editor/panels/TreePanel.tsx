@@ -236,8 +236,8 @@ export function TreePanel() {
 
         {(doc.constraints.length > 0 || doc.bones.length > 0) && (
           <>
-            <div className="section-label" style={{ display: 'flex', alignItems: 'center' }}>
-              <span style={{ flex: 1 }}>Constraints</span>
+            <div className="section-label bar">
+              <span className="grow">Constraints</span>
               <IconButton icon={Spline} title="New path constraint (the selected bones follow a path)" small onClick={() => createPathConstraint()} />
               <IconButton icon={Waves} title="New physics constraint (the selected bone swings while an animation plays)" small onClick={() => createPhysicsConstraint()} />
               <IconButton icon={Plus} title="New slider (applies an animation by hand or driven by a bone)" small onClick={() => createSlider(selection.bones[0] ?? null)} />
@@ -254,8 +254,8 @@ export function TreePanel() {
 
         {doc.slots.length > 0 && (
           <>
-            <div className="section-label" style={{ display: 'flex', alignItems: 'center' }}>
-              <span style={{ flex: 1 }}>Skins</span>
+            <div className="section-label bar">
+              <span className="grow">Skins</span>
               <IconButton icon={Plus} title="New skin" small onClick={() => createSkin()} />
             </div>
             {doc.skins.map((s, i) => {
@@ -286,8 +286,8 @@ export function TreePanel() {
 
         {(doc.events.length > 0 || doc.slots.length > 0) && (
           <>
-            <div className="section-label" style={{ display: 'flex', alignItems: 'center' }}>
-              <span style={{ flex: 1 }}>Events</span>
+            <div className="section-label bar">
+              <span className="grow">Events</span>
               <IconButton icon={Plus} title="New event" small onClick={() => createEvent()} />
             </div>
             {doc.events.map((ev) => (

@@ -18,10 +18,10 @@ export function IconButton(props: { icon: LucideIcon; title: string; onClick?: (
   );
 }
 
-export function Button(props: { children: ReactNode; onClick?: () => void; primary?: boolean; ghost?: boolean; danger?: boolean; disabled?: boolean; title?: string; icon?: LucideIcon }) {
+export function Button(props: { children: ReactNode; onClick?: () => void; primary?: boolean; ghost?: boolean; danger?: boolean; small?: boolean; disabled?: boolean; title?: string; icon?: LucideIcon }) {
   const Icon = props.icon;
   return (
-    <button type="button" className={`btn${props.primary ? ' primary' : ''}${props.ghost ? ' ghost' : ''}${props.danger ? ' danger' : ''}`} onClick={props.onClick} disabled={props.disabled} data-tip={props.title}>
+    <button type="button" className={`btn${props.primary ? ' primary' : ''}${props.ghost ? ' ghost' : ''}${props.danger ? ' danger' : ''}${props.small ? ' sm' : ''}`} onClick={props.onClick} disabled={props.disabled} data-tip={props.title}>
       {Icon && <Icon size={15} strokeWidth={1.9} />}
       {props.children}
     </button>

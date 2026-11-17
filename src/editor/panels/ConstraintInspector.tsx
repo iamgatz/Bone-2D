@@ -1,25 +1,18 @@
-import { ArrowDown, ArrowUp, Link2, Trash2 } from 'lucide-react';
+import { Link2, Trash2 } from 'lucide-react';
 import { findKeyIndex } from '@/core/curve';
 import type { Id } from '@/core/model';
 import { currentAnimation, deleteKeys } from '@/store/actions';
 import { useProject } from '@/store/doc';
-import { currentIkValues, deleteConstraint, moveConstraint, renameConstraint, setConstraintSetup, setIkValues } from '@/store/ikActions';
+import { currentIkValues, deleteConstraint, setConstraintSetup, setIkValues } from '@/store/ikActions';
 import { useUi } from '@/store/ui';
-import { Button, IconButton, NumberField, SelectField, TextField, Toggle } from '../ui/controls';
+import { Button, NumberField, SelectField, Toggle } from '../ui/controls';
+import { Field, KeyButton } from '../ui/Field';
+import { Section } from '../ui/Section';
+import { ConstraintHeader } from './ConstraintHeader';
 import { PathConstraintInspector } from './PathConstraintInspector';
 import { PhysicsConstraintInspector } from './PhysicsConstraintInspector';
 import { SliderInspector } from './SliderInspector';
 import { TransformInspector } from './TransformInspector';
-
-function Row(props: { label: string; children: React.ReactNode; right?: React.ReactNode }) {
-  return (
-    <div style={{ display: 'grid', gridTemplateColumns: '90px 1fr 24px', gap: 6, alignItems: 'center', marginBottom: 6 }}>
-      <span style={{ color: 'var(--muted)' }}>{props.label}</span>
-      <div>{props.children}</div>
-      <span>{props.right}</span>
-    </div>
-  );
-}
 
 export function ConstraintInspector({ id }: { id: Id }) {
   const project = useProject();
@@ -49,73 +42,48 @@ function IkInspector({ id }: { id: Id }) {
   })();
   const v = (animate ? currentIkValues(id) : null) ?? { mix: c.mix, softness: c.softness, bendPositive: c.bendPositive, compress: c.compress, stretch: c.stretch };
   const boneName = (b: Id) => doc.bones.find((x) => x.id === b)?.name ?? '?';
-  const index = doc.constraints.findIndex((x) => x.id === id);
 
   return (
     <>
-      <div className="group">
-        <div className="group-title">
-          <Link2 size={14} />
-          <span>IK constraint</span>
-          <span className="spacer" />
-          <IconButton icon={ArrowUp} title="Apply earlier" small disabled={index <= 0} onClick={() => moveConstraint(id, -1)} />
-          <IconButton icon={ArrowDown} title="Apply later" small disabled={index >= doc.constraints.length - 1} onClick={() => moveConstraint(id, 1)} />
-          <IconButton icon={Trash2} title="Delete constraint" small onClick={() => deleteConstraint(id)} />
-        </div>
-        <TextField value={c.name} onCommit={(n) => renameConstraint(id, n)} wide />
-      </div>
-      <div className="group">
-        <div className="group-title">
-          <span>Chain</span>
-          {animate && (
-            <>
-              <span className="spacer" />
-              <button
-                className={`key-btn${keyed ? ' on' : ''}`}
-                title={keyed ? 'Remove the IK key at the playhead' : 'Key the IK values at the playhead'}
-                onClick={() => (keyed ? deleteKeys([{ kind: 'ik', target: id, prop: '', time }]) : setIkValues(id, {}))}
-              >
-                ◆
-              </button>
-            </>
-          )}
-        </div>
-        <Row label="Bones">
-          <span style={{ color: 'var(--text-dim)' }}>{c.bones.map(boneName).join(' → ')}</span>
-        </Row>
-        <Row label="Target">
+      <ConstraintHeader id={id} title="IK constraint" icon={Link2} kind="ik" />
+      <Section
+        id="ik.chain"
+        title="Chain"
+        actions={animate && <KeyButton on={keyed} title={keyed ? 'Remove the IK key at the playhead' : 'Key the IK values at the playhead'} onClick={() => (keyed ? deleteKeys([{ kind: 'ik', target: id, prop: '', time }]) : setIkValues(id, {}))} />}
+      >
+        <Field label="Bones">
+          <span className="val">{c.bones.map(boneName).join(' → ')}</span>
+        </Field>
+        <Field label="Target">
           <SelectField value={c.target} options={doc.bones.filter((b) => !c.bones.includes(b.id)).map((b) => ({ value: b.id, label: b.name }))} onChange={(t) => setConstraintSetup(id, { target: t })} />
-        </Row>
-        <Row label="Mix">
+        </Field>
+        <Field label="Mix">
           <NumberField label="%" value={v.mix * 100} step={1} precision={0} min={0} max={100} keyed={animate && keyed} onChange={(x) => setIkValues(id, { mix: x / 100 })} />
-        </Row>
+        </Field>
         {c.bones.length === 2 && (
-          <Row label="Softness">
+          <Field label="Softness">
             <NumberField label="px" value={v.softness} step={0.5} precision={1} min={0} keyed={animate && keyed} onChange={(x) => setIkValues(id, { softness: Math.max(0, x) })} />
-          </Row>
+          </Field>
         )}
         {c.bones.length === 2 && (
-          <div className="row-between">
-            <label>Bend positive</label>
+          <Field label="Bend positive">
             <Toggle on={v.bendPositive} onChange={(x) => setIkValues(id, { bendPositive: x })} />
-          </div>
+          </Field>
         )}
-        <div className="row-between">
-          <label>Stretch</label>
+        <Field label="Stretch">
           <Toggle on={v.stretch} onChange={(x) => setIkValues(id, { stretch: x })} />
-        </div>
+        </Field>
         {c.bones.length === 1 && (
-          <div className="row-between">
-            <label>Compress</label>
+          <Field label="Compress">
             <Toggle on={v.compress} onChange={(x) => setIkValues(id, { compress: x })} />
-          </div>
+          </Field>
         )}
         {(v.stretch || v.compress) && (
-          <Row label="Scale Y">
+          <Field label="Scale Y">
             <SelectField value={c.scaleY} options={[{ value: 'none', label: 'Keep' }, { value: 'uniform', label: 'Uniform' }, { value: 'volume', label: 'Preserve volume' }]} onChange={(x) => setConstraintSetup(id, { scaleY: x })} />
-          </Row>
+          </Field>
         )}
-      </div>
+      </Section>
       <div className="group">
         <Button danger icon={Trash2} onClick={() => deleteConstraint(id)}>
           Delete constraint

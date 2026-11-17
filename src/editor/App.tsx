@@ -154,7 +154,7 @@ function ViewportHud() {
       <div className={`vp-border${mode === 'animate' ? ' animate' : ''}`} />
       <Toolbox />
       <div className="vp-top-right">
-        <span className="chip" style={{ background: 'transparent' }}>{Math.round(zoom * 100)}%</span>
+        <span className="chip plain">{Math.round(zoom * 100)}%</span>
         <IconButton icon={Maximize} title="Frame skeleton" hotkey="F" small onClick={() => viewportApi.frame()} />
         <IconButton icon={Eye} title="Toggle names" small onClick={() => uiStore.patch({ view: { ...uiStore.get().view, names: !uiStore.get().view.names } })} />
       </div>
@@ -197,7 +197,7 @@ function HelpDialog() {
   ];
   return (
     <Dialog title="Bone 2D — shortcuts" onClose={() => uiStore.patch({ helpOpen: false })} width={600}>
-      <p className="hint-text" style={{ marginTop: 0 }}>
+      <p className="hint-text flush">
         Bone 2D is a browser-based 2D skeletal animation editor. Build a rig in <b>Setup</b>, pose and key it in <b>Animate</b>, then export a Spine 4.3 compatible skeleton + atlas.
       </p>
       <div className="shortcuts">
