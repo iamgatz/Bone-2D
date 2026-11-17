@@ -12,6 +12,18 @@ export interface Release {
 
 export const CHANGELOG: Release[] = [
   {
+    version: '0.37',
+    date: '2026-11-17',
+    en: [
+      'Preview window (Windows → Preview): a small view of its own that plays an animation the way a game would. Choose an animation, loop, speed, pause; when you change to another animation the bones crossfade over the mix time. The mix table sits right there: a default time and times for single pairs of animations (saved in the project, not part of the Spine export, because Spine keeps it in the runtime code). Events that fire show up as chips; load sound files with the speaker button and an event plays the file with the name of its sound.',
+      'Mesh view buttons (Inspector, Mesh, with the Edit mesh or Weights tool on): Wireframe hides the triangle edges, Dim darkens everything outside the mesh, Isolate hides it, Freeze lets you select vertices without dragging them.',
+    ],
+    ru: [
+      'Окно «Просмотр» (Окна → Просмотр): отдельный маленький вид, который проигрывает анимацию так, как это сделает игра. Выбор анимации, повтор, скорость, пауза; при смене анимации кости плавно переходят за время перехода. Таблица переходов там же: время по умолчанию и время для отдельных пар анимаций (хранится в проекте, в экспорт Spine не попадает: Spine держит её в коде рантайма). Сработавшие события появляются метками; загрузите звуковые файлы кнопкой с динамиком, и событие проиграет файл с именем своего звука.',
+      'Кнопки вида меша (Инспектор, «Сетка», при включённом инструменте сетки или весов): «Каркас» убирает рёбра треугольников, «Затемнить» затемняет всё вне меша, «Изолировать» скрывает его, «Заморозить» позволяет выделять вершины, не сдвигая их.',
+    ],
+  },
+  {
     version: '0.36',
     date: '2026-11-17',
     en: ['Mesh edges like in Spine: draw an edge between two vertices (Ctrl+drag from one vertex to another with the mesh tool, or select two vertices and press Edge in the Mesh section; do it again to remove it) and the triangulation never crosses it, so you decide how the mesh bends. Manual edges are orange, the outline is cyan. The outline itself is now always kept as edges, so a concave outline (an L, a tail) no longer gets triangles that cut across it. The edges are saved with the project and written to the JSON and binary export as nonessential data (edges of imported Spine files are not used: the format does not say how their indices count). Vertex edits renumber the edges; Retriangulate and Clear edges rebuild the triangles.'],

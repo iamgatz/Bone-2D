@@ -70,6 +70,18 @@ export interface WeightBrush {
   locked: Id[];
 }
 
+/** How the mesh being edited is shown (Spine's Wireframe, Dim, Isolate and Freeze boxes of the Mesh tools). */
+export interface MeshView {
+  /** The triangle edges are drawn (the outline and manual edges always are). */
+  wireframe: boolean;
+  /** Everything outside the mesh is dimmed. */
+  dim: boolean;
+  /** Everything outside the mesh is hidden. */
+  isolate: boolean;
+  /** The vertices cannot be dragged (selecting them still works). */
+  freeze: boolean;
+}
+
 /** What the weights view draws on the mesh (Spine's Pies, Overlay and Selected boxes). */
 export interface WeightView {
   pies: boolean;
@@ -107,6 +119,7 @@ export interface UiState {
   expanded: Record<string, boolean>;
   brush: WeightBrush;
   weightView: WeightView;
+  meshView: MeshView;
   toast: { id: number; text: string; kind: 'info' | 'error' | 'ok' } | null;
   panel: { left: number; right: number; bottom: number };
   /** Which windows are open (see layout.ts). */
@@ -150,6 +163,7 @@ export const uiStore = createStore<UiState>({
   expanded: {},
   brush: { size: 40, strength: 0.5, mode: 'add', bone: null, feather: 100, locked: [] },
   weightView: { pies: false, overlay: false, selected: false },
+  meshView: { wireframe: true, dim: false, isolate: false, freeze: false },
   toast: null,
   panel: saved.panel ?? (typeof window !== 'undefined' && window.innerWidth < 1150 ? { left: 210, right: 240, bottom: 250 } : { left: 270, right: 300, bottom: 300 }),
   views: saved.views ?? DEFAULT_VIEWS,

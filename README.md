@@ -31,7 +31,7 @@ $env:FUZZ_SEEDS='300'; $env:FUZZ_STEPS='100'; npx vitest run tests/fuzz.test.ts
 - Bones: create by dragging (chains start at the tip of the selected bone), hierarchy with drag-and-drop, inherit modes (`normal`, `onlyTranslation`, `noRotationOrReflection`, `noScale`, `noScaleOrReflection`).
 - **Photoshop import**: drop a `.psd` into the window (or the Images window) and every visible layer becomes a picture and a slot with a region, bottom layer first, so the stack of the file is the draw order. Groups become folders, opacity and the multiply / screen / additive blend modes are kept, hidden layers are left out; one Undo takes it all back. The origin is the middle of the bottom edge of the document (masks, clipping layers and effects are not applied). **Update from PSD** (button in the Images window) matches the layers of a repainted file to the pictures by name: new pixels, attachments follow the size and the move of the layer, new layers become slots, the rig stays.
 - Slots and images: drop PNGs into the window, draw order, blend modes, tint, and **two-color tint** (a dark color that fills in where the image is dark: glow, hit flash; keyed in Animate mode together with the light color).
-- **Meshes**: auto-trace by alpha → Delaunay triangulation, vertex editing, add / remove, re-triangulate, **manual edges** (Ctrl-drag between two vertices; the triangles never cross them and always follow the outline).
+- **Meshes**: auto-trace by alpha → Delaunay triangulation, vertex editing, add / remove, re-triangulate, **manual edges** (Ctrl-drag between two vertices; the triangles never cross them and always follow the outline). Mesh view buttons: Wireframe, Dim, Isolate, Freeze.
 - **Weights**: bind to bones (auto-weights), brush (add / subtract / replace / smooth), heat map, normalize, up to 4 influences per vertex.
 - **IK** (1 and 2 bones): mix, softness, bend, stretch, compress, scaleY modes; create by dragging.
 - **Transform constraints 4.3**: map any source property to any target property, clamp, local / world, additive, presets.
@@ -71,6 +71,7 @@ $env:FUZZ_SEEDS='300'; $env:FUZZ_STEPS='100'; npx vitest run tests/fuzz.test.ts
 - Keys copied from one bone **paste onto the selected bone**; Settings: bone size and hints.
 - **Texture packer**: strip whitespace, rotate, Linear / Nearest filter, padding, power-of-two, page size; export settings are remembered and can be saved to / loaded from a file.
 - Playback, loop, frame stepping. **Onion skin** (faded poses before and after the playhead), **Clean Up** (removes the keys that change nothing), **Alt-drag a key** to shift the keys after it too, an Animations window with folders (`emotes/wave`).
+- **Preview window** (Windows → Preview): plays an animation the way a game would, crossfading to the next one by the **mix table** (a default time and times for pairs; saved in the project, not exported). Events show as chips and play the sound files you load there.
 
 **Files**
 - `.bone2d` project (images embedded), autosave to IndexedDB, File System Access API (Ctrl+S saves to the same file, Ctrl+Shift+S asks where; the Welcome window lists recent projects). Older `.marrow` files (the project's former working name) still open.

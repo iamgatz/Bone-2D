@@ -591,6 +591,8 @@ export interface Project {
   poses?: PoseEntry[];
   /** Guide lines laid over the scene in the editor (not part of the Spine export). */
   guides?: { x: number[]; y: number[] };
+  /** Crossfade times between animations for the Preview window (not part of the Spine export; see core/preview.ts). */
+  mixes?: { default: number; pairs: { from: Id; to: Id; time: number }[] };
 }
 
 // ---------------------------------------------------------------- factories

@@ -85,6 +85,7 @@ export function MeshGroup({ slotId, att }: { slotId: Id; att: MeshAttachment }) 
   const tool = useUi((s) => s.tool);
   const brush = useUi((s) => s.brush);
   const weightView = useUi((s) => s.weightView);
+  const meshView = useUi((s) => s.meshView);
   const mode = useUi((s) => s.mode);
   const selectedBones = useUi((s) => s.selection.bones);
   const pickedList = useUi((s) => (s.selection.slot === slotId && s.selection.attachment === att.name ? s.selection.vertices : EMPTY));
@@ -127,6 +128,22 @@ export function MeshGroup({ slotId, att }: { slotId: Id; att: MeshAttachment }) 
             Weights
           </Button>
         </div>
+        {(tool === 'mesh' || tool === 'weights') && (
+          <div className="hstack wrap mb">
+            {(
+              [
+                ['wireframe', 'Wireframe', 'Draw the triangle edges (the outline and manual edges always show)'],
+                ['dim', 'Dim', 'Dim everything outside this mesh'],
+                ['isolate', 'Isolate', 'Hide everything outside this mesh'],
+                ['freeze', 'Freeze', 'The vertices cannot be dragged, only selected'],
+              ] as const
+            ).map(([key, label, title]) => (
+              <Button key={key} primary={meshView[key]} title={title} onClick={() => uiStore.patch({ meshView: { ...meshView, [key]: !meshView[key] } })}>
+                {label}
+              </Button>
+            ))}
+          </div>
+        )}
         {linked && att.link && <LinkedMeshFields skinId={project.skeleton.skins[0].id} slotId={slotId} name={att.name} mesh={att} />}
         {setup && !linked && (
           <>
