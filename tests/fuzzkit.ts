@@ -27,6 +27,7 @@ import * as A from '../src/store/actions';
 import { docStore } from '../src/store/doc';
 import * as FO from '../src/store/folderActions';
 import * as SK from '../src/store/skeletonActions';
+import * as AX from '../src/store/axisActions';
 import { skeletonCount } from '../src/core/skeletons';
 import * as I from '../src/store/ikActions';
 import * as MX from '../src/store/mixActions';
@@ -156,6 +157,8 @@ export const ops: Op[] = [
   { name: 'reparentBone', run: (c) => { const b = c.pick(doc().bones)!; const p = c.chance(0.1) ? null : c.pick(doc().bones)!.id; A.reparentBone(b.id, p); } },
   { name: 'setBoneProps', run: (c) => { const b = c.pick(doc().bones)!; A.setBoneProps(b.id, { length: c.num(0, 120), inherit: c.pick(INHERIT_MODES)!, hidden: c.chance(0.2) }); } },
   { name: 'setBonePose', run: (c) => { const b = c.pick(doc().bones)!; A.setBonePose([{ id: b.id, props: c.chance(0.5) ? { rotation: c.num(-180, 180) } : { x: c.num(-100, 100), y: c.num(-100, 100), scaleX: c.num(-2, 2), scaleY: c.num(0.2, 2), shearX: c.num(-30, 30) } }]); } },
+  { name: 'splitAxes', run: (c) => { A.setMode('animate'); AX.setAxesSplit([c.pick(doc().bones)!.id], c.pick(['translate', 'scale', 'shear'] as const)!, c.chance(0.7)); } },
+  { name: 'setBoneAxis', run: (c) => { A.setMode('animate'); const b = c.pick(doc().bones)!; const axis = c.pick([{ x: c.num(-100, 100) }, { y: c.num(-100, 100) }, { scaleX: c.num(-2, 2) }, { scaleY: c.num(0.2, 2) }, { shearX: c.num(-30, 30) }, { shearY: c.num(-30, 30) }])!; A.setBonePose([{ id: b.id, props: axis }]); } },
   { name: 'keySelectedBones', run: (c) => { A.selectBone(c.pick(doc().bones)!.id); A.keySelectedBones(c.chance(0.5) ? ['rotate'] : undefined); } },
   { name: 'duplicateBones', run: (c) => { A.setMode('setup'); A.selectBone(c.pick(doc().bones)!.id); PO.duplicateSelection(c.chance(0.5)); } },
   { name: 'resetPose', run: (c) => { A.setMode('animate'); A.selectBone(c.pick(doc().bones)!.id); PO.resetPose(); } },

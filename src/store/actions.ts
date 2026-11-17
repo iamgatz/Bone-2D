@@ -16,7 +16,7 @@ import type { ScopeKind } from '@/core/skins';
 import type { KeyRef } from '@/core/keyrefs';
 import { RAD2DEG, atan2Deg, matInvert, matMul } from '@/core/math';
 import type { Mat } from '@/core/math';
-import { newAnimation, newBone, newSkin, newSlot } from '@/core/model';
+import { AXIS_GROUPS, newAnimation, newBone, newSkin, newSlot } from '@/core/model';
 import { cleanPlay, playOf, playSpan, samePlay } from '@/core/playback';
 import { cleanMixes, withoutAnimation } from '@/core/preview';
 import { isPsd, layerCenter, readPsdFile } from '@/core/import/psd';
@@ -24,7 +24,7 @@ import type { PsdLayer, PsdPixels } from '@/core/import/psd';
 import { fitRegion, planPsdSync } from '@/core/import/psdSync';
 import { cleanImageName, renameImage, sequenceFrameOwner, unusedImages } from '@/core/images';
 import { skeletonList } from '@/core/skeletons';
-import type { Animation, Bone, Id, ImageRef, Inherit, Key, PlaySettings, Project, RGB, RGBA, Slot } from '@/core/model';
+import type { Animation, AxisGroup, Bone, BoneProp, Id, ImageRef, Inherit, Key, PlaySettings, Project, RGB, RGBA, Slot } from '@/core/model';
 import { getScene, getSetupSkeleton } from '@/editor/scene';
 import { assets } from './assets';
 import type { ImageAsset } from './assets';
@@ -286,14 +286,15 @@ export function reparentBone(id: Id, newParent: Id | null) {
 
 export type PoseProps = PoseOverride;
 
-const POSE_TIMELINE: Record<keyof PoseProps, 'rotate' | 'translate' | 'scale' | 'shear'> = {
+/** The timeline a pose property is keyed on: one axis each, which a bone with a combined timeline keys together with the other axis. */
+const POSE_TIMELINE: Record<keyof PoseProps, BoneProp> = {
   rotation: 'rotate',
-  x: 'translate',
-  y: 'translate',
-  scaleX: 'scale',
-  scaleY: 'scale',
-  shearX: 'shear',
-  shearY: 'shear',
+  x: 'translatex',
+  y: 'translatey',
+  scaleX: 'scalex',
+  scaleY: 'scaley',
+  shearX: 'shearx',
+  shearY: 'sheary',
 };
 
 function ensureBoneTimelines(a: Draft<Animation>, id: Id) {
@@ -301,12 +302,12 @@ function ensureBoneTimelines(a: Draft<Animation>, id: Id) {
 }
 
 /** Writes keys for the given bone pose props at `time` into an animation draft. */
-function keyBoneInDraft(d: Draft<Project>, anim: Draft<Animation>, boneId: Id, pose: Required<PoseProps>, touched: Set<'rotate' | 'translate' | 'scale' | 'shear'>, time: number, curveKind: 'linear' | 'bezier' | 'stepped') {
+function keyBoneInDraft(d: Draft<Project>, anim: Draft<Animation>, boneId: Id, pose: Required<PoseProps>, touched: Set<BoneProp>, time: number, curveKind: 'linear' | 'bezier' | 'stepped') {
   const setup = d.skeleton.bones.find((b) => b.id === boneId);
   if (!setup) return;
   const tl = ensureBoneTimelines(anim, boneId);
   const key = (channels: number, value: number[]) => ({ time, value, ...(makeCurve(curveKind, channels) !== undefined ? { curve: makeCurve(curveKind, channels) } : {}) });
-  const put = (prop: 'rotate' | 'translate' | 'scale' | 'shear', value: number[]) => {
+  const put = (prop: BoneProp, value: number[]) => {
     const keys = (tl[prop] ??= []);
     const k = key(value.length, value);
     const exist = keys.find((x) => Math.abs(x.time - time) < 1e-4);
@@ -314,9 +315,23 @@ function keyBoneInDraft(d: Draft<Project>, anim: Draft<Animation>, boneId: Id, p
     else upsertKey(keys, k);
   };
   if (touched.has('rotate')) put('rotate', [pose.rotation - setup.rotation]);
-  if (touched.has('translate')) put('translate', [pose.x - setup.x, pose.y - setup.y]);
-  if (touched.has('scale')) put('scale', [setup.scaleX !== 0 ? pose.scaleX / setup.scaleX : 1, setup.scaleY !== 0 ? pose.scaleY / setup.scaleY : 1]);
-  if (touched.has('shear')) put('shear', [pose.shearX - setup.shearX, pose.shearY - setup.shearY]);
+  const values: Record<AxisGroup, [number, number]> = {
+    translate: [pose.x - setup.x, pose.y - setup.y],
+    scale: [setup.scaleX !== 0 ? pose.scaleX / setup.scaleX : 1, setup.scaleY !== 0 ? pose.scaleY / setup.scaleY : 1],
+    shear: [pose.shearX - setup.shearX, pose.shearY - setup.shearY],
+  };
+  for (const g of Object.keys(AXIS_GROUPS) as AxisGroup[]) {
+    const [ax, ay] = AXIS_GROUPS[g];
+    const all = touched.has(g);
+    const wantX = all || touched.has(ax);
+    const wantY = all || touched.has(ay);
+    if (!wantX && !wantY) continue;
+    // a bone whose group was split keys the axes on their own timelines; otherwise the combined timeline takes both values
+    if (tl[ax]?.length || tl[ay]?.length) {
+      if (wantX) put(ax, [values[g][0]]);
+      if (wantY) put(ay, [values[g][1]]);
+    } else put(g, values[g]);
+  }
 }
 
 /** Current local pose of a bone (setup + animation + overrides). */
@@ -359,7 +374,7 @@ export function setBonePose(updates: { id: Id; props: PoseProps }[], label = 'Ed
       const cur = currentPose(u.id);
       if (!cur) return null;
       const pose = { ...cur, ...u.props };
-      const touched = new Set<'rotate' | 'translate' | 'scale' | 'shear'>();
+      const touched = new Set<BoneProp>();
       for (const k of Object.keys(u.props) as (keyof PoseProps)[]) touched.add(POSE_TIMELINE[k]);
       return { id: u.id, pose, touched };
     })
@@ -376,7 +391,7 @@ export function extendDuration(a: Draft<Animation>, time: number) {
   if (time > a.duration) a.duration = time;
 }
 
-type Channel = 'rotate' | 'translate' | 'scale' | 'shear';
+type Channel = BoneProp;
 
 /** The transform channels a temporary pose edit touched (an override holds only the properties that were changed). */
 export function editedChannels(o: PoseProps | undefined): Set<Channel> {
@@ -423,7 +438,7 @@ function keyBonesChannels(list: { id: Id; channels: Set<Channel> }[], label: str
 }
 
 /** Keys the current pose of the selected bones (all four transform timelines or a subset). */
-export function keySelectedBones(which: ('rotate' | 'translate' | 'scale' | 'shear')[] = ['rotate', 'translate', 'scale', 'shear']) {
+export function keySelectedBones(which: BoneProp[] = ['rotate', 'translate', 'scale', 'shear']) {
   const ui = uiStore.get();
   const anim = currentAnimation();
   if (!anim || ui.mode !== 'animate') return;

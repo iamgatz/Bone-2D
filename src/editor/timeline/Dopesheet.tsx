@@ -3,6 +3,7 @@ import { decodeKey, encodeKey } from '@/core/keyrefs';
 import type { KeyRef } from '@/core/keyrefs';
 import { moveKeysBy, setTime } from '@/store/actions';
 import { docStore } from '@/store/doc';
+import { openKeyDialog } from '@/store/keyDialog';
 import { uiStore } from '@/store/ui';
 import type { Row } from './rows';
 import { alpha, token } from '../ui/tokens';
@@ -436,6 +437,13 @@ export function Dopesheet({ rows, duration, fps, onMenu }: Props) {
     ruler.addEventListener('wheel', onWheel, { passive: false });
     const noCtx = (e: Event) => e.preventDefault();
     canvas.addEventListener('contextmenu', noCtx);
+    // a double click on a key opens the key dialog
+    const onDouble = (e: MouseEvent) => {
+      const [x, y] = local(e, canvas);
+      const hit = hitKey(x, y);
+      if (hit) openKeyDialog(hit.key.refs[0]);
+    };
+    canvas.addEventListener('dblclick', onDouble);
 
     return () => {
       cancelAnimationFrame(raf);
@@ -451,6 +459,7 @@ export function Dopesheet({ rows, duration, fps, onMenu }: Props) {
       canvas.removeEventListener('wheel', onWheel);
       ruler.removeEventListener('wheel', onWheel);
       canvas.removeEventListener('contextmenu', noCtx);
+      canvas.removeEventListener('dblclick', onDouble);
     };
   }, [onMenu]);
 

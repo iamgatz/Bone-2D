@@ -1,7 +1,7 @@
 /** Applies an animation (bone, slot, IK, deform, draw order timelines) to a skeleton pose at a given time. */
 import { deformProgress, findKeyIndex, sampleKeys } from './curve';
 import { completeFolderOrder } from './folders';
-import { GLOBAL_PHYSICS, PHYSICS_PARAMS } from './model';
+import { BONE_PROPS, GLOBAL_PHYSICS, PHYSICS_PARAMS } from './model';
 import { sequenceIndexAt } from './sequence';
 import type { Animation, Id, Key, Timeline } from './model';
 import type { AttachmentData, PhysicsConstraintRT, Skeleton, Slot } from './skeleton';
@@ -77,10 +77,7 @@ export function animationEndTime(anim: Animation): number {
   };
   for (const id in anim.bones) {
     const t = anim.bones[id];
-    scan(t.rotate);
-    scan(t.translate);
-    scan(t.scale);
-    scan(t.shear);
+    for (const p of BONE_PROPS) scan(t[p]);
   }
   for (const id in anim.slots) {
     const t = anim.slots[id];
@@ -154,6 +151,13 @@ export function applyAnimation(skeleton: Skeleton, anim: Animation | null, time:
       bone.shearX = d.shearX + tmp[0];
       bone.shearY = d.shearY + tmp[1];
     }
+    // the split axes come after the combined timelines, each moving one value
+    if (tl.translatex?.length && sampleKeys(tl.translatex, time, tmp)) bone.x = d.x + tmp[0];
+    if (tl.translatey?.length && sampleKeys(tl.translatey, time, tmp)) bone.y = d.y + tmp[0];
+    if (tl.scalex?.length && sampleKeys(tl.scalex, time, tmp)) bone.scaleX = d.scaleX * tmp[0];
+    if (tl.scaley?.length && sampleKeys(tl.scaley, time, tmp)) bone.scaleY = d.scaleY * tmp[0];
+    if (tl.shearx?.length && sampleKeys(tl.shearx, time, tmp)) bone.shearX = d.shearX + tmp[0];
+    if (tl.sheary?.length && sampleKeys(tl.sheary, time, tmp)) bone.shearY = d.shearY + tmp[0];
   }
 
   for (const slotId in anim.slots) {
@@ -301,26 +305,27 @@ export function applyAnimationOnto(skeleton: Skeleton, anim: Animation, time: nu
       bone.ax += (additive ? tmp[0] : d.x + tmp[0] - bone.ax) * alpha;
       bone.ay += (additive ? tmp[1] : d.y + tmp[1] - bone.ay) * alpha;
     }
+    // one axis of a scale: the value the timeline asks for (already times the setup scale) against the current one
+    const scaled = (cur: number, setup: number, v: number) => {
+      if (alpha === 1 && !additive) return v;
+      if (additive) return cur + (v - setup) * alpha;
+      const b = Math.abs(cur) * Math.sign(v);
+      return b + (v - b) * alpha;
+    };
     if (tl.scale?.length && sampleKeys(tl.scale, time, tmp)) {
-      const x = tmp[0] * d.scaleX;
-      const y = tmp[1] * d.scaleY;
-      if (alpha === 1 && !additive) {
-        bone.ascaleX = x;
-        bone.ascaleY = y;
-      } else if (additive) {
-        bone.ascaleX += (x - d.scaleX) * alpha;
-        bone.ascaleY += (y - d.scaleY) * alpha;
-      } else {
-        const bx = Math.abs(bone.ascaleX) * Math.sign(x);
-        const by = Math.abs(bone.ascaleY) * Math.sign(y);
-        bone.ascaleX = bx + (x - bx) * alpha;
-        bone.ascaleY = by + (y - by) * alpha;
-      }
+      bone.ascaleX = scaled(bone.ascaleX, d.scaleX, tmp[0] * d.scaleX);
+      bone.ascaleY = scaled(bone.ascaleY, d.scaleY, tmp[1] * d.scaleY);
     }
     if (tl.shear?.length && sampleKeys(tl.shear, time, tmp)) {
       bone.ashearX += (additive ? tmp[0] : d.shearX + tmp[0] - bone.ashearX) * alpha;
       bone.ashearY += (additive ? tmp[1] : d.shearY + tmp[1] - bone.ashearY) * alpha;
     }
+    if (tl.translatex?.length && sampleKeys(tl.translatex, time, tmp)) bone.ax += (additive ? tmp[0] : d.x + tmp[0] - bone.ax) * alpha;
+    if (tl.translatey?.length && sampleKeys(tl.translatey, time, tmp)) bone.ay += (additive ? tmp[0] : d.y + tmp[0] - bone.ay) * alpha;
+    if (tl.scalex?.length && sampleKeys(tl.scalex, time, tmp)) bone.ascaleX = scaled(bone.ascaleX, d.scaleX, tmp[0] * d.scaleX);
+    if (tl.scaley?.length && sampleKeys(tl.scaley, time, tmp)) bone.ascaleY = scaled(bone.ascaleY, d.scaleY, tmp[0] * d.scaleY);
+    if (tl.shearx?.length && sampleKeys(tl.shearx, time, tmp)) bone.ashearX += (additive ? tmp[0] : d.shearX + tmp[0] - bone.ashearX) * alpha;
+    if (tl.sheary?.length && sampleKeys(tl.sheary, time, tmp)) bone.ashearY += (additive ? tmp[0] : d.shearY + tmp[0] - bone.ashearY) * alpha;
   }
 
   for (const slotId in anim.slots) {

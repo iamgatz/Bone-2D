@@ -23,6 +23,9 @@ describe('key edited', () => {
     A.setBonePose([{ id: bone, props: { rotation: 33 } }]);
     expect(Object.keys(uiStore.get().overrides)).toEqual([bone]);
     expect(A.editedChannels(uiStore.get().overrides[bone])).toEqual(new Set(['rotate']));
+    A.setBonePose([{ id: bone, props: { x: 3 } }]);
+    expect(A.editedChannels(uiStore.get().overrides[bone])).toEqual(new Set(['rotate', 'translatex'])); // the axis that was edited
+    uiStore.patch({ overrides: { [bone]: { rotation: 33 } } });
     A.keyEditedBones();
     expect(keysAt('rotate')).toHaveLength(1);
     expect(keysAt('translate')).toHaveLength(0);

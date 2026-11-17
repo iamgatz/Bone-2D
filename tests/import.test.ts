@@ -164,7 +164,11 @@ describe('Spine JSON import: files made by Spine itself', () => {
     expect(w).toContain('wobble constraint "springy"');
     expect(w).not.toContain('boundingbox attachment'); // bounding boxes are imported now
     expect(w).toContain('slot "lost" was skipped');
-    expect(w).toContain('separate translatex');
+    expect(w).not.toContain('translatex'); // the split axes are kept as they are now
+    const walkTl = d.animations.find((a) => a.name === 'walk')!.bones[d.bones[1].id];
+    expect(walkTl.translatex?.map((k) => k.value[0])).toEqual([0, 12, 0]);
+    expect(walkTl.translatex?.[1].curve).toBe('stepped');
+    expect(walkTl.translate).toBeUndefined();
     expect(w).not.toContain('audio'); // sounds are kept now
     expect(d.events.find((e) => e.name === 'footstep')?.audio).toBe('step.ogg');
     expect(d.bones.map((b) => b.name)).toEqual(['root', 'hip', 'arm', 'ghost']);
@@ -205,7 +209,7 @@ describe('Spine JSON import: files made by Spine itself', () => {
 
   it('keeps curves, draw order offsets, events and sliders', () => {
     const walk = d.animations.find((a) => a.name === 'walk')!;
-    const hipKeys = walk.bones[d.bones[1].id].translate!;
+    const hipKeys = walk.bones[d.bones[1].id].translatex!;
     expect(hipKeys.map((k) => k.value[0])).toEqual([0, 12, 0]);
     expect(hipKeys[1].curve).toBe('stepped');
     expect(walk.drawOrder[0].order.map((id) => d.slots.find((s) => s.id === id)!.name)).toEqual(['arm', 'body']); // "body" moved one up the list

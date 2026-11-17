@@ -4,7 +4,7 @@ import { Eye, EyeOff } from 'lucide-react';
 import { segmentProgress } from '@/core/curve';
 import { decodeKey, encodeKey } from '@/core/keyrefs';
 import type { KeyRef } from '@/core/keyrefs';
-import { GLOBAL_PHYSICS } from '@/core/model';
+import { BONE_PROPS, GLOBAL_PHYSICS } from '@/core/model';
 import type { Animation, Id, Key, SkeletonDoc } from '@/core/model';
 import { moveKeysBy, setKeyChannelValue, setKeyCurveHandle, setTime } from '@/store/actions';
 import { docStore } from '@/store/doc';
@@ -29,8 +29,14 @@ const curveColor = (c: number) => token(`--curve-${(c % 4) + 1}` as `--${string}
 const CHANNEL_NAMES: Record<string, string[]> = {
   rotate: ['rotation'],
   translate: ['x', 'y'],
+  translatex: ['x'],
+  translatey: ['y'],
   scale: ['scale x', 'scale y'],
+  scalex: ['scale x'],
+  scaley: ['scale y'],
   shear: ['shear x', 'shear y'],
+  shearx: ['shear x'],
+  sheary: ['shear y'],
   rgba: ['r', 'g', 'b', 'a'],
   rgba2: ['r', 'g', 'b', 'a', 'dark r', 'dark g', 'dark b'],
   transform: ['mix rotate', 'mix x', 'mix y', 'mix scale x', 'mix scale y', 'mix shear y'],
@@ -47,6 +53,14 @@ const CHANNEL_NAMES: Record<string, string[]> = {
   wind: ['wind'],
   gravity: ['gravity'],
 };
+
+/** The names of the numbers in one key of a timeline (also used by the key dialog). */
+export function channelNames(kind: KeyRef['kind'], prop: string): string[] {
+  if (kind === 'transform') return CHANNEL_NAMES.transform;
+  if (kind === 'ik') return CHANNEL_NAMES.ik;
+  if (kind === 'path' && prop === 'mix') return CHANNEL_NAMES.pathMix;
+  return CHANNEL_NAMES[prop] ?? [prop];
+}
 
 /** Curves for: timelines of selected keys, else all timelines of the selected bones. */
 export function buildCurves(doc: SkeletonDoc, anim: Animation | null, selection: Selection, selectedKeys: string[]): Curve[] {
@@ -67,7 +81,7 @@ export function buildCurves(doc: SkeletonDoc, anim: Animation | null, selection:
     const b = doc.bones.find((x) => x.id === boneId);
     const tl = anim.bones[boneId];
     if (!b || !tl) return;
-    for (const p of ['rotate', 'translate', 'scale', 'shear'] as const) if (!only || only === p) add('bone', boneId, p, tl[p], b.name, CHANNEL_NAMES[p]);
+    for (const p of BONE_PROPS) if (!only || only === p) add('bone', boneId, p, tl[p], b.name, CHANNEL_NAMES[p]);
   };
   const refs = selectedKeys.map(decodeKey);
   for (const r of refs) {

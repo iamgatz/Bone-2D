@@ -586,7 +586,7 @@ function repairAnimations(doc: SkeletonDoc, note: Note) {
         note(`${where}: timelines of a missing bone removed`);
         continue;
       }
-      const spec = { rotate: 1, translate: 2, scale: 2, shear: 2 } as const;
+      const spec = { rotate: 1, translate: 2, translatex: 1, translatey: 1, scale: 2, scalex: 1, scaley: 1, shear: 2, shearx: 1, sheary: 1 } as const;
       for (const prop of Object.keys(tl) as (keyof typeof spec)[]) {
         const keys = tl[prop];
         if (!(prop in spec) || !Array.isArray(keys)) {

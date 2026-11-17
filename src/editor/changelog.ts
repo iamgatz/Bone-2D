@@ -12,6 +12,18 @@ export interface Release {
 
 export const CHANGELOG: Release[] = [
   {
+    version: '0.41',
+    date: '2026-11-18',
+    en: [
+      "Split X / Y keys (Spine's translateX / translateY, scaleX / scaleY, shearX / shearY): in Animate mode the Inspector has a Split X / Y switch for position, scale and shear (also in the timeline menu and the command palette). A split channel keeps its keys but has one timeline per axis, each with its own key times and curves; auto-key and the Key buttons then key only the axis you change. Merging joins the axes again. The solver, JSON and binary export and import all handle them and are checked against the official runtime; before, a Spine file with split timelines lost the second axis on import.",
+      "Key dialog: double-click a key in the dopesheet (or right-click → Edit key…, or the command palette) to type its frame, its values, its interpolation and the bezier handles of its curve."
+    ],
+    ru: [
+      "Разделённые ключи X / Y (translateX / translateY, scaleX / scaleY, shearX / shearY в Spine): в режиме Animate в Инспекторе есть переключатель «Разделить X / Y» для позиции, масштаба и сдвига (а также в меню таймлайна и в палитре команд). Разделённый канал сохраняет ключи, но у каждой оси свой таймлайн со своими временами и кривыми; автоключ и кнопки ключей ставят ключ только на ось, которую вы меняете. «Склеить» объединяет оси обратно. Солвер, экспорт и импорт JSON и binary поддерживают такие таймлайны и сверены с официальным рантаймом; раньше файл Spine с разделёнными таймлайнами терял вторую ось при импорте.",
+      "Диалог ключа: двойной щелчок по ключу в доупшите (или правая кнопка → «Править ключ…», или палитра команд) — можно ввести кадр, значения, интерполяцию и маркеры безье кривой."
+    ],
+  },
+  {
     version: '0.40',
     date: '2026-11-18',
     en: [

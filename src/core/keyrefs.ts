@@ -58,6 +58,11 @@ export function resolveKeys(anim: Animation, ref: Pick<KeyRef, 'kind' | 'target'
   }
 }
 
+/** The key of a timeline at `time` (within the key tolerance). */
+export function keyAtTime<T extends { time: number }>(keys: readonly T[] | undefined, time: number): T | undefined {
+  return keys?.find((k) => Math.abs(k.time - time) <= KEY_EPS);
+}
+
 export function deformProp(skinId: Id, attachment: string): string {
   return `${skinId}\u0001${attachment}`;
 }

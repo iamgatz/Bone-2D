@@ -2,8 +2,10 @@ import { Bone as BoneIcon, BoxSelect, Crosshair, Image as ImageIcon, Layers, Lin
 import { useState } from 'react';
 import { createTransformConstraint, PRESET_LABEL } from '@/store/transformActions';
 import type { TransformPreset } from '@/store/transformActions';
-import { INHERIT_MODES } from '@/core/model';
-import type { Animation, BlendMode, Id, Inherit, MeshAttachment, PathAttachment, PointAttachment, PolygonAttachment, RGBA, RegionAttachment } from '@/core/model';
+import { AXIS_GROUPS, INHERIT_MODES } from '@/core/model';
+import { isSplit } from '@/core/axes';
+import { setAxesSplit } from '@/store/axisActions';
+import type { Animation, AxisGroup, BlendMode, BoneProp, Id, Inherit, MeshAttachment, PathAttachment, PointAttachment, PolygonAttachment, RGBA, RegionAttachment } from '@/core/model';
 import { BLEND_MODES, attachmentImage, pathNodeCount, polygonVertexCount } from '@/core/model';
 import { findKeyIndex } from '@/core/curve';
 import { folderOfSlot } from '@/core/folders';
@@ -26,7 +28,10 @@ import { ConvertToMeshGroup, LinkedMeshFields, MeshGroup } from './MeshInspector
 import { SequenceSection } from './SequenceSection';
 import { ConstraintInspector } from './ConstraintInspector';
 
-function hasKeyAt(anim: Animation | undefined, boneId: Id, prop: 'rotate' | 'translate' | 'scale' | 'shear', time: number): boolean {
+/** The short names of the three split switches. */
+const AXIS_SHORT: Record<AxisGroup, string> = { translate: 'Pos', scale: 'Scl', shear: 'Shr' };
+
+function hasKeyAt(anim: Animation | undefined, boneId: Id, prop: BoneProp, time: number): boolean {
   const keys = anim?.bones[boneId]?.[prop];
   if (!keys || !keys.length) return false;
   const i = findKeyIndex(keys, time + 1e-4);
@@ -47,10 +52,33 @@ function BoneInspector({ id }: { id: Id }) {
   const sb = getScene().skeleton.boneById(id);
   const pose: Required<PoseProps> = animate && sb ? { x: sb.x, y: sb.y, rotation: sb.rotation, scaleX: sb.scaleX, scaleY: sb.scaleY, shearX: sb.shearX, shearY: sb.shearY } : { x: bone.x, y: bone.y, rotation: bone.rotation, scaleX: bone.scaleX, scaleY: bone.scaleY, shearX: bone.shearX, shearY: bone.shearY };
   const set = (props: PoseProps) => setBonePose([{ id, props }], 'Edit bone');
-  const keyed = (p: 'rotate' | 'translate' | 'scale' | 'shear') => animate && hasKeyAt(anim, id, p, time);
-  const keyButton = (p: 'rotate' | 'translate' | 'scale' | 'shear', label: string) => (
+  const keyed = (p: BoneProp) => animate && hasKeyAt(anim, id, p, time);
+  const keyButton = (p: BoneProp, label: string) => (
     <KeyButton on={keyed(p)} title={`${keyed(p) ? 'Remove' : 'Set'} ${label} key at the playhead`} onClick={() => (keyed(p) ? deleteKeys([{ kind: 'bone', target: id, prop: p, time }]) : keySelectedBones([p]))} />
   );
+  const tl = anim?.bones[id];
+  /** One row for a group of two values, or one row per axis once the group is split (each axis then has its own key button). */
+  const pair = (g: AxisGroup, label: string, step: number, precision: number, x: number, y: number, setX: (v: number) => void, setY: (v: number) => void) => {
+    const [ax, ay] = AXIS_GROUPS[g];
+    if (animate && isSplit(tl, g)) {
+      return (
+        <>
+          <Field label={`${label} X`} keyButton={keyButton(ax, `${label} X`)}>
+            <NumberField label="X" value={x} step={step} precision={precision} keyed={keyed(ax)} onChange={setX} />
+          </Field>
+          <Field label={`${label} Y`} keyButton={keyButton(ay, `${label} Y`)}>
+            <NumberField label="Y" value={y} step={step} precision={precision} keyed={keyed(ay)} onChange={setY} />
+          </Field>
+        </>
+      );
+    }
+    return (
+      <Field label={label} keyButton={keyButton(g, g)}>
+        <NumberField label="X" value={x} step={step} precision={precision} keyed={keyed(g)} onChange={setX} />
+        <NumberField label="Y" value={y} step={step} precision={precision} keyed={keyed(g)} onChange={setY} />
+      </Field>
+    );
+  };
 
   return (
     <>
@@ -71,18 +99,21 @@ function BoneInspector({ id }: { id: Id }) {
         <Field label="Rotation" keyButton={keyButton('rotate', 'rotation')}>
           <NumberField label="°" value={pose.rotation} step={1} keyed={keyed('rotate')} onChange={(v) => set({ rotation: v })} />
         </Field>
-        <Field label="Position" keyButton={keyButton('translate', 'translate')}>
-          <NumberField label="X" value={pose.x} step={1} keyed={keyed('translate')} onChange={(v) => set({ x: v })} />
-          <NumberField label="Y" value={pose.y} step={1} keyed={keyed('translate')} onChange={(v) => set({ y: v })} />
-        </Field>
-        <Field label="Scale" keyButton={keyButton('scale', 'scale')}>
-          <NumberField label="X" value={pose.scaleX} step={0.01} precision={3} keyed={keyed('scale')} onChange={(v) => set({ scaleX: v })} />
-          <NumberField label="Y" value={pose.scaleY} step={0.01} precision={3} keyed={keyed('scale')} onChange={(v) => set({ scaleY: v })} />
-        </Field>
-        <Field label="Shear" keyButton={keyButton('shear', 'shear')}>
-          <NumberField label="X" value={pose.shearX} step={1} keyed={keyed('shear')} onChange={(v) => set({ shearX: v })} />
-          <NumberField label="Y" value={pose.shearY} step={1} keyed={keyed('shear')} onChange={(v) => set({ shearY: v })} />
-        </Field>
+        {pair('translate', 'Position', 1, 2, pose.x, pose.y, (v) => set({ x: v }), (v) => set({ y: v }))}
+        {pair('scale', 'Scale', 0.01, 3, pose.scaleX, pose.scaleY, (v) => set({ scaleX: v }), (v) => set({ scaleY: v }))}
+        {pair('shear', 'Shear', 1, 2, pose.shearX, pose.shearY, (v) => set({ shearX: v }), (v) => set({ shearY: v }))}
+        {animate && (
+          <Field label="Split X / Y" title="Key position, scale or shear one axis at a time: X and Y get their own timelines (Spine's split timelines)">
+            <div className="hstack">
+              {(['translate', 'scale', 'shear'] as const).map((g) => (
+                <span key={g} className="hstack">
+                  <span className="dim">{AXIS_SHORT[g]}</span>
+                  <Toggle on={isSplit(tl, g)} title={isSplit(tl, g) ? `Merge ${g} X / Y into one timeline` : `Split ${g} into X and Y timelines`} onChange={(v) => setAxesSplit([id], g, v)} />
+                </span>
+              ))}
+            </div>
+          </Field>
+        )}
       </Section>
       <Section id="bone.setup" title="Bone setup">
         <Field label="Length">

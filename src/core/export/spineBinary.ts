@@ -717,8 +717,14 @@ export function jsonToBinary(json: J): Uint8Array {
       const kinds: [string, number, number, string[]][] = [
         ['rotate', 0, 1, ['value']],
         ['translate', 1, 2, ['x', 'y']],
+        ['translatex', 2, 1, ['value']],
+        ['translatey', 3, 1, ['value']],
         ['scale', 4, 2, ['x', 'y']],
+        ['scalex', 5, 1, ['value']],
+        ['scaley', 6, 1, ['value']],
         ['shear', 7, 2, ['x', 'y']],
+        ['shearx', 8, 1, ['value']],
+        ['sheary', 9, 1, ['value']],
       ];
       const present = kinds.filter(([k]) => tl[k]?.length);
       out2.varint(present.length, true);

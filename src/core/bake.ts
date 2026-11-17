@@ -6,6 +6,7 @@
  */
 import { sampleKeys } from './curve';
 import { uid } from './ids';
+import { BONE_PROPS, axisGroupOf } from './model';
 import type { Animation, Id, IkKey, Key, Project, Timeline } from './model';
 import { applyAnimation, applyPhysicsResets } from './animate';
 import { compileSkeleton, createSkeleton } from './skeleton';
@@ -99,10 +100,10 @@ export function simplifyAnimation(anim: Animation, tolerance: Tolerance, fps: nu
   for (const id in anim.bones) {
     if (only && !only.has(id)) continue;
     const tl = anim.bones[id];
-    for (const ch of CHANNELS) {
+    for (const ch of BONE_PROPS) {
       const keys = tl[ch];
       if (!keys || keys.length < 3) continue;
-      const out = simplifyKeys(keys, tolerance[ch], fps);
+      const out = simplifyKeys(keys, tolerance[axisGroupOf(ch) ?? 'rotate'], fps);
       removed += keys.length - out.length;
       tl[ch] = out;
     }

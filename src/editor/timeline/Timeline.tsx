@@ -4,6 +4,10 @@ import { GraphEditor } from './GraphEditor';
 import { CURVE_PRESETS } from '@/core/curve';
 import { decodeKey, encodeKey } from '@/core/keyrefs';
 import type { KeyRef } from '@/core/keyrefs';
+import { axisGroupOf } from '@/core/model';
+import type { AxisGroup } from '@/core/model';
+import { setAxesSplit } from '@/store/axisActions';
+import { openKeyDialog } from '@/store/keyDialog';
 import { cleanUpKeys, copyKeys, createAnimation, currentAnimation, deleteAnimation, deleteKeys, duplicateAnimation, pasteKeys, renameAnimation, selectAnimation, selectBone, selectSlot, setAnimationDuration, setKeysCurve, setMode, setPlay, setSelection, setTime, togglePlay } from '@/store/actions';
 import { useProject } from '@/store/doc';
 import { useSettings } from '@/store/settings';
@@ -47,6 +51,16 @@ function TimelineMenu({ menu, onClose }: { menu: TimelineMenuRequest; onClose: (
   const ref = useOutsideClose(true, onClose);
   useFocusFirstItem(ref);
   const refs = menu.refs;
+  // the translate / scale / shear timelines among the keys: each can be split into X and Y, or merged back
+  const axes: { group: AxisGroup; bones: string[]; split: boolean }[] = [];
+  for (const r of refs) {
+    const group = r.kind === 'bone' ? axisGroupOf(r.prop) : null;
+    if (!group) continue;
+    const split = r.prop !== group;
+    const hit = axes.find((a) => a.group === group && a.split === split);
+    if (!hit) axes.push({ group, bones: [r.target], split });
+    else if (!hit.bones.includes(r.target)) hit.bones.push(r.target);
+  }
   const item = (label: string, fn: () => void, hot?: string) => (
     <button
       type="button"
@@ -85,6 +99,9 @@ function TimelineMenu({ menu, onClose }: { menu: TimelineMenuRequest; onClose: (
       {item('Ease in-out', () => setKeysCurve(refs, CURVE_PRESETS.easeInOut))}
       {item('Overshoot', () => setKeysCurve(refs, CURVE_PRESETS.overshoot))}
       <div className="menu-sep" />
+      {refs.length === 1 && item('Edit key…', () => openKeyDialog(refs[0]))}
+      {axes.map(({ group, bones, split }) => item(split ? `Merge ${group} X / Y` : `Split ${group} into X / Y`, () => setAxesSplit(bones, group, !split)))}
+      {(refs.length === 1 || axes.length > 0) && <div className="menu-sep" />}
       {item('Copy', () => copyKeys(refs), KEYS.copy)}
       {item('Paste at playhead', () => pasteKeys(uiStore.get().time), KEYS.paste)}
       {item('Delete', () => deleteKeys(refs), KEYS.delete)}
