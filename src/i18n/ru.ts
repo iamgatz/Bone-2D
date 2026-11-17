@@ -832,6 +832,7 @@ export const RU: Record<string, string> = {
   '{#} sounds loaded; an event plays the sound with the name of its audio path': 'Звуков загружено: {}; событие играет звук с именем его пути',
   'Some events have a sound; load the files with the speaker button to hear them.': 'У некоторых событий есть звук; загрузите файлы кнопкой с динамиком, чтобы услышать их.',
   'the mix table was repaired': 'таблица переходов исправлена',
+  'Load sound files: the events that have a sound play it while the animation plays (the file name, without folders and extension, is the name of the event\'s sound)':'Загрузить звуковые файлы: события со звуком проигрывают его, пока играет анимация (имя файла без папок и расширения — это имя звука события)',
   Folder: 'Папка',
   'Folder name': 'Имя папки',
   '+ new folder': '+ новая папка',

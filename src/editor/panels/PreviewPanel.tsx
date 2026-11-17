@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Maximize2, Pause, Play, Plus, RotateCcw, Volume2, VolumeX } from 'lucide-react';
 import { GLRenderer } from '@/render/gl';
-import type { EventKey, Id } from '@/core/model';
+import type { EventDef, EventKey, Id } from '@/core/model';
 import { PreviewPlayer, poseMixed } from '@/core/preview';
 import { compileSkeleton, createSkeleton } from '@/core/skeleton';
 import type { Skeleton } from '@/core/skeleton';
@@ -9,7 +9,7 @@ import { assets } from '@/store/assets';
 import { docStore, useProject } from '@/store/doc';
 import { setDefaultMix, setMixPair } from '@/store/mixActions';
 import { settingsStore } from '@/store/settings';
-import { addSounds, hasSound, playSound, soundCount } from '@/store/sounds';
+import { hasSound, pickSounds, playEventSound, soundCount } from '@/store/sounds';
 import { uiStore } from '@/store/ui';
 import { Button, IconButton, NumberField, SelectField, Toggle } from '../ui/controls';
 import { Field } from '../ui/Field';
@@ -40,7 +40,6 @@ export function PreviewPanel() {
   const [sounds, setSounds] = useState(soundCount());
   const [pairFrom, setPairFrom] = useState<Id>('');
   const [pairTo, setPairTo] = useState<Id>('');
-  const files = useRef<HTMLInputElement>(null);
   const fit = useRef(true);
   const cam = useRef({ x: 0, y: 0, zoom: 1 });
   const logId = useRef(0);
@@ -153,11 +152,9 @@ export function PreviewPanel() {
       renderer.end();
     };
 
-    const reportEvent = (k: EventKey, defs: { id: Id; name: string; audio?: string; volume?: number; balance?: number }[]): Fired => {
+    const reportEvent = (k: EventKey, defs: readonly { id: Id; name: string }[]): Fired => {
       const def = defs.find((e) => e.id === k.event);
-      let sound = false;
-      if (def?.audio) sound = playSound(def.audio, k.volume ?? def.volume ?? 1, k.balance ?? def.balance ?? 0);
-      return { id: ++logId.current, text: def?.name ?? '?', sound };
+      return { id: ++logId.current, text: def?.name ?? '?', sound: playEventSound(defs as EventDef[], k) };
     };
 
     raf = requestAnimationFrame(tick);
@@ -178,19 +175,7 @@ export function PreviewPanel() {
         <IconButton icon={playing ? Pause : Play} title={playing ? 'Pause' : 'Play'} small onClick={() => setPlaying(!playing)} />
         <IconButton icon={RotateCcw} title="Play the animation again from the start" small onClick={() => choose(animId)} />
         <IconButton icon={Maximize2} title="Fit the view to the animation" small onClick={() => (fit.current = true)} />
-        <IconButton icon={soundCount() ? Volume2 : VolumeX} title="Load sound files: an event plays the one with the name of its sound (folders and extension do not count)" small onClick={() => files.current?.click()} />
-        <input
-          ref={files}
-          type="file"
-          accept="audio/*,.wav,.ogg,.mp3,.m4a,.flac,.aac"
-          multiple
-          hidden
-          onChange={(e) => {
-            addSounds([...(e.target.files ?? [])]);
-            setSounds(soundCount());
-            e.target.value = '';
-          }}
-        />
+        <IconButton icon={soundCount() ? Volume2 : VolumeX} title="Load sound files: an event plays the one with the name of its sound (folders and extension do not count)" small onClick={() => pickSounds(setSounds)} />
       </div>
       <div className="panel-body" style={{ padding: 8 }}>
         <canvas ref={canvas} style={{ width: '100%', height: HEIGHT, display: 'block', borderRadius: 4 }} />

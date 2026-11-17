@@ -3,6 +3,7 @@
  * person loads some here (they stay in this browser session, not in the project) and an event whose sound has the same name (folders and
  * extension left out, see `soundKey`) plays it while the Preview runs.
  */
+import type { EventDef, EventKey } from '@/core/model';
 import { soundKey } from '@/core/preview';
 
 const urls = new Map<string, string>();
@@ -46,4 +47,24 @@ export function playSound(path: string, volume = 1, balance = 0): boolean {
     return false;
   }
   return true;
+}
+
+/** Plays the sound of a fired event (its own volume and balance win over the definition's); false when it has none or none was loaded. */
+export function playEventSound(defs: readonly EventDef[], key: EventKey): boolean {
+  const def = defs.find((e) => e.id === key.event);
+  if (!def?.audio) return false;
+  return playSound(def.audio, key.volume ?? def.volume ?? 1, key.balance ?? def.balance ?? 0);
+}
+
+/** Opens the file dialog for sound files; `done` runs once they are loaded. */
+export function pickSounds(done?: (count: number) => void) {
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.multiple = true;
+  input.accept = 'audio/*,.wav,.ogg,.mp3,.m4a,.flac,.aac';
+  input.onchange = () => {
+    addSounds([...(input.files ?? [])]);
+    done?.(soundCount());
+  };
+  input.click();
 }

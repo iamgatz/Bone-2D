@@ -1,6 +1,8 @@
 import { uiStore } from '@/store/ui';
 import { docStore } from '@/store/doc';
+import { eventsBetween } from '@/core/animate';
 import { findAnimation } from '@/core/edit';
+import { playEventSound, soundCount } from '@/store/sounds';
 import { DEFAULT_PLAY, advancePlayback, playOf, samePlay } from '@/core/playback';
 
 /** `ui.loop`, `ui.pingPong` and `ui.range` mirror the play settings of the current animation (they live on the animation, see `setPlay`). */
@@ -39,6 +41,11 @@ export function startPlaybackLoop(): () => void {
       if (!anim) uiStore.patch({ playing: false });
       else {
         const next = advancePlayback({ time: ui.time, dir }, dt * ui.speed, anim.duration, { loop: ui.loop, pingPong: ui.pingPong, range: ui.range });
+        // the events the playhead passes make their sound (when the person has loaded sound files)
+        if (dir === 1 && next.dir === 1 && soundCount() > 0 && anim.events.length) {
+          const passed = next.time >= ui.time ? eventsBetween(anim, ui.time, next.time) : [...eventsBetween(anim, ui.time, anim.duration), ...eventsBetween(anim, -1, next.time)];
+          for (const k of passed) playEventSound(docStore.get().skeleton.events, k);
+        }
         dir = next.dir;
         uiStore.patch(next.stopped ? { time: next.time, playing: false } : { time: next.time });
       }

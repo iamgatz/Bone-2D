@@ -1,4 +1,5 @@
-import { ChevronLeft, ChevronRight, Pause, Play } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Pause, Play, Volume2 } from 'lucide-react';
+import { pickSounds } from '@/store/sounds';
 import { playSpan } from '@/core/playback';
 import { currentAnimation, setPlay, setTime, togglePlay } from '@/store/actions';
 import { useProject } from '@/store/doc';
@@ -28,6 +29,7 @@ export function PlaybackPanel() {
       <div className="panel-head">
         <span className="title">Playback</span>
         <span className="dim row-meta">{anim ? anim.name : ''}</span>
+        <IconButton icon={Volume2} small title="Load sound files: the events that have a sound play it while the animation plays (the file name, without folders and extension, is the name of the event's sound)" onClick={() => pickSounds()} />
       </div>
       <div className="panel-body pad">
         <div className="hstack mb">
