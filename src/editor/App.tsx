@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Bone, BoxSelect, Download, Eye, FilePlus2, FolderOpen, Grid3x3, Bell, Image as ImageIcon, CircleHelp, MessageSquareText, Link2, Maximize, Play, Redo2, Save, Sparkles, Type, Undo2 } from 'lucide-react';
+import { Bone, BoxSelect, Download, Eye, FilePlus2, FolderOpen, Grid3x3, Bell, SlidersHorizontal, Image as ImageIcon, CircleHelp, MessageSquareText, Link2, Maximize, Play, Redo2, Save, Sparkles, Type, Undo2 } from 'lucide-react';
 import { decodeKey } from '@/core/keyrefs';
 import { clearSelection, copyKeys, deleteBones, deleteKeys, keySelectedBones, pasteKeys, sanitizeSelection, setMode, setSelection, setTime, setTool, togglePlay } from '@/store/actions';
 import { docStore, useProject } from '@/store/doc';
@@ -22,8 +22,10 @@ import { ExportDialog } from './ExportDialog';
 import { FeedbackDialog } from './Feedback';
 import { UpdatesDialog, hasUnseenUpdate } from './Updates';
 import { focusArea, setFocusArea } from './focus';
-import { HOTKEY_GROUPS, KEYS } from './hotkeys';
-import { HINTS, TOOLS, toolForKey } from './tools';
+import { hotkeyGroups, KEYS } from './hotkeys';
+import { HINTS, TOOLS, hotkeyOf, toolForKey } from './tools';
+import { SettingsDialog } from './Settings';
+import { useSettings } from '@/store/settings';
 import { AnimationsPanel } from './panels/AnimationsPanel';
 import { MetricsPanel } from './panels/MetricsPanel';
 import { LAYOUTS, VIEW_LIST, sameViews } from '@/store/layout';
@@ -129,6 +131,7 @@ function TopBar() {
         <IconButton icon={Bell} title="Updates: what is new and the project activity" onClick={() => uiStore.patch({ updatesOpen: true })} />
         {hasUnseenUpdate() && !updatesOpen && <span className="notify-dot" role="status" aria-label="New updates" />}
       </span>
+      <IconButton icon={SlidersHorizontal} title="Settings" hotkey={KEYS.settings} onClick={() => uiStore.patch({ settingsOpen: true })} />
       <IconButton icon={MessageSquareText} title="Send feedback to the author" onClick={() => uiStore.patch({ feedbackOpen: true })} />
       <IconButton icon={CircleHelp} title="Shortcuts & help" hotkey={KEYS.help} onClick={() => uiStore.patch({ helpOpen: true })} />
       <Button primary icon={Download} onClick={() => uiStore.patch({ exportOpen: true })}>Export</Button>
@@ -137,12 +140,13 @@ function TopBar() {
 }
 
 function Toolbox() {
+  useSettings((s) => s.toolKeys); // the letters can be changed in Settings
   const tool = useUi((s) => s.tool);
   const mode = useUi((s) => s.mode);
   return (
     <div className="toolbox">
       {TOOLS.map((t) => (
-        <IconButton key={t.tool} icon={t.icon} title={t.title} hotkey={t.hotkey} tipPlace="right" active={tool === t.tool} animate={mode === 'animate'} disabled={!!t.setupOnly && mode !== 'setup'} onClick={() => setTool(t.tool)} />
+        <IconButton key={t.tool} icon={t.icon} title={t.title} hotkey={hotkeyOf(t.tool)} tipPlace="right" active={tool === t.tool} animate={mode === 'animate'} disabled={!!t.setupOnly && mode !== 'setup'} onClick={() => setTool(t.tool)} />
       ))}
     </div>
   );
@@ -196,13 +200,14 @@ function Keys({ combo }: { combo: string }) {
 }
 
 function HelpDialog() {
+  useSettings((s) => s.toolKeys);
   return (
     <Dialog title="Bone 2D — shortcuts" onClose={() => uiStore.patch({ helpOpen: false })} width={720}>
       <p className="hint-text flush mb">
         Bone 2D is a browser-based 2D skeletal animation editor. Build a rig in <b>Setup</b>, pose and key it in <b>Animate</b>, then export a Spine 4.3 compatible skeleton + atlas.
       </p>
       <div className="hotkeys">
-        {HOTKEY_GROUPS.map((g) => (
+        {hotkeyGroups().map((g) => (
           <section key={g.title} className="hk-group">
             <h3 className="section-label">{g.title}</h3>
             {g.rows.map((r) => (
@@ -238,6 +243,7 @@ export function App() {
   const helpOpen = useUi((s) => s.helpOpen);
   const updatesOpen = useUi((s) => s.updatesOpen);
   const feedbackOpen = useUi((s) => s.feedbackOpen);
+  const settingsOpen = useUi((s) => s.settingsOpen);
   useLang(); // the whole tree re-renders when the language changes: strings are translated while rendering
 
   useEffect(() => {
@@ -301,6 +307,10 @@ export function App() {
       }
       switch (key) {
         case 'f': viewportApi.frame(); break;
+        case 'f12':
+          e.preventDefault();
+          uiStore.patch({ settingsOpen: !ui.settingsOpen });
+          break;
         case 'f9':
           e.preventDefault();
           toggleAllViews();
@@ -420,6 +430,7 @@ export function App() {
       {helpOpen && <HelpDialog />}
       {updatesOpen && <UpdatesDialog />}
       {feedbackOpen && <FeedbackDialog />}
+      {settingsOpen && <SettingsDialog />}
       <Toast />
       <TooltipHost />
     </div>

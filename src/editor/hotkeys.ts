@@ -1,4 +1,4 @@
-import { TOOLS } from './tools';
+import { TOOLS, hotkeyOf } from './tools';
 
 /**
  * The keys of the editor other than the tool letters (those are in tools.ts), named once: the tooltips of the buttons, the menus and the
@@ -20,6 +20,7 @@ export const KEYS = {
   delete: 'Del',
   help: '?',
   hideViews: 'F9',
+  settings: 'F12',
 } as const;
 
 export interface HotkeyRow {
@@ -31,6 +32,9 @@ export interface HotkeyGroup {
   title: string;
   rows: HotkeyRow[];
 }
+
+/** The table with the tool letters as the person set them (Settings). */
+export const hotkeyGroups = (): HotkeyGroup[] => HOTKEY_GROUPS.map((g, i) => (i === 0 ? { ...g, rows: TOOLS.map((t) => ({ label: t.title, keys: [hotkeyOf(t.tool)] })) } : g));
 
 export const HOTKEY_GROUPS: HotkeyGroup[] = [
   { title: 'Tools', rows: TOOLS.map((t) => ({ label: t.title, keys: [t.hotkey] })) },
@@ -75,6 +79,7 @@ export const HOTKEY_GROUPS: HotkeyGroup[] = [
       { label: 'Open', keys: [KEYS.open] },
       { label: 'Export', keys: [KEYS.export] },
       { label: 'Shortcuts', keys: [KEYS.help] },
+      { label: 'Settings', keys: [KEYS.settings] },
     ],
   },
 ];

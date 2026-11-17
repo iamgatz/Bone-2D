@@ -13,6 +13,7 @@ import {
   setSelection,
 } from '@/store/actions';
 import { docStore } from '@/store/doc';
+import { settingsStore } from '@/store/settings';
 import { createIkFromDrag } from '@/store/ikActions';
 import { POLYGON_TOOLS, toast, uiStore } from '@/store/ui';
 import { getScene, getSetupSkeleton, screenToWorld } from '../scene';
@@ -471,10 +472,11 @@ export class ViewportController {
       uiStore.patch({ camera: { ...cam, x: cam.x + (e.deltaY + e.deltaX) / cam.zoom } });
       return;
     }
-    const [wx, wy] = screenToWorld(cam, w, h, sx, sy);
+    const [px, py] = settingsStore.get().zoomToMouse ? [sx, sy] : [w / 2, h / 2];
+    const [wx, wy] = screenToWorld(cam, w, h, px, py);
     const f = Math.exp(-e.deltaY * (e.ctrlKey ? 0.01 : 0.0016));
     const zoom = clamp(cam.zoom * f, 0.02, 80);
-    uiStore.patch({ camera: { zoom, x: wx - (sx - w / 2) / zoom, y: wy - (h / 2 - sy) / zoom } });
+    uiStore.patch({ camera: { zoom, x: wx - (px - w / 2) / zoom, y: wy - (h / 2 - py) / zoom } });
   };
 
   onContextMenu = (e: Event) => e.preventDefault();

@@ -1483,3 +1483,57 @@ a.btn {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+
+/* ---------------------------------------------------------------- settings window */
+.settings-body {
+  margin-top: 12px;
+  max-height: min(58vh, 560px);
+  overflow: auto;
+  padding-right: 4px;
+}
+.set-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  min-height: 34px;
+  padding: 4px 0;
+  border-bottom: 1px solid var(--border);
+}
+.set-label {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+.set-control {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: none;
+}
+.keycap {
+  min-width: 34px;
+  height: 26px;
+  padding: 0 8px;
+  background: var(--panel-3);
+  border: 1px solid var(--border-strong);
+  border-bottom-width: 2px;
+  border-radius: var(--radius-xs);
+  font-family: var(--mono);
+  font-weight: var(--fw-bold);
+  cursor: pointer;
+}
+.keycap:hover {
+  background: var(--panel-4);
+}
+.keycap.changed {
+  border-color: var(--accent-line);
+  color: var(--accent);
+}
+.keycap.listening {
+  border-color: var(--animate);
+  color: var(--animate);
+}
+.section-label.mt {
+  margin-top: 8px;
+}

@@ -1,3 +1,4 @@
+import { settingsStore } from '@/store/settings';
 import { useEffect, useRef } from 'react';
 import { GLRenderer } from '@/render/gl';
 import { addImageToScene, importImageFiles } from '@/store/actions';
@@ -116,7 +117,9 @@ export function Viewport() {
       const doc = docStore.get().skeleton;
       const hiddenSlots = new Set(doc.slots.filter((s) => s.hidden).map((s) => s.id));
       const hiddenBones = new Set(doc.bones.filter((b) => b.hidden).map((b) => b.id));
-      renderer!.begin({ x: ui.camera.x, y: ui.camera.y, scale: ui.camera.zoom * dpr, width: glCanvas.width, height: glCanvas.height });
+      const prefs = settingsStore.get();
+      renderer!.setSmoothing(prefs.smoothing);
+      renderer!.begin({ x: ui.camera.x, y: ui.camera.y, scale: ui.camera.zoom * dpr, width: glCanvas.width, height: glCanvas.height }, [...prefs.viewportBg, 1]);
       if (ui.view.images) renderer!.drawSkeleton(scene.skeleton, { skip: (s) => hiddenSlots.has(s.data.id) });
       controller.meshTool.drawHeat(renderer!, scene);
       renderer!.end();

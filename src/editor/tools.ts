@@ -1,5 +1,6 @@
 import { Bone, BoxSelect, Brush, Crosshair, Link2, MousePointer2, Move, PenTool, RotateCw, Scaling, Scissors, Triangle } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
+import { settingsStore, setSettings } from '@/store/settings';
 import type { Tool } from '@/store/ui';
 
 /** The tools of the viewport, in the order of the tool box. The hotkey is one letter; the key handler and the shortcuts window read it from here. */
@@ -18,8 +19,23 @@ export const TOOLS: { tool: Tool; icon: LucideIcon; title: string; hotkey: strin
   { tool: 'path', icon: PenTool, title: 'Path', hotkey: 'N', setupOnly: true },
 ];
 
+/** The letter of a tool: the one the person chose in Settings, else the default of the table. */
+export const hotkeyOf = (tool: Tool): string => settingsStore.get().toolKeys[tool] ?? TOOLS.find((t) => t.tool === tool)!.hotkey;
+
 /** The tool of a typed letter (without Ctrl), if there is one. */
-export const toolForKey = (key: string): Tool | undefined => TOOLS.find((t) => t.hotkey.toLowerCase() === key.toLowerCase())?.tool;
+export const toolForKey = (key: string): Tool | undefined => TOOLS.find((t) => hotkeyOf(t.tool).toLowerCase() === key.toLowerCase())?.tool;
+
+/** Gives a tool another letter. Returns the tool that already has the letter (nothing changes then), or null when it is done. */
+export function setToolKey(tool: Tool, letter: string): Tool | null {
+  const key = letter.toUpperCase();
+  const other = TOOLS.find((t) => t.tool !== tool && hotkeyOf(t.tool) === key);
+  if (other) return other.tool;
+  const keys = { ...settingsStore.get().toolKeys };
+  if (key === TOOLS.find((t) => t.tool === tool)!.hotkey) delete keys[tool];
+  else keys[tool] = key;
+  setSettings({ toolKeys: keys });
+  return null;
+}
 
 /** What the tool does, shown at the bottom of the viewport while it is active. */
 export const HINTS: Record<Tool, string> = {
