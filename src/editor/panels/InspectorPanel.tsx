@@ -1,4 +1,4 @@
-import { Bone as BoneIcon, BoxSelect, Crosshair, Image as ImageIcon, Layers, Link2, Scissors, Spline, Triangle } from 'lucide-react';
+import { Bone as BoneIcon, BoxSelect, Crosshair, Image as ImageIcon, Layers, Link2, Scissors, Spline, Triangle, X } from 'lucide-react';
 import { useState } from 'react';
 import { createTransformConstraint, PRESET_LABEL } from '@/store/transformActions';
 import type { TransformPreset } from '@/store/transformActions';
@@ -6,6 +6,8 @@ import { INHERIT_MODES } from '@/core/model';
 import type { Animation, BlendMode, Id, Inherit, MeshAttachment, PathAttachment, PointAttachment, PolygonAttachment, RGBA, RegionAttachment } from '@/core/model';
 import { BLEND_MODES, attachmentImage, pathNodeCount, polygonVertexCount } from '@/core/model';
 import { findKeyIndex } from '@/core/curve';
+import { folderOfSlot } from '@/core/folders';
+import { deleteFolder, renameFolder, setSlotFolder } from '@/store/folderActions';
 import { deleteKeys, keySelectedBones, removeSkinImage, renameBone, renameSlot, setAnimationDuration, setAttachmentProps, setBonePose, setBoneProps, setFps, setSkinImage, setSlotAttachment, setSlotBone, setSlotColor, setSlotProps, setTool, currentAnimation } from '@/store/actions';
 import type { PoseProps } from '@/store/actions';
 import { docStore, useProject } from '@/store/doc';
@@ -161,6 +163,7 @@ function SlotInspector({ slotId, attachmentName }: { slotId: Id; attachmentName:
   const darkNow = animate && dark ? dark : undefined; // keyed together with the light color
   const current = animate && sk ? sk.attachmentName : slot.attachment;
   const attOptions = [{ value: '', label: '— none —' }, ...Object.keys(atts).map((n) => ({ value: n, label: n }))];
+  const folder = folderOfSlot(doc, slotId);
   const activeSkin = skinId && skinId !== doc.skins[0]?.id ? doc.skins.find((s) => s.id === skinId) : undefined;
 
   return (
@@ -191,6 +194,21 @@ function SlotInspector({ slotId, attachmentName }: { slotId: Id; attachmentName:
         <Field label="Blend">
           <SelectField value={slot.blend} options={BLEND_MODES.map((b) => ({ value: b, label: b }))} onChange={(v: BlendMode) => setSlotProps(slotId, { blend: v }, 'Blend mode')} />
         </Field>
+        {!animate && (
+          <Field label="Folder" title="Draw order folder: slots of a folder swap places with each other when you key the draw order, the other slots stay where they are">
+            <SelectField
+              value={folder?.id ?? ''}
+              options={[{ value: '', label: '— none —' }, ...(doc.drawOrderFolders ?? []).map((x) => ({ value: x.id, label: x.name })), { value: 'new', label: '+ new folder' }]}
+              onChange={(v) => setSlotFolder(slotId, v === '' ? null : v)}
+            />
+          </Field>
+        )}
+        {!animate && folder && (
+          <Field label="Folder name">
+            <TextField value={folder.name} onCommit={(v) => renameFolder(folder.id, v)} wide />
+            <IconButton icon={X} small title="Delete the folder (its slots stay, its draw order keys go)" onClick={() => deleteFolder(folder.id)} />
+          </Field>
+        )}
         <Field label="Tint" keyButton={<KeyButton on={false} title="Key color" onClick={() => setSlotColor(slotId, [color[0], color[1], color[2], color[3]], darkNow)} />}>
           <div className="hstack">
             <ColorSwatch value={color} onChange={(rgb) => setSlotColor(slotId, [rgb[0], rgb[1], rgb[2], color[3]], darkNow)} />

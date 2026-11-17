@@ -25,6 +25,7 @@ import { compileSkeleton, createSkeleton, meshWorldVertices, pointWorld } from '
 import { validateProject } from '../src/core/validate';
 import * as A from '../src/store/actions';
 import { docStore } from '../src/store/doc';
+import * as FO from '../src/store/folderActions';
 import * as I from '../src/store/ikActions';
 import * as MX from '../src/store/mixActions';
 import * as M from '../src/store/meshActions';
@@ -136,6 +137,7 @@ function allKeyRefs(a: Animation): KeyRef[] {
   for (const id in a.physics) for (const prop of Object.keys(a.physics[id])) for (const k of (a.physics[id] as Record<string, { time: number }[]>)[prop]) out.push({ kind: 'physics', target: id, prop, time: k.time });
   for (const skinId in a.deform) for (const slotId in a.deform[skinId]) for (const att in a.deform[skinId][slotId]) for (const k of a.deform[skinId][slotId][att]) out.push({ kind: 'deform', target: slotId, prop: deformProp(skinId, att), time: k.time });
   for (const k of a.drawOrder) out.push({ kind: 'drawOrder', target: '', prop: '', time: k.time });
+  for (const id in a.drawOrderFolder ?? {}) for (const k of a.drawOrderFolder![id]) out.push({ kind: 'drawOrderFolder', target: id, prop: '', time: k.time });
   for (const k of a.events) out.push({ kind: 'event', target: '', prop: '', time: k.time });
   return out;
 }
@@ -170,6 +172,9 @@ export const ops: Op[] = [
   { name: 'setSlotProps', run: (c) => { const s = c.pick(doc().slots); if (s) A.setSlotProps(s.id, { blend: c.pick(BLEND_MODES)!, hidden: c.chance(0.2), dark: c.chance(0.3) ? [c.r(), c.r(), c.r()] : null }); } },
   { name: 'renameSlot', run: (c) => { const s = c.pick(doc().slots); if (s) A.renameSlot(s.id, c.pick(NAMES)!); } },
   { name: 'deleteSlots', run: (c) => { const s = c.pick(doc().slots); if (s) A.deleteSlots([s.id]); } },
+  { name: 'setSlotFolder', run: (c) => { const s = c.pick(doc().slots); if (!s) return; const f = c.pick(doc().drawOrderFolders ?? []); const r = c.r(); FO.setSlotFolder(s.id, r < 0.3 ? 'new' : r < 0.45 ? null : (f?.id ?? 'new')); } },
+  { name: 'deleteFolder', run: (c) => { const f = c.pick(doc().drawOrderFolders ?? []); if (f && c.chance(0.4)) FO.deleteFolder(f.id); } },
+  { name: 'renameFolder', run: (c) => { const f = c.pick(doc().drawOrderFolders ?? []); if (f) FO.renameFolder(f.id, c.chance(0.5) ? 'wings' : 'tail'); } },
   { name: 'moveSlot', run: (c) => { const s = c.pick(doc().slots); if (s) A.moveSlot(s.id, Math.floor(c.r() * (doc().slots.length + 1))); } },
   { name: 'setSlotBone', run: (c) => { const s = c.pick(doc().slots); if (s) A.setSlotBone(s.id, c.pick(doc().bones)!.id); } },
   { name: 'setSlotAttachment', run: (c) => { const s = c.pick(doc().slots); if (!s) return; const names = Object.keys(doc().skins[0].attachments[s.id] ?? {}); A.setSlotAttachment(s.id, c.chance(0.2) ? null : (c.pick(names) ?? null)); } },
@@ -317,10 +322,10 @@ export const ops: Op[] = [
   { name: 'sequenceOff', run: (c) => { const withSeq = [...regions(), ...meshes()]; const r = c.pick(withSeq); if (r && c.chance(0.5)) SQ.setSequence(r.slotId, r.name, null); } },
   { name: 'closeLoop', run: (c) => { A.closeCurrentLoop(c.chance(0.7) ? 'first' : 'last', c.chance(0.3)); } },
   { name: 'deleteKeys', run: (c) => { const a = A.currentAnimation(); if (!a) return; const refs = allKeyRefs(a); A.deleteKeys(refs.filter(() => c.chance(0.15))); } },
-  { name: 'setKeysCurve', run: (c) => { const a = A.currentAnimation(); if (!a) return; const refs = allKeyRefs(a).filter((r) => r.kind !== 'drawOrder' && r.kind !== 'event' && r.prop !== 'attachment'); const k = c.pick(refs); if (k) A.setKeysCurve([k], c.pick(['linear', 'stepped', 'bezier', [0.1, 0.2, 0.9, 0.8]] as const)! as 'linear'); } },
+  { name: 'setKeysCurve', run: (c) => { const a = A.currentAnimation(); if (!a) return; const refs = allKeyRefs(a).filter((r) => r.kind !== 'drawOrder' && r.kind !== 'drawOrderFolder' && r.kind !== 'event' && r.prop !== 'attachment'); const k = c.pick(refs); if (k) A.setKeysCurve([k], c.pick(['linear', 'stepped', 'bezier', [0.1, 0.2, 0.9, 0.8]] as const)! as 'linear'); } },
   { name: 'setKeyChannelValue', run: (c) => { const a = A.currentAnimation(); if (!a) return; const refs = allKeyRefs(a).filter((r) => r.kind === 'bone' || r.kind === 'ik' || r.kind === 'slider' || r.kind === 'transform' || r.kind === 'path' || (r.kind === 'physics' && r.prop !== 'reset')); const k = c.pick(refs); if (k) A.setKeyChannelValue(k, 0, c.num(-50, 50)); } },
   { name: 'setKeyCurveHandle', run: (c) => { const a = A.currentAnimation(); if (!a) return; const refs = allKeyRefs(a).filter((r) => r.kind === 'bone' || r.kind === 'ik' || r.kind === 'deform' || r.kind === 'transform' || r.kind === 'path' || (r.kind === 'physics' && r.prop !== 'reset')); const k = c.pick(refs); if (k) A.setKeyCurveHandle(k, 0, c.chance(0.5) ? 1 : 2, c.r(), c.num(-1, 2)); } },
-  { name: 'copyPasteKeys', run: (c) => { const a = A.currentAnimation(); if (!a) return; const refs = allKeyRefs(a).filter((r) => r.kind !== 'drawOrder'); const k = c.pick(refs); if (!k) return; A.copyKeys([k]); A.pasteKeys(c.num(0, 2)); } },
+  { name: 'copyPasteKeys', run: (c) => { const a = A.currentAnimation(); if (!a) return; const refs = allKeyRefs(a).filter((r) => r.kind !== 'drawOrder' && r.kind !== 'drawOrderFolder'); const k = c.pick(refs); if (!k) return; A.copyKeys([k]); A.pasteKeys(c.num(0, 2)); } },
   // ---- history
   { name: 'undo', run: () => docStore.undo() },
   { name: 'redo', run: () => docStore.redo() },

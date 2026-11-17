@@ -7,6 +7,7 @@
 import { animationEndTime } from './animate';
 import { normalizeBoneOrder } from './edit';
 import { uid, uniqueName } from './ids';
+import { pruneFolders } from './folders';
 import { deformLength } from './mesh';
 import { syncLinkedMeshes } from './links';
 import { cleanSequence, cleanSequenceKey } from './sequence';
@@ -60,6 +61,7 @@ export function repairProject(project: Project): string[] {
 
   repairBones(doc, note);
   repairSlots(doc, note);
+  repairFolders(doc, note);
   repairSkins(doc, note);
   repairConstraints(doc, note);
   repairEvents(doc, note);
@@ -202,6 +204,25 @@ function repairBones(doc: SkeletonDoc, note: Note) {
     normalizeBoneOrder(doc);
     note('bones were not ordered parents-first');
   }
+}
+
+/** Draw order folders: a list of {id, name, slots}, each slot in at most one folder, no folder left empty. */
+function repairFolders(doc: SkeletonDoc, note: Note) {
+  if (doc.drawOrderFolders === undefined) return;
+  if (!Array.isArray(doc.drawOrderFolders)) {
+    delete doc.drawOrderFolders;
+    note('draw order folders were not a list');
+    return;
+  }
+  const valid = doc.drawOrderFolders.filter((f) => f && typeof f === 'object' && isString(f.id) && Array.isArray(f.slots));
+  if (valid.length !== doc.drawOrderFolders.length) note('damaged draw order folders removed');
+  doc.drawOrderFolders = valid;
+  dedupeIds(doc.drawOrderFolders, 'draw order folder', note);
+  for (const f of doc.drawOrderFolders) if (!isString(f.name) || !f.name.trim()) f.name = 'folder';
+  dedupeNames(doc.drawOrderFolders, 'folder', 'draw order folder', note);
+  const before = JSON.stringify(doc.drawOrderFolders.map((f) => f.slots));
+  const gone = pruneFolders(doc);
+  if (gone.length || JSON.stringify((doc.drawOrderFolders ?? []).map((f) => f.slots)) !== before) note('draw order folders repaired (unknown or shared slots, empty folders)');
 }
 
 function repairSlots(doc: SkeletonDoc, note: Note) {
@@ -660,6 +681,26 @@ function repairAnimations(doc: SkeletonDoc, note: Note) {
       k.order = (Array.isArray(k.order) ? k.order : []).filter((id) => slotIds.has(id) && !seen.has(id) && !!seen.add(id));
     }
     if (cleanKeys(a.drawOrder, 'any', 0)) note(`${where}: draw order keys repaired`);
+    if (a.drawOrderFolder !== undefined) {
+      const folderIds = new Map((doc.drawOrderFolders ?? []).map((f) => [f.id, new Set(f.slots)] as const));
+      if (!a.drawOrderFolder || typeof a.drawOrderFolder !== 'object') a.drawOrderFolder = {};
+      for (const id of Object.keys(a.drawOrderFolder)) {
+        const members = folderIds.get(id);
+        const keys = a.drawOrderFolder[id];
+        if (!members || !Array.isArray(keys)) {
+          delete a.drawOrderFolder[id];
+          note(`${where}: keys of a missing draw order folder removed`);
+          continue;
+        }
+        for (const k of keys) {
+          const seen = new Set<Id>();
+          k.order = (Array.isArray(k.order) ? k.order : []).filter((s) => members.has(s) && !seen.has(s) && !!seen.add(s));
+        }
+        if (cleanKeys(keys, 'any', 0)) note(`${where}: draw order folder keys repaired`);
+        if (!keys.length) delete a.drawOrderFolder[id];
+      }
+      if (!Object.keys(a.drawOrderFolder).length) delete a.drawOrderFolder;
+    }
 
     const before = a.events.length;
     a.events = a.events.filter((k) => eventIds.has(k.event));

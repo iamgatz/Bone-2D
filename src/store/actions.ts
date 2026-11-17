@@ -6,6 +6,7 @@ import { DEFAULT_TOLERANCE, bakeAnimation, scaleTolerance, simplifyAnimation } f
 import type { BakeOptions } from '@/core/bake';
 import { cleanUpAnimation } from '@/core/cleanup';
 import { closeLoop } from '@/core/loops';
+import { folderOrderAfterMove } from '@/core/folders';
 import { linkedTo, makeLink } from '@/core/links';
 import { findAnimation, freshName, makeCurve, normalizeBoneOrder, pruneSequences, purgeAttachment, removeBones, removeSlots, rgba2ToRgba, rgbaToRgba2, setSlotDarkColor, snapTime, upsertKey, decompose } from '@/core/edit';
 import type { BoneMats } from '@/core/mesh';
@@ -665,6 +666,17 @@ function keyDrawOrder(id: Id, toIndex: number) {
   const order = getScene().skeleton.drawOrder.map((s) => s.data.id);
   const i = order.indexOf(id);
   if (i < 0) return;
+  // a slot in a folder reorders its folder only: the folder's slots swap places, the others stay
+  const inFolder = folderOrderAfterMove(skeletonDoc(), order, id, toIndex);
+  if (inFolder) {
+    docStore.update('Key draw order', (d) => {
+      const a = d.skeleton.animations.find((x) => x.id === anim.id);
+      if (!a) return;
+      upsertKey((a.drawOrderFolder ??= {})[inFolder.folder.id] ??= [], { time: ui.time, order: inFolder.order });
+      extendDuration(a, ui.time);
+    });
+    return;
+  }
   order.splice(i, 1);
   order.splice(Math.max(0, Math.min(order.length, toIndex)), 0, id);
   docStore.update('Key draw order', (d) => {

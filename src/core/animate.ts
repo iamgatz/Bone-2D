@@ -1,5 +1,6 @@
 /** Applies an animation (bone, slot, IK, deform, draw order timelines) to a skeleton pose at a given time. */
 import { deformProgress, findKeyIndex, sampleKeys } from './curve';
+import { completeFolderOrder } from './folders';
 import { GLOBAL_PHYSICS, PHYSICS_PARAMS } from './model';
 import { sequenceIndexAt } from './sequence';
 import type { Animation, Id, Key, Timeline } from './model';
@@ -102,8 +103,32 @@ export function animationEndTime(anim: Animation): number {
   for (const id in anim.physics ?? {}) for (const p of [...PHYSICS_PARAMS, 'reset'] as const) scan(anim.physics[id][p]);
   for (const skin in anim.deform) for (const slot in anim.deform[skin]) for (const att in anim.deform[skin][slot]) scan(anim.deform[skin][slot][att]);
   scan(anim.drawOrder);
+  for (const id in anim.drawOrderFolder ?? {}) scan(anim.drawOrderFolder![id]);
   scan(anim.events);
   return end;
+}
+
+/**
+ * The draw order folder timelines: the slots of each folder with keys take the order of the key in force, among the seats they hold in the
+ * draw order the full timeline left (before the first key, setup order). What Spine's DrawOrderFolderTimeline does.
+ */
+function applyDrawOrderFolders(skeleton: Skeleton, anim: Animation, time: number) {
+  const timelines = anim.drawOrderFolder;
+  if (!timelines) return;
+  for (const f of skeleton.data.folders ?? []) {
+    const keys = timelines[f.id];
+    if (!keys?.length) continue;
+    const members = f.slots.map((i) => skeleton.slots[i]);
+    const i = findKeyIndex(keys, time);
+    const arrangement = i < 0 ? members : completeFolderOrder(members.map((m) => m.data.id), keys[i].order).map((id) => skeleton.slotById(id)!);
+    const seats = new Set(members);
+    let next = 0;
+    const out = skeleton.drawOrder.slice();
+    for (let seat = 0; seat < out.length && next < arrangement.length; seat++) {
+      if (seats.has(out[seat])) out[seat] = arrangement[next++];
+    }
+    skeleton.drawOrder = out;
+  }
 }
 
 /** Poses `skeleton` for `anim` at `time` starting from the setup pose. Does not compute world transforms. */
@@ -211,6 +236,7 @@ export function applyAnimation(skeleton: Skeleton, anim: Animation | null, time:
       skeleton.drawOrder = order;
     }
   }
+  applyDrawOrderFolders(skeleton, anim, time);
 
   for (const skinId in anim.deform) {
     const skin = skeleton.data.skinById.get(skinId);
@@ -386,6 +412,7 @@ export function applyAnimationOnto(skeleton: Skeleton, anim: Animation, time: nu
       skeleton.drawOrder = order;
     }
   }
+  applyDrawOrderFolders(skeleton, anim, time);
 
   for (const skinId in anim.deform) {
     const skin = skeleton.data.skinById.get(skinId);

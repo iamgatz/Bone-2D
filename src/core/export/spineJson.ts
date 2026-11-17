@@ -4,6 +4,7 @@
  */
 import { curveToAbsolute } from '../curve';
 import { linkSource } from '../links';
+import { drawOrderOffsets, folderSlotsInOrder } from '../folders';
 import { deformLength } from '../mesh';
 import type { Animation, Attachment, Id, IkKey, Influence, Key, SequenceDef, SkeletonDoc, Timeline } from '../model';
 import { GLOBAL_PHYSICS, PHYSICS_PARAMS, polygonVertexCount } from '../model';
@@ -714,18 +715,29 @@ function exportAnimation(doc: SkeletonDoc, a: Animation, n: Names): Json {
     out.drawOrder = a.drawOrder.map((k) => {
       const e: Json = {};
       withTime(e, k.time);
-      const offsets: { slot: string; offset: number; idx: number }[] = [];
-      const order = k.order.filter((id) => setupIndex.has(id));
-      for (const s of doc.slots) if (!order.includes(s.id)) order.push(s.id);
-      order.forEach((id, newIndex) => {
-        const old = setupIndex.get(id)!;
-        if (old !== newIndex) offsets.push({ slot: n.slotName(id), offset: newIndex - old, idx: old });
-      });
-      offsets.sort((x, y) => x.idx - y.idx);
-      if (offsets.length) e.offsets = offsets.map((o) => ({ slot: o.slot, offset: o.offset }));
+      const offsets = drawOrderOffsets(doc.slots.map((s) => s.id), k.order.filter((id) => setupIndex.has(id)));
+      if (offsets.length) e.offsets = offsets.map((o) => ({ slot: n.slotName(o.id), offset: o.offset }));
       return e;
     });
   }
+  // draw order folders: the slots of the folder (setup order) and its own keys
+  const folderTimelines: Json[] = [];
+  for (const f of doc.drawOrderFolders ?? []) {
+    const keys = a.drawOrderFolder?.[f.id];
+    const members = folderSlotsInOrder(doc, f);
+    if (!keys?.length || !members.length) continue;
+    folderTimelines.push({
+      slots: members.map((id) => n.slotName(id)),
+      keys: keys.map((k) => {
+        const e: Json = {};
+        withTime(e, k.time);
+        const offsets = drawOrderOffsets(members, k.order);
+        if (offsets.length) e.offsets = offsets.map((o) => ({ slot: n.slotName(o.id), offset: o.offset }));
+        return e;
+      }),
+    });
+  }
+  if (folderTimelines.length) out.drawOrderFolder = folderTimelines;
 
   // events
   if (a.events.length) {

@@ -612,7 +612,24 @@ export function importSpineJson(input: unknown, name = 'imported'): SpineImportR
     if (Array.isArray(am.drawOrder)) {
       a.drawOrder = arr(am.drawOrder).map(obj).map((k) => ({ time: num(k.time, 0), order: drawOrderFromOffsets(arr(k.offsets).map(obj)) }));
     }
-    if (am.drawOrderFolder) warn(`animation "${an}": draw order folder timelines are not supported and were skipped`);
+    // draw order folders: one folder per distinct set of slots, shared by the animations
+    if (Array.isArray(am.drawOrderFolder)) {
+      for (const tl of arr(am.drawOrderFolder).map(obj)) {
+        const members = arr(tl.slots).map((n) => doc.slots.find((s) => s.name === String(n))?.id).filter((id): id is Id => !!id);
+        if (!members.length) continue;
+        const sameSet = (list: Id[]) => list.length === members.length && members.every((m) => list.includes(m));
+        let folder = doc.drawOrderFolders?.find((x) => sameSet(x.slots));
+        if (!folder) {
+          if (doc.drawOrderFolders?.some((x) => x.slots.some((s) => members.includes(s)))) {
+            warn(`animation "${an}": a draw order folder shares slots with another folder and was skipped`);
+            continue;
+          }
+          folder = { id: uid(), name: `folder ${(doc.drawOrderFolders?.length ?? 0) + 1}`, slots: members };
+          (doc.drawOrderFolders ??= []).push(folder);
+        }
+        (a.drawOrderFolder ??= {})[folder.id] = arr(tl.keys).map(obj).map((k) => ({ time: num(k.time, 0), order: drawOrderFromOffsets(arr(k.offsets).map(obj), members) }));
+      }
+    }
     // events
     a.events = arr(am.events).map(obj).filter((k) => eventByName.has(String(k.name))).map((k) => {
       const key: any = { time: num(k.time, 0), event: eventByName.get(String(k.name))! };
@@ -627,13 +644,14 @@ export function importSpineJson(input: unknown, name = 'imported'): SpineImportR
     return a;
   }
 
-  function drawOrderFromOffsets(offsets: J[]): Id[] {
-    const n = doc.slots.length;
+  /** The order a list of draw order offsets makes of `list` (every slot of the skeleton, or the slots of a folder in their order). */
+  function drawOrderFromOffsets(offsets: J[], list: Id[] = doc.slots.map((s) => s.id)): Id[] {
+    const n = list.length;
     const order = new Array<number>(n).fill(-1);
     const unchanged: number[] = [];
     let original = 0;
     for (const o of offsets) {
-      const si = doc.slots.findIndex((s) => s.name === o.slot);
+      const si = list.findIndex((id) => doc.slots.find((s) => s.id === id)?.name === o.slot);
       if (si < 0) continue;
       while (original !== si) unchanged.push(original++);
       const target = original + num(o.offset, 0);
@@ -642,7 +660,7 @@ export function importSpineJson(input: unknown, name = 'imported'): SpineImportR
     }
     while (original < n) unchanged.push(original++);
     for (let i = n - 1; i >= 0; i--) if (order[i] === -1) order[i] = unchanged.pop() ?? i;
-    return order.map((i) => doc.slots[i].id);
+    return order.map((i) => list[i]);
   }
 
   // ----------------------------------------------------------- images (sizes come from the attachments)

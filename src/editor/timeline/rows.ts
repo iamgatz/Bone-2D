@@ -205,8 +205,10 @@ export function buildRows(doc: SkeletonDoc, anim: Animation | null, selectedBone
   if (sequenceRows.length) rows.push({ id: 'g:sequence', label: 'Sequences', type: 'group', depth: 0, expandable: false, expanded: true, keys: [] }, ...sequenceRows);
 
   // ---- draw order / events
-  if (anim.drawOrder.length || anim.events.length) {
+  const folderRows = (doc.drawOrderFolders ?? []).filter((f) => anim.drawOrderFolder?.[f.id]?.length);
+  if (anim.drawOrder.length || anim.events.length || folderRows.length) {
     rows.push({ id: 'g:other', label: 'Draw order & events', type: 'group', depth: 0, expandable: false, expanded: true, keys: [] });
+    for (const f of folderRows) rows.push({ id: `orderfolder:${f.id}`, label: f.name, type: 'entity', depth: 1, expandable: false, expanded: false, keys: anim.drawOrderFolder![f.id].map((k) => ({ time: k.time, refs: [{ kind: 'drawOrderFolder' as const, target: f.id, prop: '', time: k.time }] })), tone: 'order' });
     if (anim.drawOrder.length) rows.push({ id: 'order', label: 'Draw order', type: 'entity', depth: 1, expandable: false, expanded: false, keys: anim.drawOrder.map((k) => ({ time: k.time, refs: [{ kind: 'drawOrder' as const, target: '', prop: '', time: k.time }] })), tone: 'order' });
     if (anim.events.length) rows.push({ id: 'events', label: 'Events', type: 'entity', depth: 1, expandable: false, expanded: false, keys: anim.events.map((k) => ({ time: k.time, refs: [{ kind: 'event' as const, target: '', prop: '', time: k.time }] })), tone: 'event' });
   }

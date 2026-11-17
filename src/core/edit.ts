@@ -1,4 +1,5 @@
 /** Pure document edit helpers. They mutate the passed (draft) document in place, so they work under immer and in tests. */
+import { pruneFolders } from './folders';
 import { uniqueName } from './ids';
 import { remapDeformValues, vertexWorldPositions } from './mesh';
 import type { BoneMats, VertexMap } from './mesh';
@@ -79,7 +80,10 @@ export function removeSlots(doc: SkeletonDoc, slotIds: Set<Id>) {
     }
     pruneSequences(a);
     a.drawOrder = a.drawOrder.map((k) => ({ ...k, order: k.order.filter((s) => !slotIds.has(s)) }));
+    for (const id in a.drawOrderFolder ?? {}) a.drawOrderFolder![id] = a.drawOrderFolder![id].map((k) => ({ ...k, order: k.order.filter((s) => !slotIds.has(s)) }));
   }
+  for (const f of doc.drawOrderFolders ?? []) f.slots = f.slots.filter((s) => !slotIds.has(s));
+  pruneFolders(doc);
 }
 
 /**
