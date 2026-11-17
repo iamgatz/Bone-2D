@@ -1,3 +1,4 @@
+import type { PlaySettings } from './model';
 /**
  * How the playhead moves while an animation plays: forward or ping-pong (forward, then backward), looping or playing once,
  * over the whole animation or over a chosen range (Spine's loop range). Pure: the playback loop feeds it the elapsed time.
@@ -45,4 +46,28 @@ export function advancePlayback(state: PlayState, delta: number, duration: numbe
     p %= period;
   }
   return p <= length ? { time: lo + p, dir: 1, stopped: false } : { time: lo + period - p, dir: -1, stopped: false };
+}
+
+/** What a new animation plays like: looping, the whole animation, forward only. */
+export const DEFAULT_PLAY: PlaySettings = { loop: true, pingPong: false, range: null };
+
+/** The play settings of an animation (the defaults when it has none or they are damaged). */
+export function playOf(anim: { play?: unknown; duration: number } | null | undefined): PlaySettings {
+  return cleanPlay(anim?.play, anim?.duration ?? 0);
+}
+
+/** Play settings from anything: booleans where booleans belong, and a range of two numbers inside the animation (null when it is empty). */
+export function cleanPlay(raw: unknown, duration: number): PlaySettings {
+  const r = (raw && typeof raw === 'object' ? raw : {}) as { loop?: unknown; pingPong?: unknown; range?: unknown };
+  let range: [number, number] | null = null;
+  if (Array.isArray(r.range) && r.range.length === 2 && Number.isFinite(r.range[0]) && Number.isFinite(r.range[1])) {
+    const lo = Math.min(Math.max(0, +r.range[0]), duration);
+    const hi = Math.min(Math.max(0, +r.range[1]), duration);
+    if (hi - lo >= 1e-3) range = [lo, hi];
+  }
+  return { loop: typeof r.loop === 'boolean' ? r.loop : DEFAULT_PLAY.loop, pingPong: typeof r.pingPong === 'boolean' ? r.pingPong : DEFAULT_PLAY.pingPong, range };
+}
+
+export function samePlay(a: PlaySettings, b: PlaySettings): boolean {
+  return a.loop === b.loop && a.pingPong === b.pingPong && (a.range === b.range || (!!a.range && !!b.range && a.range[0] === b.range[0] && a.range[1] === b.range[1]));
 }

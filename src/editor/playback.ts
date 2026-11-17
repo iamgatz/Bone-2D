@@ -1,10 +1,30 @@
 import { uiStore } from '@/store/ui';
 import { docStore } from '@/store/doc';
 import { findAnimation } from '@/core/edit';
-import { advancePlayback } from '@/core/playback';
+import { DEFAULT_PLAY, advancePlayback, playOf, samePlay } from '@/core/playback';
+
+/** `ui.loop`, `ui.pingPong` and `ui.range` mirror the play settings of the current animation (they live on the animation, see `setPlay`). */
+function syncPlaySettings() {
+  const ui = uiStore.get();
+  const anim = findAnimation(docStore.get().skeleton, ui.animationId);
+  const play = anim ? playOf(anim) : DEFAULT_PLAY;
+  if (!samePlay(play, { loop: ui.loop, pingPong: ui.pingPong, range: ui.range })) uiStore.patch({ loop: play.loop, pingPong: play.pingPong, range: play.range });
+}
+
+/** Keeps the mirror in line with the document and the chosen animation; returns the stop function. */
+export function startPlaySync(): () => void {
+  syncPlaySettings();
+  const offDoc = docStore.subscribe(syncPlaySettings);
+  const offUi = uiStore.subscribe(syncPlaySettings);
+  return () => {
+    offDoc();
+    offUi();
+  };
+}
 
 /** Drives `ui.time` while playing. Runs for the whole app lifetime. */
 export function startPlaybackLoop(): () => void {
+  const stopSync = startPlaySync();
   let raf = 0;
   let last = performance.now();
   let dir: 1 | -1 = 1;
@@ -27,5 +47,8 @@ export function startPlaybackLoop(): () => void {
     raf = requestAnimationFrame(tick);
   };
   raf = requestAnimationFrame(tick);
-  return () => cancelAnimationFrame(raf);
+  return () => {
+    cancelAnimationFrame(raf);
+    stopSync();
+  };
 }

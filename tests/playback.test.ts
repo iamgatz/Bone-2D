@@ -3,6 +3,7 @@ import { newAnimation } from '../src/core/model';
 import { startPlaybackLoop } from '../src/editor/playback';
 import { docStore } from '../src/store/doc';
 import { uiStore } from '../src/store/ui';
+import { setPlay } from '../src/store/actions';
 
 /** Deterministic requestAnimationFrame: tests advance time by hand. */
 let queue: ((t: number) => void)[] = [];
@@ -55,7 +56,7 @@ describe('playback loop', () => {
   });
 
   it('stops at the end when not looping', () => {
-    uiStore.patch({ loop: false });
+    setPlay({ loop: false });
     for (let i = 0; i < 80; i++) step(16);
     expect(uiStore.get().playing).toBe(false);
     expect(uiStore.get().time).toBe(1);

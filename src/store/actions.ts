@@ -16,9 +16,9 @@ import type { KeyRef } from '@/core/keyrefs';
 import { RAD2DEG, atan2Deg, matInvert, matMul } from '@/core/math';
 import type { Mat } from '@/core/math';
 import { newAnimation, newBone, newSkin, newSlot } from '@/core/model';
-import { playSpan } from '@/core/playback';
+import { cleanPlay, playOf, playSpan, samePlay } from '@/core/playback';
 import { cleanImageName, renameImage, sequenceFrameOwner, unusedImages } from '@/core/images';
-import type { Animation, Bone, Id, Inherit, Project, RGB, RGBA, Slot } from '@/core/model';
+import type { Animation, Bone, Id, Inherit, PlaySettings, Project, RGB, RGBA, Slot } from '@/core/model';
 import { getScene, getSetupSkeleton } from '@/editor/scene';
 import { assets } from './assets';
 import { docStore } from './doc';
@@ -34,6 +34,21 @@ export const slotById = (id: Id) => skeletonDoc().slots.find((s) => s.id === id)
 
 export function currentAnimation(): Animation | undefined {
   return findAnimation(skeletonDoc(), uiStore.get().animationId);
+}
+
+/**
+ * Changes how the current animation plays (loop, ping-pong, play range). It is kept on the animation, so every animation has its own
+ * settings and they are saved with the project; the playback loop and the timeline read them back through `ui`.
+ */
+export function setPlay(patch: Partial<PlaySettings>) {
+  const anim = currentAnimation();
+  if (!anim) return;
+  const next = cleanPlay({ ...playOf(anim), ...patch }, anim.duration);
+  if (samePlay(next, playOf(anim))) return;
+  docStore.update('Playback settings', (d) => {
+    const a = d.skeleton.animations.find((x) => x.id === anim.id);
+    if (a) a.play = next;
+  });
 }
 
 // ------------------------------------------------------------------ mode / tool / selection

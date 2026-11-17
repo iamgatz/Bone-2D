@@ -622,6 +622,7 @@ export const RU: Record<string, string> = {
   'Simulation': 'Симуляция',
   'Global timelines': 'Глобальные таймлайны',
   'Playback': 'Воспроизведение',
+  'Playback settings': 'Настройки воспроизведения',
   'Restart simulation': 'Перезапустить симуляцию',
   'The simulation runs while an animation plays. Scrubbing shows the pose without physics.': 'Симуляция идёт, пока играет анимация. При перемотке показывается поза без физики.',
   'The bone that is moved by the simulation': 'Кость, которую двигает симуляция',
