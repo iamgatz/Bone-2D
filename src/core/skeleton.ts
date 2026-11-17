@@ -1378,7 +1378,8 @@ export class SliderRT {
   }
 
   sourceActive() {
-    return true;
+    // a slider that has no animation does nothing and is not exported, so it must not shape the update order either
+    return this.data.animation !== null;
   }
 
   sort(skeleton: Skeleton) {

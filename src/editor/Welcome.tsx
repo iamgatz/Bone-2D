@@ -1,11 +1,14 @@
-import { Bell, BookOpen, FilePlus2, FolderOpen, Keyboard, MessageSquareText, Sparkles } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { Bell, BookOpen, FilePlus2, FileText, FolderOpen, Keyboard, MessageSquareText, Sparkles, X } from 'lucide-react';
 import { loadSample } from '@/store/sample';
-import { newProject, openProjectFile } from '@/store/project';
+import { newProject, openProjectFile, openRecentProject } from '@/store/project';
+import { canKeepHandles, forgetRecent, listRecent } from '@/store/recent';
+import type { RecentEntry } from '@/store/recent';
 import { setSettings, useSettings } from '@/store/settings';
 import { uiStore } from '@/store/ui';
 import { openSpineImport } from './importSpine';
 import { REPO, SITE } from './changelog';
-import { Dialog, Toggle } from './ui/controls';
+import { Dialog, IconButton, Toggle } from './ui/controls';
 
 /** One big choice of the welcome window. */
 function Choice(props: { icon: typeof Sparkles; title: string; text: string; onClick: () => void; primary?: boolean }) {
@@ -21,9 +24,23 @@ function Choice(props: { icon: typeof Sparkles; title: string; text: string; onC
 
 const close = () => uiStore.patch({ welcomeOpen: false });
 
+/** "3 min ago", "yesterday", or the date. */
+function ago(time: number): string {
+  const minutes = Math.round((Date.now() - time) / 60000);
+  if (minutes < 1) return 'just now';
+  if (minutes < 60) return `${minutes} min ago`;
+  const hours = Math.round(minutes / 60);
+  if (hours < 24) return `${hours} h ago`;
+  return new Date(time).toLocaleDateString();
+}
+
 /** The welcome window (Spine has one too): the ways to start, the first three steps, and the way to the updates, the help and the feedback. */
 export function WelcomeDialog() {
   const showAtStart = useSettings((s) => s.showWelcome);
+  const [recent, setRecent] = useState<RecentEntry[]>([]);
+  useEffect(() => {
+    if (canKeepHandles()) void listRecent().then(setRecent);
+  }, []);
   const go = (fn: () => void) => () => {
     close();
     fn();
@@ -35,8 +52,25 @@ export function WelcomeDialog() {
         <Choice primary icon={Sparkles} title="Try the demo rig" text="A fox with IK legs, a physics tail, two skins and four animations" onClick={go(loadSample)} />
         <Choice icon={FilePlus2} title="New project" text="An empty skeleton: drop PNGs, draw bones" onClick={go(() => newProject())} />
         <Choice icon={FolderOpen} title="Open a project" text="A .bone2d file from your computer" onClick={go(openProjectFile)} />
-        <Choice icon={FolderOpen} title="Import from Spine" text="A Spine .json (4.0 – 4.3) with its atlas and images" onClick={go(openSpineImport)} />
+        <Choice icon={FolderOpen} title="Import from Spine" text="A Spine .json (4.0 – 4.3) or .skel (4.3) with its atlas and images" onClick={go(openSpineImport)} />
       </div>
+      {recent.length > 0 && (
+        <>
+          <h3 className="section-label flush mt">Recent projects</h3>
+          <div className="recent-list">
+            {recent.map((e) => (
+              <div key={e.id} className="recent-row">
+                <button type="button" className="recent-open" onClick={go(() => void openRecentProject(e.id))}>
+                  <FileText size={15} />
+                  <span className="recent-name">{e.name}</span>
+                  <span className="dim row-meta">{ago(e.time)}</span>
+                </button>
+                <IconButton icon={X} title="Forget" small onClick={() => void forgetRecent(e.id).then(() => setRecent((l) => l.filter((x) => x.id !== e.id)))} />
+              </div>
+            ))}
+          </div>
+        </>
+      )}
       <h3 className="section-label flush mt">First steps</h3>
       <ol className="steps">
         <li>

@@ -5,6 +5,9 @@ import { repairProject } from '@/core/validate';
 import { assets, blobToDataURL, dataURLToBlob } from './assets';
 import type { ImageAsset } from './assets';
 import { docStore } from './doc';
+import { LEGACY_DB, idbGet, idbSet } from './idb';
+import { forgetRecent, recentHandle, rememberRecent } from './recent';
+import type { FileHandle } from './recent';
 import { settingsStore } from './settings';
 import { emptySelection, toast, uiStore } from './ui';
 
@@ -83,6 +86,7 @@ export async function loadProjectText(text: string): Promise<LoadReport> {
 }
 
 export function newProject(name = 'untitled') {
+  currentHandle = null;
   assets.clear();
   docStore.replace(emptyProject(name));
   uiStore.patch({ mode: 'setup', selection: emptySelection, animationId: null, skinId: null, time: 0, playing: false, overrides: {}, selectedKeys: [], camera: { x: 0, y: 120, zoom: 1.2 } });
@@ -101,19 +105,55 @@ function downloadBlob(blob: Blob, filename: string) {
 }
 export { downloadBlob };
 
-export async function saveProjectFile() {
+/** The file the open project belongs to, when it came from / went to a file picker that gave us a handle: Save writes to it again. */
+let currentHandle: FileHandle | null = null;
+
+type Pickers = {
+  showSaveFilePicker?: (o: unknown) => Promise<FileHandle>;
+  showOpenFilePicker?: (o: unknown) => Promise<FileHandle[]>;
+};
+const pickers = () => window as unknown as Pickers;
+
+/** Asks for write access to a file the browser remembers from an earlier visit; true when we have it. */
+async function canWrite(handle: FileHandle): Promise<boolean> {
+  try {
+    if (!handle.queryPermission || !handle.requestPermission) return true;
+    if ((await handle.queryPermission({ mode: 'readwrite' })) === 'granted') return true;
+    return (await handle.requestPermission({ mode: 'readwrite' })) === 'granted';
+  } catch {
+    return false;
+  }
+}
+
+async function writeTo(handle: FileHandle, blob: Blob) {
+  const w = await handle.createWritable();
+  await w.write(blob);
+  await w.close();
+  docStore.dirty = false;
+  void rememberRecent(handle);
+  toast(`Saved ${handle.name}`, 'ok');
+}
+
+/** Save writes to the file the project was opened from or saved to; the first save (or "Save as") asks where. */
+export async function saveProjectFile(saveAs = false) {
   const text = await serializeProject();
   const name = (docStore.get().name || 'untitled').replace(/[^\w\- ]+/g, '_');
   const blob = new Blob([text], { type: 'application/json' });
-  const picker = (window as unknown as { showSaveFilePicker?: (o: unknown) => Promise<{ createWritable: () => Promise<{ write: (b: Blob) => Promise<void>; close: () => Promise<void> }>; name: string }> }).showSaveFilePicker;
+  if (currentHandle && !saveAs && (await canWrite(currentHandle))) {
+    try {
+      await writeTo(currentHandle, blob);
+      return;
+    } catch (e) {
+      console.warn('could not write to the open file, asking where to save instead', e);
+      currentHandle = null;
+    }
+  }
+  const picker = pickers().showSaveFilePicker;
   if (picker) {
     try {
       const handle = await picker({ suggestedName: `${name}.bone2d`, types: [{ description: 'Bone 2D project', accept: { 'application/json': ['.bone2d'] } }] });
-      const w = await handle.createWritable();
-      await w.write(blob);
-      await w.close();
-      docStore.dirty = false;
-      toast(`Saved ${handle.name}`, 'ok');
+      await writeTo(handle, blob);
+      currentHandle = handle;
       return;
     } catch (e) {
       if ((e as Error).name === 'AbortError') return;
@@ -124,7 +164,51 @@ export async function saveProjectFile() {
   toast('Project downloaded', 'ok');
 }
 
+function reportOpened(name: string, r: LoadReport) {
+  const notes = [r.repaired.length ? `${r.repaired.length} problem${r.repaired.length === 1 ? '' : 's'} repaired` : '', r.failedImages.length ? `${r.failedImages.length} image${r.failedImages.length === 1 ? '' : 's'} could not be read` : ''].filter(Boolean);
+  toast(`Opened ${name}${notes.length ? ` (${notes.join(', ')})` : ''}`, notes.length ? 'info' : 'ok');
+}
+
+/** Opens the file a handle points to (from the picker, or from the recent list) and keeps the handle for Save. */
+export async function openHandle(handle: FileHandle) {
+  try {
+    const f = await handle.getFile();
+    const r = await loadProjectText(await f.text());
+    currentHandle = handle;
+    void rememberRecent(handle);
+    reportOpened(f.name, r);
+  } catch (e) {
+    toast(`Could not open the file: ${(e as Error).message}`, 'error');
+  }
+}
+
+/** Opens a project from the recent list: the browser may ask once to let the editor read (and later save to) the file. */
+export async function openRecentProject(id: string) {
+  const handle = await recentHandle(id);
+  if (!handle) {
+    await forgetRecent(id);
+    toast('That file is not in the list any more', 'info');
+    return;
+  }
+  if (!(await canWrite(handle))) {
+    toast('The browser did not let the editor use that file', 'info');
+    return;
+  }
+  await openHandle(handle);
+}
+
 export async function openProjectFile() {
+  const pick = pickers().showOpenFilePicker;
+  if (pick) {
+    try {
+      const [handle] = await pick({ types: [{ description: 'Bone 2D project', accept: { 'application/json': ['.bone2d', '.marrow'] } }] });
+      if (handle) await openHandle(handle);
+      return;
+    } catch (e) {
+      if ((e as Error).name === 'AbortError') return;
+      // the picker is not usable here (an iframe, a policy): fall back to the plain file input below
+    }
+  }
   const input = document.createElement('input');
   input.type = 'file';
   input.accept = '.bone2d,.marrow,application/json';
@@ -132,9 +216,8 @@ export async function openProjectFile() {
     const f = input.files?.[0];
     if (!f) return;
     try {
-      const r = await loadProjectText(await f.text());
-      const notes = [r.repaired.length ? `${r.repaired.length} problem${r.repaired.length === 1 ? '' : 's'} repaired` : '', r.failedImages.length ? `${r.failedImages.length} image${r.failedImages.length === 1 ? '' : 's'} could not be read` : ''].filter(Boolean);
-      toast(`Opened ${f.name}${notes.length ? ` (${notes.join(', ')})` : ''}`, notes.length ? 'info' : 'ok');
+      currentHandle = null;
+      reportOpened(f.name, await loadProjectText(await f.text()));
     } catch (e) {
       toast(`Could not open the file: ${(e as Error).message}`, 'error');
     }
@@ -144,50 +227,10 @@ export async function openProjectFile() {
 
 // ------------------------------------------------------------------ autosave
 
-const DB = 'bone2d';
-/** Database name from before the project was renamed from "Marrow": an autosave left there is still restored, the next one goes to `DB`. */
-const LEGACY_DB = 'marrow';
-const STORE = 'kv';
-
-function idb(name = DB): Promise<IDBDatabase> {
-  return new Promise((resolve, reject) => {
-    const req = indexedDB.open(name, 1);
-    req.onupgradeneeded = () => {
-      if (name === DB) req.result.createObjectStore(STORE);
-      else req.transaction?.abort(); // the legacy database is only read: do not create an empty one when it does not exist
-    };
-    req.onsuccess = () => resolve(req.result);
-    req.onerror = () => reject(req.error);
-  });
-}
-
-async function idbPut(key: string, value: string) {
-  const db = await idb();
-  await new Promise<void>((resolve, reject) => {
-    const tx = db.transaction(STORE, 'readwrite');
-    tx.objectStore(STORE).put(value, key);
-    tx.oncomplete = () => resolve();
-    tx.onerror = () => reject(tx.error);
-  });
-  db.close();
-}
-
-async function idbGet(key: string, name = DB): Promise<string | undefined> {
-  const db = await idb(name);
-  const v = await new Promise<string | undefined>((resolve, reject) => {
-    const tx = db.transaction(STORE, 'readonly');
-    const r = tx.objectStore(STORE).get(key);
-    r.onsuccess = () => resolve(r.result as string | undefined);
-    r.onerror = () => reject(r.error);
-  });
-  db.close();
-  return v;
-}
-
 export async function restoreAutosave(): Promise<boolean> {
   try {
-    let text = await idbGet('autosave');
-    if (!text) text = await idbGet('autosave', LEGACY_DB).catch(() => undefined);
+    let text = await idbGet<string>('autosave');
+    if (!text) text = await idbGet<string>('autosave', LEGACY_DB).catch(() => undefined);
     if (!text) return false;
     await loadProjectText(text);
     return true;
@@ -204,7 +247,7 @@ export function startAutosave(): () => void {
     timer = setTimeout(async () => {
       if (!settingsStore.get().autosave) return;
       try {
-        await idbPut('autosave', await serializeProject());
+        await idbSet('autosave', await serializeProject());
       } catch (e) {
         console.warn('autosave failed', e);
       }

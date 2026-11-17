@@ -123,4 +123,16 @@
 
 **Бинарный `.skel`** (экспорт и импорт 4.3) тоже сделан: `src/core/export/spineBinary.ts` (JSON → бинарь), `src/core/import/spineBinary.ts` (бинарь → JSON для существующего импортёра), `tests/binary.test.ts`, `tests/binaryexotic.test.ts` и сверка в fuzz. Судья — официальный `SkeletonBinary`: наш файл и наш JSON загружаются в одинаковый `SkeletonData`.
 
-Осталось из таблиц выше: недавние проекты, Offset keys (Ctrl+Alt), Key Shown, Zoom Keys, папки Images, Preview-окно, редактор остальных горячих клавиш, PSD, linked mesh, sequences, спрайт-лист.
+Окно **Playback** (скорость, цикл, пинг-понг, диапазон с полосой на линейке; `src/core/playback.ts`), **Offset keys** (Ctrl+Alt-перетаскивание, по кругу) и **Zoom Keys** тоже сделаны.
+
+**Недавние проекты** в Welcome (хэндлы файлов в IndexedDB; Ctrl+S пишет в тот же файл, Ctrl+Shift+S спрашивает куда) тоже сделаны.
+
+**Prune** и **Mirror weights** (кнопки в Inspector меша; `pruneWeights`, `mirrorWeights` в `src/core/mesh.ts`, `tests/weights.test.ts`, ops в fuzz) тоже сделаны.
+
+**Images**: папки по «/», переименование (вложения следуют), замена пикселей, неиспользуемые (`src/core/images.ts`, `tests/images.test.ts`).
+
+**Размер экспорта** (масштаб скелета и атласа, `src/core/export/scale.ts`, сверка с `SkeletonJson.scale` в `tests/exportscale.test.ts`) сделан.
+
+Найдено fuzz и ещё не исправлено: слайдер от кости + transform-констрейнт (`tests/knownissues.test.ts`, фикстура `tests/fixtures/transform-parity.json`). Два других расхождения (слайдер без анимации, скоуп скинов) исправлены.
+
+Осталось из таблиц выше: Key Shown, Preview-окно, редактор остальных горячих клавиш, PSD, linked mesh, sequences, спрайт-лист.

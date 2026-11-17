@@ -32,6 +32,7 @@ import { copyPose, duplicateSelection, pastePose, resetPose } from '@/store/pose
 import { useSettings } from '@/store/settings';
 import { AnimationsPanel } from './panels/AnimationsPanel';
 import { SkinsPanel } from './panels/SkinsPanel';
+import { PlaybackPanel } from './panels/PlaybackPanel';
 import { MetricsPanel } from './panels/MetricsPanel';
 import { HistoryPanel } from './panels/HistoryPanel';
 import { LAYOUTS, VIEW_LIST, sameViews } from '@/store/layout';
@@ -75,6 +76,7 @@ function TopBar() {
             <MenuItem icon={FilePlus2} close={close} onClick={() => newProject()}>New project</MenuItem>
             <MenuItem icon={FolderOpen} close={close} hotkey={KEYS.open} onClick={() => openProjectFile()}>Open…</MenuItem>
             <MenuItem icon={Save} close={close} hotkey={KEYS.save} onClick={() => saveProjectFile()}>Save</MenuItem>
+            <MenuItem icon={Save} close={close} hotkey={KEYS.saveAs} onClick={() => saveProjectFile(true)}>Save as…</MenuItem>
             <div className="menu-sep" />
             <MenuItem icon={Download} close={close} hotkey={KEYS.export} onClick={() => uiStore.patch({ exportOpen: true })}>Export for Spine 4.3…</MenuItem>
             <MenuItem icon={FolderOpen} close={close} onClick={() => openSpineImport()}>Import Spine data (JSON 4.0–4.3, binary 4.3)…</MenuItem>
@@ -325,7 +327,7 @@ export function App() {
           docStore.redo();
         } else if (key === 's') {
           e.preventDefault();
-          saveProjectFile();
+          saveProjectFile(e.shiftKey);
         } else if (key === 'o') {
           e.preventDefault();
           openProjectFile();
@@ -437,7 +439,7 @@ export function App() {
     uiStore.patch({ panel: { ...p, [key]: Math.min(max, Math.max(min, p[key] + sign * d)) } });
   };
 
-  const leftOn = views.tree || views.images || views.animations || views.skins || views.metrics || views.history;
+  const leftOn = views.tree || views.images || views.animations || views.skins || views.playback || views.metrics || views.history;
 
   return (
     <div className="app">
@@ -449,6 +451,7 @@ export function App() {
               {views.tree && <TreePanel />}
               {views.animations && <AnimationsPanel />}
               {views.skins && <SkinsPanel />}
+              {views.playback && <PlaybackPanel />}
               {views.metrics && <MetricsPanel />}
               {views.history && <HistoryPanel />}
               {views.images && <AssetsPanel />}

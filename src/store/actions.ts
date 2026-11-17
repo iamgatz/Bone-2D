@@ -11,6 +11,8 @@ import type { KeyRef } from '@/core/keyrefs';
 import { RAD2DEG, atan2Deg, matInvert, matMul } from '@/core/math';
 import type { Mat } from '@/core/math';
 import { newAnimation, newBone, newSkin, newSlot } from '@/core/model';
+import { playSpan } from '@/core/playback';
+import { cleanImageName, renameImage, unusedImages } from '@/core/images';
 import type { Animation, Bone, Id, Inherit, Project, RGB, RGBA, Slot } from '@/core/model';
 import { getScene, getSetupSkeleton } from '@/editor/scene';
 import { assets } from './assets';
@@ -114,7 +116,12 @@ export function togglePlay() {
   if (ui.mode !== 'animate') setMode('animate');
   const anim = currentAnimation();
   if (!anim) return;
-  if (!uiStore.get().playing && uiStore.get().time >= anim.duration - 1e-6 && !uiStore.get().loop) uiStore.patch({ time: 0 });
+  const now = uiStore.get();
+  if (!now.playing) {
+    // start inside the play range, and from its beginning when a single play already reached the end
+    const [lo, hi] = playSpan(anim.duration, now.range);
+    if (now.time < lo || (now.time >= hi - 1e-6 && !now.loop)) uiStore.patch({ time: lo });
+  }
   uiStore.patch({ playing: !uiStore.get().playing, overrides: {} });
 }
 
@@ -680,16 +687,17 @@ export function deleteKeys(refs: KeyRef[]) {
   });
 }
 
-export function moveKeysBy(refs: KeyRef[], dt: number, ripple = false): KeyRef[] {
+/** `ripple`: the later keys of each timeline come along (Shift keys). `loop`: the keys travel round the animation's length (Offset keys). */
+export function moveKeysBy(refs: KeyRef[], dt: number, ripple = false, loop = false): KeyRef[] {
   const anim = currentAnimation();
   if (!anim || !refs.length) return refs;
   let result = refs;
   docStore.update('Move keys', (d) => {
     const a = d.skeleton.animations.find((x) => x.id === anim.id);
     if (!a) return;
-    result = moveKeys(a, refs, dt, ripple);
-    // a ripple also moved keys that are not in `refs`: the animation must still cover the last one
-    extendDuration(a, ripple ? animationEndTime(a) : Math.max(...result.map((r) => r.time)));
+    result = moveKeys(a, refs, dt, ripple, loop ? a.duration : 0);
+    // a ripple also moved keys that are not in `refs`: the animation must still cover the last one (a loop never leaves the animation)
+    if (!loop) extendDuration(a, ripple ? animationEndTime(a) : Math.max(...result.map((r) => r.time)));
   });
   return result;
 }
@@ -835,6 +843,61 @@ export function removeSkinImage(skinId: Id, slotId: Id, placeholder: string) {
     const skin = d.skeleton.skins.find((s) => s.id === skinId);
     if (skin) delete skin.attachments[slotId]?.[placeholder];
   });
+}
+
+// ------------------------------------------------------------------ images
+
+/** Renames an image; every attachment that shows it follows. Returns the new name, or null when it was refused. */
+export function renameImageAction(from: string, raw: string): string | null {
+  const to = cleanImageName(raw);
+  if (!to) {
+    toast('An image needs a name', 'error');
+    return null;
+  }
+  if (to === from) return from;
+  if (project().images.some((i) => i.name === to)) {
+    toast(`There is already an image called "${to}"`, 'error');
+    return null;
+  }
+  assets.alias(from, to);
+  let ok = false;
+  docStore.update('Rename image', (d) => {
+    ok = renameImage(d, from, to).ok;
+  });
+  return ok ? to : null;
+}
+
+/** Puts new pixels behind an image name. The attachments keep their size on screen; the atlas gets the new picture. */
+export async function replaceImagePixels(name: string, file: File | Blob): Promise<void> {
+  try {
+    const asset = await assets.decode(name, file);
+    assets.set(name, asset);
+    docStore.update('Replace image', (d) => {
+      const img = d.images.find((i) => i.name === name);
+      if (img) {
+        img.width = asset.width;
+        img.height = asset.height;
+      }
+    });
+    toast(`Replaced "${name}" (${asset.width}×${asset.height})`, 'ok');
+  } catch (e) {
+    toast(`Could not read that image: ${(e as Error).message}`, 'error');
+  }
+}
+
+/** Removes every image that no attachment shows. */
+export function removeUnusedImages(): number {
+  const names = unusedImages(project());
+  if (!names.length) {
+    toast('Every image is in use', 'info');
+    return 0;
+  }
+  docStore.update('Remove unused images', (d) => {
+    d.images = d.images.filter((i) => !names.includes(i.name));
+  });
+  // the pixels stay in memory so that undo brings the images back; a saved project only carries the images it lists
+  toast(`Removed ${names.length} unused image${names.length === 1 ? '' : 's'}`, 'ok');
+  return names.length;
 }
 
 export function duplicateSkinAction(id: Id) {

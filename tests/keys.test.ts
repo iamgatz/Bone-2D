@@ -65,6 +65,44 @@ describe('shift keys (ripple)', () => {
   });
 });
 
+describe('offset keys (round the loop)', () => {
+  const make = () => {
+    const a = newAnimation('x', 2);
+    a.bones['b'] = { rotate: [key(0, 0), key(0.5, 10), key(1, 20), key(1.5, 30)] };
+    return a;
+  };
+  const ref = (time: number) => ({ kind: 'bone' as const, target: 'b', prop: 'rotate', time });
+  const times = (a: ReturnType<typeof make>) => a.bones['b'].rotate!.map((k) => Math.round(k.time * 1000) / 1000);
+
+  it('wraps keys that pass the end back to the start, leaving the others where they are', () => {
+    const a = make();
+    const out = moveKeys(a, [ref(1.5)], 0.75, false, 2);
+    expect(times(a)).toEqual([0, 0.25, 0.5, 1]);
+    expect(a.bones['b'].rotate!.map((k) => k.value[0])).toEqual([0, 30, 10, 20]);
+    expect(out[0].time).toBeCloseTo(0.25);
+  });
+
+  it('wraps the other way too, and may move several keys together', () => {
+    const a = make();
+    moveKeys(a, [ref(0), ref(0.5)], -0.75, false, 2);
+    expect(times(a)).toEqual([1, 1.25, 1.5, 1.75]);
+    expect(a.bones['b'].rotate!.map((k) => k.value[0])).toEqual([20, 0, 30, 10]);
+  });
+
+  it('a key that lands on a key that stays replaces it, never extends the animation', () => {
+    const a = make();
+    moveKeys(a, [ref(1.5)], 0.5, false, 2); // 1.5 + 0.5 = 2 -> 0, where the first key is
+    expect(times(a)).toEqual([0, 0.5, 1]);
+    expect(a.bones['b'].rotate![0].value[0]).toBe(30);
+  });
+
+  it('without a length a move is clamped at the start as before', () => {
+    const a = make();
+    moveKeys(a, [ref(0.5)], -2);
+    expect(times(a)[0]).toBe(0);
+  });
+});
+
 describe('onion skin times', () => {
   const cfg = { before: 2, after: 2, gap: 3 };
 
@@ -84,5 +122,16 @@ describe('onion skin times', () => {
 
   it('draw nothing for an animation of no length', () => {
     expect(ghostTimes(0, 0, 30, cfg, true)).toEqual([]);
+  });
+});
+
+describe('offset keys: keys that meet', () => {
+  it('the key at 0 and the key at the end are one moment: moving both leaves a single key', () => {
+    const a = newAnimation('x', 1);
+    a.bones['b'] = { rotate: [key(0, 5), key(0.5, 10), key(1, 5)] };
+    const ref = (time: number) => ({ kind: 'bone' as const, target: 'b', prop: 'rotate', time });
+    moveKeys(a, [ref(0), ref(1)], 0.3, false, 1);
+    const times = a.bones['b'].rotate!.map((k) => Math.round(k.time * 1000) / 1000);
+    expect(times).toEqual([0.3, 0.5]);
   });
 });

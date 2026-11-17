@@ -1,5 +1,6 @@
 /** Builds a Spine 4.3 export bundle: skeleton JSON + texture atlas (.atlas + PNG pages), zipped. */
 import { jsonToBinary } from '@/core/export/spineBinary';
+import { scaleSpineJson } from '@/core/export/scale';
 import { exportSpineJson } from '@/core/export/spineJson';
 import { packAtlas, writeAtlas } from '@/core/export/atlas';
 import type { AtlasPage } from '@/core/export/atlas';
@@ -12,6 +13,8 @@ import { docStore } from '@/store/doc';
 export interface ExportOptions {
   /** The skeleton file: Spine JSON, or the smaller binary .skel. */
   format?: 'json' | 'binary';
+  /** Size of the export relative to the project: 0.5 makes half-size pictures and a skeleton to match. */
+  scale?: number;
   maxSize: number;
   padding: number;
   pretty: boolean;
@@ -53,24 +56,30 @@ async function pageToPng(page: AtlasPage, padding: number): Promise<Uint8Array> 
   canvas.width = page.width;
   canvas.height = page.height;
   const ctx = canvas.getContext('2d')!;
-  ctx.imageSmoothingEnabled = false;
   for (const r of page.regions) {
     const a = assets.get(r.name);
     if (!a) continue;
     const img = a.bitmap;
+    // the region has the size it is exported at; a smaller one is drawn from the full picture with smoothing
     const { x, y, width: w, height: h } = r;
-    ctx.drawImage(img, x, y);
+    const sw = img.width;
+    const sh = img.height;
+    const resized = w !== sw || h !== sh;
+    ctx.imageSmoothingEnabled = resized;
+    if (resized) ctx.imageSmoothingQuality = 'high';
+    ctx.drawImage(img, 0, 0, sw, sh, x, y, w, h);
     const p = Math.min(padding, 4);
     if (p > 0) {
       // extrude the edge pixels into the padding so bilinear filtering never samples transparent black
-      ctx.drawImage(img, 0, 0, w, 1, x, y - p, w, p);
-      ctx.drawImage(img, 0, h - 1, w, 1, x, y + h, w, p);
-      ctx.drawImage(img, 0, 0, 1, h, x - p, y, p, h);
-      ctx.drawImage(img, w - 1, 0, 1, h, x + w, y, p, h);
+      ctx.imageSmoothingEnabled = false;
+      ctx.drawImage(img, 0, 0, sw, 1, x, y - p, w, p);
+      ctx.drawImage(img, 0, sh - 1, sw, 1, x, y + h, w, p);
+      ctx.drawImage(img, 0, 0, 1, sh, x - p, y, p, h);
+      ctx.drawImage(img, sw - 1, 0, 1, sh, x + w, y, p, h);
       ctx.drawImage(img, 0, 0, 1, 1, x - p, y - p, p, p);
-      ctx.drawImage(img, w - 1, 0, 1, 1, x + w, y - p, p, p);
-      ctx.drawImage(img, 0, h - 1, 1, 1, x - p, y + h, p, p);
-      ctx.drawImage(img, w - 1, h - 1, 1, 1, x + w, y + h, p, p);
+      ctx.drawImage(img, sw - 1, 0, 1, 1, x + w, y - p, p, p);
+      ctx.drawImage(img, 0, sh - 1, 1, 1, x - p, y + h, p, p);
+      ctx.drawImage(img, sw - 1, sh - 1, 1, 1, x + w, y + h, p, p);
     }
   }
   const blob: Blob = await new Promise((resolve, reject) => canvas.toBlob((b) => (b ? resolve(b) : reject(new Error('PNG encode failed'))), 'image/png'));
@@ -121,12 +130,13 @@ export async function buildSpineExport(opts: ExportOptions): Promise<ExportResul
   const base = (opts.baseName ?? doc.name ?? 'skeleton').replace(/[^\w\-]+/g, '_') || 'skeleton';
   const names = usedImageNames();
   const missing = names.filter((n) => !assets.has(n));
-  const inputs = names.filter((n) => assets.has(n)).map((n) => ({ name: n, width: assets.get(n)!.width, height: assets.get(n)!.height }));
+  const scale = opts.scale && opts.scale > 0 ? opts.scale : 1;
+  const inputs = names.filter((n) => assets.has(n)).map((n) => ({ name: n, width: Math.max(1, Math.round(assets.get(n)!.width * scale)), height: Math.max(1, Math.round(assets.get(n)!.height * scale)) }));
 
   const enc = new TextEncoder();
   const files: ZipEntry[] = [];
   const binary = opts.format === 'binary';
-  const json = exportSpineJson(doc, { nonessential: opts.nonessential, imagesPath: './images/' });
+  const json = scaleSpineJson(exportSpineJson(doc, { nonessential: opts.nonessential, imagesPath: './images/' }), scale);
   const skeletonFile = binary ? `${base}.skel` : `${base}.json`;
   const skeletonData = binary ? jsonToBinary(json) : enc.encode(JSON.stringify(json, null, opts.pretty ? 2 : 0));
   files.push({ name: skeletonFile, data: skeletonData });

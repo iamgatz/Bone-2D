@@ -13,6 +13,7 @@ export function ExportDialog() {
   const project = useProject();
   const doc = project.skeleton;
   const [format, setFormat] = useState<'json' | 'binary'>('json');
+  const [scale, setScale] = useState('1');
   const [maxSize, setMaxSize] = useState('2048');
   const [padding, setPadding] = useState('2');
   const [pretty, setPretty] = useState(false);
@@ -30,14 +31,14 @@ export function ExportDialog() {
     if (tab !== 'data') return;
     setBusy(true);
     setError(null);
-    buildSpineExport({ format, maxSize: +maxSize, padding: +padding, pretty, nonessential, pot, includePreview, excludeAnimations: excluded })
+    buildSpineExport({ format, scale: +scale, maxSize: +maxSize, padding: +padding, pretty, nonessential, pot, includePreview, excludeAnimations: excluded })
       .then((r) => alive && setResult(r))
       .catch((e: Error) => alive && (setError(e.message), setResult(null)))
       .finally(() => alive && setBusy(false));
     return () => {
       alive = false;
     };
-  }, [format, maxSize, padding, pretty, nonessential, pot, includePreview, excluded, tab]);
+  }, [format, scale, maxSize, padding, pretty, nonessential, pot, includePreview, excluded, tab]);
 
   const close = () => uiStore.patch({ exportOpen: false });
   const base = (doc.name || 'skeleton').replace(/[^\w\-]+/g, '_');
@@ -86,6 +87,8 @@ export function ExportDialog() {
       <div className="kv">
         <label>Skeleton file</label>
         <SelectField value={format} options={[{ value: 'json', label: 'JSON (.json)' }, { value: 'binary', label: 'Binary (.skel), smaller' }]} onChange={setFormat} />
+        <label>Size</label>
+        <SelectField value={scale} options={[{ value: '1', label: '100% (as drawn)' }, { value: '0.75', label: '75%' }, { value: '0.5', label: '50%' }, { value: '0.25', label: '25%' }, { value: '2', label: '200%' }]} onChange={setScale} />
         <label>Atlas page size</label>
         <SelectField value={maxSize} options={['1024', '2048', '4096'].map((v) => ({ value: v, label: `${v} px` }))} onChange={setMaxSize} />
         <label>Padding</label>

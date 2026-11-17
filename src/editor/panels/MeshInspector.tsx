@@ -1,8 +1,8 @@
 import { useState } from 'react';
-import { Brush, Hexagon, Link2, RefreshCw, Sparkles, Triangle, Unlink2, Waves } from 'lucide-react';
+import { Brush, FlipHorizontal2, Hexagon, Link2, RefreshCw, Scissors, Sparkles, Triangle, Unlink2, Waves } from 'lucide-react';
 import type { Id, MeshAttachment } from '@/core/model';
 import { setAttachmentProps, setTool } from '@/store/actions';
-import { autoWeightMesh, bindMeshToBones, convertToMesh, regenerateMesh, retriangulateMesh, smoothMeshWeights, unbindMeshFromBones } from '@/store/meshActions';
+import { autoWeightMesh, bindMeshToBones, convertToMesh, mirrorMeshWeights, pruneMeshWeights, regenerateMesh, retriangulateMesh, smoothMeshWeights, unbindMeshFromBones } from '@/store/meshActions';
 import { useProject } from '@/store/doc';
 import { uiStore, useUi } from '@/store/ui';
 import { Button, ColorSwatch, NumberField, SelectField } from '../ui/controls';
@@ -104,6 +104,15 @@ export function MeshGroup({ slotId, att }: { slotId: Id; att: MeshAttachment }) 
                 </Button>
                 <Button icon={Waves} onClick={() => smoothMeshWeights(slotId, att.name, 2)}>
                   Smooth
+                </Button>
+                <Button icon={Scissors} onClick={() => pruneMeshWeights(slotId, att.name)} title="Drop influences lighter than 5% and keep at most 4 bones per vertex">
+                  Prune
+                </Button>
+                <Button icon={FlipHorizontal2} onClick={() => mirrorMeshWeights(slotId, att.name, true)} title="Copy the weights of the left half to the right half (bones swapped for their mirror twins)">
+                  Mirror L→R
+                </Button>
+                <Button icon={FlipHorizontal2} onClick={() => mirrorMeshWeights(slotId, att.name, false)} title="Copy the weights of the right half to the left half (bones swapped for their mirror twins)">
+                  Mirror R→L
                 </Button>
                 <Button icon={Unlink2} danger onClick={() => unbindMeshFromBones(slotId, att.name)}>
                   Unbind

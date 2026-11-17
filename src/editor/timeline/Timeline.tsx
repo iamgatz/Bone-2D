@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useRef, useState } from 'react';
-import { ChevronDown, ChevronRight, Copy, Diamond, Eraser, Film, KeyRound, Maximize, Pause, Pencil, Play, Plus, Repeat, SkipBack, SkipForward, Spline, Trash2 } from 'lucide-react';
+import { ChevronDown, ChevronRight, Copy, Diamond, Eraser, Film, KeyRound, Maximize, Pause, Pencil, Play, Plus, Repeat, SkipBack, SkipForward, Spline, Trash2, ZoomIn } from 'lucide-react';
 import { GraphEditor } from './GraphEditor';
 import { CURVE_PRESETS } from '@/core/curve';
 import { decodeKey, encodeKey } from '@/core/keyrefs';
@@ -130,6 +130,21 @@ export function Timeline() {
     uiStore.patch({ tlZoom: Math.max(20, w / d), tlScroll: -8 / Math.max(20, w / d) });
   };
 
+  /** Zoom Keys: the timeline fits the selected keys (all of the animation when none is selected). */
+  const zoomKeys = () => {
+    if (!anim) return;
+    const times = selectedKeys.length ? selectedKeys.map((s) => decodeKey(s).time) : [0, anim.duration];
+    let lo = Math.min(...times);
+    let hi = Math.max(...times);
+    if (hi - lo < 0.05) {
+      lo -= 0.25;
+      hi += 0.25;
+    }
+    const pad = (hi - lo) * 0.06;
+    const w = (bodyRef.current?.clientWidth ?? 800) - 232 - 24;
+    uiStore.patch({ tlZoom: Math.min(3000, Math.max(20, w / (hi - lo + 2 * pad))), tlScroll: lo - pad });
+  };
+
   const animate = mode === 'animate';
   const jump = (t: number) => (uiStore.patch({ playing: false }), setTime(t));
 
@@ -174,6 +189,7 @@ export function Timeline() {
           </div>
         )}
         <IconButton icon={Maximize} title="Fit timeline to the animation" onClick={fit} />
+        <IconButton icon={ZoomIn} title="Zoom to the selected keys (all keys when none is selected)" disabled={!anim} onClick={zoomKeys} />
         <span className="sep tl-opt2" />
         <IconButton icon={Diamond} title="Dopesheet" active={view === 'dopesheet'} onClick={() => uiStore.patch({ timelineView: 'dopesheet' })} />
         <IconButton icon={Spline} title="Curve graph" active={view === 'graph'} onClick={() => uiStore.patch({ timelineView: 'graph' })} />

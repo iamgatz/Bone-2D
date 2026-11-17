@@ -67,3 +67,68 @@ describe('playback loop', () => {
     expect(uiStore.get().time).toBe(0);
   });
 });
+
+import { advancePlayback, playSpan } from '../src/core/playback';
+
+describe('advancePlayback', () => {
+  const once = { loop: false, pingPong: false, range: null };
+  const loop = { loop: true, pingPong: false, range: null };
+
+  it('plays forward and stops at the end of a single play', () => {
+    expect(advancePlayback({ time: 0.5, dir: 1 }, 0.25, 1, once)).toEqual({ time: 0.75, dir: 1, stopped: false });
+    expect(advancePlayback({ time: 0.9, dir: 1 }, 0.25, 1, once)).toEqual({ time: 1, dir: 1, stopped: true });
+  });
+
+  it('wraps a loop, even over several lengths at once', () => {
+    expect(advancePlayback({ time: 0.9, dir: 1 }, 0.25, 1, loop).time).toBeCloseTo(0.15);
+    expect(advancePlayback({ time: 0.1, dir: 1 }, 2.5, 1, loop).time).toBeCloseTo(0.6);
+  });
+
+  it('plays only the range, looping inside it', () => {
+    const range = { loop: true, pingPong: false, range: [0.4, 0.8] as [number, number] };
+    expect(advancePlayback({ time: 0.7, dir: 1 }, 0.2, 1, range).time).toBeCloseTo(0.5);
+    expect(advancePlayback({ time: 0, dir: 1 }, 0.1, 1, range).time).toBeCloseTo(0.5); // starts from the range
+    expect(advancePlayback({ time: 0.7, dir: 1 }, 0.2, 1, { ...range, loop: false })).toMatchObject({ time: 0.8, stopped: true });
+  });
+
+  it('ping-pong turns round at both ends and keeps its direction', () => {
+    const pp = { loop: true, pingPong: true, range: null };
+    let s = { time: 0.8, dir: 1 as 1 | -1 };
+    s = advancePlayback(s, 0.4, 1, pp);
+    expect(s.time).toBeCloseTo(0.8);
+    expect(s.dir).toBe(-1);
+    s = advancePlayback(s, 0.5, 1, pp);
+    expect(s.time).toBeCloseTo(0.3);
+    expect(s.dir).toBe(-1);
+    s = advancePlayback(s, 0.5, 1, pp); // past the start: turns forward
+    expect(s.time).toBeCloseTo(0.2);
+    expect(s.dir).toBe(1);
+  });
+
+  it('a single ping-pong goes there and back and stops at the start', () => {
+    const once2 = { loop: false, pingPong: true, range: null };
+    expect(advancePlayback({ time: 0.9, dir: 1 }, 0.3, 1, once2)).toMatchObject({ time: 0.8, dir: -1, stopped: false });
+    expect(advancePlayback({ time: 0.1, dir: -1 }, 0.3, 1, once2)).toMatchObject({ time: 0, stopped: true });
+  });
+
+  it('an empty or reversed range means the whole animation', () => {
+    expect(playSpan(2, null)).toEqual([0, 2]);
+    expect(playSpan(2, [1, 1])).toEqual([0, 2]);
+    expect(playSpan(2, [1.5, 1])).toEqual([0, 2]);
+    expect(playSpan(2, [-1, 5])).toEqual([0, 2]);
+    expect(playSpan(2, [0.5, 1.5])).toEqual([0.5, 1.5]);
+  });
+
+  it('never leaves the span, whatever the step', () => {
+    for (const pingPong of [false, true]) {
+      let s = { time: 0.3, dir: 1 as 1 | -1 };
+      for (let i = 0; i < 500; i++) {
+        const r = advancePlayback(s, 0.037 * ((i % 7) + 1), 1.2, { loop: true, pingPong, range: [0.2, 0.9] });
+        expect(r.time).toBeGreaterThanOrEqual(0.2 - 1e-9);
+        expect(r.time).toBeLessThanOrEqual(0.9 + 1e-9);
+        s = r;
+      }
+    }
+  });
+});
+
