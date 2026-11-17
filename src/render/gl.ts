@@ -78,6 +78,8 @@ export class GLRenderer {
   private iCount = 0;
   private curTex: WebGLTexture | null = null;
   private curBlend: BlendMode = 'normal';
+  /** Linear (smooth) textures; off = nearest, pixels as they are. */
+  private smooth = true;
   private textures = new Map<string, { tex: WebGLTexture; version: number; w: number; h: number }>();
   private whiteTex: WebGLTexture;
   private uCenter: WebGLUniformLocation;
@@ -173,13 +175,26 @@ export class GLRenderer {
     gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, false);
     gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, src.bitmap);
     gl.generateMipmap(gl.TEXTURE_2D);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+    this.filter(tex);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
     const entry = { tex, version: src.version, w: src.bitmap.width, h: src.bitmap.height };
     this.textures.set(name, entry);
     return entry;
+  }
+
+  private filter(tex: WebGLTexture) {
+    const gl = this.gl;
+    gl.bindTexture(gl.TEXTURE_2D, tex);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, this.smooth ? gl.LINEAR_MIPMAP_LINEAR : gl.NEAREST);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, this.smooth ? gl.LINEAR : gl.NEAREST);
+  }
+
+  /** Smooth or nearest texture filtering for every image (the Settings window). */
+  setSmoothing(on: boolean) {
+    if (on === this.smooth) return;
+    this.smooth = on;
+    for (const t of this.textures.values()) this.filter(t.tex);
   }
 
   begin(cam: CameraView, clear: RGBA = [0.075, 0.082, 0.1, 1]) {

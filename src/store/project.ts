@@ -5,6 +5,7 @@ import { repairProject } from '@/core/validate';
 import { assets, blobToDataURL, dataURLToBlob } from './assets';
 import type { ImageAsset } from './assets';
 import { docStore } from './doc';
+import { settingsStore } from './settings';
 import { emptySelection, toast, uiStore } from './ui';
 
 interface ProjectFile {
@@ -201,6 +202,7 @@ export function startAutosave(): () => void {
   const schedule = () => {
     if (timer) clearTimeout(timer);
     timer = setTimeout(async () => {
+      if (!settingsStore.get().autosave) return;
       try {
         await idbPut('autosave', await serializeProject());
       } catch (e) {
