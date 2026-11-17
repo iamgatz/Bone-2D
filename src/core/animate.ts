@@ -88,7 +88,7 @@ export function applyAnimation(skeleton: Skeleton, anim: Animation | null, time:
 
   for (const boneId in anim.bones) {
     const bone = skeleton.boneById(boneId);
-    if (!bone) continue;
+    if (!bone || !bone.active) continue; // the official runtime skips what the skin does not activate
     const tl = anim.bones[boneId];
     const d = bone.data;
     if (tl.rotate && tl.rotate.length && sampleKeys(tl.rotate, time, tmp)) bone.rotation = d.rotation + tmp[0];
@@ -108,7 +108,7 @@ export function applyAnimation(skeleton: Skeleton, anim: Animation | null, time:
 
   for (const slotId in anim.slots) {
     const slot = skeleton.slotById(slotId);
-    if (!slot) continue;
+    if (!slot || !slot.bone.active) continue;
     const tl = anim.slots[slotId];
     if (tl.attachment && tl.attachment.length) {
       const i = findKeyIndex(tl.attachment, time);
@@ -126,7 +126,7 @@ export function applyAnimation(skeleton: Skeleton, anim: Animation | null, time:
   for (const cid in anim.ik) {
     const c = skeleton.ikById(cid);
     const keys = anim.ik[cid];
-    if (!c || !keys.length) continue;
+    if (!c || !c.active || !keys.length) continue;
     if (sampleKeys(keys, time, tmp)) {
       c.mix = tmp[0];
       c.softness = tmp[1];
@@ -140,13 +140,13 @@ export function applyAnimation(skeleton: Skeleton, anim: Animation | null, time:
   for (const cid in anim.transform ?? {}) {
     const c = skeleton.transformById(cid);
     const keys = anim.transform[cid];
-    if (!c || !keys.length) continue;
+    if (!c || !c.active || !keys.length) continue;
     if (sampleKeys(keys, time, tmp)) c.mix = [tmp[0], tmp[1], tmp[2], tmp[3], tmp[4], tmp[5]];
   }
 
   for (const cid in anim.slider ?? {}) {
     const c = skeleton.sliderById(cid);
-    if (!c) continue;
+    if (!c || !c.active) continue;
     const tl = anim.slider[cid];
     if (tl.time?.length && sampleKeys(tl.time, time, tmp)) c.time = tmp[0];
     if (tl.mix?.length && sampleKeys(tl.mix, time, tmp)) c.mix = tmp[0];
@@ -154,7 +154,7 @@ export function applyAnimation(skeleton: Skeleton, anim: Animation | null, time:
 
   for (const cid in anim.path ?? {}) {
     const c = skeleton.pathById(cid);
-    if (!c) continue;
+    if (!c || !c.active) continue;
     const tl = anim.path[cid];
     if (tl.position?.length && sampleKeys(tl.position, time, tmp)) c.position = tmp[0];
     if (tl.spacing?.length && sampleKeys(tl.spacing, time, tmp)) c.spacing = tmp[0];
@@ -192,7 +192,7 @@ export function applyAnimation(skeleton: Skeleton, anim: Animation | null, time:
     if (!skin) continue;
     for (const slotId in anim.deform[skinId]) {
       const slot = skeleton.slotById(slotId);
-      if (!slot) continue;
+      if (!slot || !slot.bone.active) continue;
       const perAtt = anim.deform[skinId][slotId];
       for (const attName in perAtt) {
         const keys = perAtt[attName];

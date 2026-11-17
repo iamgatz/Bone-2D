@@ -114,7 +114,7 @@ export function exportSpineJson(doc: SkeletonDoc, options: SpineExportOptions = 
     setIf(o, 'shearX', r5(b.shearX), 0);
     setIf(o, 'shearY', r5(b.shearY), 0);
     setIf(o, 'inherit', b.inherit, 'normal');
-    if (b.skinRequired) o.skin = true;
+    if (bd.skinRequired) o.skin = true;
     if (options.nonessential !== false) {
       const col = hexColor(b.color, true);
       if (col !== '989898ff') o.color = col;

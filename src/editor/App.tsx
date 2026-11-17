@@ -31,6 +31,7 @@ import { settingsStore } from '@/store/settings';
 import { copyPose, duplicateSelection, pastePose, resetPose } from '@/store/poseActions';
 import { useSettings } from '@/store/settings';
 import { AnimationsPanel } from './panels/AnimationsPanel';
+import { SkinsPanel } from './panels/SkinsPanel';
 import { MetricsPanel } from './panels/MetricsPanel';
 import { HistoryPanel } from './panels/HistoryPanel';
 import { LAYOUTS, VIEW_LIST, sameViews } from '@/store/layout';
@@ -436,7 +437,7 @@ export function App() {
     uiStore.patch({ panel: { ...p, [key]: Math.min(max, Math.max(min, p[key] + sign * d)) } });
   };
 
-  const leftOn = views.tree || views.images || views.animations || views.metrics || views.history;
+  const leftOn = views.tree || views.images || views.animations || views.skins || views.metrics || views.history;
 
   return (
     <div className="app">
@@ -447,6 +448,7 @@ export function App() {
             <aside className="left" style={{ width: panel.left }} onPointerDownCapture={() => setFocusArea('tree')}>
               {views.tree && <TreePanel />}
               {views.animations && <AnimationsPanel />}
+              {views.skins && <SkinsPanel />}
               {views.metrics && <MetricsPanel />}
               {views.history && <HistoryPanel />}
               {views.images && <AssetsPanel />}

@@ -1726,3 +1726,42 @@ a.btn {
 .row.undone {
   opacity: 0.45;
 }
+
+/* ---------------------------------------------------------------- skins window */
+.skin-hint {
+  padding: 2px 12px 6px;
+}
+.skin-slot {
+  padding: 3px 12px 5px;
+}
+.skin-slot-name {
+  display: block;
+  color: var(--text-dim);
+  font-size: var(--fs-sm);
+  margin-bottom: 3px;
+}
+.skin-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.skin-chip {
+  border: 1px dashed var(--border-strong, var(--border));
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+}
+.skin-chip:hover {
+  color: var(--text);
+}
+.skin-chip.own {
+  border-style: solid;
+  border-color: var(--accent-line);
+  background: var(--accent-soft);
+  color: var(--text);
+}
+.scope-check {
+  flex: none;
+  margin: 0 2px;
+  accent-color: var(--accent);
+}
