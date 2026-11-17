@@ -67,7 +67,7 @@ export function removeKeys(anim: Animation, refs: KeyRef[]) {
 }
 
 /** Shifts the referenced keys by dt (clamped to >= 0). Keys landing on an unmoved key replace it. Returns the refs after the move. */
-export function moveKeys(anim: Animation, refs: KeyRef[], dt: number): KeyRef[] {
+export function moveKeys(anim: Animation, refs: KeyRef[], dt: number, ripple = false): KeyRef[] {
   const groups = new Map<AnyKeys, { kind: KeyKind; times: number[]; moved: Map<number, number> }>();
   for (const ref of refs) {
     const keys = resolveKeys(anim, ref);
@@ -81,6 +81,9 @@ export function moveKeys(anim: Animation, refs: KeyRef[], dt: number): KeyRef[] 
   const shift = Math.max(dt, -minTime);
   for (const [keys, g] of groups) {
     const moved = new Set<{ time: number }>();
+    // ripple: the keys after the last moved one of this timeline travel with them (Spine's Shift)
+    const last = Math.max(...g.times);
+    const later = ripple ? keys.filter((k) => k.time > last + KEY_EPS) : [];
     for (const k of keys) {
       const from = g.times.find((t) => Math.abs(t - k.time) <= KEY_EPS);
       if (from !== undefined) {
@@ -88,6 +91,10 @@ export function moveKeys(anim: Animation, refs: KeyRef[], dt: number): KeyRef[] 
         g.moved.set(from, k.time);
         moved.add(k);
       }
+    }
+    for (const key of later) {
+      key.time = Math.max(0, key.time + shift);
+      moved.add(key);
     }
     // a key that lands on an unmoved key replaces it (event keys may legitimately share a time)
     if (g.kind !== 'event') {

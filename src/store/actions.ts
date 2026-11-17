@@ -1,6 +1,7 @@
 /** Every user-level operation on the document / UI. Components and tools call these; they never mutate state directly. */
 import type { Draft } from 'immer';
 import { animationEndTime } from '@/core/animate';
+import { cleanUpAnimation } from '@/core/cleanup';
 import { findAnimation, freshName, makeCurve, normalizeBoneOrder, purgeAttachment, removeBones, removeSlots, rgbaToRgba2, setSlotDarkColor, snapTime, upsertKey, decompose } from '@/core/edit';
 import type { BoneMats } from '@/core/mesh';
 import { moveKeys, removeKeys, resolveKeys } from '@/core/keyrefs';
@@ -595,6 +596,18 @@ export function createAnimation(name?: string, duration = 1): Id {
   return anim.id;
 }
 
+/** Removes the keys of an animation that change nothing. Returns how many keys went. */
+export function cleanUpKeys(id: Id): number {
+  let removed = 0;
+  docStore.update('Clean up animation', (d) => {
+    const a = d.skeleton.animations.find((x) => x.id === id);
+    if (a) removed = cleanUpAnimation(a);
+  });
+  uiStore.patch({ selectedKeys: [] });
+  toast(removed ? `Removed ${removed} keys that change nothing` : 'Nothing to clean up: every key does something', removed ? 'ok' : 'info');
+  return removed;
+}
+
 export function selectAnimation(id: Id) {
   uiStore.patch({ animationId: id, time: 0, playing: false, overrides: {}, selectedKeys: [] });
 }
@@ -665,16 +678,16 @@ export function deleteKeys(refs: KeyRef[]) {
   });
 }
 
-export function moveKeysBy(refs: KeyRef[], dt: number): KeyRef[] {
+export function moveKeysBy(refs: KeyRef[], dt: number, ripple = false): KeyRef[] {
   const anim = currentAnimation();
   if (!anim || !refs.length) return refs;
   let result = refs;
   docStore.update('Move keys', (d) => {
     const a = d.skeleton.animations.find((x) => x.id === anim.id);
     if (!a) return;
-    result = moveKeys(a, refs, dt);
-    const end = Math.max(...result.map((r) => r.time));
-    extendDuration(a, end);
+    result = moveKeys(a, refs, dt, ripple);
+    // a ripple also moved keys that are not in `refs`: the animation must still cover the last one
+    extendDuration(a, ripple ? animationEndTime(a) : Math.max(...result.map((r) => r.time)));
   });
   return result;
 }

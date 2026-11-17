@@ -3,7 +3,7 @@ import { RotateCcw } from 'lucide-react';
 import { setLang, useLang } from '@/i18n';
 import { DEFAULT_SETTINGS, resetSettings, setSettings, useSettings } from '@/store/settings';
 import { toast, uiStore } from '@/store/ui';
-import { Button, ColorSwatch, Dialog, Toggle } from './ui/controls';
+import { Button, ColorSwatch, Dialog, SelectField, Toggle } from './ui/controls';
 import { Segmented } from './ui/Segmented';
 import { hotkeyGroups } from './hotkeys';
 import { TOOLS, hotkeyOf, setToolKey } from './tools';
@@ -65,6 +65,9 @@ export function SettingsDialog() {
   const bg = useSettings((s) => s.viewportBg);
   const smoothing = useSettings((s) => s.smoothing);
   const zoomToMouse = useSettings((s) => s.zoomToMouse);
+  const onionBefore = useSettings((s) => s.onionBefore);
+  const onionAfter = useSettings((s) => s.onionAfter);
+  const onionGap = useSettings((s) => s.onionGap);
   useSettings((s) => s.toolKeys);
   const close = () => uiStore.patch({ settingsOpen: false });
   const others = hotkeyGroups().slice(1);
@@ -121,6 +124,15 @@ export function SettingsDialog() {
             </Row>
             <Row label="Zoom to mouse" hint="The wheel zooms around the pointer, not the middle of the viewport">
               <Toggle on={zoomToMouse} onChange={(v) => setSettings({ zoomToMouse: v })} title="Zoom to mouse" />
+            </Row>
+            <Row label="Onion skin: frames before" hint="Faded poses before the playhead (red)">
+              <SelectField value={String(onionBefore)} options={[0, 1, 2, 3, 4, 5, 6].map((n) => ({ value: String(n), label: String(n) }))} onChange={(v) => setSettings({ onionBefore: Number(v) })} />
+            </Row>
+            <Row label="Onion skin: frames after" hint="Faded poses after the playhead (blue)">
+              <SelectField value={String(onionAfter)} options={[0, 1, 2, 3, 4, 5, 6].map((n) => ({ value: String(n), label: String(n) }))} onChange={(v) => setSettings({ onionAfter: Number(v) })} />
+            </Row>
+            <Row label="Onion skin: frames between ghosts">
+              <SelectField value={String(onionGap)} options={[1, 2, 3, 4, 5, 6, 8, 10, 15, 20, 30].map((n) => ({ value: String(n), label: String(n) }))} onChange={(v) => setSettings({ onionGap: Number(v) })} />
             </Row>
           </>
         )}
