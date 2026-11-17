@@ -6,6 +6,7 @@ import type { Camera, UiState } from '@/store/ui';
 import { worldToScreen } from '../scene';
 import type { Scene } from '../scene';
 import { slotWorldVertices } from './hit';
+import { drawTrails } from './trails';
 import { alpha, token } from '../ui/tokens';
 
 /** The colours of the overlay: getters, because they are read from the design tokens when drawing (the stylesheet is not there yet when this module loads). */
@@ -476,6 +477,7 @@ export function drawOverlay(o: OverlayInput) {
   o.under?.(o);
   if (ui.view.bones) drawBones(o);
   if (ui.view.constraints) drawConstraints(o);
+  drawTrails(o);
   o.extra?.(o);
   drawGizmo(o);
   drawInteraction(o);

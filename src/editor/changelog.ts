@@ -12,6 +12,12 @@ export interface Release {
 
 export const CHANGELOG: Release[] = [
   {
+    version: '0.13',
+    date: '2026-11-17',
+    en: ['Motion trails (View menu, or the route button in the top bar): the path that the selected bones travel in the animation, cool before the playhead and warm after it, with the keys marked on it. Spine has nothing like it.'],
+    ru: ['Траектории движения (меню «Вид» или кнопка с маршрутом в верхней панели): путь, который выбранные кости проходят в анимации, холодным цветом до маркера и тёплым после него, с отмеченными ключами. В Spine такого нет.'],
+  },
+  {
     version: '0.12',
     date: '2026-11-17',
     en: [
