@@ -1,7 +1,7 @@
 import { settingsStore } from '@/store/settings';
 import { useEffect, useRef } from 'react';
 import { GLRenderer } from '@/render/gl';
-import { addImageToScene, importImageFiles } from '@/store/actions';
+import { addImageToScene, importDropped } from '@/store/actions';
 import { assets } from '@/store/assets';
 import { docStore } from '@/store/doc';
 import { toast, uiStore } from '@/store/ui';
@@ -198,9 +198,9 @@ export function Viewport() {
       addImageToScene(imageName, wx, wy);
       return;
     }
-    const files = [...e.dataTransfer.files];
-    if (!files.length) return;
-    const names = await importImageFiles(files);
+    if (!e.dataTransfer.files.length) return;
+    const { names, folder } = await importDropped(e.dataTransfer);
+    if (folder) return; // a folder of pictures goes to the Images window, not onto the scene as slots
     let off = 0;
     for (const n of names) {
       addImageToScene(n, wx + off, wy - off);

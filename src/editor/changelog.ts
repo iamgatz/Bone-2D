@@ -12,6 +12,12 @@ export interface Release {
 
 export const CHANGELOG: Release[] = [
   {
+    version: '0.28',
+    date: '2026-11-17',
+    en: ['Folders of images: drop a folder onto the Images window or the viewport (or use the new folder button of the Images window) and every picture in it is imported, subfolders included. The folders stay: "hero/arm/upper.png" is the picture "hero/arm/upper", shown in a folder of the Images window. Numbered files come in the natural order (frame2 before frame10). A whole folder is one step in the history. A folder dropped on the viewport only fills the Images window, it does not put a hundred slots on the scene.'],
+    ru: ['Папки с картинками: перетащите папку в окно «Картинки» или во вьюпорт (или нажмите новую кнопку с папкой в окне «Картинки») — импортируются все картинки в ней, включая вложенные папки. Папки сохраняются: «hero/arm/upper.png» становится картинкой «hero/arm/upper» в папке окна «Картинки». Пронумерованные файлы идут в естественном порядке (frame2 раньше frame10). Вся папка — один шаг в истории. Папка, брошенная во вьюпорт, только наполняет окно «Картинки» и не ставит сотню слотов на сцену.'],
+  },
+  {
     version: '0.27',
     date: '2026-11-17',
     en: ['Update from PSD: the artist repaints the Photoshop file, the rig stays. The new button in the Images window reads a .psd and matches its layers to the pictures by name ("group/layer"): the matched pictures get the new pixels, a region attachment follows the new size and the way the layer moved (and keeps the scale you gave it), meshes keep their shape, a layer the project has not got yet becomes a new slot right above the layer under it in the file, and nothing is removed. One step in the history (the old pixels do not come back with Undo, as with Replace image).'],

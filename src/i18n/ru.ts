@@ -121,7 +121,8 @@ export const RU: Record<string, string> = {
   'px': 'px',
 
   // ---------------------------------------------------------------- images panel
-  'Drop PNG / WebP images or a PSD file here': 'Перетащи сюда PNG / WebP или файл PSD',
+  'Drop PNG / WebP images, a folder of them or a PSD file here': 'Перетащи сюда PNG / WebP, папку с ними или файл PSD',
+  'Import a folder of images (its folders become folders of pictures)': 'Импорт папки с картинками (её папки станут папками картинок)',
   'or click to browse': 'или нажми, чтобы выбрать',
   'Import images': 'Импорт картинок',
   'Import PSD': 'Импорт PSD',

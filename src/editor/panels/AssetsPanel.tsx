@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { ChevronDown, ChevronRight, Eraser, Folder, ImagePlus, Pencil, RefreshCw, Trash2, Upload } from 'lucide-react';
+import { ChevronDown, ChevronRight, Eraser, Folder, FolderUp, ImagePlus, Pencil, RefreshCw, Trash2, Upload } from 'lucide-react';
 import { baseOf, imageGroups, imageUsage } from '@/core/images';
 import type { ImageRef } from '@/core/model';
-import { addImageToScene, importImageFiles, reimportPsd, removeUnusedImages, renameImageAction, replaceImagePixels } from '@/store/actions';
+import { addImageToScene, importDropped, importFolderFiles, importImageFiles, reimportPsd, removeUnusedImages, renameImageAction, replaceImagePixels } from '@/store/actions';
 import { assets } from '@/store/assets';
 import { docStore, useProject } from '@/store/doc';
 import { toast, uiStore } from '@/store/ui';
@@ -33,6 +33,7 @@ export function AssetsPanel() {
   const fileRef = useRef<HTMLInputElement>(null);
   const replaceRef = useRef<HTMLInputElement>(null);
   const psdRef = useRef<HTMLInputElement>(null);
+  const folderRef = useRef<HTMLInputElement>(null);
   const replacing = useRef<string | null>(null);
   const [renaming, setRenaming] = useState<string | null>(null);
   const [closed, setClosed] = useState<Record<string, boolean>>({});
@@ -118,6 +119,20 @@ export function AssetsPanel() {
         <span className="title">Images</span>
         <IconButton icon={Eraser} title="Remove the images no attachment shows" small disabled={unused === 0} onClick={() => removeUnusedImages()} />
         <IconButton icon={ImagePlus} title="Import images (or a PSD file: every layer becomes a picture and a slot)" small onClick={() => fileRef.current?.click()} />
+        <IconButton icon={FolderUp} title="Import a folder of images (its folders become folders of pictures)" small onClick={() => folderRef.current?.click()} />
+        <input
+          ref={folderRef}
+          type="file"
+          hidden
+          multiple
+          // @ts-expect-error not in the React typings: lets the browser choose a folder
+          webkitdirectory=""
+          onChange={async (e) => {
+            const list = [...(e.target.files ?? [])];
+            e.target.value = '';
+            await importFolderFiles(list);
+          }}
+        />
         <IconButton icon={RefreshCw} title="Update from PSD: layers with the name of a picture give it new pixels, new layers become slots" small disabled={project.images.length === 0} onClick={() => psdRef.current?.click()} />
         <input
           ref={psdRef}
@@ -150,12 +165,12 @@ export function AssetsPanel() {
         onDrop={async (e) => {
           if (!e.dataTransfer.files.length) return;
           e.preventDefault();
-          await importImageFiles([...e.dataTransfer.files]);
+          await importDropped(e.dataTransfer);
         }}
       >
         {project.images.length === 0 ? (
           <div className="drop-hint" onClick={() => fileRef.current?.click()}>
-            Drop PNG / WebP images or a PSD file here
+            Drop PNG / WebP images, a folder of them or a PSD file here
             <br />
             or click to browse
           </div>
