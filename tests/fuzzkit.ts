@@ -10,6 +10,7 @@
  *   - undoing everything restores the starting document exactly, and redoing everything restores the final one.
  */
 import { expect } from 'vitest';
+import { bakeAnimation, constrainedBoneIndices, poseFrames } from '../src/core/bake';
 import { applyAnimation, applyPhysicsResets } from '../src/core/animate';
 import { exportSpineJson } from '../src/core/export/spineJson';
 import { deformProp } from '../src/core/keyrefs';
@@ -278,8 +279,12 @@ function ambiguousBones(ours: ReturnType<typeof createSkeleton>, official: any):
     if (a < 0) a += 360;
     return a < 1e-3 || a > 360 - 1e-3;
   };
+  // (the constraint may have read its source before a slider moved it, so the pose that is left says nothing about the wrap)
+  const nearWrapValue = (v: number) => v < 1e-3 || v > 360 - 1e-3;
   for (const c of ours.constraints) {
-    if (c.kind === 'transform' && !c.data.localSource && c.data.properties.some((p) => p.prop === 'rotate') && nearWrap(c.source)) for (const b of c.bones) mark(b);
+    if (c.kind === 'transform' && !c.data.localSource && c.data.properties.some((p) => p.prop === 'rotate') && (nearWrap(c.source) || nearWrapValue(c.lastSourceRotation))) for (const b of c.bones) mark(b);
+    // a path bone that has to turn by exactly half a turn goes either way on a nanometre of noise
+    if (c.kind === 'path' && c.onBranchCut) for (const b of c.bones) mark(b);
     if (c.kind === 'slider') {
       const o = official.constraints.find((x: any) => x.data.name === c.data.name);
       if (o && Math.abs(o.appliedPose.time - c.time) > 1e-2) for (const i of c.data.animatedBones) mark(ours.bones[i]);
@@ -634,6 +639,43 @@ function attachmentMismatch(p: Project, ours: ReturnType<typeof createSkeleton>,
   return null;
 }
 
+/**
+ * Baking an animation turns the constraints into bone keys: the baked animation (constraints off) has to pose every bone the way the
+ * original does on every frame, whatever the document contains.
+ */
+export function bakeMismatch(p: Project): string | null {
+  const doc = p.skeleton;
+  for (const anim of doc.animations.slice(0, 2)) {
+    if (!(anim.duration > 0)) continue;
+    const baked = bakeAnimation(doc, anim, { simplify: null });
+    const withBaked = { ...structuredClone(doc), animations: [...doc.animations, baked] };
+    const names = doc.bones.map((b) => b.name);
+    // a bone that no skin switches on is not posed by the update order, but a constraint can still write to it; that is not baked (and cannot be seen)
+    const probeData = compileSkeleton(structuredClone(doc));
+    const probe = createSkeleton(probeData, null);
+    // A constrained bone whose parent is constrained as well can be left in a state that its parent's final pose does not explain
+    // (a constraint ordered after the child moved the parent; the child keeps the world it had). Its local pose then cannot be read back
+    // from the parent, in the official runtime either, so such a pair is not compared.
+    const constrained = new Set(constrainedBoneIndices(probeData));
+    const want = poseFrames(doc, anim);
+    const got = poseFrames(withBaked, baked);
+    for (let f = 0; f < want.length; f++) {
+      for (let i = 0; i < want[f].length; i++) {
+        if (!probe.bones[i].active) continue;
+        const parent = probe.bones[i].parent;
+        if (parent && constrained.has(i) && constrained.has(parent.data.index)) continue;
+        for (let k = 0; k < 6; k++) {
+          const x = want[f][i][k];
+          const y = got[f][i][k];
+          const scale = Math.max(1, Math.abs(x), Math.abs(y));
+          if (!(Math.abs(x - y) <= (k < 4 ? 1e-3 : 5e-3) * scale)) return `animation "${anim.name}" frame ${f} bone "${names[i]}" element ${k}: original ${x}, baked ${y}`;
+        }
+      }
+    }
+  }
+  return null;
+}
+
 function parity(p: Project, label: string) {
   const m = parityMismatch(p);
   if (m) throw new Error(`${label}: bone "${m.bone}".${m.what} ours=${m.ours} official=${m.official} (animation ${m.animation} t=${m.time})`);
@@ -725,6 +767,8 @@ export function playSession(seed: number, steps: number, opts: { parity?: boolea
       // the binary export must load as the same skeleton as the JSON
       const bin = compareBinary(docStore.get());
       if (bin.diffs.length) throw new Error(`seed ${seed} final state: binary differs from JSON: ${bin.diffs.slice(0, 5).join('; ')}`);
+      const baked = bakeMismatch(docStore.get());
+      if (baked) throw new Error(`seed ${seed} final state: a baked animation poses differently: ${baked}`);
       const back = compareReadBack(docStore.get());
       if (back.length) throw new Error(`seed ${seed} final state: the binary reads back differently: ${back.slice(0, 5).join('; ')}`);
     } catch (e) {

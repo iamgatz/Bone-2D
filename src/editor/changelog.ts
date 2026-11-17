@@ -12,6 +12,18 @@ export interface Release {
 
 export const CHANGELOG: Release[] = [
   {
+    version: '0.14',
+    date: '2026-11-17',
+    en: [
+      'Animation tools window (Windows menu). Simplify keys takes out the keys a curve does not need, within a tolerance you scale; it shows how many can go before you press the button. Bake constraints writes what IK, transform, path, physics and sliders do into plain bone keys of a new animation (every frame or every N-th, optionally simplified, constraints switched off in the copy), so the motion plays the same where a game runtime has no such constraint. Checked frame by frame in the random-session tests.',
+      'The one difference from the official runtime that the random-session tests could not explain turned out to be the test reading a bone on the 0/360 wrap before a slider moved it; the test now knows about that, the editor needed no change.',
+    ],
+    ru: [
+      'Окно «Инструменты анимации» (меню «Окна»). «Упрощение ключей» убирает ключи, которые кривой не нужны, в допуске, который можно менять; перед нажатием видно, сколько уйдёт. «Запечь констрейнты» записывает работу IK, transform, path, физики и слайдеров в обычные ключи костей новой анимации (каждый кадр или каждый N-й, с упрощением по желанию, констрейнты в копии выключены), и движение играет так же там, где в игровом рантайме таких констрейнтов нет. Сверено кадр за кадром в тестах со случайными сессиями.',
+      'Единственное расхождение с официальным рантаймом, которое случайные сессии не смогли объяснить, оказалось тестом: он читал кость на стыке 0/360 после того, как слайдер её повернул. Теперь тест это знает, редактор менять не пришлось.',
+    ],
+  },
+  {
     version: '0.13',
     date: '2026-11-17',
     en: ['Motion trails (View menu, or the route button in the top bar): the path that the selected bones travel in the animation, cool before the playhead and warm after it, with the keys marked on it. Spine has nothing like it.'],

@@ -1297,6 +1297,8 @@ export class TransformConstraintRT {
   readonly source: Bone;
   mix: number[];
   active = true;
+  /** The world rotation the source had when the constraint last read it (0..360), NaN before; lets the tests spot a read on the 0/360 wrap. */
+  lastSourceRotation = Number.NaN;
 
   constructor(data: TransformData, skeleton: Skeleton) {
     this.data = data;
@@ -1335,7 +1337,9 @@ export class TransformConstraintRT {
       if (d.localTarget) bone.modifyLocal();
       else bone.modifyWorld();
       for (const from of d.properties) {
-        const value = transformFrom(from.prop, sk, source, d.localSource, d.offsets) - from.offset;
+        const raw = transformFrom(from.prop, sk, source, d.localSource, d.offsets);
+        if (from.prop === 'rotate' && !d.localSource) this.lastSourceRotation = raw;
+        const value = raw - from.offset;
         for (const to of from.to) {
           if (m[MIX_INDEX[to.prop]] === 0) continue;
           let clamped = to.offset + value * to.scale;
@@ -1428,6 +1432,8 @@ export class PathConstraintRT {
   /** mixRotate, mixX, mixY */
   mix: number[];
   active = true;
+  /** True when a bone had to turn by exactly half a turn (the wrap of the angle decides which way): two runtimes can differ by float noise there. Read by the tests. */
+  onBranchCut = false;
   private readonly scratch = newPathScratch();
   private readonly points: number[] = [];
   private lengths: number[] = [];
@@ -1492,6 +1498,7 @@ export class PathConstraintRT {
     const mixX = this.mix[1];
     const mixY = this.mix[2];
     if (mixRotate === 0 && mixX === 0 && mixY === 0) return;
+    this.onBranchCut = false;
     const data = this.data;
     const tangents = data.rotateMode === 'tangent';
     const scale = data.rotateMode === 'chainScale';
@@ -1611,6 +1618,7 @@ export class PathConstraintRT {
           boneX += (length * (cos * a - sin * c) - dx) * mixRotate;
           boneY += (length * (sin * a + cos * c) - dy) * mixRotate;
         } else r += offsetRotation;
+        if (Math.abs(Math.abs(r) - SPINE_PI) < 1e-6) this.onBranchCut = true;
         if (r > SPINE_PI) r -= PI2;
         else if (r < -SPINE_PI) r += PI2;
         r *= mixRotate;
