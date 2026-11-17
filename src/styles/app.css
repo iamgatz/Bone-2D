@@ -309,20 +309,41 @@ textarea {
   display: flex;
   align-items: center;
   gap: 9px;
+  width: 100%;
   padding: 6px 9px;
+  border: 0;
   border-radius: var(--radius-sm);
-  cursor: pointer;
+  background: none;
   color: var(--text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
 }
-.menu-item:hover {
+.menu-item:hover,
+.menu-item:focus-visible {
   background: var(--panel-3);
+}
+.menu-item:focus-visible {
+  outline-offset: -2px;
 }
 .menu-item .kbd {
   margin-left: auto;
 }
-.menu-item.disabled {
+.menu-item:disabled {
   opacity: 0.4;
   pointer-events: none;
+}
+.menu-gap {
+  flex: none;
+  width: 15px;
+}
+.menu-check {
+  flex: none;
+  margin-left: auto;
+  color: var(--accent);
+}
+.dialog:focus {
+  outline: none;
 }
 .menu-sep {
   height: 1px;
@@ -751,7 +772,7 @@ textarea {
   color: var(--danger);
 }
 .flush {
-  margin: 0;
+  margin-top: 0;
 }
 .contents {
   display: contents;
@@ -1193,18 +1214,37 @@ textarea {
 .kv label {
   color: var(--muted);
 }
-.shortcuts {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 4px 24px;
+/* the shortcuts window: groups in two columns, a row is a name and its keys */
+.hotkeys {
+  columns: 2;
+  column-gap: var(--sp-8);
 }
-.shortcuts div {
+.hk-group {
+  break-inside: avoid;
+  margin-bottom: var(--sp-6);
+}
+.hk-group .section-label {
+  margin: 0;
+  padding: 0 0 var(--sp-2);
+}
+.hk-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 10px;
-  padding: 3px 0;
+  gap: var(--sp-4);
+  padding: var(--sp-1) 0;
   border-bottom: 1px solid var(--hover);
+}
+.hk-keys {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--sp-2) var(--sp-3);
+}
+.hk-combo {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-1);
 }
 .toast {
   position: fixed;

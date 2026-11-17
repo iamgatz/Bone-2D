@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import type { CSSProperties, ReactNode } from 'react';
 import type { LucideIcon } from 'lucide-react';
-import { X } from 'lucide-react';
+import { Check, X } from 'lucide-react';
 import { clamp, parseNumberExpr } from '@/core/math';
 import { docStore } from '@/store/doc';
 
@@ -211,47 +211,126 @@ export function useOutsideClose(open: boolean, close: () => void) {
   return ref;
 }
 
+/** Arrow keys, Home and End move between the items of a menu. */
+export function menuKeys(e: React.KeyboardEvent<HTMLElement>) {
+  const items = [...e.currentTarget.querySelectorAll<HTMLElement>('[role^=menuitem]:not(:disabled)')];
+  if (!items.length) return;
+  const i = items.indexOf(document.activeElement as HTMLElement);
+  const next = e.key === 'ArrowDown' ? (i + 1) % items.length : e.key === 'ArrowUp' ? (i <= 0 ? items.length - 1 : i - 1) : e.key === 'Home' ? 0 : e.key === 'End' ? items.length - 1 : -1;
+  if (next < 0) return;
+  e.preventDefault();
+  items[next].focus();
+}
+
+/** When a menu opens, the keyboard is in it: the first item has the focus. */
+export function useFocusFirstItem(ref: React.RefObject<HTMLElement | null>, active = true) {
+  useEffect(() => {
+    if (active) ref.current?.querySelector<HTMLElement>('[role^=menuitem]:not(:disabled)')?.focus();
+  }, [ref, active]);
+}
+
 export function Menu(props: { label: ReactNode; children: (close: () => void) => ReactNode; icon?: LucideIcon }) {
   const [open, setOpen] = useState(false);
   const ref = useOutsideClose(open, () => setOpen(false));
+  const trigger = useRef<HTMLButtonElement>(null);
+  const pop = useRef<HTMLDivElement>(null);
+  useFocusFirstItem(pop, open);
   const Icon = props.icon;
   return (
     <div className="menu" ref={ref}>
-      <button className={`btn ghost${open ? ' on' : ''}`} onClick={() => setOpen(!open)}>
+      <button
+        ref={trigger}
+        type="button"
+        className={`btn ghost${open ? ' on' : ''}`}
+        aria-haspopup="menu"
+        aria-expanded={open}
+        onClick={() => setOpen(!open)}
+        onKeyDown={(e) => e.key === 'ArrowDown' && (e.preventDefault(), setOpen(true))}
+      >
         {Icon && <Icon size={15} strokeWidth={1.9} />}
         {props.label}
       </button>
-      {open && <div className="menu-pop">{props.children(() => setOpen(false))}</div>}
+      {open && (
+        <div
+          ref={pop}
+          className="menu-pop"
+          role="menu"
+          onKeyDown={(e) => {
+            if (e.key === 'Escape') {
+              e.stopPropagation(); // closes the menu, not the selection
+              setOpen(false);
+              trigger.current?.focus();
+            } else if (e.key === 'Tab') setOpen(false);
+            else menuKeys(e);
+          }}
+        >
+          {props.children(() => setOpen(false))}
+        </div>
+      )}
     </div>
   );
 }
 
-export function MenuItem(props: { icon?: LucideIcon; children: ReactNode; onClick: () => void; hotkey?: string; disabled?: boolean; close: () => void }) {
+/** One item of a menu. With `checked` it is a switch (a tick at the right while it is on). */
+export function MenuItem(props: { icon?: LucideIcon; children: ReactNode; onClick: () => void; hotkey?: string; disabled?: boolean; checked?: boolean; close: () => void }) {
   const Icon = props.icon;
+  const checkable = props.checked !== undefined;
   return (
-    <div
-      className={`menu-item${props.disabled ? ' disabled' : ''}`}
+    <button
+      type="button"
+      role={checkable ? 'menuitemcheckbox' : 'menuitem'}
+      aria-checked={checkable ? props.checked : undefined}
+      className="menu-item"
+      disabled={props.disabled}
       onClick={() => {
         props.close();
         props.onClick();
       }}
     >
-      {Icon ? <Icon size={15} strokeWidth={1.9} /> : <span style={{ width: 15 }} />}
+      {Icon ? <Icon size={15} strokeWidth={1.9} /> : <span className="menu-gap" />}
       <span>{props.children}</span>
-      {props.hotkey && <span className="kbd">{props.hotkey}</span>}
-    </div>
+      {props.checked && <Check size={14} className="menu-check" />}
+      {props.hotkey && <kbd className="kbd">{props.hotkey}</kbd>}
+    </button>
   );
 }
 
+/** A modal dialog: the keyboard goes into it and comes back to where it was; Tab stays inside, Esc closes. */
 export function Dialog(props: { title: string; onClose: () => void; children: ReactNode; footer?: ReactNode; width?: number }) {
+  const box = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const before = document.activeElement as HTMLElement | null;
+    box.current?.focus();
+    return () => before?.focus?.();
+  }, []);
   useEffect(() => {
     const k = (e: KeyboardEvent) => e.key === 'Escape' && props.onClose();
     window.addEventListener('keydown', k);
     return () => window.removeEventListener('keydown', k);
   }, [props]);
+  const keys = (e: React.KeyboardEvent) => {
+    if (e.key === 'Escape') {
+      e.stopPropagation(); // closes the dialog, not the selection
+      props.onClose();
+      return;
+    }
+    if (e.key !== 'Tab' || !box.current) return;
+    const focusable = [...box.current.querySelectorAll<HTMLElement>('button:not(:disabled), input:not(:disabled), select:not(:disabled), textarea:not(:disabled), [tabindex]:not([tabindex="-1"])')];
+    if (!focusable.length) return;
+    const first = focusable[0];
+    const last = focusable[focusable.length - 1];
+    const at = document.activeElement;
+    if (e.shiftKey && (at === first || at === box.current)) {
+      e.preventDefault();
+      last.focus();
+    } else if (!e.shiftKey && at === last) {
+      e.preventDefault();
+      first.focus();
+    }
+  };
   return (
     <div className="overlay" onMouseDown={(e) => e.target === e.currentTarget && props.onClose()}>
-      <div className="dialog" style={props.width ? { width: props.width } : undefined}>
+      <div ref={box} className="dialog" role="dialog" aria-modal="true" aria-label={props.title} tabIndex={-1} onKeyDown={keys} style={props.width ? { width: props.width } : undefined}>
         <div className="dialog-head">
           <span>{props.title}</span>
           <span className="spacer" />

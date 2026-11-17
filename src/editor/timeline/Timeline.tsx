@@ -8,7 +8,8 @@ import { copyKeys, createAnimation, currentAnimation, deleteAnimation, deleteKey
 import { useProject } from '@/store/doc';
 import { uiStore, useUi } from '@/store/ui';
 import type { CurveKind } from '@/store/ui';
-import { Button, IconButton, SelectField, TextField, useOutsideClose } from '../ui/controls';
+import { KEYS } from '../hotkeys';
+import { Button, IconButton, SelectField, TextField, menuKeys, useFocusFirstItem, useOutsideClose } from '../ui/controls';
 import { Dopesheet, ROW_H } from './Dopesheet';
 import type { TimelineMenuRequest } from './Dopesheet';
 import { buildRows } from './rows';
@@ -43,9 +44,12 @@ function FrameField({ fps, time }: { fps: number; time: number }) {
 
 function TimelineMenu({ menu, onClose }: { menu: TimelineMenuRequest; onClose: () => void }) {
   const ref = useOutsideClose(true, onClose);
+  useFocusFirstItem(ref);
   const refs = menu.refs;
   const item = (label: string, fn: () => void, hot?: string) => (
-    <div
+    <button
+      type="button"
+      role="menuitem"
       className="menu-item"
       onClick={() => {
         fn();
@@ -53,11 +57,22 @@ function TimelineMenu({ menu, onClose }: { menu: TimelineMenuRequest; onClose: (
       }}
     >
       <span>{label}</span>
-      {hot && <span className="kbd">{hot}</span>}
-    </div>
+      {hot && <kbd className="kbd">{hot}</kbd>}
+    </button>
   );
   return (
-    <div ref={ref} className="menu-pop" style={{ position: 'fixed', left: Math.min(menu.x, window.innerWidth - 230), top: Math.min(menu.y, window.innerHeight - 330), zIndex: 120 }}>
+    <div
+      ref={ref}
+      className="menu-pop"
+      role="menu"
+      onKeyDown={(e) => {
+        if (e.key === 'Escape') {
+          e.stopPropagation(); // closes the menu, not the selection
+          onClose();
+        } else menuKeys(e);
+      }}
+      style={{ position: 'fixed', left: Math.min(menu.x, window.innerWidth - 230), top: Math.min(menu.y, window.innerHeight - 330), zIndex: 120 }}
+    >
       <div className="section-label" style={{ paddingTop: 4 }}>
         {`Interpolation · ${refs.length} key${refs.length === 1 ? '' : 's'}`}
       </div>
@@ -69,9 +84,9 @@ function TimelineMenu({ menu, onClose }: { menu: TimelineMenuRequest; onClose: (
       {item('Ease in-out', () => setKeysCurve(refs, CURVE_PRESETS.easeInOut))}
       {item('Overshoot', () => setKeysCurve(refs, CURVE_PRESETS.overshoot))}
       <div className="menu-sep" />
-      {item('Copy', () => copyKeys(refs), 'Ctrl C')}
-      {item('Paste at playhead', () => pasteKeys(uiStore.get().time), 'Ctrl V')}
-      {item('Delete', () => deleteKeys(refs), 'Del')}
+      {item('Copy', () => copyKeys(refs), KEYS.copy)}
+      {item('Paste at playhead', () => pasteKeys(uiStore.get().time), KEYS.paste)}
+      {item('Delete', () => deleteKeys(refs), KEYS.delete)}
     </div>
   );
 }
@@ -141,7 +156,7 @@ export function Timeline() {
         </div>
         <span className="sep" />
         <IconButton icon={SkipBack} title="Go to start" onClick={() => jump(0)} disabled={!anim} />
-        <IconButton icon={playing ? Pause : Play} title={playing ? 'Pause' : 'Play'} hotkey="Space" active={playing} animate onClick={() => togglePlay()} disabled={!anim} />
+        <IconButton icon={playing ? Pause : Play} title={playing ? 'Pause' : 'Play'} hotkey={KEYS.play} active={playing} animate onClick={() => togglePlay()} disabled={!anim} />
         <IconButton icon={SkipForward} title="Go to end" onClick={() => anim && jump(anim.duration)} disabled={!anim} />
         <IconButton icon={Repeat} title="Loop" active={loop} onClick={() => uiStore.patch({ loop: !loop })} />
         <FrameField fps={doc.fps} time={time} />
