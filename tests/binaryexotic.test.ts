@@ -221,7 +221,9 @@ describe('binary reader on files written the way Spine writes them', () => {
     const result = importSpineJson(binaryToJson(bytes), 'exotic');
     const skin = result.project.skeleton.skins[0];
     const slotId = result.project.skeleton.slots[0].id;
-    expect(skin.attachments[slotId].linked.type).toBe('mesh'); // an independent copy of its source
+    const linked = skin.attachments[slotId].linked;
+    expect(linked.type).toBe('mesh');
+    expect(linked.type === 'mesh' && linked.link?.source).toBeTruthy(); // it keeps the link to its source
     expect(result.warnings.length).toBeGreaterThan(0);
   });
 });

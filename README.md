@@ -60,6 +60,7 @@ $env:FUZZ_SEEDS='300'; $env:FUZZ_STEPS='100'; npx vitest run tests/fuzz.test.ts
 - **Hierarchy filter** by name, **Ctrl+H** shows everything hidden, **Ctrl+Shift+H** shows only the selection.
 - **Close the loop**: the end of an animation takes the value of its start, for seamless cycles.
 - **Sequences** (frame-by-frame pictures on a region or mesh) with all seven Spine modes, in the editor, the JSON / binary export and the import.
+- **Linked meshes**: a skin gives a mesh another picture and keeps its shape, weights and deform; the link is written to and read from Spine files.
 - **Event sounds** (path, volume, balance) are edited in the Hierarchy and kept through the Spine export and import.
 - **Rulers, guides and snapping** to the grid and the guides (guides are saved in the project).
 - Keys copied from one bone **paste onto the selected bone**; Settings: bone size and hints.
@@ -111,7 +112,7 @@ Rationale for the choices is in [docs/PROMPT.md](docs/PROMPT.md); notes on the 4
 ## Not done yet
 
 Weights and deformation for clipping / bounding boxes (only moving vertices is supported),
-linked meshes (imported as copies), sequence atlases, draw-order folders, binary files of Spine 4.0 – 4.2,
+sequence atlases, draw-order folders, binary files of Spine 4.0 – 4.2,
 collaboration.
 
 Spine quirks we reproduce on purpose: angles go through float32 π (`180 / 3.1415927`), and reading a world rotation at the 0 / 360° boundary (the source of a transform

@@ -23,6 +23,11 @@ export function duplicateSkin(doc: SkeletonDoc, skinId: Id): Skin | null {
   const src = doc.skins[index];
   const copy: Skin = { id: uid(), name: freshName(`${src.name} copy`, doc.skins), attachments: clone(src.attachments), bones: [...src.bones], constraints: [...src.constraints] };
   doc.skins.splice(index + 1, 0, copy);
+  // a linked mesh that follows a mesh of the skin that is copied follows the one of the copy
+  for (const slotId in copy.attachments) for (const name in copy.attachments[slotId]) {
+    const att = copy.attachments[slotId][name];
+    if (att.type === 'mesh' && att.link?.skin === src.id) att.link.skin = copy.id;
+  }
   for (const anim of doc.animations) {
     const deform = anim.deform[src.id];
     if (deform) anim.deform[copy.id] = clone(deform);

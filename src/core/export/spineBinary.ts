@@ -420,7 +420,7 @@ export function jsonToBinary(json: J): Uint8Array {
       body.varint(entries.length, true);
       for (const [placeholder, att] of entries) {
         ref(body, placeholder);
-        writeAttachment(att, placeholder);
+        writeAttachment(att, placeholder, slotName, skin.name);
       }
     }
   };
@@ -459,7 +459,24 @@ export function jsonToBinary(json: J): Uint8Array {
     body.varint(num(s.setup, 0), true);
   };
 
-  const writeAttachment = (att: J, placeholder: string) => {
+  // the slots (other than their own) that show a linked mesh sharing the deform of a mesh: the loader of the binary format reads
+  // them from the source mesh (the JSON loader works them out itself)
+  const followerSlots = new Map<string, Set<number>>();
+  for (const skin of skins) {
+    for (const [slotName, perSlot] of Object.entries<Record<string, J>>(skin.attachments ?? {})) {
+      for (const att of Object.values(perSlot)) {
+        if (att.type !== 'linkedmesh' || att.timelines === false) continue;
+        const sourceSlot: string = att.slot ?? slotName;
+        if (sourceSlot === slotName) continue;
+        const key = `${att.skin ?? defaultSkin.name}|${sourceSlot}|${att.source}`;
+        const set = followerSlots.get(key) ?? new Set<number>();
+        set.add(slot(slotName));
+        followerSlots.set(key, set);
+      }
+    }
+  }
+
+  const writeAttachment = (att: J, placeholder: string, slotName: string, skinName: string) => {
     const name: string = att.name ?? placeholder;
     const type: string = att.type ?? 'region';
     const color = att.color !== undefined ? rgba8888(hexBytes(att.color, [255, 255, 255, 255])) : null;
@@ -517,9 +534,35 @@ export function jsonToBinary(json: J): Uint8Array {
         for (const v of uvs) body.float(v);
         for (const t of triangles.slice(0, Math.max(0, (2 * vertexCount - hull - 2) * 3))) body.varint(t, true);
         for (let i = triangles.length; i < (2 * vertexCount - hull - 2) * 3; i++) body.varint(0, true);
-        body.varint(0, true); // timeline slots
+        const followers = [...(followerSlots.get(`${skinName}|${slotName}|${placeholder}`) ?? [])];
+        body.varint(followers.length, true); // timeline slots
+        for (const s of followers) body.varint(s, true);
         if (nonessential) {
           body.varint(0, true); // hull edges
+          body.float(num(att.width, 0));
+          body.float(num(att.height, 0));
+        }
+        break;
+      }
+      case 'linkedmesh': {
+        const path: string = att.path ?? name;
+        const colorValue = color ?? whiteColor;
+        let flags = 3 | hasName;
+        if (path !== name) flags |= 16;
+        if (colorValue !== whiteColor) flags |= 32;
+        if (att.sequence) flags |= 64;
+        if (att.timelines !== false) flags |= 128;
+        body.byte(flags);
+        if (flags & 8) ref(body, name);
+        if (flags & 16) ref(body, path);
+        if (flags & 32) body.int32(colorValue);
+        if (flags & 64) writeSequence(att.sequence);
+        body.varint(slot(att.slot ?? slotName), true);
+        const sourceSkin = skinIndex.get(att.skin ?? defaultSkin.name);
+        if (sourceSkin === undefined) throw new Error(`Binary export: unknown skin "${att.skin}"`);
+        body.varint(sourceSkin, true);
+        ref(body, att.source);
+        if (nonessential) {
           body.float(num(att.width, 0));
           body.float(num(att.height, 0));
         }

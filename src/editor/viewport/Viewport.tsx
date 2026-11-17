@@ -10,9 +10,11 @@ import { ghostsFor } from '../ghosts';
 import { ViewportController } from './controller';
 import { drawOverlay } from './overlay';
 
-export const viewportApi: { controller: ViewportController | null; frame: () => void; size: () => [number, number] } = {
+export const viewportApi: { controller: ViewportController | null; frame: () => void; frameSelection: () => void; zoom100: () => void; size: () => [number, number] } = {
   controller: null,
   frame: () => {},
+  frameSelection: () => {},
+  zoom100: () => {},
   size: () => [800, 600],
 };
 
@@ -77,9 +79,10 @@ export function Viewport() {
     resize();
 
     viewportApi.size = () => [host.clientWidth, host.clientHeight];
-    viewportApi.frame = () => {
+    /** Puts the camera over the skeleton, or over the bones in `only` (and the skeleton's bounds only when it is the whole skeleton). */
+    const frameBones = (only?: ReadonlySet<number>) => {
       const scene = getScene();
-      const b = scene.skeleton.getBounds();
+      const b = only ? null : scene.skeleton.getBounds();
       let minX = Infinity,
         minY = Infinity,
         maxX = -Infinity,
@@ -91,6 +94,7 @@ export function Viewport() {
         maxY = b[1] + b[3];
       }
       for (const bone of scene.skeleton.bones) {
+        if (only && !only.has(bone.data.index)) continue;
         for (const [x, y] of [
           [bone.worldX, bone.worldY],
           [bone.tipX, bone.tipY],
@@ -108,6 +112,20 @@ export function Viewport() {
       const zoom = Math.min((w - pad * 2) / Math.max(maxX - minX, 40), (h - pad * 2) / Math.max(maxY - minY, 40), 4);
       uiStore.patch({ camera: { x: (minX + maxX) / 2, y: (minY + maxY) / 2, zoom: Math.max(0.05, zoom) } });
     };
+    viewportApi.frame = () => frameBones();
+    // the selected bones (and the bone of the selected slot); without a selection it is the same as framing the whole skeleton
+    viewportApi.frameSelection = () => {
+      const scene = getScene();
+      const sel = uiStore.get().selection;
+      const ids = new Set(sel.bones);
+      const slot = sel.slot ? scene.skeleton.slotById(sel.slot) : null;
+      if (slot) ids.add(slot.bone.data.id);
+      const indices = new Set<number>();
+      for (const bone of scene.skeleton.bones) if (ids.has(bone.data.id)) indices.add(bone.data.index);
+      frameBones(indices.size ? indices : undefined);
+    };
+    // one scene unit per pixel of the screen (the size the pictures were made at)
+    viewportApi.zoom100 = () => uiStore.patch({ camera: { ...uiStore.get().camera, zoom: 1 } });
 
     const draw = () => {
       const ui = uiStore.get();

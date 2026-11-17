@@ -28,6 +28,7 @@ import type {
   SkeletonDoc,
   TransformProp,
 } from './model';
+import { hasLinkedMeshes, linkSource } from './links';
 import { polygonVertexCount } from './model';
 import { DEG2RAD, EPS, EPS2, INV_PI2, RAD2DEG, SPINE_PI, atan2Deg, signum } from './math';
 import { computeWorldPositions, newPathScratch, pathCurveLengths, setSize } from './path';
@@ -287,6 +288,10 @@ export interface SkeletonData {
   slotIndex: Map<Id, number>;
   constraintIndex: Map<Id, number>;
   skinById: Map<Id, SkinData>;
+  /** A linked mesh that shares the deform of its source -> the source (the deform timelines of the source move it, its own are ignored). */
+  deformSource: Map<AttachmentData, AttachmentData>;
+  /** A source mesh -> the slots (other than its own) that can show a linked mesh sharing its deform. */
+  deformFollowers: Map<AttachmentData, number[]>;
   /** Token that changes whenever the bone id order changes (invalidates weighted attachment caches). */
   boneOrderKey: string;
 }
@@ -378,6 +383,33 @@ function compileVertices(vertexCount: number, vertices: number[], weights: Influ
     }
   }
   return { vertexCount, weighted: true, positions, bones, deformLength: influences * 2 };
+}
+
+/** Fills `deformSource` and `deformFollowers`: which linked meshes follow the deform of which source. */
+function resolveLinkedMeshes(doc: SkeletonDoc, data: SkeletonData) {
+  doc.skins.forEach((skin, si) => {
+    const compiledSkin = data.skins[si];
+    for (const slotId in skin.attachments) {
+      const slotIdx = data.slotIndex.get(slotId);
+      if (slotIdx === undefined) continue;
+      for (const name in skin.attachments[slotId]) {
+        const att = skin.attachments[slotId][name];
+        if (att.type !== 'mesh' || !att.link?.deform) continue;
+        const source = linkSource(doc, slotId, att);
+        const sourceIdx = source ? data.slotIndex.get(source.slotId) : undefined;
+        if (!source || sourceIdx === undefined) continue;
+        const from = compiledSkin.attachments[slotIdx]?.get(name);
+        const to = data.skinById.get(source.skin.id)?.attachments[sourceIdx]?.get(att.link.source);
+        if (!from || !to) continue;
+        data.deformSource.set(from, to);
+        if (sourceIdx !== slotIdx) {
+          const list = data.deformFollowers.get(to) ?? [];
+          if (!list.includes(slotIdx)) list.push(slotIdx);
+          data.deformFollowers.set(to, list);
+        }
+      }
+    }
+  });
 }
 
 /** Stable topological order: parents always before children, otherwise document order is kept. */
@@ -623,8 +655,11 @@ export function compileSkeleton(doc: SkeletonDoc): SkeletonData {
     slotIndex,
     constraintIndex,
     skinById,
+    deformSource: new Map(),
+    deformFollowers: new Map(),
     boneOrderKey,
   };
+  if (hasLinkedMeshes(doc)) resolveLinkedMeshes(doc, data);
   if (pathEntries.length) fillPathLengths(data, pathEntries);
   compileMemo.set(doc, data);
   return data;

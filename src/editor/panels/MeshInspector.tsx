@@ -1,11 +1,12 @@
 import { useState } from 'react';
 import { Brush, FlipHorizontal2, Hexagon, Link2, RefreshCw, Scissors, Sparkles, Triangle, Unlink2, Waves } from 'lucide-react';
-import type { Id, MeshAttachment } from '@/core/model';
-import { setAttachmentProps, setTool } from '@/store/actions';
+import type { Id, MeshAttachment, Project } from '@/core/model';
+import { linkSource } from '@/core/links';
+import { linkMeshTo, setAttachmentProps, setLinkDeform, setTool, unlinkMesh } from '@/store/actions';
 import { autoWeightMesh, bindMeshToBones, convertToMesh, mirrorMeshWeights, pruneMeshWeights, regenerateMesh, retriangulateMesh, smoothMeshWeights, unbindMeshFromBones } from '@/store/meshActions';
 import { useProject } from '@/store/doc';
 import { uiStore, useUi } from '@/store/ui';
-import { Button, ColorSwatch, NumberField, SelectField } from '../ui/controls';
+import { Button, ColorSwatch, NumberField, SelectField, Toggle } from '../ui/controls';
 import { Field } from '../ui/Field';
 import { Section } from '../ui/Section';
 
@@ -33,6 +34,49 @@ export function ConvertToMeshGroup({ slotId, name }: { slotId: Id; name: string 
   );
 }
 
+/** The meshes of the default skin a mesh could take its shape from: every other mesh that is not linked itself. */
+function shapeSources(doc: Project['skeleton'], slotId: Id, name: string): { value: string; label: string }[] {
+  const out: { value: string; label: string }[] = [];
+  for (const slot of doc.slots) {
+    for (const [n, a] of Object.entries(doc.skins[0].attachments[slot.id] ?? {})) {
+      if (a.type === 'mesh' && !a.link && !(slot.id === slotId && n === name)) out.push({ value: `${slot.id}${n}`, label: n === slot.name ? n : `${slot.name} · ${n}` });
+    }
+  }
+  return out;
+}
+
+/**
+ * What a linked mesh is: its shape is the shape of a source mesh, its picture is its own. Shows the source, whether the deform of the
+ * source moves it too, and a way to cut it loose.
+ */
+export function LinkedMeshFields({ skinId, slotId, name, mesh }: { skinId: Id; slotId: Id; name: string; mesh: MeshAttachment }) {
+  const project = useProject();
+  const link = mesh.link;
+  if (!link) return null;
+  const doc = project.skeleton;
+  const source = linkSource(doc, slotId, mesh);
+  const slot = doc.slots.find((s) => s.id === (link.slot ?? slotId));
+  const skin = doc.skins.find((s) => s.id === (link.skin ?? doc.skins[0]?.id));
+  const where = [link.source, ...(link.slot && slot ? [slot.name] : []), ...(link.skin && skin ? [skin.name] : [])].join(' · ');
+  return (
+    <>
+      <Field label="Linked to">
+        <span className="chip accent" title="The shape of this mesh (vertices, triangles, weights) is the shape of its source mesh">
+          {source ? where : `${link.source} (missing)`}
+        </span>
+      </Field>
+      <Field label="Share deform">
+        <Toggle on={link.deform} onChange={(on) => setLinkDeform(skinId, slotId, name, on)} title="The deform animation of the source mesh moves this one too; off = it has deform timelines of its own" />
+      </Field>
+      <div className="hstack mb">
+        <Button icon={Unlink2} onClick={() => unlinkMesh(skinId, slotId, name)} title="Keep the shape this mesh has now and edit it on its own">
+          Unlink
+        </Button>
+      </div>
+    </>
+  );
+}
+
 export function MeshGroup({ slotId, att }: { slotId: Id; att: MeshAttachment }) {
   const project = useProject();
   const tool = useUi((s) => s.tool);
@@ -47,6 +91,7 @@ export function MeshGroup({ slotId, att }: { slotId: Id; att: MeshAttachment }) 
   const influencing = weighted ? [...new Set(att.weights!.flat().map((i) => i[0]))] : [];
   const boneName = (id: Id) => doc.bones.find((b) => b.id === id)?.name ?? '?';
   const setup = mode === 'setup';
+  const linked = !!att.link;
 
   return (
     <>
@@ -57,15 +102,26 @@ export function MeshGroup({ slotId, att }: { slotId: Id; att: MeshAttachment }) 
           <span className={`chip${weighted ? ' accent' : ''}`}>{weighted ? `weighted · ${influencing.length} bones` : 'unweighted'}</span>
         </div>
         <div className="hstack mb">
-          <Button primary={tool === 'mesh'} icon={Triangle} onClick={() => setTool('mesh')} title="Edit vertices (M)">
+          <Button primary={tool === 'mesh'} icon={Triangle} disabled={linked && setup} onClick={() => setTool('mesh')} title="Edit vertices (M)">
             {mode === 'animate' ? 'Deform' : 'Edit mesh'}
           </Button>
-          <Button primary={tool === 'weights'} icon={Brush} disabled={!setup} onClick={() => setTool('weights')} title="Paint weights (W)">
+          <Button primary={tool === 'weights'} icon={Brush} disabled={!setup || linked} onClick={() => setTool('weights')} title="Paint weights (W)">
             Weights
           </Button>
         </div>
-        {setup && (
+        {linked && att.link && <LinkedMeshFields skinId={project.skeleton.skins[0].id} slotId={slotId} name={att.name} mesh={att} />}
+        {setup && !linked && (
           <>
+            <Field label="Share shape with">
+              <SelectField
+                value=""
+                options={[{ value: '', label: '— none —' }, ...shapeSources(project.skeleton, slotId, att.name)]}
+                onChange={(v) => {
+                  const [sid, ...rest] = v.split('');
+                  if (sid) linkMeshTo(slotId, att.name, { slotId: sid, name: rest.join('') });
+                }}
+              />
+            </Field>
             <Field label="Density">
               <NumberField label="px" value={spacing} step={1} precision={0} min={8} max={400} onChange={setSpacing} />
             </Field>
@@ -84,7 +140,7 @@ export function MeshGroup({ slotId, att }: { slotId: Id; att: MeshAttachment }) 
         )}
       </Section>
 
-      {setup && (
+      {setup && !linked && (
         <Section id="mesh.weights" title="Weights" icon={Link2}>
           {!weighted ? (
             <>

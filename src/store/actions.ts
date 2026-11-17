@@ -1,10 +1,12 @@
 /** Every user-level operation on the document / UI. Components and tools call these; they never mutate state directly. */
+import { current } from 'immer';
 import type { Draft } from 'immer';
 import { animationEndTime } from '@/core/animate';
 import { DEFAULT_TOLERANCE, bakeAnimation, scaleTolerance, simplifyAnimation } from '@/core/bake';
 import type { BakeOptions } from '@/core/bake';
 import { cleanUpAnimation } from '@/core/cleanup';
 import { closeLoop } from '@/core/loops';
+import { linkedTo, makeLink } from '@/core/links';
 import { findAnimation, freshName, makeCurve, normalizeBoneOrder, pruneSequences, purgeAttachment, removeBones, removeSlots, rgbaToRgba2, setSlotDarkColor, snapTime, upsertKey, decompose } from '@/core/edit';
 import type { BoneMats } from '@/core/mesh';
 import { moveKeys, removeKeys, resolveKeys, retargetClip } from '@/core/keyrefs';
@@ -885,6 +887,16 @@ export function setSkinImage(skinId: Id, slotId: Id, placeholder: string, imageN
     const def = d.skeleton.skins[0].attachments[slotId]?.[placeholder];
     const skin = d.skeleton.skins.find((s) => s.id === skinId);
     if (!skin || !def) return;
+    if (def.type === 'mesh') {
+      // a mesh keeps its shape, weights and deform: the skin gets a linked mesh that has the picture of its own
+      const source = def.link ? null : def;
+      if (!source) return;
+      const shape = structuredClone(current(source));
+      delete shape.sequence; // one picture
+      delete shape.region;
+      (skin.attachments[slotId] ??= {})[placeholder] = { ...shape, name: placeholder, path: img.name, color: [1, 1, 1, 1], link: makeLink(d.skeleton, slotId, { skinId: d.skeleton.skins[0].id, slotId, name: placeholder }) };
+      return;
+    }
     const base = def.type === 'region' ? def : { x: 0, y: 0, rotation: 0, scaleX: 1, scaleY: 1 };
     (skin.attachments[slotId] ??= {})[placeholder] = {
       type: 'region',
@@ -899,6 +911,46 @@ export function setSkinImage(skinId: Id, slotId: Id, placeholder: string, imageN
       height: img.height,
       color: [1, 1, 1, 1],
     };
+  });
+}
+
+/**
+ * Makes a mesh of the default skin follow the shape of another mesh of it (two slots that share one shape: a left and a right arm).
+ * The mesh keeps its picture, colour and sequence; its own shape is replaced by the source's (undo brings it back).
+ */
+export function linkMeshTo(slotId: Id, name: string, source: { slotId: Id; name: string }) {
+  const doc = docStore.get().skeleton;
+  const skin = doc.skins[0];
+  const own = skin.attachments[slotId]?.[name];
+  const src = skin.attachments[source.slotId]?.[source.name];
+  if (own?.type !== 'mesh' || src?.type !== 'mesh' || src === own) return;
+  if (src.link) {
+    toast('That mesh is a linked mesh itself: link to the mesh it follows', 'error');
+    return;
+  }
+  if (linkedTo(doc, skin.id, slotId, name).length) {
+    toast('Other meshes follow this one: unlink them first', 'error');
+    return;
+  }
+  docStore.update('Link mesh', (d) => {
+    const m = d.skeleton.skins[0].attachments[slotId]?.[name];
+    if (m?.type === 'mesh') m.link = makeLink(d.skeleton, slotId, { skinId: d.skeleton.skins[0].id, slotId: source.slotId, name: source.name });
+  });
+}
+
+/** Whether a linked mesh keeps using the deform timelines of its source mesh. */
+export function setLinkDeform(skinId: Id, slotId: Id, name: string, on: boolean) {
+  docStore.update('Linked mesh deform', (d) => {
+    const m = d.skeleton.skins.find((s) => s.id === skinId)?.attachments[slotId]?.[name];
+    if (m?.type === 'mesh' && m.link) m.link.deform = on;
+  });
+}
+
+/** Cuts a linked mesh loose from its source: it keeps the shape it has now and can be edited on its own. */
+export function unlinkMesh(skinId: Id, slotId: Id, name: string) {
+  docStore.update('Unlink mesh', (d) => {
+    const m = d.skeleton.skins.find((s) => s.id === skinId)?.attachments[slotId]?.[name];
+    if (m?.type === 'mesh') delete m.link;
   });
 }
 

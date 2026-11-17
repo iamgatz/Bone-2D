@@ -112,6 +112,23 @@ export interface MeshAttachment {
   region?: { x: number; y: number; rotation: number; scaleX: number; scaleY: number; width: number; height: number };
   /** Frame-by-frame pictures; every frame is a picture the uvs fit. */
   sequence?: SequenceDef;
+  /**
+   * A linked mesh (Spine's `linkedmesh`): the shape (uvs, triangles, vertices, weights) is the one of the source mesh, the picture
+   * (`path`), the colour and the sequence are its own. The shape fields above are a copy that the editor keeps equal to the source
+   * (see core/links.ts); the export writes the link instead of the shape.
+   */
+  link?: MeshLink;
+}
+
+export interface MeshLink {
+  /** Name of the source mesh (a mesh that is not linked itself). */
+  source: string;
+  /** Slot of the source mesh; `null` = the slot of this mesh. */
+  slot: Id | null;
+  /** Skin of the source mesh; `null` = the default skin (the first one). */
+  skin: Id | null;
+  /** The deform timelines of the source move this mesh too. */
+  deform: boolean;
 }
 
 /** A single point + rotation in the slot bone's space (spawn points, muzzles …). Never drawn by runtimes. */

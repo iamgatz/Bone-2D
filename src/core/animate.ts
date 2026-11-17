@@ -3,11 +3,34 @@ import { deformProgress, findKeyIndex, sampleKeys } from './curve';
 import { GLOBAL_PHYSICS, PHYSICS_PARAMS } from './model';
 import { sequenceIndexAt } from './sequence';
 import type { Animation, Id, Key, Timeline } from './model';
-import type { PhysicsConstraintRT, Skeleton, Slot } from './skeleton';
+import type { AttachmentData, PhysicsConstraintRT, Skeleton, Slot } from './skeleton';
 
 const tmp: number[] = [0, 0, 0, 0, 0, 0, 0];
 
 const clamp01 = (v: number) => (v < 0 ? 0 : v > 1 ? 1 : v);
+
+/** The attachment whose deform timelines move an attachment: itself, or the source of a linked mesh that shares it. */
+function deformOwner(skeleton: Skeleton, att: AttachmentData): AttachmentData {
+  return skeleton.data.deformSource.get(att) ?? att;
+}
+
+/**
+ * The slots a deform timeline of `att` (which belongs to `slot`) moves: the slot while it shows `att` or a linked mesh that follows
+ * its deform, and the slots that show such a linked mesh while the source sits in another slot (Spine's `timelineSlots`).
+ */
+function deformSlots(skeleton: Skeleton, slot: Slot, att: AttachmentData): Slot[] {
+  const out: Slot[] = [];
+  const shows = (s: Slot) => {
+    const cur = skeleton.slotAttachment(s);
+    return !!cur && deformOwner(skeleton, cur) === att;
+  };
+  if (shows(slot)) out.push(slot);
+  for (const index of skeleton.data.deformFollowers.get(att) ?? []) {
+    const other = skeleton.slots[index];
+    if (other && other !== slot && other.bone.active && shows(other)) out.push(other);
+  }
+  return out;
+}
 
 /**
  * Spine's RGBA / RGBA2 timeline applied on top of the current pose (sliders): the light color (and the dark one for two-color
@@ -200,9 +223,10 @@ export function applyAnimation(skeleton: Skeleton, anim: Animation | null, time:
         const keys = perAtt[attName];
         if (!keys.length) continue;
         const att = skin.attachments[slot.data.index]?.get(attName);
-        if (!att || att !== skeleton.slotAttachment(slot)) continue;
+        if (!att || skeleton.data.deformSource.has(att)) continue;
         const out = sampleDeform(keys, time);
-        if (out) slot.deform = out;
+        if (!out) continue;
+        for (const target of deformSlots(skeleton, slot, att)) target.deform = out;
       }
     }
   }
@@ -280,9 +304,13 @@ export function applyAnimationOnto(skeleton: Skeleton, anim: Animation, time: nu
     if (tl.attachment?.length) {
       const i = findKeyIndex(tl.attachment, time);
       if (i >= 0 && tl.attachment[i].name !== slot.attachmentName) {
-        // a slot that changes its attachment starts over without the deformation of the old one (the official `SlotPose.setAttachment`)
+        // a slot that changes its attachment starts over without the deformation of the old one (the official `SlotPose.setAttachment`),
+        // unless the two share their deform timelines (a mesh and the linked meshes that follow its deform)
+        const before = skeleton.slotAttachment(slot);
         slot.attachmentName = tl.attachment[i].name;
-        slot.deform = [];
+        const after = skeleton.slotAttachment(slot);
+        const sameDeform = !!before && !!after && before !== after && deformOwner(skeleton, before) === deformOwner(skeleton, after);
+        if (!sameDeform) slot.deform = [];
         slot.sequenceIndex = -1;
       }
     }
@@ -370,11 +398,13 @@ export function applyAnimationOnto(skeleton: Skeleton, anim: Animation, time: nu
         const keys = perAtt[attName];
         if (!keys.length) continue;
         const att = skin.attachments[slot.data.index]?.get(attName);
-        if (!att || (att.kind !== 'mesh' && att.kind !== 'path') || att !== skeleton.slotAttachment(slot)) continue;
+        if (!att || (att.kind !== 'mesh' && att.kind !== 'path') || skeleton.data.deformSource.has(att)) continue;
         const out = sampleDeform(keys, time);
         if (!out || out.length !== att.deformLength) continue;
-        const current = slot.deform.length === att.deformLength ? slot.deform : new Array<number>(att.deformLength).fill(0);
-        slot.deform = current.map((c, i) => c + (additive ? out[i] : out[i] - c) * alpha);
+        for (const target of deformSlots(skeleton, slot, att)) {
+          const current = target.deform.length === att.deformLength ? target.deform : new Array<number>(att.deformLength).fill(0);
+          target.deform = current.map((c, i) => c + (additive ? out[i] : out[i] - c) * alpha);
+        }
       }
     }
   }

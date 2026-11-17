@@ -165,6 +165,8 @@ function TopBar() {
             <MenuItem close={close} icon={Route} checked={view.trails} onClick={() => uiStore.patch({ view: { ...view, trails: !view.trails } })}>Motion trails</MenuItem>
             <div className="menu-sep" />
             <MenuItem close={close} icon={Maximize} hotkey={KEYS.frame} onClick={() => viewportApi.frame()}>Frame skeleton</MenuItem>
+            <MenuItem close={close} icon={Maximize} hotkey={KEYS.frameSelection} onClick={() => viewportApi.frameSelection()}>Frame the selection</MenuItem>
+            <MenuItem close={close} icon={Maximize} hotkey={KEYS.zoom100} onClick={() => viewportApi.zoom100()}>Zoom to 100%</MenuItem>
           </>
         )}
       </Menu>
