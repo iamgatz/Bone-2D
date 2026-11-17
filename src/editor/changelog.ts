@@ -12,6 +12,12 @@ export interface Release {
 
 export const CHANGELOG: Release[] = [
   {
+    version: '0.27',
+    date: '2026-11-17',
+    en: ['Update from PSD: the artist repaints the Photoshop file, the rig stays. The new button in the Images window reads a .psd and matches its layers to the pictures by name ("group/layer"): the matched pictures get the new pixels, a region attachment follows the new size and the way the layer moved (and keeps the scale you gave it), meshes keep their shape, a layer the project has not got yet becomes a new slot right above the layer under it in the file, and nothing is removed. One step in the history (the old pixels do not come back with Undo, as with Replace image).'],
+    ru: ['Обновление из PSD: художник правит файл Photoshop, а риг остаётся. Новая кнопка в окне «Картинки» читает .psd и сопоставляет слои с картинками по имени («группа/слой»): совпавшие картинки получают новые пиксели, регион следует за новым размером и за тем, как сдвинулся слой (и сохраняет масштаб, который вы задали), меши сохраняют форму, слой, которого в проекте ещё нет, становится новым слотом сразу над нижележащим слоем файла, ничего не удаляется. Один шаг в истории (старые пиксели с Undo не возвращаются, как и при «Заменить картинку»).'],
+  },
+  {
     version: '0.26',
     date: '2026-11-17',
     en: ['Photoshop import: drop a .psd file into the window (or the Images window) and every visible layer becomes a picture and a slot with a region, bottom layer first, so the layer stack is the draw order. Groups become folders ("arm/upper"), layer opacity becomes the slot alpha, multiply / screen / linear dodge become Spine blend modes, hidden layers are skipped. The origin is the middle of the bottom edge of the document. One Undo removes the whole import.'],

@@ -559,6 +559,8 @@ export interface ImageRef {
   name: string;
   width: number;
   height: number;
+  /** Where the middle of this picture was in the scene when it came from a PSD layer (editor metadata, not exported): "Update from PSD" moves the attachments by how far the layer moved. */
+  psd?: [number, number];
 }
 
 /** The local transform of one bone. */

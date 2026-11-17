@@ -105,6 +105,10 @@ export function repairProject(project: Project): string[] {
       return false;
     }
     imageNames.add(img.name);
+    if (img.psd !== undefined && !(Array.isArray(img.psd) && img.psd.length === 2 && img.psd.every((n) => typeof n === 'number' && Number.isFinite(n)))) {
+      delete img.psd;
+      note(`image "${img.name}": PSD position dropped`);
+    }
     return true;
   });
   return messages;

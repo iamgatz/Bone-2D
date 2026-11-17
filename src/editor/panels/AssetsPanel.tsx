@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { ChevronDown, ChevronRight, Eraser, Folder, ImagePlus, Pencil, Trash2, Upload } from 'lucide-react';
+import { ChevronDown, ChevronRight, Eraser, Folder, ImagePlus, Pencil, RefreshCw, Trash2, Upload } from 'lucide-react';
 import { baseOf, imageGroups, imageUsage } from '@/core/images';
 import type { ImageRef } from '@/core/model';
-import { addImageToScene, importImageFiles, removeUnusedImages, renameImageAction, replaceImagePixels } from '@/store/actions';
+import { addImageToScene, importImageFiles, reimportPsd, removeUnusedImages, renameImageAction, replaceImagePixels } from '@/store/actions';
 import { assets } from '@/store/assets';
 import { docStore, useProject } from '@/store/doc';
 import { toast, uiStore } from '@/store/ui';
@@ -32,6 +32,7 @@ export function AssetsPanel() {
   const project = useProject();
   const fileRef = useRef<HTMLInputElement>(null);
   const replaceRef = useRef<HTMLInputElement>(null);
+  const psdRef = useRef<HTMLInputElement>(null);
   const replacing = useRef<string | null>(null);
   const [renaming, setRenaming] = useState<string | null>(null);
   const [closed, setClosed] = useState<Record<string, boolean>>({});
@@ -117,6 +118,18 @@ export function AssetsPanel() {
         <span className="title">Images</span>
         <IconButton icon={Eraser} title="Remove the images no attachment shows" small disabled={unused === 0} onClick={() => removeUnusedImages()} />
         <IconButton icon={ImagePlus} title="Import images (or a PSD file: every layer becomes a picture and a slot)" small onClick={() => fileRef.current?.click()} />
+        <IconButton icon={RefreshCw} title="Update from PSD: layers with the name of a picture give it new pixels, new layers become slots" small disabled={project.images.length === 0} onClick={() => psdRef.current?.click()} />
+        <input
+          ref={psdRef}
+          type="file"
+          accept=".psd"
+          hidden
+          onChange={async (e) => {
+            const file = e.target.files?.[0];
+            e.target.value = '';
+            if (file) await reimportPsd(file);
+          }}
+        />
         <input ref={fileRef} type="file" accept="image/*,.psd" multiple hidden onChange={async (e) => (await importImageFiles([...(e.target.files ?? [])]), (e.target.value = ''))} />
         <input
           ref={replaceRef}
