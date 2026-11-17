@@ -84,6 +84,8 @@ export interface UiState {
   panel: { left: number; right: number; bottom: number };
   exportOpen: boolean;
   helpOpen: boolean;
+  updatesOpen: boolean;
+  feedbackOpen: boolean;
 }
 
 export const emptySelection: Selection = { bones: [], slot: null, attachment: null, constraint: null, vertices: [] };
@@ -113,6 +115,8 @@ export const uiStore = createStore<UiState>({
   panel: typeof window !== 'undefined' && window.innerWidth < 1150 ? { left: 210, right: 240, bottom: 250 } : { left: 270, right: 300, bottom: 300 },
   exportOpen: false,
   helpOpen: false,
+  updatesOpen: false,
+  feedbackOpen: false,
 });
 
 export function useUi<S>(selector: (s: UiState) => S, equals?: (a: S, b: S) => boolean): S {

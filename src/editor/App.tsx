@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Bone, BoxSelect, Download, Eye, FilePlus2, FolderOpen, Grid3x3, Image as ImageIcon, CircleHelp, Link2, Maximize, Play, Redo2, Save, Sparkles, Type, Undo2 } from 'lucide-react';
+import { Bone, BoxSelect, Download, Eye, FilePlus2, FolderOpen, Grid3x3, Bell, Image as ImageIcon, CircleHelp, MessageSquareText, Link2, Maximize, Play, Redo2, Save, Sparkles, Type, Undo2 } from 'lucide-react';
 import { decodeKey } from '@/core/keyrefs';
 import { clearSelection, copyKeys, deleteBones, deleteKeys, keySelectedBones, pasteKeys, sanitizeSelection, setMode, setSelection, setTime, setTool, togglePlay } from '@/store/actions';
 import { docStore, useProject } from '@/store/doc';
@@ -19,6 +19,8 @@ import { Segmented } from './ui/Segmented';
 import { TooltipHost } from './ui/Tooltip';
 import { Viewport, viewportApi } from './viewport/Viewport';
 import { ExportDialog } from './ExportDialog';
+import { FeedbackDialog } from './Feedback';
+import { UpdatesDialog, hasUnseenUpdate } from './Updates';
 import { focusArea, setFocusArea } from './focus';
 import { HOTKEY_GROUPS, KEYS } from './hotkeys';
 import { HINTS, TOOLS, toolForKey } from './tools';
@@ -32,6 +34,7 @@ function TopBar() {
   const project = useProject();
   const mode = useUi((s) => s.mode);
   const view = useUi((s) => s.view);
+  const updatesOpen = useUi((s) => s.updatesOpen); // the dot goes out once the window has been opened
   const [, force] = useState(0);
   useEffect(() => {
     const unsub = docStore.subscribe(() => force((n) => n + 1));
@@ -96,6 +99,11 @@ function TopBar() {
       <IconButton icon={Redo2} title="Redo" hotkey={KEYS.redo} disabled={!docStore.canRedo} onClick={() => docStore.redo()} />
       <span className="sep" />
       <LangToggle />
+      <span className="badge-wrap">
+        <IconButton icon={Bell} title="Updates: what is new and the project activity" onClick={() => uiStore.patch({ updatesOpen: true })} />
+        {hasUnseenUpdate() && !updatesOpen && <span className="notify-dot" role="status" aria-label="New updates" />}
+      </span>
+      <IconButton icon={MessageSquareText} title="Send feedback to the author" onClick={() => uiStore.patch({ feedbackOpen: true })} />
       <IconButton icon={CircleHelp} title="Shortcuts & help" hotkey={KEYS.help} onClick={() => uiStore.patch({ helpOpen: true })} />
       <Button primary icon={Download} onClick={() => uiStore.patch({ exportOpen: true })}>Export</Button>
     </div>
@@ -201,6 +209,8 @@ export function App() {
   const panel = useUi((s) => s.panel);
   const exportOpen = useUi((s) => s.exportOpen);
   const helpOpen = useUi((s) => s.helpOpen);
+  const updatesOpen = useUi((s) => s.updatesOpen);
+  const feedbackOpen = useUi((s) => s.feedbackOpen);
   useLang(); // the whole tree re-renders when the language changes: strings are translated while rendering
 
   useEffect(() => {
@@ -359,6 +369,8 @@ export function App() {
       </div>
       {exportOpen && <ExportDialog />}
       {helpOpen && <HelpDialog />}
+      {updatesOpen && <UpdatesDialog />}
+      {feedbackOpen && <FeedbackDialog />}
       <Toast />
       <TooltipHost />
     </div>
