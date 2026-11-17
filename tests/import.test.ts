@@ -166,7 +166,8 @@ describe('Spine JSON import: files made by Spine itself', () => {
     expect(w).toContain('slot "lost" was skipped');
     expect(w).toContain('linked mesh "hatLinked" was imported as an independent mesh');
     expect(w).toContain('separate translatex');
-    expect(w).toContain('audio');
+    expect(w).not.toContain('audio'); // sounds are kept now
+    expect(d.events.find((e) => e.name === 'footstep')?.audio).toBe('step.ogg');
     expect(d.bones.map((b) => b.name)).toEqual(['root', 'hip', 'arm', 'ghost']);
     expect(d.fps).toBe(24);
     expect(d.slots.map((s) => s.name)).toEqual(['body', 'arm']);
