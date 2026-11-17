@@ -5,6 +5,7 @@
 import { closeCurrentLoop, selectAnimation, setMode, setTool, togglePlay } from '@/store/actions';
 import { docStore } from '@/store/doc';
 import { LAYOUTS, VIEW_LIST } from '@/store/layout';
+import { startSetParent } from '@/store/parentActions';
 import { copyPose, duplicateSelection, pastePose, resetPose } from '@/store/poseActions';
 import { newProject, openProjectFile, saveProjectFile } from '@/store/project';
 import { loadSample } from '@/store/sample';
@@ -46,6 +47,7 @@ export function buildCommands(): Command[] {
     { id: 'anim.closeloop', group: 'Animation', title: 'Close the loop (end = start)', run: () => void closeCurrentLoop('first', false) },
     { id: 'view.showall', group: 'View', title: 'Show everything hidden', keys: KEYS.showAll, run: () => void showAll() },
     { id: 'view.isolate', group: 'View', title: 'Show only the selection', keys: KEYS.isolate, run: () => void isolateSelection() },
+    { id: 'edit.parent', group: 'Edit', title: 'Set parent', keys: KEYS.parent, run: () => void startSetParent() },
     { id: 'edit.reset', group: 'Edit', title: 'Reset pose', run: () => resetPose() },
     { id: 'edit.copypose', group: 'Edit', title: 'Copy pose', run: () => copyPose() },
     { id: 'edit.pastepose', group: 'Edit', title: 'Paste pose', run: () => pastePose() },

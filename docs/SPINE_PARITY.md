@@ -36,7 +36,7 @@
 | **Shear** | ❌ (shear есть в модели и экспорте, инструмента нет) | инструмент и гизмо shear | **P1** |
 | Pose tools: Reset pose / Reset selected / Set to setup pose / Copy–paste pose / Mirror pose | ❌ | меню Pose + клавиши | **P1** |
 | Duplicate bone с детьми и слотами, зеркальное дублирование (X/Y) | ❌ | «Duplicate» и «Mirror» для костей, слотов, вложений, ключей | **P1** |
-| Bone: Parent tool, bone selection modes, lock, hide | ◐ drag в дереве | отдельный режим «Parent» | P3 |
+| Bone: Parent tool, bone selection modes, lock, hide | ✅ Set Parent (Shift+P: клик по новой родительской кости во вьюпорте или в дереве), drag в дереве, lock, hide | — | |
 | Bone creation options: Auto parent / Length | ✅ | — | |
 | Mesh tools: Edit mesh, Auto-trace, Hull, Triangulate, Generate | ✅ | Hull-edges, «Edit mesh outline», Smooth | P2 |
 | Mesh: Linked mesh, Sequence | ✅ | — (linked mesh: настоящая связь, общая деформация, другой слот / скин; создаётся через «В скине» и при импорте) | |
@@ -145,4 +145,4 @@
 
 Закрыто 28 (после этого счёта сделаны: цикл / пинг-понг / диапазон на анимацию, linked mesh, подсветка смещённых вершин, зум по выделенному и 100%, фильтр и Ctrl+H в дереве, упаковщик с trim / rotation / фильтром, сохранение и загрузка настроек экспорта, sequences с ключами и экспортом, линейки / направляющие / привязка, вставка ключей на другую кость), частично 4 (настройки F12; бэкапы; зум-клавиши; меши: нет Hull-edges и Smooth), открыто 11. Счёт приблизительный: строки таблиц объединяют по нескольку возможностей.
 
-Открыто на момент счёта (фильтр и Ctrl+H в дереве, настройки экспорта, упаковщик, sequences, линейки со снапом и вставка ключей на другую цель уже закрыты): Preview-окно, выделенные панели Slot color / Mesh tools / Weights, Audio (данные событий сохраняются, окна и проигрывания нет), Parent tool, Hull-edges и Smooth в мешах, Key Shown (клавиша K ставит ключи на все каналы выбранных костей), UI папок draw order, таблица миксов, несколько скелетов в проекте, CLI.
+Открыто на момент счёта (фильтр и Ctrl+H в дереве, настройки экспорта, упаковщик, sequences, линейки со снапом и вставка ключей на другую цель уже закрыты): Preview-окно, выделенные панели Slot color / Mesh tools / Weights, Audio (данные событий сохраняются, окна и проигрывания нет), Hull-edges и Smooth в мешах, Key Shown (клавиша K ставит ключи на все каналы выбранных костей), UI папок draw order, таблица миксов, несколько скелетов в проекте, CLI.

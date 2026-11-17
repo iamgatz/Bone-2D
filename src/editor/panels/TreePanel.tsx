@@ -8,7 +8,8 @@ import { useProject } from '@/store/doc';
 import { createPathConstraint } from '@/store/pathConstraintActions';
 import { createPhysicsConstraint } from '@/store/physicsActions';
 import { createSlider } from '@/store/sliderActions';
-import { useUi } from '@/store/ui';
+import { applyParent } from '@/store/parentActions';
+import { uiStore, useUi } from '@/store/ui';
 import { showAll } from '@/store/visibilityActions';
 import { getScene } from '../scene';
 import { IconButton, NumberField, TextField } from '../ui/controls';
@@ -155,7 +156,7 @@ export function TreePanel() {
             if (bid && bid !== bone.id) reparentBone(bid, bone.id);
             if (sid) setSlotBone(sid, bone.id);
           }}
-          onClick={(e) => selectBone(bone.id, e.shiftKey || e.ctrlKey || e.metaKey)}
+          onClick={(e) => (uiStore.get().pickParent ? applyParent(bone.id) : selectBone(bone.id, e.shiftKey || e.ctrlKey || e.metaKey))}
           onDoubleClick={() => setEditing('b:' + bone.id)}
         >
           <span className={`chev${hasKids ? '' : ' hidden'}`} onClick={(e) => (e.stopPropagation(), toggle('b:' + bone.id))}>
