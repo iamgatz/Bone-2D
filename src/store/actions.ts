@@ -25,6 +25,7 @@ import type { Animation, Bone, Id, ImageRef, Inherit, PlaySettings, Project, RGB
 import { getScene, getSetupSkeleton } from '@/editor/scene';
 import { assets } from './assets';
 import type { ImageAsset } from './assets';
+import { entriesOf, pathedFromInput, readEntries } from './dropped';
 import { docStore } from './doc';
 import { ATTACHMENT_TOOLS, emptySelection, toast, uiStore } from './ui';
 import type { PoseOverride, Selection, Tool } from './ui';
@@ -400,27 +401,45 @@ export function keySelectedBones(which: ('rotate' | 'translate' | 'scale' | 'she
 
 // ------------------------------------------------------------------ images, slots, attachments
 
-export async function importImageFiles(files: File[]): Promise<string[]> {
-  const added: string[] = [];
-  for (const f of files) {
+export async function importImageFiles(files: File[], paths?: string[]): Promise<string[]> {
+  const refs: ImageRef[] = [];
+  for (const [i, f] of files.entries()) {
     if (isPsd(f)) {
       await importPsd(f);
       continue;
     }
     if (!/^image\/(png|jpeg|webp|gif)/.test(f.type) && !/\.(png|jpe?g|webp|gif)$/i.test(f.name)) continue;
     try {
-      const ref = await assets.addFile(f);
-      docStore.update('Import image', (d) => {
-        d.images.push(ref);
-      });
-      added.push(ref.name);
+      const path = paths?.[i] ? cleanImageName(paths[i]) : '';
+      refs.push(await assets.addFile(f, path || undefined));
     } catch (e) {
       toast(`Could not read ${f.name}`, 'error');
       console.error(e);
     }
   }
-  if (added.length) toast(`Imported ${added.length} image${added.length > 1 ? 's' : ''}`, 'ok');
-  return added;
+  if (refs.length) {
+    // a whole folder is one step of the history
+    docStore.update(refs.length > 1 ? 'Import images' : 'Import image', (d) => {
+      d.images.push(...refs);
+    });
+    toast(`Imported ${refs.length} image${refs.length > 1 ? 's' : ''}`, 'ok');
+  }
+  return refs.map((r) => r.name);
+}
+
+/** Imports what was dropped: files, or folders of files (their folders become folders of pictures). Call it inside the drop event. */
+export async function importDropped(dt: DataTransfer): Promise<{ names: string[]; folder: boolean }> {
+  const entries = entriesOf(dt);
+  const loose = [...dt.files];
+  if (!entries.some((e) => e.isDirectory)) return { names: await importImageFiles(loose), folder: false };
+  const { files } = await readEntries(entries);
+  return { names: await importImageFiles(files.map((f) => f.file), files.map((f) => f.path)), folder: true };
+}
+
+/** Imports the files of a "choose a folder" input. */
+export async function importFolderFiles(list: File[]): Promise<string[]> {
+  const files = pathedFromInput(list);
+  return importImageFiles(files.map((f) => f.file), files.map((f) => f.path));
 }
 
 /** Where an attachment goes on a bone so that it sits at a scene position (and stays upright in the scene). */

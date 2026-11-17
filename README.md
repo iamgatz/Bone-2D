@@ -46,6 +46,7 @@ $env:FUZZ_SEEDS='300'; $env:FUZZ_STEPS='100'; npx vitest run tests/fuzz.test.ts
 - Skins (swap the image in a slot), events, undo / redo (a gesture collapses into one step).
 
 **Workspace**
+- **Folders of images**: drop a folder onto the Images window or the viewport (or use its folder button); subfolders stay as folders of pictures (`hero/arm/upper`), one Undo takes the lot.
 - **Windows menu**: Hierarchy, Images, Animations, Metrics, Inspector and Timeline open and close on their own, ready layouts, `F9` hides everything; the arrangement is remembered. Metrics counts bones, meshes, vertices and keys and lists what looks forgotten before an export.
 - **Settings** (`F12`): language, autosave, viewport background, texture smoothing, zoom to mouse, onion skin frames, and the **letters of the tools** can be changed.
 - **Updates** (the bell) shows what is new and the live activity of the project; **Feedback** sends a bug report or an idea.
