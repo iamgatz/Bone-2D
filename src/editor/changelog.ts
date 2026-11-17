@@ -12,6 +12,12 @@ export interface Release {
 
 export const CHANGELOG: Release[] = [
   {
+    version: '0.22',
+    date: '2026-11-17',
+    en: ['Rulers, guides and snapping (View menu, and two buttons in the viewport): rulers along the top and left show the scene units. Drag a guide out of a ruler (from the top one a horizontal line, from the left one a vertical line), drag a guide to move it, drag it back onto its ruler to take it away; Clear guides removes them all. Guides are saved with the project and are not part of the export. Snap puts new bones and moved bones on the grid, and on a guide when one is close.'],
+    ru: ['Линейки, направляющие и привязка (меню «Вид» и две кнопки во вьюпорте): линейки сверху и слева показывают единицы сцены. Вытащите направляющую из линейки (из верхней горизонтальную, из левой вертикальную), потяните её, чтобы сдвинуть, или верните на линейку, чтобы убрать; «Убрать направляющие» стирает все. Направляющие сохраняются в проекте и в экспорт не попадают. Привязка ставит новые и двигаемые кости на сетку, а рядом с направляющей — на неё.'],
+  },
+  {
     version: '0.21',
     date: '2026-11-17',
     en: ['Pasting keys: keys copied from one bone go onto the bone that is selected now, so the swing of one arm can be pasted onto the other (select the other bone and press Ctrl+V; several selected bones each get a copy). The same for the keys of one slot. With the same bone selected the keys stay where they were.', 'Settings: Bone size (50 to 200 percent) and Hints (switch the pop-up hints off).'],

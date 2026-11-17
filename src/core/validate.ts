@@ -9,6 +9,7 @@ import { normalizeBoneOrder } from './edit';
 import { uid, uniqueName } from './ids';
 import { deformLength } from './mesh';
 import { cleanSequence, cleanSequenceKey } from './sequence';
+import { cleanGuides } from './snap';
 import { repairPoses } from './poses';
 import {
   BLEND_MODES,
@@ -76,6 +77,14 @@ export function repairProject(project: Project): string[] {
     const kept = (skin.constraints ?? []).filter((id) => constraintIds.has(id));
     if (kept.length !== (skin.constraints ?? []).length) note(`skin "${skin.name}": dropped unknown constraints`);
     skin.constraints = kept;
+  }
+
+  if (project.guides !== undefined) {
+    const clean = cleanGuides(project.guides);
+    const old = project.guides as { x?: unknown; y?: unknown } | null;
+    const same = !!old && typeof old === 'object' && JSON.stringify(old.x) === JSON.stringify(clean.x) && JSON.stringify(old.y) === JSON.stringify(clean.y);
+    if (!same) note('the guides were repaired');
+    project.guides = clean;
   }
 
   if (project.poses !== undefined) {

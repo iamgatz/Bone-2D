@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Bone, BoxSelect, Download, Eye, EyeOff, FilePlus2, FolderOpen, Grid3x3, Bell, Search, Home, Layers, ClipboardCopy, ClipboardPaste, Copy, FlipHorizontal2, RotateCcw, SlidersHorizontal, Image as ImageIcon, CircleHelp, MessageSquareText, Link2, Maximize, Play, Redo2, Route, Save, Sparkles, Type, Undo2 } from 'lucide-react';
+import { Bone, BoxSelect, Download, Eye, EyeOff, FilePlus2, FolderOpen, Grid3x3, Bell, Search, Home, Layers, ClipboardCopy, ClipboardPaste, Copy, FlipHorizontal2, RotateCcw, SlidersHorizontal, Image as ImageIcon, CircleHelp, MessageSquareText, Link2, Maximize, Play, Redo2, Route, Ruler, Magnet, Trash2, Save, Sparkles, Type, Undo2 } from 'lucide-react';
 import { decodeKey } from '@/core/keyrefs';
 import { clearSelection, copyKeys, deleteBones, deleteKeys, keySelectedBones, pasteKeys, sanitizeSelection, setMode, setSelection, setTime, setTool, togglePlay } from '@/store/actions';
 import { docStore, useProject } from '@/store/doc';
@@ -30,6 +30,7 @@ import { WelcomeDialog } from './Welcome';
 import { Palette } from './Palette';
 import { settingsStore } from '@/store/settings';
 import { copyPose, duplicateSelection, pastePose, resetPose } from '@/store/poseActions';
+import { clearGuides } from '@/store/guideActions';
 import { isolateSelection, showAll } from '@/store/visibilityActions';
 import { useSettings } from '@/store/settings';
 import { AnimationsPanel } from './panels/AnimationsPanel';
@@ -158,6 +159,9 @@ function TopBar() {
             <MenuItem close={close} icon={Link2} checked={view.constraints} onClick={() => uiStore.patch({ view: { ...view, constraints: !view.constraints } })}>Constraints</MenuItem>
             <MenuItem close={close} icon={BoxSelect} checked={view.outlines} onClick={() => uiStore.patch({ view: { ...view, outlines: !view.outlines } })}>Clips, boxes &amp; points</MenuItem>
             <MenuItem close={close} icon={Layers} checked={view.onion} onClick={() => uiStore.patch({ view: { ...view, onion: !view.onion } })}>Onion skin</MenuItem>
+            <MenuItem close={close} icon={Ruler} checked={view.rulers} onClick={() => uiStore.patch({ view: { ...view, rulers: !view.rulers } })}>Rulers and guides</MenuItem>
+            <MenuItem close={close} icon={Magnet} checked={view.snap} onClick={() => uiStore.patch({ view: { ...view, snap: !view.snap } })}>Snap to grid and guides</MenuItem>
+            <MenuItem close={close} icon={Trash2} onClick={() => void clearGuides()}>Clear guides</MenuItem>
             <MenuItem close={close} icon={Route} checked={view.trails} onClick={() => uiStore.patch({ view: { ...view, trails: !view.trails } })}>Motion trails</MenuItem>
             <div className="menu-sep" />
             <MenuItem close={close} icon={Maximize} hotkey={KEYS.frame} onClick={() => viewportApi.frame()}>Frame skeleton</MenuItem>
@@ -222,6 +226,8 @@ function ViewportHud() {
         <IconButton icon={Maximize} title="Frame skeleton" hotkey={KEYS.frame} small onClick={() => viewportApi.frame()} />
         <IconButton icon={Layers} title="Onion skin: faded poses of the frames around the playhead (Animate mode)" small active={view.onion} onClick={() => uiStore.patch({ view: { ...uiStore.get().view, onion: !uiStore.get().view.onion } })} />
         <IconButton icon={Route} title="Motion trails: the path the selected bones travel in the animation, keys marked (Animate mode)" small active={view.trails} onClick={() => uiStore.patch({ view: { ...uiStore.get().view, trails: !uiStore.get().view.trails } })} />
+        <IconButton icon={Ruler} title="Rulers and guides: drag a guide out of a ruler" small active={view.rulers} onClick={() => uiStore.patch({ view: { ...uiStore.get().view, rulers: !uiStore.get().view.rulers } })} />
+        <IconButton icon={Magnet} title="Snap new and moved bones to the grid and the guides" small active={view.snap} onClick={() => uiStore.patch({ view: { ...uiStore.get().view, snap: !uiStore.get().view.snap } })} />
         <IconButton icon={Eye} title="Toggle names" small onClick={() => uiStore.patch({ view: { ...uiStore.get().view, names: !uiStore.get().view.names } })} />
       </div>
       {empty && (

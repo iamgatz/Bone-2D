@@ -2,6 +2,8 @@
 import type { Id } from '@/core/model';
 import type { Bone } from '@/core/skeleton';
 import { REGION_TRIANGLES } from '@/core/skeleton';
+import { gridStep } from '@/core/snap';
+import { docStore } from '@/store/doc';
 import { settingsStore } from '@/store/settings';
 import type { Camera, UiState } from '@/store/ui';
 import { worldToScreen } from '../scene';
@@ -42,12 +44,18 @@ export const COLORS = {
 };
 
 export interface Interaction {
-  kind: 'create' | 'marquee' | 'link' | 'none';
+  kind: 'create' | 'marquee' | 'link' | 'guide' | 'none';
   x0: number;
   y0: number;
   x1: number;
   y1: number;
+  /** A guide being dragged: which kind of line, which one of its list (-1 for a new one), and where it is now (x0 for a vertical line, y0 for a horizontal one). */
+  axis?: 'x' | 'y';
+  index?: number;
 }
+
+/** The width of the rulers, in pixels. */
+export const RULER = 18;
 
 export interface OverlayInput {
   ctx: CanvasRenderingContext2D;
@@ -65,15 +73,9 @@ export interface OverlayInput {
   extra?: (o: OverlayInput) => void;
 }
 
-function niceStep(minWorld: number): number {
-  const p = Math.pow(10, Math.floor(Math.log10(minWorld)));
-  const n = minWorld / p;
-  return (n <= 1 ? 1 : n <= 2 ? 2 : n <= 5 ? 5 : 10) * p;
-}
-
 export function drawGrid(o: OverlayInput) {
   const { ctx, w, h, cam } = o;
-  const step = niceStep(28 / cam.zoom);
+  const step = gridStep(cam.zoom);
   const [wx0, wy1] = [cam.x - w / 2 / cam.zoom, cam.y + h / 2 / cam.zoom];
   const [wx1, wy0] = [cam.x + w / 2 / cam.zoom, cam.y - h / 2 / cam.zoom];
   ctx.lineWidth = 1;
@@ -415,9 +417,86 @@ export function drawGizmo(o: OverlayInput) {
   }
 }
 
+/** The guide lines of the project, and the one being dragged; then the rulers over them. */
+export function drawGuidesAndRulers(o: OverlayInput) {
+  const { ctx, w, h, cam, ui, interaction } = o;
+  if (!ui.view.rulers) return;
+  const guides = docStore.get().guides;
+  const dragging = interaction?.kind === 'guide' ? interaction : null;
+  ctx.save();
+  ctx.lineWidth = 1;
+  const line = (axis: 'x' | 'y', v: number, dashed: boolean) => {
+    ctx.strokeStyle = alpha('--accent', dashed ? 0.9 : 0.65);
+    ctx.setLineDash(dashed ? [5, 4] : []);
+    ctx.beginPath();
+    if (axis === 'x') {
+      const x = Math.round(worldToScreen(cam, w, h, v, 0)[0]) + 0.5;
+      ctx.moveTo(x, 0);
+      ctx.lineTo(x, h);
+    } else {
+      const y = Math.round(worldToScreen(cam, w, h, 0, v)[1]) + 0.5;
+      ctx.moveTo(0, y);
+      ctx.lineTo(w, y);
+    }
+    ctx.stroke();
+  };
+  (guides?.x ?? []).forEach((v, i) => (dragging?.axis === 'x' && dragging.index === i ? undefined : line('x', v, false)));
+  (guides?.y ?? []).forEach((v, i) => (dragging?.axis === 'y' && dragging.index === i ? undefined : line('y', v, false)));
+  if (dragging) line(dragging.axis!, dragging.axis === 'x' ? dragging.x0 : dragging.y0, true);
+  ctx.setLineDash([]);
+
+  // the rulers: a band along the top (x) and the left (y) with a tick at every grid line and a number at the larger ones
+  const step = gridStep(cam.zoom);
+  const major = step * 5;
+  ctx.fillStyle = alpha('--panel', 0.94);
+  ctx.fillRect(0, 0, w, RULER);
+  ctx.fillRect(0, 0, RULER, h);
+  ctx.strokeStyle = token('--border');
+  ctx.beginPath();
+  ctx.moveTo(0, RULER + 0.5);
+  ctx.lineTo(w, RULER + 0.5);
+  ctx.moveTo(RULER + 0.5, 0);
+  ctx.lineTo(RULER + 0.5, h);
+  ctx.stroke();
+  ctx.fillStyle = COLORS.muted;
+  ctx.strokeStyle = COLORS.muted;
+  ctx.font = '9px system-ui, sans-serif';
+  ctx.textBaseline = 'top';
+  const [wx0, wy1] = [cam.x - w / 2 / cam.zoom, cam.y + h / 2 / cam.zoom];
+  const [wx1, wy0] = [cam.x + w / 2 / cam.zoom, cam.y - h / 2 / cam.zoom];
+  const label = (v: number) => String(Math.round(v * 1000) / 1000);
+  for (let v = Math.ceil(wx0 / step) * step; v <= wx1; v += step) {
+    const sx = Math.round(worldToScreen(cam, w, h, v, 0)[0]) + 0.5;
+    if (sx < RULER) continue;
+    const isMajor = Math.abs(v % major) < step / 2;
+    ctx.beginPath();
+    ctx.moveTo(sx, RULER);
+    ctx.lineTo(sx, RULER - (isMajor ? 9 : 4));
+    ctx.stroke();
+    if (isMajor) ctx.fillText(label(v), sx + 3, 2);
+  }
+  for (let v = Math.ceil(wy0 / step) * step; v <= wy1; v += step) {
+    const sy = Math.round(worldToScreen(cam, w, h, 0, v)[1]) + 0.5;
+    if (sy < RULER) continue;
+    const isMajor = Math.abs(v % major) < step / 2;
+    ctx.beginPath();
+    ctx.moveTo(RULER, sy);
+    ctx.lineTo(RULER - (isMajor ? 9 : 4), sy);
+    ctx.stroke();
+    if (isMajor) {
+      ctx.save();
+      ctx.translate(2, sy - 3);
+      ctx.rotate(-Math.PI / 2);
+      ctx.fillText(label(v), 0, 0);
+      ctx.restore();
+    }
+  }
+  ctx.restore();
+}
+
 export function drawInteraction(o: OverlayInput) {
   const { ctx, w, h, cam, interaction } = o;
-  if (!interaction || interaction.kind === 'none') return;
+  if (!interaction || interaction.kind === 'none' || interaction.kind === 'guide') return;
   const [x0, y0] = worldToScreen(cam, w, h, interaction.x0, interaction.y0);
   const [x1, y1] = worldToScreen(cam, w, h, interaction.x1, interaction.y1);
   if (interaction.kind === 'create') {
@@ -483,4 +562,5 @@ export function drawOverlay(o: OverlayInput) {
   o.extra?.(o);
   drawGizmo(o);
   drawInteraction(o);
+  drawGuidesAndRulers(o);
 }

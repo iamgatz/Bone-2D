@@ -9,6 +9,7 @@ import { copyPose, duplicateSelection, pastePose, resetPose } from '@/store/pose
 import { newProject, openProjectFile, saveProjectFile } from '@/store/project';
 import { loadSample } from '@/store/sample';
 import { uiStore } from '@/store/ui';
+import { clearGuides } from '@/store/guideActions';
 import { isolateSelection, showAll } from '@/store/visibilityActions';
 import { applyLayout, toggleAllViews, toggleView } from '@/store/viewActions';
 import { KEYS } from './hotkeys';
@@ -53,6 +54,9 @@ export function buildCommands(): Command[] {
     { id: 'view.frame', group: 'View', title: 'Frame skeleton', keys: KEYS.frame, run: () => viewportApi.frame() },
     { id: 'view.trails', group: 'View', title: 'Motion trails', run: () => uiStore.patch({ view: { ...uiStore.get().view, trails: !uiStore.get().view.trails } }) },
     { id: 'view.onion', group: 'View', title: 'Onion skin', run: () => uiStore.patch({ view: { ...uiStore.get().view, onion: !uiStore.get().view.onion } }) },
+    { id: 'view.rulers', group: 'View', title: 'Rulers and guides', run: () => uiStore.patch({ view: { ...uiStore.get().view, rulers: !uiStore.get().view.rulers } }) },
+    { id: 'view.snap', group: 'View', title: 'Snap to grid and guides', run: () => uiStore.patch({ view: { ...uiStore.get().view, snap: !uiStore.get().view.snap } }) },
+    { id: 'view.clearguides', group: 'View', title: 'Clear guides', run: () => void clearGuides() },
     { id: 'view.grid', group: 'View', title: 'Grid', run: () => uiStore.patch({ view: { ...uiStore.get().view, grid: !uiStore.get().view.grid } }) },
     { id: 'view.names', group: 'View', title: 'Bone names', run: () => uiStore.patch({ view: { ...uiStore.get().view, names: !uiStore.get().view.names } }) },
     { id: 'view.hide', group: 'Windows', title: 'Hide / show all windows', keys: KEYS.hideViews, run: () => toggleAllViews() },
