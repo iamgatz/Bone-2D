@@ -2,7 +2,7 @@
 import { deformedVertices } from '@/core/deformMarks';
 import type { Id, MeshAttachment } from '@/core/model';
 import type { GLRenderer } from '@/render/gl';
-import { addMeshVertex, currentDeform, deleteMeshVertices, getMesh, moveMeshVertices, paintWeights, setDeformKey } from '@/store/meshActions';
+import { addMeshVertex, toggleMeshEdge, currentDeform, deleteMeshVertices, getMesh, moveMeshVertices, paintWeights, setDeformKey } from '@/store/meshActions';
 import { docStore } from '@/store/doc';
 import { setSelection } from '@/store/actions';
 import { toast, uiStore } from '@/store/ui';
@@ -17,7 +17,8 @@ import { boneCss, boundBones, overlayColors, pieVertices } from './weightColors'
 type Drag =
   | { kind: 'vertices'; moves: Map<number, [number, number]>; p0: [number, number]; base: number[] | null }
   | { kind: 'marquee'; x0: number; y0: number; x1: number; y1: number; base: number[] }
-  | { kind: 'paint' };
+  | { kind: 'paint' }
+  | { kind: 'edge'; from: number; x: number; y: number };
 
 export interface ActiveMesh {
   slotId: Id;
@@ -135,6 +136,11 @@ export class MeshTool {
 
     // mesh tool
     const hit = this.hitVertex(geo.vertices, geo.count, wx, wy, zoom);
+    if (hit >= 0 && (e.ctrlKey || e.metaKey) && ui.mode === 'setup') {
+      // Ctrl+drag from a vertex to another vertex draws a manual edge (or removes the one that is there)
+      this.drag = { kind: 'edge', from: hit, x: wx, y: wy };
+      return true;
+    }
     if (hit >= 0) {
       const cur = ui.selection.vertices;
       let vertices: number[];
@@ -193,6 +199,11 @@ export class MeshTool {
       }
       setSelection({ ...ui.selection, vertices: [...picked] });
       this.invalidate();
+    } else if (d.kind === 'edge') {
+      d.x = wx;
+      d.y = wy;
+      this.hoverVertex = this.hitVertex(geo.vertices, geo.count, wx, wy, ui.camera.zoom);
+      this.invalidate();
     } else if (d.kind === 'paint') {
       const bone = ui.brush.bone;
       if (bone) paintWeights(am.slotId, am.name, { x: wx, y: wy }, bone);
@@ -202,6 +213,11 @@ export class MeshTool {
 
   pointerUp(): boolean {
     if (!this.drag) return false;
+    if (this.drag.kind === 'edge') {
+      const am = activeMesh();
+      const to = this.hoverVertex;
+      if (am && to >= 0 && to !== this.drag.from) toggleMeshEdge(am.slotId, am.name, this.drag.from, to);
+    }
     if (this.drag.kind === 'vertices' || this.drag.kind === 'paint') docStore.endGesture();
     this.drag = null;
     this.invalidate();
@@ -246,8 +262,28 @@ export class MeshTool {
       ctx.closePath();
     }
     ctx.stroke();
+    // manual edges (orange) and the edge being drawn
+    const manual = am.mesh.edges ?? [];
+    if (edit && ui.tool === 'mesh' && (manual.length || this.drag?.kind === 'edge')) {
+      ctx.strokeStyle = token('--mesh-edge');
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      for (let i = 0; i + 1 < manual.length; i += 2) {
+        const a = P(manual[i]);
+        const b = P(manual[i + 1]);
+        ctx.moveTo(a[0], a[1]);
+        ctx.lineTo(b[0], b[1]);
+      }
+      if (this.drag?.kind === 'edge') {
+        const a = P(this.drag.from);
+        const to = this.hoverVertex >= 0 ? P(this.hoverVertex) : worldToScreen(cam, w, h, this.drag.x, this.drag.y);
+        ctx.moveTo(a[0], a[1]);
+        ctx.lineTo(to[0], to[1]);
+      }
+      ctx.stroke();
+    }
     // outline
-    ctx.strokeStyle = edit ? token('--accent') : alpha('--accent', 0.5);
+    ctx.strokeStyle = edit ? (ui.tool === 'mesh' ? token('--mesh-hull') : token('--accent')) : alpha('--accent', 0.5);
     ctx.lineWidth = edit ? 1.8 : 1.2;
     ctx.beginPath();
     for (let i = 0; i < am.mesh.hull; i++) {

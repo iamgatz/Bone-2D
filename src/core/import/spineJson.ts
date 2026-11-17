@@ -703,7 +703,9 @@ function readAttachment(
       uvs,
       triangles: arr(m.triangles).map((v) => num(v, 0)),
       hull: num(m.hull, vertexCount),
-      edges: arr(m.edges).map((v) => num(v, 0)),
+      // the file's edges are editor data and the format does not say how its indices count (and whether the hull is in it), so they are not
+      // used as constraints here: the triangles of the file are kept as they are and manual edges are drawn again in the editor
+      edges: [],
       vertices: [],
       weights: null,
       ...(sequence ? { sequence } : {}),

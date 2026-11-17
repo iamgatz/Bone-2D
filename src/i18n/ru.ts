@@ -57,8 +57,8 @@ export const RU: Record<string, string> = {
     'Тяни, чтобы переместить выбранную кость (или хватай ось) · Shift — добавить к выбору',
   'Drag anywhere to rotate the selected bones around their origins': 'Тяни где угодно, чтобы повернуть выбранные кости вокруг их начал',
   'Drag to scale · Shift = X only · Alt = Y only': 'Тяни, чтобы масштабировать · Shift — только X · Alt — только Y',
-  'Drag vertices · Ctrl-click or double-click adds a vertex · Del removes · in Animate mode dragging keys a deform':
-    'Тяни вершины · Ctrl-клик или двойной клик добавляет вершину · Del удаляет · в режиме «Анимация» перетаскивание ключует деформацию',
+  'Drag vertices · Ctrl-click or double-click adds a vertex · Ctrl-drag between vertices draws an edge · Del removes · in Animate mode dragging keys a deform':
+    'Тяни вершины · Ctrl-клик или двойной клик добавляет вершину · Ctrl-перетаскивание между вершинами проводит ребро · Del удаляет · в режиме «Анимация» перетаскивание ключует деформацию',
   'Paint over the mesh · click a bone to switch the brush bone · adjust size and strength in the Inspector':
     'Рисуй по мешу · клик по кости переключает кость кисти · размер и силу задай в Инспекторе',
   'Drag from the end of a bone chain to a target bone (or empty space to create one)':
@@ -796,6 +796,22 @@ export const RU: Record<string, string> = {
   bones: 'костей',
   Swap: 'Поменять',
   Weld: 'Слить',
+  Edges: 'Рёбра',
+  Edge: 'Ребро',
+  Clear: 'Очистить',
+  '{#} manual': 'вручную: {}',
+  'Manual edges: the triangles never cross them': 'Рёбра, проведённые вручную: треугольники их никогда не пересекают',
+  'Draw an edge between the two selected vertices, or remove the one that is there. Ctrl+drag from one vertex to another does the same in the viewport': 'Провести ребро между двумя выбранными вершинами или убрать уже существующее. То же делает Ctrl+перетаскивание от вершины к вершине во вьюпорте',
+  'Remove every manual edge': 'Убрать все рёбра, проведённые вручную',
+  'Add edge': 'Добавить ребро',
+  'Delete edge': 'Удалить ребро',
+  'Clear edges': 'Очистить рёбра',
+  'Pick two different vertices': 'Выберите две разные вершины',
+  'That edge is part of the outline already': 'Это ребро уже часть контура',
+  'That edge exists already': 'Такое ребро уже есть',
+  'An edge cannot cross another edge': 'Ребро не может пересекать другое ребро',
+  'An edge cannot cross the outline': 'Ребро не может пересекать контур',
+  'An edge has to run inside the outline': 'Ребро должно идти внутри контура',
   'The mesh stops following this bone; its weights go to the other bones of each vertex (or to the parent bone)': 'Сетка перестаёт следовать за этой костью; её веса уходят другим костям каждой вершины (или родительской кости)',
   'Remove bone from mesh': 'Убрать кость из сетки',
   'Nothing to remove: the mesh does not follow this bone': 'Нечего убирать: сетка не следует за этой костью',

@@ -39,7 +39,7 @@
 | Bone: Parent tool, bone selection modes, lock, hide | ✅ Set Parent (Shift+P: клик по новой родительской кости во вьюпорте или в дереве), drag в дереве, lock, hide | — | |
 | Bone: Split (Nested, Fibonacci) | ✅ Раздел «Разрезать» в инспекторе: 2–32 части, цепочкой или рядом, поровну или по Фибоначчи; дети на конце идут за последней частью (в доках Spine про детей, веса и ключи не сказано — это наш выбор) | — | |
 | Bone creation options: Auto parent / Length | ✅ | — | |
-| Mesh tools: Edit mesh, Auto-trace, Hull, Triangulate, Generate | ✅ | Hull-edges, «Edit mesh outline», Smooth | P2 |
+| Mesh tools: Edit mesh, Auto-trace, Hull, Triangulate, Generate, ручные рёбра (оранжевые; триангуляция их не пересекает, контур всегда в рёбрах) | ◐ | Режимы New / Reset / Generate как в Spine, Dim / Isolate / Deformed (UV-вид), Wireframe, Freeze, выделение петли рёбер (Shift-клик), правая кнопка переключает Modify / Create / Delete; рёбра из импортируемых файлов не читаются (формат не говорит, как считать индексы) | P2 |
 | Mesh: Linked mesh, Sequence | ✅ | — (linked mesh: настоящая связь, общая деформация, другой слот / скин; создаётся через «В скине» и при импорте) | |
 | Weights: Bind, Auto, Brush, Smooth, Prune, Normalize, Mirror weights | ◐ Есть Bind, Auto, Brush, Smooth, Prune (лимит и порог), Mirror, Swap, Update bindings, Pies / Overlay / Selected, список костей с цветом и Remove, Weld (Overlapping / All; в Spine различие двух режимов не описано, значение выбрано нами), Lock, Feather у кисти, копия и вставка весов, работа на выбранных вершинах | порядок треугольников по списку костей (перетаскивание в списке) | P2 |
 | Snapping, rulers, guides, pixel grid | ❌ | снап к сетке, линейки | P3 |
@@ -148,4 +148,4 @@
 
 Из весов Spine (страница Weights, прочитана 2026-11-17) нет ещё: Weld (выровнять веса соседних сеток), Update bindings (перепривязать вершины к костям после смены позы Setup), порядок треугольников по списку костей, Pies и Overlay.
 
-Открыто на момент счёта (фильтр и Ctrl+H в дереве, настройки экспорта, упаковщик, sequences, линейки со снапом и вставка ключей на другую цель уже закрыты): Preview-окно, выделенные панели Slot color / Mesh tools / Weights, Audio (данные событий сохраняются, окна и проигрывания нет), Hull-edges и Smooth в мешах, Key Shown (клавиша K ставит ключи на все каналы выбранных костей), UI папок draw order, таблица миксов, несколько скелетов в проекте, CLI.
+Открыто на момент счёта (фильтр и Ctrl+H в дереве, настройки экспорта, упаковщик, sequences, линейки со снапом и вставка ключей на другую цель уже закрыты): Preview-окно, выделенные панели Slot color / Mesh tools / Weights, Audio (данные событий сохраняются, окна и проигрывания нет), Smooth в мешах, Key Shown (клавиша K ставит ключи на все каналы выбранных костей), UI папок draw order, таблица миксов, несколько скелетов в проекте, CLI.

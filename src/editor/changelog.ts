@@ -12,6 +12,12 @@ export interface Release {
 
 export const CHANGELOG: Release[] = [
   {
+    version: '0.36',
+    date: '2026-11-17',
+    en: ['Mesh edges like in Spine: draw an edge between two vertices (Ctrl+drag from one vertex to another with the mesh tool, or select two vertices and press Edge in the Mesh section; do it again to remove it) and the triangulation never crosses it, so you decide how the mesh bends. Manual edges are orange, the outline is cyan. The outline itself is now always kept as edges, so a concave outline (an L, a tail) no longer gets triangles that cut across it. The edges are saved with the project and written to the JSON and binary export as nonessential data (edges of imported Spine files are not used: the format does not say how their indices count). Vertex edits renumber the edges; Retriangulate and Clear edges rebuild the triangles.'],
+    ru: ['Рёбра меша, как в Spine: проведите ребро между двумя вершинами (Ctrl+перетаскивание от вершины к вершине инструментом меша, либо выберите две вершины и нажмите «Ребро» в разделе «Меш»; ещё раз — ребро убирается), и триангуляция его никогда не пересекает, так что вы сами решаете, как сгибается меш. Ребра, проведённые вручную, оранжевые, контур — голубой. Сам контур теперь всегда остаётся рёбрами, поэтому у вогнутого контура (буква Г, хвост) больше не появляются треугольники, режущие его насквозь. Рёбра сохраняются в проекте и пишутся в JSON и бинарный экспорт как необязательные данные (рёбра импортируемых файлов Spine не используются: формат не говорит, как считаются их индексы). Правки вершин перенумеровывают рёбра; «Перетриангулировать» и «Очистить» пересобирают треугольники.'],
+  },
+  {
     version: '0.35',
     date: '2026-11-17',
     en: ['Weights: the list of the bones a mesh follows (Inspector, Weights) shows each bone with its colour, the Lock toggle and a new Remove button. Remove makes the mesh stop following that bone: its weight goes to the other bones of each vertex in proportion, a vertex that followed only that bone goes to the parent bone, the vertices stay where they are. One step in the history.'],

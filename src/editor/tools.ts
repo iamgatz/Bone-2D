@@ -46,7 +46,7 @@ export const HINTS: Record<Tool, string> = {
   rotate: 'Drag anywhere to rotate the selected bones around their origins',
   scale: 'Drag to scale · Shift = X only · Alt = Y only',
   shear: 'Drag to shear the selected bones: sideways skews the bone, along it skews the other axis · Shift = X only · Alt = Y only',
-  mesh: 'Drag vertices · Ctrl-click or double-click adds a vertex · Del removes · in Animate mode dragging keys a deform',
+  mesh: 'Drag vertices · Ctrl-click or double-click adds a vertex · Ctrl-drag between vertices draws an edge · Del removes · in Animate mode dragging keys a deform',
   weights: 'Paint over the mesh · click a bone to switch the brush bone · adjust size and strength in the Inspector',
   ik: 'Drag from the end of a bone chain to a target bone (or empty space to create one)',
   clipping: 'Click to place polygon points · click the first point, double-click or Enter to finish · Esc cancels · it is created on the selected bone',

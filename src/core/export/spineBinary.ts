@@ -538,7 +538,9 @@ export function jsonToBinary(json: J): Uint8Array {
         body.varint(followers.length, true); // timeline slots
         for (const s of followers) body.varint(s, true);
         if (nonessential) {
-          body.varint(0, true); // hull edges
+          const edges: number[] = att.edges ?? []; // the manual edges (editor data)
+          body.varint(edges.length, true);
+          for (const e of edges) body.varint(e, true);
           body.float(num(att.width, 0));
           body.float(num(att.height, 0));
         }
