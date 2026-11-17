@@ -96,7 +96,7 @@ function TopBar() {
             <MenuItem icon={Save} close={close} hotkey="Ctrl S" onClick={() => saveProjectFile()}>Save</MenuItem>
             <div className="menu-sep" />
             <MenuItem icon={Download} close={close} hotkey="Ctrl E" onClick={() => uiStore.patch({ exportOpen: true })}>Export for Spine 4.3…</MenuItem>
-            <MenuItem icon={FolderOpen} close={close} onClick={() => openSpineImport()}>Import Spine 4.3 JSON…</MenuItem>
+            <MenuItem icon={FolderOpen} close={close} onClick={() => openSpineImport()}>Import Spine JSON (4.0–4.3)…</MenuItem>
             <div className="menu-sep" />
             <MenuItem icon={Sparkles} close={close} onClick={() => loadSample()}>Load demo rig (Bolt)</MenuItem>
           </>

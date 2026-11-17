@@ -10,7 +10,7 @@ export const RU: Record<string, string> = {
   'Open…': 'Открыть…',
   'Save': 'Сохранить',
   'Export for Spine 4.3…': 'Экспорт для Spine 4.3…',
-  'Import Spine 4.3 JSON…': 'Импорт Spine 4.3 JSON…',
+  'Import Spine JSON (4.0–4.3)…': 'Импорт Spine JSON (4.0–4.3)…',
   'Load demo rig (Bolt)': 'Загрузить демо-риг (Bolt)',
   'File': 'Файл',
   'View': 'Вид',

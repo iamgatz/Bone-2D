@@ -8,6 +8,7 @@ import { animationEndTime } from '../animate';
 import { curveFromAbsolute } from '../curve';
 import { uid, uniqueName } from '../ids';
 import { deformLength } from '../mesh';
+import { isLegacySpineJson, upgradeLegacySpineJson } from './legacy';
 import {
   BLEND_MODES,
   DEFAULT_BOUNDING_BOX_COLOR,
@@ -26,7 +27,7 @@ import {
   newSkin,
   newSlot,
 } from '../model';
-import type { Animation, Attachment, BlendMode, Bone, Constraint, Curve, Id, Inherit, Influence, Key, MeshAttachment, PathTimelines, Project, RGB, RGBA, SkeletonDoc, Timeline, TransformFrom, TransformProp } from '../model';
+import type { Animation, Attachment, BlendMode, Bone, Constraint, Curve, Id, Influence, Key, MeshAttachment, PathTimelines, Project, RGB, RGBA, SkeletonDoc, Timeline, TransformFrom, TransformProp } from '../model';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 type J = Record<string, any>;
@@ -108,7 +109,7 @@ const single = (name: string, def: number) => (k: J) => [num(k[name] ?? (name ==
 const pair = (def: number) => (k: J) => [num(k.x, def), num(k.y, def)];
 
 export function importSpineJson(input: unknown, name = 'imported'): SpineImportResult {
-  const root = obj(input);
+  let root = obj(input);
   if (!Array.isArray(root.bones) || root.bones.length === 0) throw new Error('Not a Spine skeleton: no bones');
   const warnings: string[] = [];
   const warn = (m: string) => {
@@ -116,7 +117,13 @@ export function importSpineJson(input: unknown, name = 'imported'): SpineImportR
   };
   const header = obj(root.skeleton);
   const version = str(header.spine, '');
-  if (version && !version.startsWith('4.3')) warn(`The file was exported by Spine ${version}; only 4.3 files import faithfully`);
+  if (isLegacySpineJson(root)) {
+    // Spine 4.0 - 4.2: the constraints live in separate arrays and transform constraints have another shape
+    const upgraded = upgradeLegacySpineJson(root);
+    root = upgraded.root;
+    warn(`Spine ${version || 'older than 4.3'} file: converted to the 4.3 structure`);
+    for (const w of upgraded.warnings) warn(w);
+  } else if (version && !version.startsWith('4.3')) warn(`The file was exported by Spine ${version}; only 4.3 files import faithfully`);
 
   const project = emptyProject(name);
   const doc: SkeletonDoc = project.skeleton;
@@ -132,7 +139,8 @@ export function importSpineJson(input: unknown, name = 'imported'): SpineImportR
     boneNames.add(n);
     const parent = typeof bm.parent === 'string' ? (boneByName.get(bm.parent)?.id ?? null) : null;
     if (typeof bm.parent === 'string' && !parent) warn(`bone "${n}": parent "${bm.parent}" was not defined before it`);
-    const inheritRaw = bm.inherit ?? bm.transform;
+    // `inherit` since 4.2, `transform` before; the official loaders accept the first letter in either case ("NoScale")
+    const inherit = oneOf(bm.inherit ?? bm.transform, INHERIT_MODES, 'normal');
     const b = newBone({
       name: n,
       parent,
@@ -144,7 +152,7 @@ export function importSpineJson(input: unknown, name = 'imported'): SpineImportR
       scaleY: num(bm.scaleY, 1),
       shearX: num(bm.shearX, 0),
       shearY: num(bm.shearY, 0),
-      inherit: INHERIT_MODES.includes(inheritRaw) ? (inheritRaw as Inherit) : 'normal',
+      inherit,
       skinRequired: bool(bm.skin, false),
       color: rgba(bm.color, [0.6, 0.6, 0.6, 1]),
     });
