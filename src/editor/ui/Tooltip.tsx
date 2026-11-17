@@ -1,5 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
+import { settingsStore } from '@/store/settings';
 
 /**
  * Tooltips with the hotkey as a key cap.
@@ -69,7 +70,7 @@ export function TooltipHost() {
       setTip({ text, hotkey: el.dataset.tipKey, rect: el.getBoundingClientRect(), place: (el.dataset.tipPlace as Place | undefined) ?? 'bottom' });
     };
     const onOver = (e: PointerEvent) => {
-      if (e.pointerType === 'touch') return;
+      if (e.pointerType === 'touch' || !settingsStore.get().tooltips) return;
       const el = find(e.target);
       if (el === owner) return;
       hide();
