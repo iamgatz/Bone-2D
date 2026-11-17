@@ -1,9 +1,9 @@
 import { useState } from 'react';
-import { Brush, FlipHorizontal2, Hexagon, Link2, RefreshCw, Scissors, Sparkles, Triangle, Unlink2, Waves } from 'lucide-react';
+import { ArrowLeftRight, Brush, FlipHorizontal2, Hexagon, Link2, RefreshCw, Scissors, Sparkles, Triangle, Unlink2, Waves } from 'lucide-react';
 import type { Id, MeshAttachment, Project } from '@/core/model';
 import { linkSource } from '@/core/links';
 import { linkMeshTo, setAttachmentProps, setLinkDeform, setTool, unlinkMesh } from '@/store/actions';
-import { autoWeightMesh, bindMeshToBones, convertToMesh, mirrorMeshWeights, pruneMeshWeights, regenerateMesh, retriangulateMesh, smoothMeshWeights, unbindMeshFromBones } from '@/store/meshActions';
+import { autoWeightMesh, bindMeshToBones, convertToMesh, mirrorMeshWeights, pruneMeshWeights, regenerateMesh, retriangulateMesh, smoothMeshWeights, swapMeshWeights, unbindMeshFromBones } from '@/store/meshActions';
 import { useProject } from '@/store/doc';
 import { uiStore, useUi } from '@/store/ui';
 import { Button, ColorSwatch, NumberField, SelectField, Toggle } from '../ui/controls';
@@ -83,8 +83,13 @@ export function MeshGroup({ slotId, att }: { slotId: Id; att: MeshAttachment }) 
   const brush = useUi((s) => s.brush);
   const mode = useUi((s) => s.mode);
   const selectedBones = useUi((s) => s.selection.bones);
+  const pickedVertices = useUi((s) => (s.selection.slot === slotId && s.selection.attachment === att.name ? s.selection.vertices.length : 0));
   const [spacing, setSpacing] = useState(34);
   const [padding, setPadding] = useState(2);
+  const [pruneBones, setPruneBones] = useState(4);
+  const [pruneBelow, setPruneBelow] = useState(5);
+  const [swapA, setSwapA] = useState<Id>('');
+  const [swapB, setSwapB] = useState<Id>('');
   const doc = project.skeleton;
   const slot = doc.slots.find((s) => s.id === slotId);
   const weighted = att.weights != null;
@@ -92,6 +97,8 @@ export function MeshGroup({ slotId, att }: { slotId: Id; att: MeshAttachment }) 
   const boneName = (id: Id) => doc.bones.find((b) => b.id === id)?.name ?? '?';
   const setup = mode === 'setup';
   const linked = !!att.link;
+  const swapFrom = influencing.includes(swapA) ? swapA : (influencing[0] ?? '');
+  const swapTo = influencing.includes(swapB) && swapB !== swapFrom ? swapB : (influencing.find((b) => b !== swapFrom) ?? '');
 
   return (
     <>
@@ -161,7 +168,7 @@ export function MeshGroup({ slotId, att }: { slotId: Id; att: MeshAttachment }) 
                 <Button icon={Waves} onClick={() => smoothMeshWeights(slotId, att.name, 2)}>
                   Smooth
                 </Button>
-                <Button icon={Scissors} onClick={() => pruneMeshWeights(slotId, att.name)} title="Drop influences lighter than 5% and keep at most 4 bones per vertex">
+                <Button icon={Scissors} onClick={() => pruneMeshWeights(slotId, att.name, pruneBelow / 100, pruneBones)} title="Drop the influences lighter than the threshold and keep at most the given number of bones per vertex">
                   Prune
                 </Button>
                 <Button icon={FlipHorizontal2} onClick={() => mirrorMeshWeights(slotId, att.name, true)} title="Copy the weights of the left half to the right half (bones swapped for their mirror twins)">
@@ -174,6 +181,20 @@ export function MeshGroup({ slotId, att }: { slotId: Id; att: MeshAttachment }) 
                   Unbind
                 </Button>
               </div>
+              <p className="hint-text mb">{pickedVertices ? `Auto, Smooth, Prune and Swap work on the ${pickedVertices} selected vertices.` : 'Select vertices with the mesh tool (M) to limit Auto, Smooth, Prune and Swap to them; with none selected they work on the whole mesh.'}</p>
+              <Field label="Prune">
+                <NumberField label="bones" value={pruneBones} step={1} precision={0} min={1} max={4} onChange={(v) => setPruneBones(Math.max(1, Math.min(4, Math.round(v))))} title="Most bones one vertex may keep" />
+                <NumberField label="%" value={pruneBelow} step={1} precision={0} min={0} max={50} onChange={(v) => setPruneBelow(Math.max(0, Math.min(50, v)))} title="Weights lighter than this are removed" />
+              </Field>
+              {influencing.length > 1 && (
+                <Field label="Swap">
+                  <SelectField value={swapFrom} options={influencing.map((id) => ({ value: id, label: boneName(id) }))} onChange={setSwapA} />
+                  <SelectField value={swapTo} options={influencing.map((id) => ({ value: id, label: boneName(id) }))} onChange={setSwapB} />
+                  <Button icon={ArrowLeftRight} onClick={() => swapMeshWeights(slotId, att.name, swapFrom, swapTo)} title="The two bones exchange their weights on the selected vertices (or the whole mesh)">
+                    Swap
+                  </Button>
+                </Field>
+              )}
               <Field label="Bone">
                 <SelectField value={brush.bone ?? influencing[0]} options={influencing.map((id) => ({ value: id, label: boneName(id) }))} onChange={(v) => uiStore.patch({ brush: { ...brush, bone: v } })} />
               </Field>

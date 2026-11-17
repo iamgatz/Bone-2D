@@ -12,6 +12,12 @@ export interface Release {
 
 export const CHANGELOG: Release[] = [
   {
+    version: '0.31',
+    date: '2026-11-17',
+    en: ['Weights, closer to Spine: Auto, Smooth and Prune now work only on the selected vertices when some are selected (select them with the mesh tool, M; with none selected they work on the whole mesh). Prune has its own settings: the most bones a vertex may keep and the weight below which an influence is removed. New Swap: two bones exchange their weights on the selected vertices or the whole mesh, the vertices stay where they are. Each is one step in the history.'],
+    ru: ['Веса, ближе к Spine: Авто, Сглаживание и Очистка теперь работают только на выбранных вершинах, если они выбраны (выбираются инструментом сетки, M; без выбора — на всей сетке). У Очистки появились настройки: сколько костей может остаться у вершины и ниже какого веса влияние убирается. Новое: Обмен — две кости меняются весами на выбранных вершинах или на всей сетке, вершины остаются на месте. Каждое действие — один шаг в истории.'],
+  },
+  {
     version: '0.30',
     date: '2026-11-17',
     en: ['Split bone (Inspector, Split section, in Setup mode): cuts the selected bone into 2 to 32 shorter bones along its length. Nested makes a chain (every new bone is a child of the one before: tails, spines, tentacles), without it the parts stand side by side under the parent of the bone. Fibonacci makes each part shorter than the one before (5 3 2 1 1), otherwise the lengths are equal. The original keeps its name, slots, weights and keys and becomes the first part. In a chain the children of the bone move to the part they sit on, so a hand at the end of a forearm follows the last part. One step in the history.'],

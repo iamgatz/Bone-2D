@@ -3,7 +3,7 @@ import { makeCurve, reconcileDeform, upsertKey } from '@/core/edit';
 import { RAD2DEG } from '@/core/math';
 import type { Mat } from '@/core/math';
 import { deformHome } from '@/core/links';
-import { adjacency, autoWeights, bindMesh, generateMeshFromImage, locateInMesh, meshFromRegion, meshWorldPositions, mirrorWeights, normalizeInfluences, pruneWeights, removeMeshVertices, setBoneWeight, smoothWeights, triangulate, unbindMesh } from '@/core/mesh';
+import { adjacency, autoWeights, bindMesh, generateMeshFromImage, keepOutside, locateInMesh, meshFromRegion, meshWorldPositions, mirrorWeights, normalizeInfluences, pruneWeights, removeMeshVertices, setBoneWeight, smoothWeights, swapBoneWeights, triangulate, unbindMesh } from '@/core/mesh';
 import { mirrorName } from '@/core/duplicate';
 import type { BoneMats, TraceOptions, VertexMap } from '@/core/mesh';
 import { matInvert } from '@/core/math';
@@ -264,6 +264,14 @@ export function unbindMeshFromBones(slotId: Id, name: string) {
   writeMesh(slotId, name, unbindMesh(mesh, slotMat(slotId), mats), 'Unbind mesh');
 }
 
+/** The selected vertices of this mesh (Spine: Auto, Smooth, Prune and Swap work on them; with none selected, on the whole mesh). */
+export function weightScope(slotId: Id, name: string, count: number): Set<number> | undefined {
+  const sel = uiStore.get().selection;
+  if (sel.slot !== slotId || sel.attachment !== name) return undefined;
+  const v = sel.vertices.filter((i) => i >= 0 && i < count);
+  return v.length ? new Set(v) : undefined;
+}
+
 export function autoWeightMesh(slotId: Id, name: string) {
   const mesh = getShapeMesh(slotId, name);
   if (!mesh || !mesh.weights) return;
@@ -272,7 +280,9 @@ export function autoWeightMesh(slotId: Id, name: string) {
   const world = meshWorldPositions(mesh, slotMat(slotId), mats);
   let w = autoWeights(world, boneSegments(ids));
   w = smoothWeights(w, adjacency(mesh.triangles, mesh.uvs.length / 2), 2, 0.5);
-  writeMesh(slotId, name, bindMesh(unbindMesh(mesh, slotMat(slotId), mats), slotMat(slotId), mats, w), 'Auto weights');
+  const done = bindMesh(unbindMesh(mesh, slotMat(slotId), mats), slotMat(slotId), mats, w);
+  const only = weightScope(slotId, name, mesh.uvs.length / 2);
+  writeMesh(slotId, name, only && done.weights ? { ...done, weights: keepOutside(mesh.weights, done.weights, only) } : done, 'Auto weights');
 }
 
 export function smoothMeshWeights(slotId: Id, name: string, passes = 1) {
@@ -292,15 +302,34 @@ export function smoothMeshWeights(slotId: Id, name: string, passes = 1) {
       }),
     ),
   );
-  writeMesh(slotId, name, { ...mesh, weights }, 'Smooth weights');
+  writeMesh(slotId, name, { ...mesh, weights: keepOutside(mesh.weights, weights, weightScope(slotId, name, mesh.uvs.length / 2)) }, 'Smooth weights');
 }
 
 /** Drops the faint influences of every vertex and keeps at most `max` bones per vertex (Spine's Prune). */
 export function pruneMeshWeights(slotId: Id, name: string, threshold = 0.05, max = 4) {
   const mesh = getShapeMesh(slotId, name);
   if (!mesh || !mesh.weights) return;
-  const weights = pruneWeights(mesh.weights, threshold, max);
+  const weights = pruneWeights(mesh.weights, threshold, max, weightScope(slotId, name, mesh.uvs.length / 2));
   writeMesh(slotId, name, { ...mesh, weights }, 'Prune weights');
+}
+
+/** Two bones exchange their weights (on the selected vertices, or the whole mesh). Returns how many vertices changed. */
+export function swapMeshWeights(slotId: Id, name: string, a: Id, b: Id): number {
+  const mesh = getShapeMesh(slotId, name);
+  if (!mesh || !mesh.weights) return 0;
+  if (a === b) {
+    toast('Pick two different bones to swap');
+    return 0;
+  }
+  const { mats, slotMat } = setupMats();
+  const world = meshWorldPositions(mesh, slotMat(slotId), mats);
+  const r = swapBoneWeights(mesh.weights, world, a, b, mats, weightScope(slotId, name, mesh.uvs.length / 2));
+  if (!r.changed) {
+    toast('Neither bone has weight on these vertices');
+    return 0;
+  }
+  writeMesh(slotId, name, { ...mesh, weights: r.weights }, 'Swap weights');
+  return r.changed;
 }
 
 /**

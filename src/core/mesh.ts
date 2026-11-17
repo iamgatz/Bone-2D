@@ -419,15 +419,54 @@ export function normalizeInfluences(list: Influence[], maxInfluences = 4): Influ
  * is left back to 1. A vertex always keeps at least its strongest bone. The setup pose does not change (every influence of a vertex
  * points at the same world position), only how the vertex follows the bones.
  */
-export function pruneWeights(weights: Influence[][], threshold = 0.05, max = 4): Influence[][] {
-  return weights.map((list) => {
-    if (list.length === 0) return list;
+export function pruneWeights(weights: Influence[][], threshold = 0.05, max = 4, only?: ReadonlySet<number>): Influence[][] {
+  return weights.map((list, vi) => {
+    if (list.length === 0 || (only && !only.has(vi))) return list;
     const sorted = [...list].sort((a, b) => b[3] - a[3]);
     let kept = sorted.filter((i) => i[3] >= threshold).slice(0, Math.max(1, max));
     if (kept.length === 0) kept = [sorted[0]];
     const sum = kept.reduce((s, i) => s + i[3], 0);
     return kept.map((i) => [i[0], i[1], i[2], sum > 0 ? i[3] / sum : 1 / kept.length] as Influence);
   });
+}
+
+/** Keeps `next` for the vertices in `only` and `old` for every other vertex (scope of Auto, Smooth, Prune and Swap to the selected vertices). */
+export function keepOutside<T>(old: readonly T[], next: readonly T[], only: ReadonlySet<number> | undefined): T[] {
+  return only ? next.map((v, i) => (only.has(i) ? v : old[i])) : [...next];
+}
+
+/**
+ * Swap (Spine's weights tool, two bones selected): the two bones exchange their weights on the vertices of `only` (all vertices when
+ * it is missing). The vertex stays where it is: the bind position of each moved influence is re-expressed in the other bone's space.
+ * Returns the new weights and how many vertices had either bone.
+ */
+export function swapBoneWeights(weights: Influence[][], world: ArrayLike<number>, a: Id, b: Id, bones: BoneMats, only?: ReadonlySet<number>): { weights: Influence[][]; changed: number } {
+  const ma = bones.get(a);
+  const mb = bones.get(b);
+  if (a === b || !ma || !mb) return { weights, changed: 0 };
+  const ia = matInvert(ma);
+  const ib = matInvert(mb);
+  let changed = 0;
+  const out = weights.map((list, i) => {
+    if (only && !only.has(i)) return list;
+    const wa = list.find((e) => e[0] === a)?.[3] ?? 0;
+    const wb = list.find((e) => e[0] === b)?.[3] ?? 0;
+    if (wa === 0 && wb === 0) return list;
+    changed++;
+    const rest = list.filter((e) => e[0] !== a && e[0] !== b).map((e) => [...e] as Influence);
+    const x = world[i * 2];
+    const y = world[i * 2 + 1];
+    if (wb > 0) {
+      const p = matApply(ia, x, y);
+      rest.push([a, p[0], p[1], wb]);
+    }
+    if (wa > 0) {
+      const p = matApply(ib, x, y);
+      rest.push([b, p[0], p[1], wa]);
+    }
+    return normalizeInfluences(rest);
+  });
+  return { weights: out, changed };
 }
 
 /**
