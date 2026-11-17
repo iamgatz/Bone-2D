@@ -251,6 +251,8 @@ export const ops: Op[] = [
   { name: 'unbindMeshFromBones', run: (c) => { const m = c.pick(meshes()); if (m) M.unbindMeshFromBones(m.slotId, m.name); } },
   { name: 'autoWeightMesh', run: (c) => { const m = c.pick(meshes()); if (m) M.autoWeightMesh(m.slotId, m.name); } },
   { name: 'pruneMeshWeights', run: (c) => { const m = c.pick(meshes()); if (m) M.pruneMeshWeights(m.slotId, m.name, c.num(0, 0.4), 1 + Math.floor(c.r() * 4)); } },
+  { name: 'updateMeshBindings', run: (c) => { const m = c.pick(meshes()); if (m) M.updateMeshBindings(m.slotId, m.name); } },
+  { name: 'weldMeshWeights', run: (c) => { const m = c.pick(meshes()); const o = c.pick(meshes()); if (m && o) M.weldMeshWeights(m.slotId, m.name, o.slotId, o.name, c.chance(0.5) ? 'all' : 'overlapping'); } },
   { name: 'mirrorMeshWeights', run: (c) => { const m = c.pick(meshes()); if (m) M.mirrorMeshWeights(m.slotId, m.name, c.chance(0.5)); } },
   { name: 'smoothMeshWeights', run: (c) => { const m = c.pick(meshes()); if (m) M.smoothMeshWeights(m.slotId, m.name, 1 + Math.floor(c.r() * 3)); } },
   { name: 'paintWeights', run: (c) => { const m = c.pick(meshes()); if (!m) return; const bone = c.pick(doc().bones)!.id; uiStore.patch({ brush: { size: c.num(10, 300), strength: c.num(0.1, 1), mode: c.pick(['add', 'subtract', 'smooth', 'replace'] as const)!, bone, feather: c.pick([0, 30, 100])!, locked: doc().bones.filter(() => c.r() < 0.2).map((b) => b.id) } }); const { mats, slotMat } = M.setupMats(); const w = meshWorldPositions(M.getMesh(m.slotId, m.name)!, slotMat(m.slotId), mats); const i = Math.floor(c.r() * (w.length / 2)); M.paintWeights(m.slotId, m.name, { x: w[i * 2], y: w[i * 2 + 1] }, bone); } },

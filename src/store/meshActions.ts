@@ -3,7 +3,7 @@ import { makeCurve, reconcileDeform, upsertKey } from '@/core/edit';
 import { RAD2DEG } from '@/core/math';
 import type { Mat } from '@/core/math';
 import { deformHome } from '@/core/links';
-import { adjacency, autoWeights, bindMesh, generateMeshFromImage, keepOutside, locateInMesh, meshFromRegion, meshWorldPositions, mirrorWeights, normalizeInfluences, pruneWeights, removeMeshVertices, setBoneWeight, smoothWeights, swapBoneWeights, triangulate, unbindMesh } from '@/core/mesh';
+import { adjacency, autoWeights, bindMesh, generateMeshFromImage, keepOutside, locateInMesh, meshFromRegion, meshWorldPositions, mirrorWeights, normalizeInfluences, pruneWeights, removeMeshVertices, setBoneWeight, smoothWeights, swapBoneWeights, triangulate, unbindMesh, updateBindings, weldWeights } from '@/core/mesh';
 import { mirrorName } from '@/core/duplicate';
 import type { BoneMats, TraceOptions, VertexMap } from '@/core/mesh';
 import { matInvert } from '@/core/math';
@@ -329,6 +329,62 @@ export function swapMeshWeights(slotId: Id, name: string, a: Id, b: Id): number 
     return 0;
   }
   writeMesh(slotId, name, { ...mesh, weights: r.weights }, 'Swap weights');
+  return r.changed;
+}
+
+/** Makes the bind pose of the vertices the pose the bones have now (Spine: Update). Returns how many vertices had a stale binding. */
+export function updateMeshBindings(slotId: Id, name: string): number {
+  const mesh = getShapeMesh(slotId, name);
+  if (!mesh || !mesh.weights) return 0;
+  const { mats, slotMat } = setupMats();
+  const world = meshWorldPositions(mesh, slotMat(slotId), mats);
+  const r = updateBindings(mesh.weights, world, mats, weightScope(slotId, name, mesh.uvs.length / 2));
+  if (!r.changed) {
+    toast('The bindings are already up to date');
+    return 0;
+  }
+  writeMesh(slotId, name, { ...mesh, weights: r.weights }, 'Update bindings');
+  toast(`Updated the bindings of ${r.changed} vertices`, 'ok');
+  return r.changed;
+}
+
+/** The other weighted meshes (not linked ones) a mesh can be welded to, with the number of bones they share with it. */
+export function weldTargets(slotId: Id, name: string): { slotId: Id; name: string; label: string; shared: number }[] {
+  const doc = docStore.get().skeleton;
+  const mine = getMesh(slotId, name);
+  if (!mine?.weights) return [];
+  const mineBones = new Set(mine.weights.flat().map((e) => e[0]));
+  const out: { slotId: Id; name: string; label: string; shared: number }[] = [];
+  for (const slot of doc.slots) {
+    for (const [n, a] of Object.entries(doc.skins[0].attachments[slot.id] ?? {})) {
+      if (a.type !== 'mesh' || a.link || !a.weights || (slot.id === slotId && n === name)) continue;
+      const shared = new Set(a.weights.flat().map((e) => e[0]).filter((b) => mineBones.has(b))).size;
+      out.push({ slotId: slot.id, name: n, label: n === slot.name ? n : `${slot.name} · ${n}`, shared });
+    }
+  }
+  return out;
+}
+
+/** Weld: this mesh takes the weights of another where they overlap (or everywhere), see core `weldWeights`. Returns how many vertices were set. */
+export function weldMeshWeights(slotId: Id, name: string, otherSlot: Id, otherName: string, mode: 'all' | 'overlapping'): number {
+  const mesh = getShapeMesh(slotId, name);
+  const other = getMesh(otherSlot, otherName);
+  if (!mesh || !mesh.weights || !other || !other.weights || other.link) return 0;
+  const { mats, slotMat } = setupMats();
+  const r = weldWeights(
+    mesh.weights,
+    meshWorldPositions(mesh, slotMat(slotId), mats),
+    { world: meshWorldPositions(other, slotMat(otherSlot), mats), triangles: other.triangles, weights: other.weights },
+    mode,
+    mats,
+    weightScope(slotId, name, mesh.uvs.length / 2),
+  );
+  if (!r.changed) {
+    toast('Weld needs two meshes bound to at least the same two bones, one over the other');
+    return 0;
+  }
+  writeMesh(slotId, name, { ...mesh, weights: r.weights }, 'Weld weights');
+  toast(`Welded the weights of ${r.changed} vertices`, 'ok');
   return r.changed;
 }
 
