@@ -628,10 +628,14 @@ export function unbindMesh(mesh: MeshAttachment, slotMat: Mat, bones: BoneMats):
 /**
  * Sets the weight of one bone on a vertex, rescaling the other influences so the total stays 1.
  * `bindFor` supplies the bind position when the bone is not yet an influence.
+ * `locked` (Spine's weight lock): the weight of a locked bone does not change; the others share what is left, and a locked bone itself cannot be painted.
  */
-export function setBoneWeight(list: Influence[], bone: Id, target: number, bindFor: (bone: Id) => [number, number] | null, maxInfluences = 4): Influence[] {
-  target = Math.max(0, Math.min(1, target));
+export function setBoneWeight(list: Influence[], bone: Id, target: number, bindFor: (bone: Id) => [number, number] | null, maxInfluences = 4, locked?: ReadonlySet<Id>): Influence[] {
+  if (locked?.has(bone)) return list;
   let cur = list.map((i) => [...i] as Influence);
+  const held = locked ? cur.filter((i) => locked.has(i[0])) : [];
+  const heldSum = held.reduce((s, i) => s + i[3], 0);
+  target = Math.max(0, Math.min(1 - heldSum, target));
   let mine = cur.find((i) => i[0] === bone);
   if (!mine) {
     const bind = bindFor(bone);
@@ -639,14 +643,20 @@ export function setBoneWeight(list: Influence[], bone: Id, target: number, bindF
     mine = [bone, bind[0], bind[1], 0] as Influence;
     cur.push(mine);
   }
-  const others = cur.filter((i) => i !== mine);
+  const others = cur.filter((i) => i !== mine && !held.includes(i));
   const otherSum = others.reduce((s, i) => s + i[3], 0);
   mine[3] = target;
-  const rest = 1 - target;
+  const rest = Math.max(0, 1 - heldSum - target);
   if (otherSum > 1e-6) for (const o of others) o[3] = (o[3] / otherSum) * rest;
   else if (others.length) for (const o of others) o[3] = rest / others.length;
-  else mine[3] = 1;
+  else mine[3] = Math.max(0, 1 - heldSum);
   cur = cur.filter((i) => i[3] > 1e-4);
+  if (held.length && cur.length > maxInfluences) {
+    // a locked bone is never the one that drops out
+    const keep = cur.filter((i) => held.includes(i));
+    const free = cur.filter((i) => !held.includes(i)).sort((x, y) => y[3] - x[3]).slice(0, Math.max(0, maxInfluences - keep.length));
+    cur = [...keep, ...free];
+  }
   return normalizeInfluences(cur, maxInfluences);
 }
 

@@ -358,6 +358,56 @@ export function mirrorMeshWeights(slotId: Id, name: string, fromLeft: boolean): 
   return result.changed;
 }
 
+let weightClip: { bone: Id; w: number }[][] | null = null;
+
+/** Copy (Spine: Ctrl+C in the weights tool): remembers the weights of the selected vertices, in the order of their numbers. */
+export function copyVertexWeights(slotId: Id, name: string): number {
+  const mesh = getMesh(slotId, name);
+  if (!mesh || !mesh.weights) return 0;
+  const picked = weightScope(slotId, name, mesh.uvs.length / 2);
+  if (!picked) {
+    toast('Select the vertices to copy the weights of first (mesh tool, M)');
+    return 0;
+  }
+  const order = [...picked].sort((a, b) => a - b);
+  weightClip = order.map((i) => mesh.weights![i].map((e) => ({ bone: e[0], w: e[3] })));
+  toast(`Copied the weights of ${order.length} vertices`, 'ok');
+  return order.length;
+}
+
+/** Paste: gives the copied weights to the selected vertices (the same number of them, in the order of their numbers); the vertices stay where they are. */
+export function pasteVertexWeights(slotId: Id, name: string): number {
+  const mesh = getShapeMesh(slotId, name);
+  if (!mesh || !mesh.weights) return 0;
+  if (!weightClip) {
+    toast('Copy the weights of some vertices first');
+    return 0;
+  }
+  const picked = weightScope(slotId, name, mesh.uvs.length / 2);
+  if (!picked || picked.size !== weightClip.length) {
+    toast(`Select ${weightClip.length} vertices to paste the weights onto`);
+    return 0;
+  }
+  const { mats, slotMat } = setupMats();
+  const world = meshWorldPositions(mesh, slotMat(slotId), mats);
+  const clip = weightClip;
+  const order = [...picked].sort((a, b) => a - b);
+  const weights = mesh.weights.map((l) => l);
+  order.forEach((vi, k) => {
+    const list: Influence[] = [];
+    for (const e of clip[k]) {
+      const m = mats.get(e.bone);
+      if (!m) continue;
+      const p = matInvert(m);
+      list.push([e.bone, p.a * world[vi * 2] + p.b * world[vi * 2 + 1] + p.x, p.c * world[vi * 2] + p.d * world[vi * 2 + 1] + p.y, e.w]);
+    }
+    if (list.length) weights[vi] = normalizeInfluences(list);
+  });
+  writeMesh(slotId, name, { ...mesh, weights }, 'Paste weights');
+  toast(`Pasted the weights onto ${order.length} vertices`, 'ok');
+  return order.length;
+}
+
 export interface BrushStroke {
   x: number;
   y: number;
@@ -374,12 +424,14 @@ export function paintWeights(slotId: Id, name: string, stroke: BrushStroke, bone
   const adj = brush.mode === 'smooth' ? adjacency(mesh.triangles, mesh.uvs.length / 2) : null;
   const inv = matInvert(mats.get(bone) ?? { a: 1, b: 0, c: 0, d: 1, x: 0, y: 0 });
   const weights = mesh.weights.map((list) => list);
+  const locked = new Set(brush.locked);
   let changed = false;
   const n = mesh.uvs.length / 2;
   for (let i = 0; i < n; i++) {
     const d = Math.hypot(world[i * 2] - stroke.x, world[i * 2 + 1] - stroke.y);
     if (d > radius) continue;
-    const f = Math.pow(1 - d / radius, 1.4) * brush.strength;
+    const inner = radius * (1 - Math.max(0, Math.min(100, brush.feather)) / 100);
+    const f = (d <= inner ? 1 : Math.pow(1 - (d - inner) / (radius - inner), 1.4)) * brush.strength;
     const list = weights[i];
     const cur = list.find((e) => e[0] === bone)?.[3] ?? 0;
     const bindFor = (): [number, number] => [inv.a * world[i * 2] + inv.b * world[i * 2 + 1] + inv.x, inv.c * world[i * 2] + inv.d * world[i * 2 + 1] + inv.y];
@@ -394,7 +446,7 @@ export function paintWeights(slotId: Id, name: string, stroke: BrushStroke, bone
       target = cur + (avg - cur) * Math.min(1, f * 1.5);
     }
     if (Math.abs(target - cur) < 1e-4) continue;
-    weights[i] = setBoneWeight(list, bone, target, bindFor);
+    weights[i] = setBoneWeight(list, bone, target, bindFor, 4, locked);
     changed = true;
   }
   if (!changed) return;

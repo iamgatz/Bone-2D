@@ -68,4 +68,27 @@ describe('pasting keys', () => {
     const pasted = A.pasteKeys(0.9);
     expect(pasted.map((p) => p.target)).toEqual([upper.id]);
   });
+
+  it('two-colour keys pasted onto a slot without a dark colour become plain colour keys, curve included', () => {
+    const [from, to] = doc().slots;
+    const anim = A.currentAnimation()!;
+    docStore.update('prepare', (d) => {
+      d.skeleton.slots.find((x) => x.id === from.id)!.dark = [0, 0, 0];
+      d.skeleton.slots.find((x) => x.id === to.id)!.dark = null;
+      const a = d.skeleton.animations.find((x) => x.id === anim.id)!;
+      const curve = Array.from({ length: 7 }, () => [1 / 3, 1 / 3, 2 / 3, 2 / 3]).flat();
+      (a.slots[from.id] ??= {}).rgba2 = [
+        { time: 0.1, value: [1, 1, 1, 1, 0, 0, 0], curve },
+        { time: 0.5, value: [0.5, 0.5, 0.5, 1, 0.1, 0.1, 0.1] },
+      ];
+    });
+    A.copyKeys([{ kind: 'slot', target: from.id, prop: 'rgba2', time: 0.1 }]);
+    A.selectSlot(to.id);
+    const pasted = A.pasteKeys(0.3);
+    expect(pasted.map((p) => p.prop)).toEqual(['rgba']);
+    const key = A.currentAnimation()!.slots[to.id].rgba![0];
+    expect(key.value.length).toBe(4);
+    expect(Array.isArray(key.curve) ? key.curve.length : 16).toBe(16);
+    expect(validateProject(docStore.get())).toEqual([]);
+  });
 });

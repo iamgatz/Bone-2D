@@ -253,7 +253,7 @@ export const ops: Op[] = [
   { name: 'pruneMeshWeights', run: (c) => { const m = c.pick(meshes()); if (m) M.pruneMeshWeights(m.slotId, m.name, c.num(0, 0.4), 1 + Math.floor(c.r() * 4)); } },
   { name: 'mirrorMeshWeights', run: (c) => { const m = c.pick(meshes()); if (m) M.mirrorMeshWeights(m.slotId, m.name, c.chance(0.5)); } },
   { name: 'smoothMeshWeights', run: (c) => { const m = c.pick(meshes()); if (m) M.smoothMeshWeights(m.slotId, m.name, 1 + Math.floor(c.r() * 3)); } },
-  { name: 'paintWeights', run: (c) => { const m = c.pick(meshes()); if (!m) return; const bone = c.pick(doc().bones)!.id; uiStore.patch({ brush: { size: c.num(10, 300), strength: c.num(0.1, 1), mode: c.pick(['add', 'subtract', 'smooth', 'replace'] as const)!, bone } }); const { mats, slotMat } = M.setupMats(); const w = meshWorldPositions(M.getMesh(m.slotId, m.name)!, slotMat(m.slotId), mats); const i = Math.floor(c.r() * (w.length / 2)); M.paintWeights(m.slotId, m.name, { x: w[i * 2], y: w[i * 2 + 1] }, bone); } },
+  { name: 'paintWeights', run: (c) => { const m = c.pick(meshes()); if (!m) return; const bone = c.pick(doc().bones)!.id; uiStore.patch({ brush: { size: c.num(10, 300), strength: c.num(0.1, 1), mode: c.pick(['add', 'subtract', 'smooth', 'replace'] as const)!, bone, feather: c.pick([0, 30, 100])!, locked: doc().bones.filter(() => c.r() < 0.2).map((b) => b.id) } }); const { mats, slotMat } = M.setupMats(); const w = meshWorldPositions(M.getMesh(m.slotId, m.name)!, slotMat(m.slotId), mats); const i = Math.floor(c.r() * (w.length / 2)); M.paintWeights(m.slotId, m.name, { x: w[i * 2], y: w[i * 2 + 1] }, bone); } },
   { name: 'setDeformKey', run: (c) => { A.setMode('animate'); const sc = getScene(); const cands = sc.skeleton.slots.filter((s) => { const k = sc.skeleton.slotAttachment(s)?.kind; return k === 'mesh' || k === 'path'; }); const s = c.pick(cands); if (!s) return; const att = sc.skeleton.slotAttachment(s)!; const base = M.currentDeform(s.data.id); if (!base) return; M.setDeformKey(s.data.id, att.name, base, [{ index: Math.floor(c.r() * (att.kind === 'mesh' || att.kind === 'path' ? att.vertexCount : 1)), dx: c.num(-20, 20), dy: c.num(-20, 20) }]); } },
   // ---- constraints
   { name: 'createIkFromDrag', run: (c) => { const end = c.pick(doc().bones)!; const target = c.chance(0.5) ? c.pick(doc().bones)!.id : null; I.createIkFromDrag(end.id, target, c.num(-150, 150), c.num(-50, 250), c.chance(0.3)); } },
@@ -733,13 +733,28 @@ export function bakeMismatch(p: Project): string | null {
     // (a constraint ordered after the child moved the parent; the child keeps the world it had). Its local pose then cannot be read back
     // from the parent, in the official runtime either, so such a pair is not compared.
     const constrained = new Set(constrainedBoneIndices(probeData));
+    // ...and neither is anything below such a pair: the child follows the parent it is given, whatever its own pose says
+    const unexplained = new Set<number>();
+    const pairs = new Set<number>();
+    for (let i = 0; i < probe.bones.length; i++) {
+      const parent = probe.bones[i].parent;
+      if (!parent) continue;
+      if (constrained.has(i) && constrained.has(parent.data.index)) pairs.add(i);
+      if (pairs.has(i) || unexplained.has(parent.data.index)) unexplained.add(i);
+    }
     const want = poseFrames(doc, anim);
     const got = poseFrames(withBaked, baked);
     for (let f = 0; f < want.length; f++) {
       for (let i = 0; i < want[f].length; i++) {
         if (!probe.bones[i].active) continue;
-        const parent = probe.bones[i].parent;
-        if (parent && constrained.has(i) && constrained.has(parent.data.index)) continue;
+        if (pairs.has(i)) continue;
+        if (unexplained.has(i)) {
+          // allowed to differ only because the parent differs: a child that differs under a parent that matches is a real bake error
+          const p = probe.bones[i].parent!.data.index;
+          const differs = (j: number) => want[f][j].some((x, k) => !(Math.abs(x - got[f][j][k]) <= (k < 4 ? 1e-3 : 5e-3) * Math.max(1, Math.abs(x), Math.abs(got[f][j][k]))));
+          if (differs(i) && !differs(p)) return `animation "${anim.name}" frame ${f} bone "${names[i]}" differs from its baked pose although its parent matches`;
+          continue;
+        }
         for (let k = 0; k < 6; k++) {
           const x = want[f][i][k];
           const y = got[f][i][k];
