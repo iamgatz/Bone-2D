@@ -131,6 +131,7 @@ export function removeBones(doc: SkeletonDoc, ids: Iterable<Id>, bindPose?: Bone
       if (a.transform) delete a.transform[id];
       if (a.slider) delete a.slider[id];
       if (a.path) delete a.path[id];
+      if (a.physics) delete a.physics[id];
     }
   }
   return gone;

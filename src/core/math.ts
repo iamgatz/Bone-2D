@@ -7,6 +7,7 @@
 export const SPINE_PI = 3.1415927;
 export const DEG2RAD = SPINE_PI / 180;
 export const RAD2DEG = 180 / SPINE_PI;
+export const INV_PI2 = 1 / (SPINE_PI * 2);
 export const EPS = 0.00001;
 export const EPS2 = EPS * EPS;
 

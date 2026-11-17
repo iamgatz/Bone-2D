@@ -1,8 +1,8 @@
 /** Shared, memoized "what the document looks like right now": the posed skeleton for the current mode/animation/time. */
-import { applyAnimation } from '@/core/animate';
+import { applyAnimation, applyPhysicsResets } from '@/core/animate';
 import type { Animation, Id, SkeletonDoc } from '@/core/model';
 import { compileSkeleton, createSkeleton } from '@/core/skeleton';
-import type { Skeleton, SkeletonData } from '@/core/skeleton';
+import type { PhysicsMode, Skeleton, SkeletonData } from '@/core/skeleton';
 import { docStore } from '@/store/doc';
 import { uiStore } from '@/store/ui';
 import type { Camera, PoseOverride } from '@/store/ui';
@@ -23,6 +23,14 @@ let cache: {
   scene: Scene;
 } | null = null;
 
+/** Forgets the posed skeleton, and with it the state of the physics simulation: the next frame starts from rest. */
+export function restartScene() {
+  cache = null;
+}
+
+/** Longest stretch of time one frame may advance the physics by; a longer gap (a stalled tab, a jump) restarts the simulation. */
+const MAX_PHYSICS_STEP = 0.25;
+
 export function getScene(): Scene {
   const project = docStore.get();
   const ui = uiStore.get();
@@ -34,7 +42,8 @@ export function getScene(): Scene {
   if (c && c.doc === doc && c.skinId === ui.skinId && c.anim === anim && c.time === time && c.overrides === overrides) return c.scene;
 
   const data = compileSkeleton(doc);
-  const skeleton = c && c.scene.data === data && c.skinId === ui.skinId ? c.scene.skeleton : createSkeleton(data, ui.skinId && doc.skins.some((s) => s.id === ui.skinId) ? ui.skinId : null);
+  const reuse = !!c && c.scene.data === data && c.skinId === ui.skinId;
+  const skeleton = reuse ? c!.scene.skeleton : createSkeleton(data, ui.skinId && doc.skins.some((s) => s.id === ui.skinId) ? ui.skinId : null);
   applyAnimation(skeleton, anim, time);
   for (const id in overrides) {
     const b = skeleton.boneById(id);
@@ -48,7 +57,30 @@ export function getScene(): Scene {
     if (o.shearX !== undefined) b.shearX = o.shearX;
     if (o.shearY !== undefined) b.shearY = o.shearY;
   }
-  skeleton.updateWorldTransform();
+  // Physics only simulates while an animation plays: a step forward advances it, the same frame again keeps what it has
+  // computed (pause, a bone dragged), any other time starts it again from rest. In Setup mode it does not run at all.
+  let physics: PhysicsMode = 'none';
+  if (anim && data.constraints.some((x) => x.kind === 'physics')) {
+    physics = 'reset';
+    let dt = 0;
+    if (reuse && c!.anim === anim) {
+      if (time === c!.time) physics = 'pose';
+      else if (ui.playing) {
+        let d = time - c!.time;
+        if (d < 0 && ui.loop) d += anim.duration;
+        if (d > 0 && d <= MAX_PHYSICS_STEP) {
+          physics = 'update';
+          dt = d;
+          if (time < c!.time) {
+            applyPhysicsResets(skeleton, anim, c!.time, anim.duration);
+            applyPhysicsResets(skeleton, anim, -1, time);
+          } else applyPhysicsResets(skeleton, anim, c!.time, time);
+        }
+      }
+    }
+    skeleton.update(dt);
+  }
+  skeleton.updateWorldTransform(physics);
   const scene: Scene = { doc, data, skeleton, animation: anim };
   cache = { doc, skinId: ui.skinId, anim, time, overrides, scene };
   return scene;

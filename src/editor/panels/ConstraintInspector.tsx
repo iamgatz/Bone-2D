@@ -7,6 +7,7 @@ import { currentIkValues, deleteConstraint, moveConstraint, renameConstraint, se
 import { useUi } from '@/store/ui';
 import { Button, IconButton, NumberField, SelectField, TextField, Toggle } from '../ui/controls';
 import { PathConstraintInspector } from './PathConstraintInspector';
+import { PhysicsConstraintInspector } from './PhysicsConstraintInspector';
 import { SliderInspector } from './SliderInspector';
 import { TransformInspector } from './TransformInspector';
 
@@ -27,6 +28,7 @@ export function ConstraintInspector({ id }: { id: Id }) {
   if (c0.type === 'transform') return <TransformInspector id={id} />;
   if (c0.type === 'slider') return <SliderInspector id={id} />;
   if (c0.type === 'path') return <PathConstraintInspector id={id} />;
+  if (c0.type === 'physics') return <PhysicsConstraintInspector id={id} />;
   return <IkInspector id={id} />;
 }
 

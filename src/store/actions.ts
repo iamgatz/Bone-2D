@@ -900,6 +900,7 @@ export function pasteKeys(time: number): KeyRef[] {
         else if (c.kind === 'transform') keys = (a.transform[c.target] = []);
         else if (c.kind === 'slider') ((a.slider[c.target] ??= {}) as Record<string, unknown>)[c.prop] = keys = [];
         else if (c.kind === 'path') ((a.path[c.target] ??= {}) as Record<string, unknown>)[c.prop] = keys = [];
+        else if (c.kind === 'physics') ((a.physics[c.target] ??= {}) as Record<string, unknown>)[c.prop] = keys = [];
         else if (c.kind === 'deform') {
           const [skinId, att] = c.prop.split('\u0001');
           keys = (((a.deform[skinId] ??= {})[c.target] ??= {})[att] = []) as unknown as { time: number }[];

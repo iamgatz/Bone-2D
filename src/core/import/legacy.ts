@@ -4,7 +4,7 @@
  * What changed between the versions (read from the official runtimes' `SkeletonJson` of each version):
  *   4.0  separate top-level arrays `ik` / `transform` / `path`; deform timelines in `animations.<n>.deform`
  *   4.1  deform (and sequence) timelines moved to `animations.<n>.attachments`
- *   4.2  `physics` constraints, bone `transform` renamed `inherit` (the importer reads both)
+ *   4.2  `physics` constraints (with their own defaults), bone `transform` renamed `inherit` (the importer reads both)
  *   4.3  one ordered `constraints` array with a `type` per entry; transform constraints are a table of
  *        "source property -> constrained property" (`properties`) instead of six fixed channels; path constraints name their
  *        slot under `slot` instead of `target`
@@ -95,6 +95,11 @@ function convertPath(map: J): J {
   return o;
 }
 
+/** A 4.2 physics constraint: the keys are the same, but the 4.2 loader's defaults are inertia 1 and damping 1 (4.3: 0.5 and 0.85). */
+function convertPhysics(map: J): J {
+  return { ...map, type: 'physics', inertia: map.inertia ?? 1, damping: map.damping ?? 1 };
+}
+
 /** Converts a 4.0 - 4.2 document. Call only for documents `isLegacySpineJson` accepts. */
 export function upgradeLegacySpineJson(input: J): LegacyUpgrade {
   const warnings: string[] = [];
@@ -128,8 +133,9 @@ export function upgradeLegacySpineJson(input: J): LegacyUpgrade {
     if (kind === 'ik') return convertIk(map);
     if (kind === 'transform') return convertTransform(map, warn, scales);
     if (kind === 'path') return convertPath(map);
-    return { ...map, type: 'physics' };
+    return convertPhysics(map);
   });
+  if (entries.some((e) => e.kind === 'physics')) warn('physics constraints use the 4.3 simulation, which smooths the motion between steps: it moves slightly differently from 4.2');
   for (const kind of ['ik', 'transform', 'path', 'physics']) delete root[kind];
 
   // ----------------------------------------------------------- animations: deform moved under `attachments` in 4.1

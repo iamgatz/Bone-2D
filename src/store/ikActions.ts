@@ -70,6 +70,7 @@ export function deleteConstraint(id: Id) {
       delete a.transform[id];
       delete a.slider[id];
       delete a.path?.[id];
+      delete a.physics?.[id];
     }
   });
   setSelection({});

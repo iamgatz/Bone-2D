@@ -41,6 +41,7 @@ $env:FUZZ_SEEDS='300'; $env:FUZZ_STEPS='100'; npx vitest run tests/fuzz.test.ts
   (the end slot is clipped inclusively); weighted polygons from imported files are kept and drawn.
 - **Paths** (tool `N`): Bezier path attachments — click places a node, dragging pulls its handles; edit nodes with the mesh tool (`M`), Ctrl-click / double-click the curve adds a node, `Del` removes it. Closed / open, constant speed or setup lengths, binding to bones with automatic weights.
 - **Path constraints 4.3** (the spline button next to Constraints): the selected bones follow the path shown in a slot — rotate mode `tangent` / `chain` / `chainScale`, position `fixed` / `percent`, spacing `length` / `fixed` / `percent` / `proportional`, offset rotation, three mixes.
+- **Physics constraints** (Spine 4.2+; the wave button next to Constraints): a spring simulation on one bone — it swings (rotate), is pushed (x / y), stretches (scale X, with the scale Y mode `none` / `uniform` / `volume`) or shears — with inertia, strength, damping, mass, wind, gravity, mix, a limit and its own step rate. The simulation runs while an animation plays (scrubbing shows the pose without it); every parameter can be keyed, the global timelines and reset keys are supported.
 - Skins (swap the image in a slot), events, undo / redo (a gesture collapses into one step).
 
 **Animation (Animate mode)**
@@ -55,12 +56,12 @@ $env:FUZZ_SEEDS='300'; $env:FUZZ_STEPS='100'; npx vitest run tests/fuzz.test.ts
 - Export ZIP: Spine 4.3 JSON + atlas (MaxRects, edge extrusion) + `*-preview.html` (plays the export with the **official** Spine player).
 - **Spine JSON import, 4.0 – 4.3** (File → Import…): pick the `.json` together with the `.atlas` and the page images — regions are cut out (trim offsets and rotation are honored).
   Files from Spine 4.0 / 4.1 / 4.2 (separate `ik` / `transform` / `path` lists, the old transform-constraint model) are converted to the 4.3 model on the way in; the two corners where 4.3 computes
-  a transform constraint differently from 4.2 are reported. Whatever is not supported (physics constraints, sequences, …) is skipped and listed in the console. Export → import → export gives the same JSON, byte for byte.
+  a transform constraint differently from 4.2 are reported. Whatever is not supported (sequences, …) is skipped and listed in the console. Export → import → export gives the same JSON, byte for byte.
 
 ## Why the export can be trusted
 
 `tests/spine-parity.test.ts` exports a deliberately nasty test rig (all inherit modes, shear, IK, 4 transform constraints, weighted and plain meshes, deformation, colors,
-events, skins, random draw orders; `tests/path.test.ts` adds open / closed / weighted paths and path constraints in every mode), loads the JSON with the official `@esotericsoftware/spine-core@4.3.x` and compares **world matrices of every bone, mesh vertices, colors,
+events, skins, random draw orders; `tests/path.test.ts` adds open / closed / weighted paths and path constraints in every mode, and `tests/physics.test.ts` plays physics constraints frame by frame against the same runtime), loads the JSON with the official `@esotericsoftware/spine-core@4.3.x` and compares **world matrices of every bone, mesh vertices, colors,
 attachments and draw order** with our own solver at dozens of points in time. The check is not vacuous: mutant tests confirm that any deviation is caught.
 Clipping, bounding boxes and points are checked the same way, including the real `SkeletonClipping` and `SkeletonBounds` (`tests/attachments.test.ts`).
 
@@ -92,7 +93,7 @@ Rationale for the choices is in [docs/PROMPT.md](docs/PROMPT.md); notes on the 4
 
 ## Not done yet
 
-Physics constraints, weights and deformation for clipping / bounding boxes (only moving vertices is supported),
+Weights and deformation for clipping / bounding boxes (only moving vertices is supported),
 linked meshes (imported as copies), sequence atlases, draw-order folders, binary export (`.skel`),
 onion skin, collaboration.
 
