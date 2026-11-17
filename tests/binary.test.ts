@@ -100,3 +100,42 @@ describe('binary import', () => {
     expect(looksLikeBinary(new TextEncoder().encode(' {"skeleton":{}}'))).toBe(false);
   });
 });
+
+describe('reading a binary file back', () => {
+  // fuzz seed 142: the reader rounded floats to 7 significant digits, so a region rotated -142.95984 degrees came back as -142.9598 and the
+  // offsets of its sequence differed by 3e-5 from what the official reader gets. A float32 must come back as exactly that float32.
+  it('keeps every 32-bit float exactly, however many digits it needs', () => {
+    const p = rich();
+    let changed = 0;
+    for (const skin of p.skeleton.skins) {
+      for (const slot of Object.values(skin.attachments)) {
+        for (const a of Object.values(slot)) {
+          if (a.type !== 'region') continue;
+          a.rotation = -142.95984 - changed * 0.00013;
+          a.x = -7.71258 + changed * 0.00031;
+          a.y = -284.46972;
+          changed++;
+        }
+      }
+    }
+    expect(changed).toBeGreaterThan(0);
+    const json = exportSpineJson(p.skeleton) as { skins: { attachments: Record<string, Record<string, { type?: string; rotation?: number; x?: number }>> }[] };
+    const back = binaryToJson(exportSpineBinary(p.skeleton)) as typeof json;
+    let checked = 0;
+    json.skins.forEach((skin, si) => {
+      for (const slot of Object.keys(skin.attachments)) {
+        for (const name of Object.keys(skin.attachments[slot])) {
+          const want = skin.attachments[slot][name];
+          const got = back.skins[si].attachments[slot][name];
+          if (want.rotation !== undefined) {
+            expect(Math.fround(got.rotation!)).toBe(Math.fround(want.rotation));
+            checked++;
+          }
+          if (want.x !== undefined && want.type !== 'mesh') expect(Math.fround(got.x!)).toBe(Math.fround(want.x));
+        }
+      }
+    });
+    expect(checked).toBeGreaterThan(0);
+    expect(compareReadBack(p)).toEqual([]);
+  });
+});

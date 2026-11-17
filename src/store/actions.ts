@@ -1,6 +1,8 @@
 /** Every user-level operation on the document / UI. Components and tools call these; they never mutate state directly. */
 import type { Draft } from 'immer';
 import { animationEndTime } from '@/core/animate';
+import { DEFAULT_TOLERANCE, bakeAnimation, scaleTolerance, simplifyAnimation } from '@/core/bake';
+import type { BakeOptions } from '@/core/bake';
 import { cleanUpAnimation } from '@/core/cleanup';
 import { findAnimation, freshName, makeCurve, normalizeBoneOrder, purgeAttachment, removeBones, removeSlots, rgbaToRgba2, setSlotDarkColor, snapTime, upsertKey, decompose } from '@/core/edit';
 import type { BoneMats } from '@/core/mesh';
@@ -615,6 +617,36 @@ export function cleanUpKeys(id: Id): number {
   uiStore.patch({ selectedKeys: [] });
   toast(removed ? `Removed ${removed} keys that change nothing` : 'Nothing to clean up: every key does something', removed ? 'ok' : 'info');
   return removed;
+}
+
+/** Drops the keys of the bone timelines that a curve does not need (`strength` scales the tolerance). Returns how many keys went. */
+export function simplifyCurrentAnimation(strength: number, selectedOnly: boolean): number {
+  const anim = currentAnimation();
+  if (!anim) return 0;
+  const bones = selectedOnly ? uiStore.get().selection.bones : undefined;
+  let removed = 0;
+  docStore.update('Simplify keys', (d) => {
+    const a = d.skeleton.animations.find((x) => x.id === anim.id);
+    if (a) removed = simplifyAnimation(a, scaleTolerance(DEFAULT_TOLERANCE, strength), d.skeleton.fps, bones);
+  });
+  uiStore.patch({ selectedKeys: [] });
+  toast(removed ? `Removed ${removed} keys, the curves stay within the tolerance` : 'No key can go without changing the motion', removed ? 'ok' : 'info');
+  return removed;
+}
+
+/** Writes the result of the constraints (IK, physics, sliders ...) into plain bone keys of a new animation. Returns its id. */
+export function bakeCurrentAnimation(options: Partial<BakeOptions>): Id | null {
+  const anim = currentAnimation();
+  if (!anim) return null;
+  const doc = skeletonDoc();
+  const baked = bakeAnimation(doc, anim, { ...options, skinId: uiStore.get().skinId });
+  baked.name = freshName(`${anim.name} baked`, doc.animations);
+  docStore.update('Bake animation', (d) => {
+    d.skeleton.animations.push(baked);
+  });
+  selectAnimation(baked.id);
+  toast(`Baked into "${baked.name}": ${Object.keys(baked.bones).length} bones carry keys`, 'ok');
+  return baked.id;
 }
 
 export function selectAnimation(id: Id) {

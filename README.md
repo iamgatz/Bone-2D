@@ -54,6 +54,7 @@ $env:FUZZ_SEEDS='300'; $env:FUZZ_STEPS='100'; npx vitest run tests/fuzz.test.ts
 - Auto-key (or manual keys + "Key all"); keys for rotate / translate / scale / shear, slot colors (light and dark), attachment changes, IK mix / bend, transform-constraint mixes, **path position / spacing / mixes**, **mesh and path deformation** (drag nodes in Animate mode), draw order, events.
 - Dopesheet: selection, box select, drag keys with frame snapping, copy / paste, interpolation (linear / stepped / bezier / ease).
 - **Graph editor**: per-channel curves, drag keys and Bézier handles.
+- **Animation tools** window: *Simplify keys* takes out the keys a curve does not need (tolerance you scale, shows how many can go first), *Bake constraints* writes what IK, transform, path, physics and sliders do into plain bone keys of a new animation (every frame or every N-th, optionally simplified, constraints switched off in the copy). Checked frame by frame against the originals in the random-session tests.
 - Playback, loop, frame stepping. **Onion skin** (faded poses before and after the playhead), **Clean Up** (removes the keys that change nothing), **Alt-drag a key** to shift the keys after it too, an Animations window with folders (`emotes/wave`).
 
 **Files**

@@ -252,7 +252,11 @@ export function applyAnimationOnto(skeleton: Skeleton, anim: Animation, time: nu
     const tl = anim.slots[slotId];
     if (tl.attachment?.length) {
       const i = findKeyIndex(tl.attachment, time);
-      if (i >= 0) slot.attachmentName = tl.attachment[i].name;
+      if (i >= 0 && tl.attachment[i].name !== slot.attachmentName) {
+        // a slot that changes its attachment starts over without the deformation of the old one (the official `SlotPose.setAttachment`)
+        slot.attachmentName = tl.attachment[i].name;
+        slot.deform = [];
+      }
     }
     if (tl.rgba?.length && sampleKeys(tl.rgba, time, tmp)) mixColor(slot, tmp, alpha, false);
     if (tl.rgba2?.length && sampleKeys(tl.rgba2, time, tmp)) mixColor(slot, tmp, alpha, true);

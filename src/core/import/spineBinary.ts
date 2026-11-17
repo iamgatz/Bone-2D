@@ -105,8 +105,15 @@ class In {
   }
 }
 
-/** Round to 6 significant digits: a 32-bit float printed with its full double expansion is noise (0.30000001192...). */
-const f = (v: number): number => (Number.isFinite(v) ? +v.toPrecision(7) : 0);
+/** The shortest decimal that is the same 32-bit float, so a value read from the file is exactly the value the official reader gets. */
+const f = (v: number): number => {
+  if (!Number.isFinite(v)) return 0;
+  for (let digits = 1; digits < 9; digits++) {
+    const r = +v.toPrecision(digits);
+    if (Math.fround(r) === v) return r;
+  }
+  return +v.toPrecision(9);
+};
 
 function hex(v: number, alpha: boolean): string {
   const u = v >>> 0;
