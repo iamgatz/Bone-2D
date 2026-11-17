@@ -497,12 +497,32 @@ export interface ImageRef {
   height: number;
 }
 
+/** The local transform of one bone. */
+export interface BonePose {
+  x: number;
+  y: number;
+  rotation: number;
+  scaleX: number;
+  scaleY: number;
+  shearX: number;
+  shearY: number;
+}
+
+/** A pose kept in the pose library: the local transforms of some bones by bone name (so it survives renaming ids and works after a bone is added). Not exported. */
+export interface PoseEntry {
+  id: Id;
+  name: string;
+  bones: Record<string, BonePose>;
+}
+
 export interface Project {
   format: 'bone2d';
   version: 1;
   name: string;
   skeleton: SkeletonDoc;
   images: ImageRef[];
+  /** The pose library of the editor (poses are not part of the Spine export). */
+  poses?: PoseEntry[];
 }
 
 // ---------------------------------------------------------------- factories

@@ -12,6 +12,12 @@ export interface Release {
 
 export const CHANGELOG: Release[] = [
   {
+    version: '0.16',
+    date: '2026-11-17',
+    en: ['Poses window (Windows menu): a library of poses kept by name (a guard stance, a wave, a hand shape). Press + to keep the pose of the selected bones (all when none is selected); click a pose to put it on the bones. In Setup mode it sets the setup pose, in Animate mode it keys the bones at the playhead. A Blend percentage puts a pose on only part of the way, angles turning the short way round. Rename, replace with the current pose, delete. The library is saved in the project file and is not part of the Spine export.'],
+    ru: ['Окно «Позы» (меню «Окна»): библиотека поз с именами (стойка, взмах руки, форма кисти). Нажмите +, чтобы сохранить позу выбранных костей (всех, если ничего не выбрано), клик по позе накладывает её на кости. В режиме Setup поза становится позой по умолчанию, в режиме Animate кости получают ключи в точке маркера. Процент «Наложение» кладёт позу лишь частично, углы идут по короткой дуге. Можно переименовать позу, заменить её текущей или удалить. Библиотека сохраняется в файле проекта и в экспорт Spine не попадает.'],
+  },
+  {
     version: '0.15',
     date: '2026-11-17',
     en: ['Every key of the editor can be moved: Settings → Hotkeys now has a button for each command (Undo, Save, Frame skeleton, Play…), not only the tool letters. Press it, then the new combination (Ctrl, Alt, Shift and a key, F-keys, Tab, Space). A combination that another command, a tool letter or the browser already has is refused with the name of the owner; Reset puts the default back. The tooltips, menus, shortcuts window and command palette show the keys as you set them.'],

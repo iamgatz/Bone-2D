@@ -142,6 +142,15 @@ export const ops: Op[] = [
   { name: 'duplicateBones', run: (c) => { A.setMode('setup'); A.selectBone(c.pick(doc().bones)!.id); PO.duplicateSelection(c.chance(0.5)); } },
   { name: 'resetPose', run: (c) => { A.setMode('animate'); A.selectBone(c.pick(doc().bones)!.id); PO.resetPose(); } },
   { name: 'copyPastePose', run: (c) => { A.setMode('animate'); A.setSelection({ bones: [c.pick(doc().bones)!.id, c.pick(doc().bones)!.id] }); PO.copyPose(); A.selectBone(c.pick(doc().bones)!.id); PO.pastePose(); } },
+  { name: 'poseLibrary', run: (c) => {
+    A.setSelection({ bones: c.chance(0.3) ? [] : [c.pick(doc().bones)!.id, c.pick(doc().bones)!.id] });
+    const made = PO.savePose(c.pick(NAMES));
+    const t = made ?? c.pick(project().poses ?? []);
+    if (t && c.chance(0.7)) { A.setMode(c.chance(0.5) ? 'animate' : 'setup'); A.selectBone(c.pick(doc().bones)!.id); PO.applyPose(t.id, c.chance(0.5) ? 1 : c.r()); }
+    if (t && c.chance(0.3)) PO.renamePose(t.id, c.pick(NAMES)!);
+    if (t && c.chance(0.2)) PO.overwritePose(t.id);
+    if (t && c.chance(0.2)) PO.deletePose(t.id);
+  } },
   // ---- slots / images / attachments
   { name: 'addImageToScene', run: (c) => { const img = c.pick(project().images); if (img) A.addImageToScene(img.name, c.num(-150, 150), c.num(-50, 250), c.chance(0.5) ? c.pick(doc().bones)!.id : null); } },
   { name: 'setSlotProps', run: (c) => { const s = c.pick(doc().slots); if (s) A.setSlotProps(s.id, { blend: c.pick(BLEND_MODES)!, hidden: c.chance(0.2), dark: c.chance(0.3) ? [c.r(), c.r(), c.r()] : null }); } },
