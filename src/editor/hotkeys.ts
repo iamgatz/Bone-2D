@@ -21,6 +21,8 @@ export const KEYS = {
   help: '?',
   hideViews: 'F9',
   settings: 'F12',
+  duplicate: 'Ctrl+D',
+  mirror: 'Ctrl+Shift+D',
 } as const;
 
 export interface HotkeyRow {
@@ -55,6 +57,8 @@ export const HOTKEY_GROUPS: HotkeyGroup[] = [
       { label: 'Undo', keys: [KEYS.undo] },
       { label: 'Redo', keys: [KEYS.redo, 'Ctrl+Shift+Z'] },
       { label: 'Select all bones', keys: [KEYS.selectAll] },
+      { label: 'Duplicate bones', keys: [KEYS.duplicate] },
+      { label: 'Mirror bones', keys: [KEYS.mirror] },
       { label: 'Copy keys', keys: [KEYS.copy] },
       { label: 'Paste keys', keys: [KEYS.paste] },
       { label: 'Delete selection / keys', keys: [KEYS.delete, 'Backspace'] },

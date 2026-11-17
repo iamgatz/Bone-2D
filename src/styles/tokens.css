@@ -61,6 +61,7 @@
   --axis-y: #6ee18c;
   --gizmo-rotate: #ffc85a;
   --gizmo-scale: #78aaff;
+  --gizmo-shear: #c98bff;
   --handle-hover: #ffffff; /* a vertex or a path node under the pointer */
   --handle-tangent: #ffd479; /* the handles of a path node */
   --handle-outline: rgba(8, 10, 14, 0.95);

@@ -1,4 +1,4 @@
-import { Bone, BoxSelect, Brush, Crosshair, Link2, MousePointer2, Move, PenTool, RotateCw, Scaling, Scissors, Triangle } from 'lucide-react';
+import { Bone, BoxSelect, Brush, Crosshair, Italic, Link2, MousePointer2, Move, PenTool, RotateCw, Scaling, Scissors, Triangle } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { settingsStore, setSettings } from '@/store/settings';
 import type { Tool } from '@/store/ui';
@@ -10,6 +10,7 @@ export const TOOLS: { tool: Tool; icon: LucideIcon; title: string; hotkey: strin
   { tool: 'translate', icon: Move, title: 'Translate', hotkey: 'T' },
   { tool: 'rotate', icon: RotateCw, title: 'Rotate', hotkey: 'R' },
   { tool: 'scale', icon: Scaling, title: 'Scale', hotkey: 'S' },
+  { tool: 'shear', icon: Italic, title: 'Shear', hotkey: 'H' },
   { tool: 'mesh', icon: Triangle, title: 'Edit mesh / deform', hotkey: 'M' },
   { tool: 'weights', icon: Brush, title: 'Paint weights', hotkey: 'W', setupOnly: true },
   { tool: 'ik', icon: Link2, title: 'IK constraint', hotkey: 'I', setupOnly: true },
@@ -44,6 +45,7 @@ export const HINTS: Record<Tool, string> = {
   translate: 'Drag to move the selected bone (or grab an axis) · Shift = add to selection',
   rotate: 'Drag anywhere to rotate the selected bones around their origins',
   scale: 'Drag to scale · Shift = X only · Alt = Y only',
+  shear: 'Drag to shear the selected bones: sideways skews the bone, along it skews the other axis · Shift = X only · Alt = Y only',
   mesh: 'Drag vertices · Ctrl-click or double-click adds a vertex · Del removes · in Animate mode dragging keys a deform',
   weights: 'Paint over the mesh · click a bone to switch the brush bone · adjust size and strength in the Inspector',
   ik: 'Drag from the end of a bone chain to a target bone (or empty space to create one)',

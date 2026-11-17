@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Bone, BoxSelect, Download, Eye, FilePlus2, FolderOpen, Grid3x3, Bell, SlidersHorizontal, Image as ImageIcon, CircleHelp, MessageSquareText, Link2, Maximize, Play, Redo2, Save, Sparkles, Type, Undo2 } from 'lucide-react';
+import { Bone, BoxSelect, Download, Eye, FilePlus2, FolderOpen, Grid3x3, Bell, ClipboardCopy, ClipboardPaste, Copy, FlipHorizontal2, RotateCcw, SlidersHorizontal, Image as ImageIcon, CircleHelp, MessageSquareText, Link2, Maximize, Play, Redo2, Save, Sparkles, Type, Undo2 } from 'lucide-react';
 import { decodeKey } from '@/core/keyrefs';
 import { clearSelection, copyKeys, deleteBones, deleteKeys, keySelectedBones, pasteKeys, sanitizeSelection, setMode, setSelection, setTime, setTool, togglePlay } from '@/store/actions';
 import { docStore, useProject } from '@/store/doc';
@@ -25,6 +25,7 @@ import { focusArea, setFocusArea } from './focus';
 import { hotkeyGroups, KEYS } from './hotkeys';
 import { HINTS, TOOLS, hotkeyOf, toolForKey } from './tools';
 import { SettingsDialog } from './Settings';
+import { copyPose, duplicateSelection, pastePose, resetPose } from '@/store/poseActions';
 import { useSettings } from '@/store/settings';
 import { AnimationsPanel } from './panels/AnimationsPanel';
 import { MetricsPanel } from './panels/MetricsPanel';
@@ -74,6 +75,35 @@ function TopBar() {
             <MenuItem icon={FolderOpen} close={close} onClick={() => openSpineImport()}>Import Spine JSON (4.0–4.3)…</MenuItem>
             <div className="menu-sep" />
             <MenuItem icon={Sparkles} close={close} onClick={() => loadSample()}>Load demo rig (Bolt)</MenuItem>
+          </>
+        )}
+      </Menu>
+      <Menu label="Edit">
+        {(close) => (
+          <>
+            <MenuItem icon={Undo2} close={close} hotkey={KEYS.undo} disabled={!docStore.canUndo} onClick={() => docStore.undo()}>
+              Undo
+            </MenuItem>
+            <MenuItem icon={Redo2} close={close} hotkey={KEYS.redo} disabled={!docStore.canRedo} onClick={() => docStore.redo()}>
+              Redo
+            </MenuItem>
+            <div className="menu-sep" />
+            <MenuItem icon={Copy} close={close} hotkey={KEYS.duplicate} disabled={mode !== 'setup'} onClick={() => duplicateSelection(false)}>
+              Duplicate bones
+            </MenuItem>
+            <MenuItem icon={FlipHorizontal2} close={close} hotkey={KEYS.mirror} disabled={mode !== 'setup'} onClick={() => duplicateSelection(true)}>
+              Mirror bones
+            </MenuItem>
+            <div className="menu-sep" />
+            <MenuItem icon={RotateCcw} close={close} disabled={mode !== 'animate'} onClick={() => resetPose()}>
+              Reset pose
+            </MenuItem>
+            <MenuItem icon={ClipboardCopy} close={close} onClick={() => copyPose()}>
+              Copy pose
+            </MenuItem>
+            <MenuItem icon={ClipboardPaste} close={close} onClick={() => pastePose()}>
+              Paste pose
+            </MenuItem>
           </>
         )}
       </Menu>
@@ -294,6 +324,9 @@ export function App() {
           e.preventDefault();
           const refs = pasteKeys(ui.time);
           if (refs.length) uiStore.patch({ selectedKeys: refs.map((r) => JSON.stringify([r.kind, r.target, r.prop, Math.round(r.time * 10000) / 10000])) });
+        } else if (key === 'd') {
+          e.preventDefault();
+          duplicateSelection(e.shiftKey);
         } else if (key === 'a') {
           e.preventDefault();
           setSelection({ bones: docStore.get().skeleton.bones.map((b) => b.id) });

@@ -34,6 +34,7 @@ type Drag =
   | { kind: 'create'; parent: Id | null; ox: number; oy: number }
   | { kind: 'rotate'; ids: Id[]; cx: Record<Id, [number, number]>; a0: Record<Id, number>; r0: Record<Id, number>; sign: Record<Id, number> }
   | { kind: 'translate'; ids: Id[]; p0: [number, number]; start: Record<Id, { x: number; y: number }>; inv: Record<Id, Mat4>; axis: 'x' | 'y' | null }
+  | { kind: 'shear'; ids: Id[]; o: Record<Id, [number, number]>; ang: Record<Id, number>; p0: [number, number]; start: Record<Id, { shx: number; shy: number }>; mode: 'xy' | 'x' | 'y' }
   | { kind: 'scale'; ids: Id[]; o: Record<Id, [number, number]>; d0: Record<Id, number>; start: Record<Id, { sx: number; sy: number }>; mode: 'xy' | 'x' | 'y' }
   | { kind: 'attachment'; slotId: Id; name: string; label: string; p0: [number, number]; start: { x: number; y: number }; inv: Mat4 };
 
@@ -203,7 +204,7 @@ export class ViewportController {
     }
 
     // empty space: tools act on the current selection from anywhere (like Spine), select tool clears it
-    if ((ui.tool === 'translate' || ui.tool === 'rotate' || ui.tool === 'scale') && uiStore.get().selection.bones.length) {
+    if ((ui.tool === 'translate' || ui.tool === 'rotate' || ui.tool === 'scale' || ui.tool === 'shear') && uiStore.get().selection.bones.length) {
       this.startBoneDrag(e, wx, wy, null);
       return;
     }
@@ -226,7 +227,7 @@ export class ViewportController {
     let ids = ui.selection.bones.filter((id) => scene.skeleton.boneById(id));
     if (!ids.length) return;
     const targets = new Set(scene.data.constraints.flatMap((c) => (c.kind === 'ik' ? [scene.data.bones[c.target].id] : [])));
-    let kind: 'rotate' | 'translate' | 'scale' = ui.tool === 'rotate' ? 'rotate' : ui.tool === 'scale' ? 'scale' : ui.tool === 'translate' ? 'translate' : 'rotate';
+    let kind: 'rotate' | 'translate' | 'scale' | 'shear' = ui.tool === 'rotate' ? 'rotate' : ui.tool === 'scale' ? 'scale' : ui.tool === 'shear' ? 'shear' : ui.tool === 'translate' ? 'translate' : 'rotate';
     // in the pose (select) tool, IK targets and bones without a parent are moved instead of rotated
     if (ui.tool === 'select') {
       const first = scene.skeleton.boneById(ids[0])!;
@@ -235,7 +236,7 @@ export class ViewportController {
     if (ui.mode === 'animate' && ui.autoKey === false) {
       /* overrides handled in setBonePose */
     }
-    docStore.beginGesture(kind === 'rotate' ? 'Rotate' : kind === 'scale' ? 'Scale' : 'Move');
+    docStore.beginGesture(kind === 'rotate' ? 'Rotate' : kind === 'scale' ? 'Scale' : kind === 'shear' ? 'Shear' : 'Move');
     if (kind === 'translate') {
       // drop bones whose ancestor is also moving
       const set = new Set(ids);
@@ -274,6 +275,18 @@ export class ViewportController {
         sign[id] = p && p.a * p.d - p.b * p.c < 0 ? -1 : 1;
       }
       this.begin(e, { kind: 'rotate', ids, cx, a0, r0, sign });
+    } else if (kind === 'shear') {
+      const o: Record<Id, [number, number]> = {};
+      const ang: Record<Id, number> = {};
+      const start: Record<Id, { shx: number; shy: number }> = {};
+      for (const id of ids) {
+        const b = scene.skeleton.boneById(id)!;
+        o[id] = [b.worldX, b.worldY];
+        ang[id] = Math.atan2(b.c, b.a); // the world direction of the bone's x axis
+        const pose = currentPose(id)!;
+        start[id] = { shx: pose.shearX, shy: pose.shearY };
+      }
+      this.begin(e, { kind: 'shear', ids, o, ang, p0: [wx, wy], start, mode: e.shiftKey ? 'x' : e.altKey ? 'y' : 'xy' });
     } else {
       const o: Record<Id, [number, number]> = {};
       const d0: Record<Id, number> = {};
@@ -378,6 +391,24 @@ export class ViewportController {
           return { id, props: { x: d.start[id].x + m[0] * dx + m[1] * dy, y: d.start[id].y + m[2] * dx + m[3] * dy } };
         });
         setBonePose(updates, 'Move');
+        break;
+      }
+      case 'shear': {
+        // the mouse moves in the bone's own frame: across the bone tilts its x axis (shear X), along it tilts the y axis (shear Y)
+        const lever = 70 / uiStore.get().camera.zoom;
+        const updates = d.ids.map((id) => {
+          const c = Math.cos(d.ang[id]);
+          const s = Math.sin(d.ang[id]);
+          const dx = wx - d.p0[0];
+          const dy = wy - d.p0[1];
+          const along = dx * c + dy * s;
+          const across = -dx * s + dy * c;
+          const props: { shearX?: number; shearY?: number } = {};
+          if (d.mode !== 'y') props.shearX = d.start[id].shx + Math.atan2(across, lever) * (180 / Math.PI);
+          if (d.mode !== 'x') props.shearY = d.start[id].shy - Math.atan2(along, lever) * (180 / Math.PI);
+          return { id, props };
+        });
+        setBonePose(updates, 'Shear');
         break;
       }
       case 'scale': {

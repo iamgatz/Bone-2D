@@ -4,7 +4,7 @@ import { DEFAULT_VIEWS, loadLayout } from './layout';
 import type { Views } from './layout';
 
 export type Mode = 'setup' | 'animate';
-export type Tool = 'select' | 'create' | 'translate' | 'rotate' | 'scale' | 'mesh' | 'weights' | 'ik' | 'clipping' | 'boundingbox' | 'point' | 'path';
+export type Tool = 'select' | 'create' | 'translate' | 'rotate' | 'scale' | 'shear' | 'mesh' | 'weights' | 'ik' | 'clipping' | 'boundingbox' | 'point' | 'path';
 /** Tools that draw clipping polygons, bounding boxes and points. */
 export const POLYGON_TOOLS: readonly Tool[] = ['clipping', 'boundingbox', 'point'];
 /** Tools that create attachments in the viewport (Setup mode only). */
