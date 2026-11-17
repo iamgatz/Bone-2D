@@ -18,6 +18,10 @@ export interface Settings {
   onionBefore: number;
   onionAfter: number;
   onionGap: number;
+  /** How thick the bones are drawn in the viewport, in percent of the default. */
+  boneScale: number;
+  /** Show the hints that pop up over buttons and fields. */
+  tooltips: boolean;
   /** Letters of the tools that differ from the defaults (tools.ts). */
   toolKeys: Record<string, string>;
   /** Key combinations of the commands that differ from the defaults (hotkeys.ts), by command id: "Ctrl+Shift+S". */
@@ -25,6 +29,8 @@ export interface Settings {
 }
 
 /** A combination as the editor writes it: Ctrl, Alt and Shift in that order, then one key. */
+export const BONE_SCALES = [50, 75, 100, 150, 200] as const;
+
 export const COMBO = /^(Ctrl\+)?(Alt\+)?(Shift\+)?(F\d{1,2}|Tab|Space|[^\s+])$/;
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -36,6 +42,8 @@ export const DEFAULT_SETTINGS: Settings = {
   onionBefore: 2,
   onionAfter: 2,
   onionGap: 3,
+  boneScale: 100,
+  tooltips: true,
   toolKeys: {},
   keyMap: {},
 };
@@ -59,6 +67,8 @@ export function readSettings(raw: string | null): Settings {
     if (whole(data.onionBefore, 0, 6)) out.onionBefore = data.onionBefore;
     if (whole(data.onionAfter, 0, 6)) out.onionAfter = data.onionAfter;
     if (whole(data.onionGap, 1, 30)) out.onionGap = data.onionGap;
+    if ((BONE_SCALES as readonly unknown[]).includes(data.boneScale)) out.boneScale = data.boneScale as number;
+    if (typeof data.tooltips === 'boolean') out.tooltips = data.tooltips;
     if (data.toolKeys && typeof data.toolKeys === 'object') {
       const used = new Set<string>();
       for (const [tool, letter] of Object.entries(data.toolKeys)) {

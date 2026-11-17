@@ -18,6 +18,11 @@ describe('settings', () => {
     expect(s).toMatchObject({ autosave: false, zoomToMouse: false, smoothing: false, viewportBg: [0.5, 0.5, 0.5] });
   });
 
+  it('take the bone size from a list of sizes and the hints from a flag', () => {
+    expect(readSettings(JSON.stringify({ boneScale: 150, tooltips: false }))).toMatchObject({ boneScale: 150, tooltips: false });
+    expect(readSettings(JSON.stringify({ boneScale: 120, tooltips: 'no' }))).toMatchObject({ boneScale: 100, tooltips: true });
+  });
+
   it('drop tool letters that are not one capital letter or that two tools share', () => {
     const s = readSettings(JSON.stringify({ toolKeys: { select: 'Q', create: 'Q', rotate: 'ab', scale: '5' } }));
     expect(s.toolKeys).toEqual({ select: 'Q' });

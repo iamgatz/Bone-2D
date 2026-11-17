@@ -7,7 +7,7 @@ import { cleanUpAnimation } from '@/core/cleanup';
 import { closeLoop } from '@/core/loops';
 import { findAnimation, freshName, makeCurve, normalizeBoneOrder, pruneSequences, purgeAttachment, removeBones, removeSlots, rgbaToRgba2, setSlotDarkColor, snapTime, upsertKey, decompose } from '@/core/edit';
 import type { BoneMats } from '@/core/mesh';
-import { moveKeys, removeKeys, resolveKeys } from '@/core/keyrefs';
+import { moveKeys, removeKeys, resolveKeys, retargetClip } from '@/core/keyrefs';
 import { duplicateSkin, setSkinRequired, setSkinScope, toggleOverride } from '@/core/skins';
 import type { ScopeKind } from '@/core/skins';
 import type { KeyRef } from '@/core/keyrefs';
@@ -1040,11 +1040,19 @@ export function pasteKeys(time: number): KeyRef[] {
   const anim = currentAnimation();
   if (!anim || !clipboard.length) return [];
   const out: KeyRef[] = [];
-  const fps = skeletonDoc().fps;
+  const doc = skeletonDoc();
+  const fps = doc.fps;
+  // keys copied from one bone go onto the bone that is selected now (the other arm), else back where they came from
+  const sel = uiStore.get().selection;
+  const items = retargetClip(
+    clipboard,
+    sel.bones.filter((id) => doc.bones.some((b) => b.id === id)),
+    sel.slot && doc.slots.some((s) => s.id === sel.slot) ? sel.slot : null,
+  );
   docStore.update('Paste keys', (d) => {
     const a = d.skeleton.animations.find((x) => x.id === anim.id);
     if (!a) return;
-    for (const c of clipboard) {
+    for (const c of items) {
       const t = snapTime(time + c.dt, fps);
       let keys = resolveKeys(a, c);
       if (!keys) {

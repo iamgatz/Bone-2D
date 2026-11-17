@@ -2,6 +2,7 @@
 import type { Id } from '@/core/model';
 import type { Bone } from '@/core/skeleton';
 import { REGION_TRIANGLES } from '@/core/skeleton';
+import { settingsStore } from '@/store/settings';
 import type { Camera, UiState } from '@/store/ui';
 import { worldToScreen } from '../scene';
 import type { Scene } from '../scene';
@@ -123,19 +124,20 @@ export function drawBone(o: OverlayInput, bone: Bone, selected: boolean, hovered
   const [tx, ty] = worldToScreen(cam, w, h, tipWX, tipWY);
   const len = Math.hypot(tx - ox, ty - oy);
   const colors = boneColor(bone, o, selected, hovered);
+  const k = settingsStore.get().boneScale / 100;
   ctx.lineJoin = 'round';
   if (len < 3) {
     ctx.fillStyle = colors.fill;
     ctx.strokeStyle = colors.stroke;
     ctx.lineWidth = selected ? 2 : 1.25;
     ctx.beginPath();
-    ctx.arc(ox, oy, selected ? 7 : 5.5, 0, Math.PI * 2);
+    ctx.arc(ox, oy, (selected ? 7 : 5.5) * k, 0, Math.PI * 2);
     ctx.fill();
     ctx.stroke();
   } else {
     const ux = (tx - ox) / len;
     const uy = (ty - oy) / len;
-    const wd = Math.min(9, Math.max(3.5, len * 0.13));
+    const wd = Math.min(9 * k, Math.max(3.5 * k, len * 0.13 * k));
     const px = -uy * wd;
     const py = ux * wd;
     const kx = ox + ux * len * 0.2;
@@ -154,7 +156,7 @@ export function drawBone(o: OverlayInput, bone: Bone, selected: boolean, hovered
   }
   // origin joint
   ctx.beginPath();
-  ctx.arc(ox, oy, selected ? 3.6 : 3, 0, Math.PI * 2);
+  ctx.arc(ox, oy, (selected ? 3.6 : 3) * Math.min(k, 1.6), 0, Math.PI * 2);
   ctx.fillStyle = selected ? COLORS.accent : alpha('--text', 0.95);
   ctx.fill();
   ctx.strokeStyle = token('--key-outline');

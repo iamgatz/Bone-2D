@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { RotateCcw } from 'lucide-react';
 import { setLang, useLang } from '@/i18n';
-import { DEFAULT_SETTINGS, resetSettings, setSettings, useSettings } from '@/store/settings';
+import { BONE_SCALES, DEFAULT_SETTINGS, resetSettings, setSettings, useSettings } from '@/store/settings';
 import { toast, uiStore } from '@/store/ui';
 import { Button, ColorSwatch, Dialog, SelectField, Toggle } from './ui/controls';
 import { Segmented } from './ui/Segmented';
@@ -109,6 +109,8 @@ export function SettingsDialog() {
   const onionBefore = useSettings((s) => s.onionBefore);
   const onionAfter = useSettings((s) => s.onionAfter);
   const onionGap = useSettings((s) => s.onionGap);
+  const boneScale = useSettings((s) => s.boneScale);
+  const tooltips = useSettings((s) => s.tooltips);
   useSettings((s) => s.toolKeys);
   useSettings((s) => s.keyMap);
   const close = () => uiStore.patch({ settingsOpen: false });
@@ -152,6 +154,9 @@ export function SettingsDialog() {
             <Row label="Autosave" hint="Keeps the open project in this browser a moment after every change">
               <Toggle on={autosave} onChange={(v) => setSettings({ autosave: v })} title="Autosave" />
             </Row>
+            <Row label="Hints" hint="The hints that pop up over buttons and fields">
+              <Toggle on={tooltips} onChange={(v) => setSettings({ tooltips: v })} title="Hints" />
+            </Row>
           </>
         )}
         {tab === 'viewport' && (
@@ -163,6 +168,9 @@ export function SettingsDialog() {
                   Reset
                 </Button>
               )}
+            </Row>
+            <Row label="Bone size" hint="How thick the bones and joints are drawn">
+              <SelectField value={String(boneScale)} options={BONE_SCALES.map((n) => ({ value: String(n), label: `${n}%` }))} onChange={(v) => setSettings({ boneScale: Number(v) })} />
             </Row>
             <Row label="Smooth images" hint="Off shows the pixels as they are (pixel art)">
               <Toggle on={smoothing} onChange={(v) => setSettings({ smoothing: v })} title="Smooth images" />

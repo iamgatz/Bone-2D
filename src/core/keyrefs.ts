@@ -174,3 +174,19 @@ export function pruneEmpty(anim: Animation) {
     if (Object.keys(anim.deform[skin]).length === 0) delete anim.deform[skin];
   }
 }
+
+/**
+ * Where copied keys go when they are pasted: onto the bone (or slot) that is selected now, when the copy came from one other bone (slot).
+ * So the swing of one arm can be pasted onto the other. A copy from several bones, or a paste with the same bone selected, stays where it was.
+ * Several selected bones each get a copy of the keys.
+ */
+export function retargetClip<T extends { kind: KeyKind; target: Id }>(clip: readonly T[], selectedBones: readonly Id[], selectedSlot: Id | null): T[] {
+  let out = [...clip];
+  const bones = [...new Set(clip.filter((c) => c.kind === 'bone').map((c) => c.target))];
+  if (bones.length === 1 && selectedBones.length && !(selectedBones.length === 1 && selectedBones[0] === bones[0])) {
+    out = out.flatMap((c) => (c.kind !== 'bone' ? [c] : selectedBones.map((b) => ({ ...c, target: b }))));
+  }
+  const slots = [...new Set(clip.filter((c) => c.kind === 'slot').map((c) => c.target))];
+  if (slots.length === 1 && selectedSlot && selectedSlot !== slots[0]) out = out.map((c) => (c.kind === 'slot' ? { ...c, target: selectedSlot } : c));
+  return out;
+}

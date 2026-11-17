@@ -12,6 +12,12 @@ export interface Release {
 
 export const CHANGELOG: Release[] = [
   {
+    version: '0.21',
+    date: '2026-11-17',
+    en: ['Pasting keys: keys copied from one bone go onto the bone that is selected now, so the swing of one arm can be pasted onto the other (select the other bone and press Ctrl+V; several selected bones each get a copy). The same for the keys of one slot. With the same bone selected the keys stay where they were.', 'Settings: Bone size (50 to 200 percent) and Hints (switch the pop-up hints off).'],
+    ru: ['Вставка ключей: ключи, скопированные с одной кости, вставляются на кость, выбранную сейчас, так что взмах одной руки можно вставить на другую (выберите другую кость и нажмите Ctrl+V; каждая из нескольких выбранных костей получит копию). То же для ключей одного слота. Если выбрана та же кость, ключи остаются на месте.', 'Настройки: «Толщина костей» (от 50 до 200 процентов) и «Подсказки» (можно выключить всплывающие подсказки).'],
+  },
+  {
     version: '0.20',
     date: '2026-11-17',
     en: ['Sequences: a region or a mesh can show a different picture over time (smoke, fire, a blink drawn frame by frame). Number the pictures (flame01, flame02…), select the image and press Make a sequence in the Inspector: the numbered series is found and the frames are set. In Animate mode key the Mode (hold, once, loop, ping-pong and the backwards versions), the Frame and the Delay; the keys have their own Sequences rows in the dopesheet and move, copy and delete like any key. The Spine export (JSON and binary) and the import (JSON and binary) carry sequences, every frame goes into the atlas, and the tests compare the frame shown at every time with the official Spine 4.3 runtime. The Metrics window warns about missing frames.'],
