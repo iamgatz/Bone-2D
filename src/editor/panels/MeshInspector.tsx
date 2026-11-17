@@ -1,9 +1,9 @@
 import { useState } from 'react';
-import { ArrowLeftRight, Brush, FlipHorizontal2, Hexagon, Link2, RefreshCw, Scissors, Sparkles, Triangle, Unlink2, Waves } from 'lucide-react';
+import { ArrowLeftRight, Brush, ClipboardPaste, Copy, Lock, Unlock, FlipHorizontal2, Hexagon, Link2, RefreshCw, Scissors, Sparkles, Triangle, Unlink2, Waves } from 'lucide-react';
 import type { Id, MeshAttachment, Project } from '@/core/model';
 import { linkSource } from '@/core/links';
 import { linkMeshTo, setAttachmentProps, setLinkDeform, setTool, unlinkMesh } from '@/store/actions';
-import { autoWeightMesh, bindMeshToBones, convertToMesh, mirrorMeshWeights, pruneMeshWeights, regenerateMesh, retriangulateMesh, smoothMeshWeights, swapMeshWeights, unbindMeshFromBones } from '@/store/meshActions';
+import { autoWeightMesh, bindMeshToBones, convertToMesh, copyVertexWeights, pasteVertexWeights, mirrorMeshWeights, pruneMeshWeights, regenerateMesh, retriangulateMesh, smoothMeshWeights, swapMeshWeights, unbindMeshFromBones } from '@/store/meshActions';
 import { useProject } from '@/store/doc';
 import { uiStore, useUi } from '@/store/ui';
 import { Button, ColorSwatch, NumberField, SelectField, Toggle } from '../ui/controls';
@@ -195,6 +195,26 @@ export function MeshGroup({ slotId, att }: { slotId: Id; att: MeshAttachment }) 
                   </Button>
                 </Field>
               )}
+              <div className="hstack wrap mb">
+                <Button icon={Copy} onClick={() => copyVertexWeights(slotId, att.name)} title="Remember the weights of the selected vertices">
+                  Copy weights
+                </Button>
+                <Button icon={ClipboardPaste} onClick={() => pasteVertexWeights(slotId, att.name)} title="Give the remembered weights to the same number of selected vertices">
+                  Paste weights
+                </Button>
+              </div>
+              <Field label="Lock">
+                <div className="hstack wrap">
+                  {influencing.map((id) => {
+                    const on = brush.locked.includes(id);
+                    return (
+                      <Button key={id} small ghost={!on} primary={on} icon={on ? Lock : Unlock} title="A locked bone keeps its weights while you paint" onClick={() => uiStore.patch({ brush: { ...brush, locked: on ? brush.locked.filter((x) => x !== id) : [...brush.locked, id] } })}>
+                        {boneName(id)}
+                      </Button>
+                    );
+                  })}
+                </div>
+              </Field>
               <Field label="Bone">
                 <SelectField value={brush.bone ?? influencing[0]} options={influencing.map((id) => ({ value: id, label: boneName(id) }))} onChange={(v) => uiStore.patch({ brush: { ...brush, bone: v } })} />
               </Field>
@@ -203,6 +223,9 @@ export function MeshGroup({ slotId, att }: { slotId: Id; att: MeshAttachment }) 
               </Field>
               <Field label="Size">
                 <NumberField label="px" value={brush.size} step={1} precision={0} min={4} max={400} onChange={(v) => uiStore.patch({ brush: { ...brush, size: v } })} />
+              </Field>
+              <Field label="Feather">
+                <NumberField label="%" value={brush.feather} step={5} precision={0} min={0} max={100} onChange={(v) => uiStore.patch({ brush: { ...brush, feather: Math.max(0, Math.min(100, v)) } })} title="How much of the brush size fades out: 100% from the centre, 0% a hard edge" />
               </Field>
               <Field label="Strength">
                 <NumberField label="%" value={brush.strength * 100} step={1} precision={0} min={1} max={100} onChange={(v) => uiStore.patch({ brush: { ...brush, strength: v / 100 } })} />

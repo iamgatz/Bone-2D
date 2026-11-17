@@ -88,7 +88,7 @@ describe('review: deform keys follow mesh edits', () => {
     const mesh0 = M.getMesh(arm.id, 'arm')!;
     const before = deformLength(mesh0, hasBone);
     const sumBefore = doc().animations[0].deform[skinId][arm.id].arm[1].value.reduce((s, v) => s + Math.abs(v), 0);
-    uiStore.patch({ brush: { size: 800, strength: 1, mode: 'add', bone: bone('armLower').id } });
+    uiStore.patch({ brush: { size: 800, strength: 1, mode: 'add', bone: bone('armLower').id, feather: 100, locked: [] } });
     const { mats, slotMat } = M.setupMats();
     const w = meshWorldPositions(mesh0, slotMat(arm.id), mats);
     M.paintWeights(arm.id, 'arm', { x: w[0], y: w[1] }, bone('armLower').id);

@@ -64,6 +64,10 @@ export interface WeightBrush {
   strength: number;
   mode: 'add' | 'subtract' | 'smooth' | 'replace';
   bone: Id | null;
+  /** Percent of the size over which the brush fades to nothing (100 = from the centre, 0 = a hard edge). */
+  feather: number;
+  /** Bones whose weights the brush leaves alone. */
+  locked: Id[];
 }
 
 export interface UiState {
@@ -135,7 +139,7 @@ export const uiStore = createStore<UiState>({
   tlScroll: -0.05,
   selectedKeys: [],
   expanded: {},
-  brush: { size: 40, strength: 0.5, mode: 'add', bone: null },
+  brush: { size: 40, strength: 0.5, mode: 'add', bone: null, feather: 100, locked: [] },
   toast: null,
   panel: saved.panel ?? (typeof window !== 'undefined' && window.innerWidth < 1150 ? { left: 210, right: 240, bottom: 250 } : { left: 270, right: 300, bottom: 300 }),
   views: saved.views ?? DEFAULT_VIEWS,

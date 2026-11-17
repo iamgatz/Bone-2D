@@ -7,7 +7,7 @@ import type { BakeOptions } from '@/core/bake';
 import { cleanUpAnimation } from '@/core/cleanup';
 import { closeLoop } from '@/core/loops';
 import { linkedTo, makeLink } from '@/core/links';
-import { findAnimation, freshName, makeCurve, normalizeBoneOrder, pruneSequences, purgeAttachment, removeBones, removeSlots, rgbaToRgba2, setSlotDarkColor, snapTime, upsertKey, decompose } from '@/core/edit';
+import { findAnimation, freshName, makeCurve, normalizeBoneOrder, pruneSequences, purgeAttachment, removeBones, removeSlots, rgba2ToRgba, rgbaToRgba2, setSlotDarkColor, snapTime, upsertKey, decompose } from '@/core/edit';
 import type { BoneMats } from '@/core/mesh';
 import { moveKeys, removeKeys, resolveKeys, retargetClip } from '@/core/keyrefs';
 import { duplicateSkin, setSkinRequired, setSkinScope, toggleOverride } from '@/core/skins';
@@ -21,7 +21,7 @@ import { isPsd, layerCenter, readPsdFile } from '@/core/import/psd';
 import type { PsdLayer, PsdPixels } from '@/core/import/psd';
 import { fitRegion, planPsdSync } from '@/core/import/psdSync';
 import { cleanImageName, renameImage, sequenceFrameOwner, unusedImages } from '@/core/images';
-import type { Animation, Bone, Id, ImageRef, Inherit, PlaySettings, Project, RGB, RGBA, Slot } from '@/core/model';
+import type { Animation, Bone, Id, ImageRef, Inherit, Key, PlaySettings, Project, RGB, RGBA, Slot } from '@/core/model';
 import { getScene, getSetupSkeleton } from '@/editor/scene';
 import { assets } from './assets';
 import type { ImageAsset } from './assets';
@@ -1329,7 +1329,7 @@ export function pasteKeys(time: number): KeyRef[] {
       // colour keys follow the target slot: two-colour keys need a dark colour there, and a two-colour slot keeps its kind of keys
       if (c.kind === 'slot' && (c.prop === 'rgba' || c.prop === 'rgba2')) {
         const dark = !!d.skeleton.slots.find((s) => s.id === c.target)?.dark;
-        if (c.prop === 'rgba2' && !dark) c = { ...c, prop: 'rgba', key: { ...c.key, value: (c.key.value as number[]).slice(0, 4) } };
+        if (c.prop === 'rgba2' && !dark) c = { ...c, prop: 'rgba', key: rgba2ToRgba([c.key as unknown as Key])[0] as unknown as Record<string, unknown> }; // the curve loses its dark channels too
         else if (c.prop === 'rgba' && dark) continue;
       }
       const t = snapTime(time + c.dt, fps);

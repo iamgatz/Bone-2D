@@ -12,6 +12,12 @@ export interface Release {
 
 export const CHANGELOG: Release[] = [
   {
+    version: '0.32',
+    date: '2026-11-17',
+    en: ['Weights: Lock (a locked bone keeps its weights while you paint, the others share what is left), Feather on the brush (how much of its size fades out: 100% from the centre, 0% a hard edge), Copy weights and Paste weights between the same number of selected vertices.', 'Fixed: pasting two-colour (dark colour) keys onto a slot without a dark colour left the curve of the dark channels in the plain colour key; the document then needed repair. Found by the fuzz test.'],
+    ru: ['Веса: Замок (кость с замком сохраняет свои веса при рисовании, остальные делят то, что осталось), Растушёвка кисти (какая часть размера затухает: 100% — от центра, 0% — жёсткий край), Копировать и Вставить веса между одинаковым числом выбранных вершин.', 'Исправлено: вставка ключей двух цветов (с тёмным цветом) на слот без тёмного цвета оставляла в обычном ключе кривую тёмных каналов, и документ потом требовал ремонта. Нашёл фаззер.'],
+  },
+  {
     version: '0.31',
     date: '2026-11-17',
     en: ['Weights, closer to Spine: Auto, Smooth and Prune now work only on the selected vertices when some are selected (select them with the mesh tool, M; with none selected they work on the whole mesh). Prune has its own settings: the most bones a vertex may keep and the weight below which an influence is removed. New Swap: two bones exchange their weights on the selected vertices or the whole mesh, the vertices stay where they are. Each is one step in the history.'],
