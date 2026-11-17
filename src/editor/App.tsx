@@ -24,6 +24,10 @@ import { UpdatesDialog, hasUnseenUpdate } from './Updates';
 import { focusArea, setFocusArea } from './focus';
 import { HOTKEY_GROUPS, KEYS } from './hotkeys';
 import { HINTS, TOOLS, toolForKey } from './tools';
+import { AnimationsPanel } from './panels/AnimationsPanel';
+import { MetricsPanel } from './panels/MetricsPanel';
+import { LAYOUTS, VIEW_LIST, sameViews } from '@/store/layout';
+import { applyLayout, startLayoutPersist, toggleAllViews, toggleView } from '@/store/viewActions';
 
 function LangToggle() {
   const lang = useLang();
@@ -34,6 +38,7 @@ function TopBar() {
   const project = useProject();
   const mode = useUi((s) => s.mode);
   const view = useUi((s) => s.view);
+  const views = useUi((s) => s.views);
   const updatesOpen = useUi((s) => s.updatesOpen); // the dot goes out once the window has been opened
   const [, force] = useState(0);
   useEffect(() => {
@@ -67,6 +72,27 @@ function TopBar() {
             <MenuItem icon={FolderOpen} close={close} onClick={() => openSpineImport()}>Import Spine JSON (4.0–4.3)…</MenuItem>
             <div className="menu-sep" />
             <MenuItem icon={Sparkles} close={close} onClick={() => loadSample()}>Load demo rig (Bolt)</MenuItem>
+          </>
+        )}
+      </Menu>
+      <Menu label="Windows">
+        {(close) => (
+          <>
+            {VIEW_LIST.map((v) => (
+              <MenuItem key={v.id} close={close} checked={views[v.id]} onClick={() => toggleView(v.id)}>
+                {v.label}
+              </MenuItem>
+            ))}
+            <div className="menu-sep" />
+            {LAYOUTS.map((l) => (
+              <MenuItem key={l.id} close={close} checked={sameViews(views, l.views)} onClick={() => applyLayout(l.id)}>
+                {`Layout: ${l.label}`}
+              </MenuItem>
+            ))}
+            <div className="menu-sep" />
+            <MenuItem close={close} hotkey={KEYS.hideViews} onClick={() => toggleAllViews()}>
+              Hide / show all windows
+            </MenuItem>
           </>
         )}
       </Menu>
@@ -207,6 +233,7 @@ function Toast() {
 
 export function App() {
   const panel = useUi((s) => s.panel);
+  const views = useUi((s) => s.views);
   const exportOpen = useUi((s) => s.exportOpen);
   const helpOpen = useUi((s) => s.helpOpen);
   const updatesOpen = useUi((s) => s.updatesOpen);
@@ -216,6 +243,7 @@ export function App() {
   useEffect(() => {
     const stopPlayback = startPlaybackLoop();
     const stopAutosave = startAutosave();
+    const stopLayout = startLayoutPersist();
     const stopSanitize = docStore.subscribe(sanitizeSelection); // undo / redo can remove what is selected
     restoreAutosave().then((ok) => {
       if (!ok) setTimeout(() => viewportApi.frame(), 60);
@@ -273,6 +301,10 @@ export function App() {
       }
       switch (key) {
         case 'f': viewportApi.frame(); break;
+        case 'f9':
+          e.preventDefault();
+          toggleAllViews();
+          break;
         case 'enter':
           if (viewportApi.controller?.polygonTool.commit() || viewportApi.controller?.pathTool.commit()) e.preventDefault();
           break;
@@ -326,6 +358,7 @@ export function App() {
     return () => {
       stopPlayback();
       stopAutosave();
+      stopLayout();
       void stopSanitize();
       window.removeEventListener('keydown', onKey);
       window.removeEventListener('beforeunload', warn);
@@ -343,29 +376,45 @@ export function App() {
     uiStore.patch({ panel: { ...p, [key]: Math.min(max, Math.max(min, p[key] + sign * d)) } });
   };
 
+  const leftOn = views.tree || views.images || views.animations || views.metrics;
+
   return (
     <div className="app">
       <TopBar />
       <div className="main">
-        <aside className="left" style={{ width: panel.left }} onPointerDownCapture={() => setFocusArea('tree')}>
-          <TreePanel />
-          <AssetsPanel />
-        </aside>
-        <Splitter dir="v" onDrag={drag('left', 1, 200, 480)} />
+        {leftOn && (
+          <>
+            <aside className="left" style={{ width: panel.left }} onPointerDownCapture={() => setFocusArea('tree')}>
+              {views.tree && <TreePanel />}
+              {views.animations && <AnimationsPanel />}
+              {views.metrics && <MetricsPanel />}
+              {views.images && <AssetsPanel />}
+            </aside>
+            <Splitter dir="v" onDrag={drag('left', 1, 200, 480)} />
+          </>
+        )}
         <section className="center">
           <div className="viewport-wrap" onPointerDownCapture={() => setFocusArea('viewport')}>
             <Viewport />
             <ViewportHud />
           </div>
-          <Splitter dir="h" onDrag={drag('bottom', -1, 130, 620)} />
-          <div onPointerDownCapture={() => setFocusArea('timeline')}>
-            <Timeline />
-          </div>
+          {views.timeline && (
+            <>
+              <Splitter dir="h" onDrag={drag('bottom', -1, 130, 620)} />
+              <div onPointerDownCapture={() => setFocusArea('timeline')}>
+                <Timeline />
+              </div>
+            </>
+          )}
         </section>
-        <Splitter dir="v" onDrag={drag('right', -1, 230, 480)} />
-        <aside className="right" style={{ width: panel.right }} onPointerDownCapture={() => setFocusArea('viewport')}>
-          <InspectorPanel />
-        </aside>
+        {views.inspector && (
+          <>
+            <Splitter dir="v" onDrag={drag('right', -1, 230, 480)} />
+            <aside className="right" style={{ width: panel.right }} onPointerDownCapture={() => setFocusArea('viewport')}>
+              <InspectorPanel />
+            </aside>
+          </>
+        )}
       </div>
       {exportOpen && <ExportDialog />}
       {helpOpen && <HelpDialog />}

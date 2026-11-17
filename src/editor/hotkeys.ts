@@ -19,6 +19,7 @@ export const KEYS = {
   key: 'K',
   delete: 'Del',
   help: '?',
+  hideViews: 'F9',
 } as const;
 
 export interface HotkeyRow {
@@ -61,6 +62,7 @@ export const HOTKEY_GROUPS: HotkeyGroup[] = [
     title: 'View',
     rows: [
       { label: 'Frame skeleton', keys: [KEYS.frame] },
+      { label: 'Hide / show all windows', keys: [KEYS.hideViews] },
       { label: 'Pan viewport', keys: ['Mid drag', 'Right drag', 'Alt+drag'] },
       { label: 'Zoom', keys: ['Wheel'] },
       { label: 'Timeline zoom', keys: ['Ctrl+Wheel'] },
