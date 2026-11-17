@@ -836,4 +836,12 @@ export const RU: Record<string, string> = {
   'Ctrl': 'Ctrl',
   'to animate: move the time marker, pose the bones, keys are made for you.': 'чтобы анимировать: двигайте маркер времени, ставьте кости в позу, ключи создаются сами.',
   'iamgatz.github.io/Bone-2D': 'iamgatz.github.io/Bone-2D',
+  'History': 'История',
+  'Opened': 'Открыто',
+  'Command palette': 'Палитра команд',
+  'Command palette: find any command or tool by name': 'Палитра команд: найти любую команду или инструмент по названию',
+  'Type a command or a tool name…': 'Введите команду или название инструмента…',
+  'Nothing matches': 'Ничего не найдено',
+  'Command': 'Команда',
+  'Help': 'Справка',
 };

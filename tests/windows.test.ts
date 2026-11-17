@@ -57,3 +57,34 @@ describe('window layout', () => {
     expect(LAYOUTS[0].views).toEqual(DEFAULT_VIEWS);
   });
 });
+
+describe('history and the command palette', () => {
+  it('jumps to any point of the history and back', async () => {
+    const { DocStore } = await import('../src/store/doc');
+    const store = new DocStore();
+    for (const n of ['a', 'b', 'c']) store.update(n, (d) => void (d.name = n));
+    expect(store.history).toEqual({ past: ['a', 'b', 'c'], future: [] });
+    store.jumpTo(0);
+    expect(store.get().name).toBe('a');
+    expect(store.history).toEqual({ past: ['a'], future: ['b', 'c'] });
+    store.jumpTo(-1);
+    expect(store.get().name).toBe('untitled');
+    store.jumpTo(2);
+    expect(store.get().name).toBe('c');
+    expect(store.history.future).toEqual([]);
+  });
+
+  it('finds commands by every word typed, in either language', async () => {
+    const { filterCommands } = await import('../src/editor/commands');
+    const cmd = (title: string, group = 'Edit') => ({ id: title, title, group, run: () => {} });
+    const all = [cmd('Mirror bones'), cmd('Duplicate bones'), cmd('Reset pose'), cmd('Onion skin', 'View')];
+    const id = (s: string) => s;
+    expect(filterCommands(all, 'bones', id).map((c) => c.title)).toEqual(['Mirror bones', 'Duplicate bones']);
+    expect(filterCommands(all, 'dup bon', id).map((c) => c.title)).toEqual(['Duplicate bones']); // every word must be somewhere in the title or group
+    expect(filterCommands(all, 'dup', id).map((c) => c.title)).toEqual(['Duplicate bones']);
+    expect(filterCommands(all, 'view onion', id).map((c) => c.title)).toEqual(['Onion skin']);
+    expect(filterCommands(all, '', id)).toBe(all);
+    const ru = (s: string) => ({ 'Onion skin': 'Призраки кадров', View: 'Вид' })[s] ?? s;
+    expect(filterCommands(all, 'призр', ru).map((c) => c.title)).toEqual(['Onion skin']);
+  });
+});

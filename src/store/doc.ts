@@ -102,6 +102,17 @@ export class DocStore implements Store<Project> {
     return this.redoStack[this.redoStack.length - 1]?.label;
   }
 
+  /** The labels of what can be undone (oldest first) and redone (next first): the History window shows them. */
+  get history(): { past: string[]; future: string[] } {
+    return { past: this.undoStack.map((e) => e.label), future: [...this.redoStack].reverse().map((e) => e.label) };
+  }
+
+  /** Goes to the state after the index-th past entry (-1 = before the first one), or after the index-th step of the future (index >= past length). */
+  jumpTo(index: number) {
+    while (this.undoStack.length - 1 > index && this.canUndo) this.undo();
+    while (this.undoStack.length - 1 < index && this.canRedo) this.redo();
+  }
+
   undo() {
     this.gesture = null;
     const e = this.undoStack.pop();
