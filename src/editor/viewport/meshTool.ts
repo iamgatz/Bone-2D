@@ -1,4 +1,5 @@
 /** Viewport behaviour for the Mesh and Weights tools (vertex editing, deform keys, weight painting, heat map). */
+import { deformedVertices } from '@/core/deformMarks';
 import type { Id, MeshAttachment } from '@/core/model';
 import type { GLRenderer } from '@/render/gl';
 import { addMeshVertex, currentDeform, deleteMeshVertices, getMesh, moveMeshVertices, paintWeights, setDeformKey } from '@/store/meshActions';
@@ -272,13 +273,17 @@ export class MeshTool {
       return;
     }
     const sel = new Set(ui.selection.vertices);
+    // in Animate mode the vertices the current pose deforms stand out
+    const slot = scene.skeleton.slotById(am.slotId);
+    const shown = slot ? scene.skeleton.slotAttachment(slot) : null;
+    const moved = ui.mode === 'animate' && slot && shown && shown.kind === 'mesh' && slot.deform.length ? deformedVertices(shown, slot.deform) : null;
     for (let i = 0; i < geo.count; i++) {
       const [x, y] = P(i);
       const selected = sel.has(i);
       const hovered = i === this.hoverVertex;
       const hullV = i < am.mesh.hull;
       const r = selected || hovered ? 5 : hullV ? 4 : 3.6;
-      ctx.fillStyle = selected ? COLORS.accent : hovered ? token('--handle-hover') : hullV ? token('--accent-glow') : token('--text');
+      ctx.fillStyle = selected ? COLORS.accent : hovered ? token('--handle-hover') : moved?.[i] ? token('--vertex-deformed') : hullV ? token('--accent-glow') : token('--text');
       ctx.strokeStyle = token('--handle-outline');
       ctx.lineWidth = 1.3;
       ctx.beginPath();

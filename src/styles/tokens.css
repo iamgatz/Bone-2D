@@ -63,6 +63,7 @@
   --gizmo-scale: #78aaff;
   --gizmo-shear: #c98bff;
   --handle-hover: #ffffff; /* a vertex or a path node under the pointer */
+  --vertex-deformed: #ff9f43; /* a mesh vertex the current pose has moved (Deform tool) */
   --handle-tangent: #ffd479; /* the handles of a path node */
   --handle-outline: rgba(8, 10, 14, 0.95);
   --curve-1: #ff6b6b; /* the channels of the graph editor: x / r, y / g, z / b, w / a */
