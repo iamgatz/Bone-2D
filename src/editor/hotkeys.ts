@@ -22,6 +22,7 @@ export const KEYS = {
   hideViews: 'F9',
   settings: 'F12',
   duplicate: 'Ctrl+D',
+  palette: 'Ctrl+K',
   mirror: 'Ctrl+Shift+D',
 } as const;
 
@@ -82,6 +83,7 @@ export const HOTKEY_GROUPS: HotkeyGroup[] = [
       { label: 'Save', keys: [KEYS.save] },
       { label: 'Open', keys: [KEYS.open] },
       { label: 'Export', keys: [KEYS.export] },
+      { label: 'Command palette', keys: [KEYS.palette] },
       { label: 'Shortcuts', keys: [KEYS.help] },
       { label: 'Settings', keys: [KEYS.settings] },
     ],

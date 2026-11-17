@@ -94,6 +94,7 @@ export interface UiState {
   feedbackOpen: boolean;
   settingsOpen: boolean;
   welcomeOpen: boolean;
+  paletteOpen: boolean;
 }
 
 export const emptySelection: Selection = { bones: [], slot: null, attachment: null, constraint: null, vertices: [] };
@@ -130,6 +131,7 @@ export const uiStore = createStore<UiState>({
   feedbackOpen: false,
   settingsOpen: false,
   welcomeOpen: false,
+  paletteOpen: false,
 });
 
 export function useUi<S>(selector: (s: UiState) => S, equals?: (a: S, b: S) => boolean): S {

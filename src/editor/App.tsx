@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Bone, BoxSelect, Download, Eye, FilePlus2, FolderOpen, Grid3x3, Bell, Home, Layers, ClipboardCopy, ClipboardPaste, Copy, FlipHorizontal2, RotateCcw, SlidersHorizontal, Image as ImageIcon, CircleHelp, MessageSquareText, Link2, Maximize, Play, Redo2, Save, Sparkles, Type, Undo2 } from 'lucide-react';
+import { Bone, BoxSelect, Download, Eye, FilePlus2, FolderOpen, Grid3x3, Bell, Search, Home, Layers, ClipboardCopy, ClipboardPaste, Copy, FlipHorizontal2, RotateCcw, SlidersHorizontal, Image as ImageIcon, CircleHelp, MessageSquareText, Link2, Maximize, Play, Redo2, Save, Sparkles, Type, Undo2 } from 'lucide-react';
 import { decodeKey } from '@/core/keyrefs';
 import { clearSelection, copyKeys, deleteBones, deleteKeys, keySelectedBones, pasteKeys, sanitizeSelection, setMode, setSelection, setTime, setTool, togglePlay } from '@/store/actions';
 import { docStore, useProject } from '@/store/doc';
@@ -26,11 +26,13 @@ import { hotkeyGroups, KEYS } from './hotkeys';
 import { HINTS, TOOLS, hotkeyOf, toolForKey } from './tools';
 import { SettingsDialog } from './Settings';
 import { WelcomeDialog } from './Welcome';
+import { Palette } from './Palette';
 import { settingsStore } from '@/store/settings';
 import { copyPose, duplicateSelection, pastePose, resetPose } from '@/store/poseActions';
 import { useSettings } from '@/store/settings';
 import { AnimationsPanel } from './panels/AnimationsPanel';
 import { MetricsPanel } from './panels/MetricsPanel';
+import { HistoryPanel } from './panels/HistoryPanel';
 import { LAYOUTS, VIEW_LIST, sameViews } from '@/store/layout';
 import { applyLayout, startLayoutPersist, toggleAllViews, toggleView } from '@/store/viewActions';
 
@@ -161,6 +163,7 @@ function TopBar() {
       <IconButton icon={Redo2} title="Redo" hotkey={KEYS.redo} disabled={!docStore.canRedo} onClick={() => docStore.redo()} />
       <span className="sep" />
       <LangToggle />
+      <IconButton icon={Search} title="Command palette: find any command or tool by name" hotkey={KEYS.palette} onClick={() => uiStore.patch({ paletteOpen: true })} />
       <span className="badge-wrap">
         <IconButton icon={Bell} title="Updates: what is new and the project activity" onClick={() => uiStore.patch({ updatesOpen: true })} />
         {hasUnseenUpdate() && !updatesOpen && <span className="notify-dot" role="status" aria-label="New updates" />}
@@ -281,6 +284,7 @@ export function App() {
   const feedbackOpen = useUi((s) => s.feedbackOpen);
   const settingsOpen = useUi((s) => s.settingsOpen);
   const welcomeOpen = useUi((s) => s.welcomeOpen);
+  const paletteOpen = useUi((s) => s.paletteOpen);
   useLang(); // the whole tree re-renders when the language changes: strings are translated while rendering
 
   useEffect(() => {
@@ -334,6 +338,9 @@ export function App() {
           e.preventDefault();
           const refs = pasteKeys(ui.time);
           if (refs.length) uiStore.patch({ selectedKeys: refs.map((r) => JSON.stringify([r.kind, r.target, r.prop, Math.round(r.time * 10000) / 10000])) });
+        } else if (key === 'k') {
+          e.preventDefault();
+          uiStore.patch({ paletteOpen: !ui.paletteOpen });
         } else if (key === 'd') {
           e.preventDefault();
           duplicateSelection(e.shiftKey);
@@ -429,7 +436,7 @@ export function App() {
     uiStore.patch({ panel: { ...p, [key]: Math.min(max, Math.max(min, p[key] + sign * d)) } });
   };
 
-  const leftOn = views.tree || views.images || views.animations || views.metrics;
+  const leftOn = views.tree || views.images || views.animations || views.metrics || views.history;
 
   return (
     <div className="app">
@@ -441,6 +448,7 @@ export function App() {
               {views.tree && <TreePanel />}
               {views.animations && <AnimationsPanel />}
               {views.metrics && <MetricsPanel />}
+              {views.history && <HistoryPanel />}
               {views.images && <AssetsPanel />}
             </aside>
             <Splitter dir="v" onDrag={drag('left', 1, 200, 480)} />
@@ -475,6 +483,7 @@ export function App() {
       {feedbackOpen && <FeedbackDialog />}
       {settingsOpen && <SettingsDialog />}
       {welcomeOpen && <WelcomeDialog />}
+      {paletteOpen && <Palette />}
       <Toast />
       <TooltipHost />
     </div>
