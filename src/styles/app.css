@@ -1537,3 +1537,47 @@ a.btn {
 .section-label.mt {
   margin-top: 8px;
 }
+
+/* ---------------------------------------------------------------- export: animation tab */
+.export-anim {
+  margin-top: 12px;
+}
+.export-preview {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: stretch;
+}
+.preview-frame {
+  display: grid;
+  place-items: center;
+  max-height: 260px;
+  min-height: 80px;
+  overflow: hidden;
+  border-radius: var(--radius);
+  background: var(--sunken);
+}
+.preview-frame canvas {
+  max-width: 100%;
+  max-height: 260px;
+  object-fit: contain;
+}
+.preview-frame.checker {
+  background-color: var(--sunken-2);
+  background-image: linear-gradient(45deg, var(--panel-3) 25%, transparent 25%, transparent 75%, var(--panel-3) 75%), linear-gradient(45deg, var(--panel-3) 25%, transparent 25%, transparent 75%, var(--panel-3) 75%);
+  background-size: 16px 16px;
+  background-position: 0 0, 8px 8px;
+}
+.export-anim input[type='range'] {
+  width: 100%;
+  accent-color: var(--accent);
+}
+.export-anim progress {
+  flex: 1;
+  height: 8px;
+  accent-color: var(--accent);
+}
+.hstack.end {
+  justify-content: flex-end;
+  margin-top: 12px;
+}

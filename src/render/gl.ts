@@ -90,8 +90,9 @@ export class GLRenderer {
   private clipping = false;
   source: TextureSource | null = null;
 
-  constructor(canvas: HTMLCanvasElement) {
-    const gl = canvas.getContext('webgl2', { alpha: false, antialias: true, stencil: true, preserveDrawingBuffer: false });
+  /** `alpha` keeps transparency in the canvas (renders for files); `preserveDrawingBuffer` lets the picture be read after the frame is drawn. */
+  constructor(canvas: HTMLCanvasElement, opts: { alpha?: boolean; preserveDrawingBuffer?: boolean } = {}) {
+    const gl = canvas.getContext('webgl2', { alpha: opts.alpha ?? false, antialias: true, stencil: true, preserveDrawingBuffer: opts.preserveDrawingBuffer ?? false });
     if (!gl) throw new Error('WebGL2 is not available in this browser');
     this.gl = gl;
     const vs = compile(gl, gl.VERTEX_SHADER, VS);
