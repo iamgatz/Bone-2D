@@ -12,6 +12,12 @@ export interface Release {
 
 export const CHANGELOG: Release[] = [
   {
+    version: '0.26',
+    date: '2026-11-17',
+    en: ['Photoshop import: drop a .psd file into the window (or the Images window) and every visible layer becomes a picture and a slot with a region, bottom layer first, so the layer stack is the draw order. Groups become folders ("arm/upper"), layer opacity becomes the slot alpha, multiply / screen / linear dodge become Spine blend modes, hidden layers are skipped. The origin is the middle of the bottom edge of the document. One Undo removes the whole import.'],
+    ru: ['Импорт из Photoshop: перетащите файл .psd в окно (или в окно «Картинки») — каждый видимый слой станет картинкой и слотом с регионом, нижний слой первым, так что стопка слоёв — это порядок отрисовки. Группы становятся папками («arm/upper»), прозрачность слоя — альфой слота, режимы multiply / screen / linear dodge — режимами наложения Spine, скрытые слои пропускаются. Начало координат — середина нижней кромки документа. Один Undo убирает весь импорт.'],
+  },
+  {
     version: '0.25',
     date: '2026-11-17',
     en: ['Every animation now has its own playback settings: Loop, Ping-pong and the play range (Playback window and the loop button of the timeline). They are saved with the project and not exported, so a walk can loop while a jump plays once, and the range you set on one animation no longer leaks into the others.'],
