@@ -32,7 +32,7 @@ export function WelcomeDialog() {
     <Dialog title="Welcome to Bone 2D" width={680} onClose={close}>
       <p className="hint-text flush mb">A 2D skeletal animation editor that runs in the browser and exports Spine 4.3 files. Nothing to install: everything stays on your computer.</p>
       <div className="choices">
-        <Choice primary icon={Sparkles} title="Try the demo rig" text="A finished character: IK legs, a walk cycle, a skin" onClick={go(loadSample)} />
+        <Choice primary icon={Sparkles} title="Try the demo rig" text="A fox with IK legs, a physics tail, two skins and four animations" onClick={go(loadSample)} />
         <Choice icon={FilePlus2} title="New project" text="An empty skeleton: drop PNGs, draw bones" onClick={go(() => newProject())} />
         <Choice icon={FolderOpen} title="Open a project" text="A .bone2d file from your computer" onClick={go(openProjectFile)} />
         <Choice icon={FolderOpen} title="Import from Spine" text="A Spine .json (4.0 – 4.3) with its atlas and images" onClick={go(openSpineImport)} />

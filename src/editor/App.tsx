@@ -78,7 +78,7 @@ function TopBar() {
             <MenuItem icon={Download} close={close} hotkey={KEYS.export} onClick={() => uiStore.patch({ exportOpen: true })}>Export for Spine 4.3…</MenuItem>
             <MenuItem icon={FolderOpen} close={close} onClick={() => openSpineImport()}>Import Spine JSON (4.0–4.3)…</MenuItem>
             <div className="menu-sep" />
-            <MenuItem icon={Sparkles} close={close} onClick={() => loadSample()}>Load demo rig (Bolt)</MenuItem>
+            <MenuItem icon={Sparkles} close={close} onClick={() => loadSample()}>Load demo rig (Kit)</MenuItem>
             <MenuItem icon={Home} close={close} onClick={() => uiStore.patch({ welcomeOpen: true })}>Welcome screen</MenuItem>
           </>
         )}
