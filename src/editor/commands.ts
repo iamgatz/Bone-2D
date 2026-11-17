@@ -3,13 +3,16 @@
  * The titles are English strings like the rest of the interface and get translated where they are shown.
  */
 import { closeCurrentLoop, keyEditedBones, keySelectedBones, selectAnimation, setMode, setTool, togglePlay } from '@/store/actions';
+import { setAxesSplit } from '@/store/axisActions';
+import { decodeKey } from '@/core/keyrefs';
 import { docStore } from '@/store/doc';
+import { openKeyDialog } from '@/store/keyDialog';
 import { LAYOUTS, VIEW_LIST } from '@/store/layout';
 import { startSetParent } from '@/store/parentActions';
 import { copyPose, duplicateSelection, pastePose, resetPose } from '@/store/poseActions';
 import { newProject, openProjectFile, saveProjectFile } from '@/store/project';
 import { loadSample } from '@/store/sample';
-import { uiStore } from '@/store/ui';
+import { toast, uiStore } from '@/store/ui';
 import { clearGuides } from '@/store/guideActions';
 import { isolateSelection, showAll } from '@/store/visibilityActions';
 import { applyLayout, toggleAllViews, toggleView } from '@/store/viewActions';
@@ -28,7 +31,14 @@ export interface Command {
   run: () => void;
 }
 
-const open = (key: 'exportOpen' | 'helpOpen' | 'updatesOpen' | 'feedbackOpen' | 'settingsOpen' | 'welcomeOpen') => () => uiStore.patch({ [key]: true });
+/** The key dialog for the first selected key of the timeline. */
+function editSelectedKey() {
+  const selected = uiStore.get().selectedKeys;
+  if (selected.length) openKeyDialog(decodeKey(selected[0]));
+  else toast('Select a key in the timeline first');
+}
+
+const open = (key:'exportOpen' | 'helpOpen' | 'updatesOpen' | 'feedbackOpen' | 'settingsOpen' | 'welcomeOpen') => () => uiStore.patch({ [key]: true });
 
 export function buildCommands(): Command[] {
   const doc = docStore.get().skeleton;
@@ -55,6 +65,13 @@ export function buildCommands(): Command[] {
     { id: 'mode.toggle', group: 'Animation', title: 'Setup ⇄ Animate', keys: KEYS.mode, run: () => setMode(uiStore.get().mode === 'setup' ? 'animate' : 'setup') },
     { id: 'anim.keyedited', group: 'Animation', title: 'Key edited channels', keys: KEYS.key, run: () => keyEditedBones() },
     { id: 'anim.keyshown', group: 'Animation', title: 'Key all channels of the selected bones', keys: KEYS.keyShown, run: () => keySelectedBones() },
+    { id: 'anim.editkey', group: 'Animation', title: 'Edit the selected key…', run: () => editSelectedKey() },
+    { id: 'anim.split.translate', group: 'Animation', title: 'Split position keys of the selected bones into X / Y', run: () => setAxesSplit(uiStore.get().selection.bones, 'translate', true) },
+    { id: 'anim.merge.translate', group: 'Animation', title: 'Merge position X / Y keys of the selected bones', run: () => setAxesSplit(uiStore.get().selection.bones, 'translate', false) },
+    { id: 'anim.split.scale', group: 'Animation', title: 'Split scale keys of the selected bones into X / Y', run: () => setAxesSplit(uiStore.get().selection.bones, 'scale', true) },
+    { id: 'anim.merge.scale', group: 'Animation', title: 'Merge scale X / Y keys of the selected bones', run: () => setAxesSplit(uiStore.get().selection.bones, 'scale', false) },
+    { id: 'anim.split.shear', group: 'Animation', title: 'Split shear keys of the selected bones into X / Y', run: () => setAxesSplit(uiStore.get().selection.bones, 'shear', true) },
+    { id: 'anim.merge.shear', group: 'Animation', title: 'Merge shear X / Y keys of the selected bones', run: () => setAxesSplit(uiStore.get().selection.bones, 'shear', false) },
     { id: 'anim.play', group: 'Animation', title: 'Play / pause', keys: KEYS.play, run: () => togglePlay() },
     { id: 'view.frame', group: 'View', title: 'Frame skeleton', keys: KEYS.frame, run: () => viewportApi.frame() },
     { id: 'view.frameselection', group: 'View', title: 'Frame the selection', keys: KEYS.frameSelection, run: () => viewportApi.frameSelection() },

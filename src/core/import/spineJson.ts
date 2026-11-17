@@ -455,19 +455,9 @@ export function importSpineJson(input: unknown, name = 'imported'): SpineImportR
       if (t.translate) tl.translate = timeline(t.translate, 2, pair(0));
       if (t.scale) tl.scale = timeline(t.scale, 2, pair(1));
       if (t.shear) tl.shear = timeline(t.shear, 2, pair(0));
-      for (const [axis, group, ch, def] of [['translatex', 'translate', 0, 0], ['translatey', 'translate', 1, 0], ['scalex', 'scale', 0, 1], ['scaley', 'scale', 1, 1], ['shearx', 'shear', 0, 0], ['sheary', 'shear', 1, 0]] as const) {
-        if (!t[axis]) continue;
-        if ((tl as Record<string, Timeline | undefined>)[group]) {
-          warn(`animation "${an}": separate ${axis} timeline next to a combined ${group} timeline was ignored`);
-          continue;
-        }
-        warn(`animation "${an}": the separate ${axis} timeline was merged into a ${group} timeline`);
-        const own = timeline(t[axis], 1, single('value', def));
-        (tl as Record<string, Timeline>)[group] = own.map((k): Key => {
-          const value = ch === 0 ? [k.value[0], def] : [def, k.value[0]];
-          const curve = Array.isArray(k.curve) ? (ch === 0 ? [...k.curve, 1 / 3, 1 / 3, 2 / 3, 2 / 3] : [1 / 3, 1 / 3, 2 / 3, 2 / 3, ...k.curve]) : k.curve;
-          return curve === undefined ? { time: k.time, value } : { time: k.time, value, curve };
-        });
+      // the split axes keep their own key times and curves
+      for (const [axis, def] of [['translatex', 0], ['translatey', 0], ['scalex', 1], ['scaley', 1], ['shearx', 0], ['sheary', 0]] as const) {
+        if (t[axis]) tl[axis] = timeline(t[axis], 1, single('value', def));
       }
       if (t.inherit) warn(`animation "${an}": inherit timelines are not supported and were skipped`);
       if (!Object.keys(tl).length) delete a.bones[bid];

@@ -29,7 +29,7 @@ import type {
   TransformProp,
 } from './model';
 import { hasLinkedMeshes, linkSource } from './links';
-import { polygonVertexCount } from './model';
+import { BONE_PROPS, polygonVertexCount } from './model';
 import { DEG2RAD, EPS, EPS2, INV_PI2, RAD2DEG, SPINE_PI, atan2Deg, signum } from './math';
 import { computeWorldPositions, newPathScratch, pathCurveLengths, setSize } from './path';
 
@@ -494,7 +494,7 @@ export function compileSkeleton(doc: SkeletonDoc): SkeletonData {
         for (const id of Object.keys(animation.bones)) {
           const bi = boneIndex.get(id);
           const tl = animation.bones[id];
-          if (bi !== undefined && ((tl.rotate?.length ?? 0) || (tl.translate?.length ?? 0) || (tl.scale?.length ?? 0) || (tl.shear?.length ?? 0))) animatedBones.push(bi);
+          if (bi !== undefined && BONE_PROPS.some((p) => tl[p]?.length)) animatedBones.push(bi);
         }
       }
       constraintIndex.set(c.id, constraints.length);

@@ -455,8 +455,14 @@ function exportAnimation(doc: SkeletonDoc, a: Animation, n: Names): Json {
     };
     put('rotate', tl.rotate, ['value'], 1);
     put('translate', tl.translate, ['x', 'y'], 2);
+    put('translatex', tl.translatex, ['value'], 1);
+    put('translatey', tl.translatey, ['value'], 1);
     put('scale', tl.scale, ['x', 'y'], 2);
+    put('scalex', tl.scalex, ['value'], 1);
+    put('scaley', tl.scaley, ['value'], 1);
     put('shear', tl.shear, ['x', 'y'], 2);
+    put('shearx', tl.shearx, ['value'], 1);
+    put('sheary', tl.sheary, ['value'], 1);
     if (Object.keys(o).length) bones[name] = o;
   }
   if (Object.keys(bones).length) out.bones = bones;

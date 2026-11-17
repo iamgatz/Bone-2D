@@ -18,6 +18,7 @@ import { Button, Dialog, IconButton, Menu, MenuItem, Splitter } from './ui/contr
 import { Segmented } from './ui/Segmented';
 import { TooltipHost } from './ui/Tooltip';
 import { FloatingPanels } from './panels/FloatingPanels';
+import { KeyDialogHost } from './timeline/KeyDialog';
 import { FLOAT_LIST, toggleFloat, useFloats } from '@/store/floats';
 import { Viewport, viewportApi } from './viewport/Viewport';
 import { ExportDialog } from './ExportDialog';
@@ -494,6 +495,7 @@ export function App() {
       {welcomeOpen && <WelcomeDialog />}
       {paletteOpen && <Palette />}
       <FloatingPanels />
+      <KeyDialogHost />
       <Toast />
       <TooltipHost />
     </div>

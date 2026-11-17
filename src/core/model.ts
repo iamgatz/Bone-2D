@@ -495,10 +495,35 @@ export interface BoneTimelines {
   rotate?: Timeline;
   /** value = [x, y] relative to setup */
   translate?: Timeline;
+  /** value = [x] relative to setup: the X of a split translate (Spine's `translatex`; its own key times and curves) */
+  translatex?: Timeline;
+  translatey?: Timeline;
   /** value = [x, y] multiplier of setup scale */
   scale?: Timeline;
+  /** value = [x] multiplier of the setup scale (a split scale) */
+  scalex?: Timeline;
+  scaley?: Timeline;
   /** value = [x, y] degrees relative to setup */
   shear?: Timeline;
+  /** value = [x] degrees relative to setup (a split shear) */
+  shearx?: Timeline;
+  sheary?: Timeline;
+}
+
+/** Every timeline name a bone can carry. */
+export type BoneProp = keyof BoneTimelines;
+export const BONE_PROPS: BoneProp[] = ['rotate', 'translate', 'translatex', 'translatey', 'scale', 'scalex', 'scaley', 'shear', 'shearx', 'sheary'];
+/** The three channels that can be keyed per axis, and the two timelines each splits into. */
+export type AxisGroup = 'translate' | 'scale' | 'shear';
+export const AXIS_GROUPS: Record<AxisGroup, [BoneProp, BoneProp]> = {
+  translate: ['translatex', 'translatey'],
+  scale: ['scalex', 'scaley'],
+  shear: ['shearx', 'sheary'],
+};
+/** The group a timeline belongs to (a combined one or one of its axes), or null for rotate. */
+export function axisGroupOf(prop: string): AxisGroup | null {
+  for (const g of Object.keys(AXIS_GROUPS) as AxisGroup[]) if (g === prop || AXIS_GROUPS[g].includes(prop as BoneProp)) return g;
+  return null;
 }
 
 export interface SlotTimelines {

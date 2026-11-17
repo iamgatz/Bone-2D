@@ -1,4 +1,5 @@
 /** Motion trails in the viewport: where the selected bones travel during the current animation, with the keys marked on the path. */
+import { BONE_PROPS } from '@/core/model';
 import { sampleTrails, trailAt } from '@/core/trails';
 import type { Trail } from '@/core/trails';
 import { docStore } from '@/store/doc';
@@ -29,7 +30,7 @@ function keyTimes(o: OverlayInput, boneId: string): number[] {
   const tl = o.scene.animation?.bones[boneId];
   if (!tl) return [];
   const times = new Set<number>();
-  for (const keys of [tl.rotate, tl.translate, tl.scale, tl.shear]) for (const k of keys ?? []) times.add(Math.round(k.time * 1e5) / 1e5);
+  for (const p of BONE_PROPS) for (const k of tl[p] ?? []) times.add(Math.round(k.time * 1e5) / 1e5);
   return [...times].sort((a, b) => a - b);
 }
 

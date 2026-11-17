@@ -2,7 +2,7 @@
 import { KEY_EPS } from '@/core/edit';
 import type { KeyRef } from '@/core/keyrefs';
 import { deformProp } from '@/core/keyrefs';
-import { PHYSICS_PARAMS } from '@/core/model';
+import { BONE_PROPS, PHYSICS_PARAMS } from '@/core/model';
 import type { Animation, Id, SkeletonDoc } from '@/core/model';
 
 export interface RowKeyInfo {
@@ -30,8 +30,14 @@ export interface Row {
 const PROP_LABEL: Record<string, string> = {
   rotate: 'Rotate',
   translate: 'Translate',
+  translatex: 'Translate X',
+  translatey: 'Translate Y',
   scale: 'Scale',
+  scalex: 'Scale X',
+  scaley: 'Scale Y',
   shear: 'Shear',
+  shearx: 'Shear X',
+  sheary: 'Shear Y',
   attachment: 'Attachment',
   rgba: 'Color',
   rgba2: 'Color',
@@ -73,7 +79,7 @@ export function buildRows(doc: SkeletonDoc, anim: Animation | null, selectedBone
     const tl = anim.bones[bone.id];
     const selected = selectedBones.includes(bone.id);
     if (!tl && !selected) continue;
-    const props = (['rotate', 'translate', 'scale', 'shear'] as const).filter((p) => tl?.[p]?.length).map((p) => ({ prop: p, kind: 'bone' as const, target: bone.id, keys: tl![p]! }));
+    const props = BONE_PROPS.filter((p) => tl?.[p]?.length).map((p) => ({ prop: p, kind: 'bone' as const, target: bone.id, keys: tl![p]! }));
     const id = `bone:${bone.id}`;
     const open = isOpen(id, selected);
     const keys: RowKeyInfo[] = [];
