@@ -11,7 +11,7 @@ export const RU: Record<string, string> = {
   'Save': 'Сохранить',
   'Export for Spine 4.3…': 'Экспорт для Spine 4.3…',
   'Import Spine JSON (4.0–4.3)…': 'Импорт Spine JSON (4.0–4.3)…',
-  'Load demo rig (Bolt)': 'Загрузить демо-риг (Bolt)',
+  'Load demo rig (Kit)': 'Загрузить демо-риг (Kit)',
   'File': 'Файл',
   'View': 'Вид',
   'Grid': 'Сетка',
@@ -415,7 +415,7 @@ export const RU: Record<string, string> = {
   'Imported "{}" — {#} notes (see the console)': 'Импортировано «{1}» — заметок: {2} (см. консоль)',
   'Imported "{}"': 'Импортировано «{}»',
   'Could not import: {}': 'Не удалось импортировать: {}',
-  'Loaded the "Bolt" demo rig — switch to Animate and press Space': 'Загружен демо-риг «Bolt» — перейди в «Анимация» и нажми пробел',
+  'Loaded the "Kit" demo rig — switch to Animate and press Space': 'Загружен демо-риг «Kit» — перейди в «Анимация» и нажми пробел',
 
   // ---------------------------------------------------------------- undo / redo labels
   'Add image': 'Добавить картинку',
@@ -820,7 +820,7 @@ export const RU: Record<string, string> = {
   'Shown when the editor starts with an empty project': 'Показывается, когда редактор запускается с пустым проектом',
   'A 2D skeletal animation editor that runs in the browser and exports Spine 4.3 files. Nothing to install: everything stays on your computer.': 'Редактор 2D-скелетной анимации, работает в браузере и экспортирует файлы Spine 4.3. Ничего ставить не нужно: всё остаётся на вашем компьютере.',
   'Try the demo rig': 'Попробовать демо-риг',
-  'A finished character: IK legs, a walk cycle, a skin': 'Готовый персонаж: IK-ноги, цикл ходьбы, скин',
+  'A fox with IK legs, a physics tail, two skins and four animations': 'Лиса с IK-ногами, физичным хвостом, двумя скинами и четырьмя анимациями',
   'An empty skeleton: drop PNGs, draw bones': 'Пустой скелет: бросьте PNG, рисуйте кости',
   'Open a project': 'Открыть проект',
   'A .bone2d file from your computer': 'Файл .bone2d с вашего компьютера',
