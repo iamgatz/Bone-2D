@@ -116,7 +116,47 @@ export function repairProject(project: Project): string[] {
     }
     return true;
   });
+  repairOthers(project, note);
   return messages;
+}
+
+/** The other skeletons of the project: each one is repaired like the edited one, and the table of them is kept consistent. */
+function repairOthers(project: Project, note: Note) {
+  if (project.others === undefined && project.activeAt === undefined) return;
+  if (!Array.isArray(project.others)) {
+    project.others = [];
+    note('the list of other skeletons was repaired');
+  }
+  const kept = project.others.filter((o) => o && typeof o === 'object' && Array.isArray((o as SkeletonDoc).bones));
+  if (kept.length !== project.others.length) note('skeletons that could not be read were dropped');
+  project.others = kept;
+  const at = project.activeAt;
+  if (!Number.isInteger(at) || at! < 0 || at! > kept.length) {
+    if (at !== undefined) note('the position of the edited skeleton was repaired');
+    project.activeAt = 0;
+  }
+  const seen = new Set<string>([isString(project.skeleton.name) ? project.skeleton.name : '']);
+  for (const other of kept) {
+    // the same checks as for the edited one, on a project that has this skeleton and its own pose library and mix table
+    const sub: Project = { format: 'bone2d', version: 1, name: project.name, skeleton: other, images: [], poses: other.aside?.poses, mixes: other.aside?.mixes };
+    for (const m of repairProject(sub)) note(`skeleton "${other.name}": ${m}`);
+    const aside: NonNullable<SkeletonDoc['aside']> = {};
+    if (sub.poses?.length) aside.poses = sub.poses;
+    if (sub.mixes) aside.mixes = sub.mixes;
+    if (aside.poses || aside.mixes) other.aside = aside;
+    else delete other.aside;
+    let name = isString(other.name) && other.name.trim() ? other.name : 'skeleton';
+    if (seen.has(name)) name = uniqueName(name, seen);
+    if (name !== other.name) {
+      other.name = name;
+      note('a skeleton name was made unique');
+    }
+    seen.add(name);
+  }
+  if (!kept.length) {
+    delete project.others;
+    delete project.activeAt;
+  }
 }
 
 // ------------------------------------------------------------------ helpers

@@ -7,6 +7,8 @@
  * copy equal to the source, and what turns a link whose source is gone into an ordinary mesh. It runs after every edit of the
  * document, so the copy is never seen out of date.
  */
+import { dropDeformTimeline } from './edit';
+import { remapDeformValues } from './mesh';
 import type { Id, MeshAttachment, MeshLink, SkeletonDoc, Skin } from './model';
 
 export interface LinkSource {
@@ -56,6 +58,24 @@ function copyShape(to: MeshAttachment, from: MeshAttachment): boolean {
   return changed;
 }
 
+/** The deform keys a linked mesh has of its own, made to fit its shape after the shape of its source changed (dropped when they cannot be carried over). */
+function keepOwnDeform(doc: SkeletonDoc, skin: Skin, slotId: Id, name: string, before: MeshAttachment, after: MeshAttachment) {
+  const bones = new Set(doc.bones.map((b) => b.id));
+  const has = (id: Id) => bones.has(id);
+  for (const a of doc.animations) {
+    const keys = a.deform[skin.id]?.[slotId]?.[name];
+    if (!keys) continue;
+    const next: number[][] = [];
+    for (const k of keys) {
+      const v = remapDeformValues(before, after, null, has, k.value);
+      if (!v) break;
+      next.push(v);
+    }
+    if (next.length !== keys.length) dropDeformTimeline(a, skin.id, slotId, name);
+    else keys.forEach((k, i) => void (k.value = next[i]));
+  }
+}
+
 /**
  * Brings every linked mesh in line with its source: a link whose source is gone (or is not a plain mesh) is dropped and the mesh
  * stays as it is, and the link of a mesh in the default skin is written the one way (`skin: null`). Returns the number of changes.
@@ -77,7 +97,11 @@ export function syncLinkedMeshes(doc: SkeletonDoc): number {
         }
         if (att.link.skin === defaultId) att.link.skin = null;
         if (att.link.slot === slotId) att.link.slot = null;
-        if (copyShape(att, source.mesh)) changes++;
+        const old = att.link.deform ? null : { ...att }; // a linked mesh with deform keys of its own: they have to follow its new shape
+        if (copyShape(att, source.mesh)) {
+          changes++;
+          if (old) keepOwnDeform(doc, skin, slotId, name, old, att);
+        }
       }
     }
   }

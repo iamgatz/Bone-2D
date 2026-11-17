@@ -2,10 +2,11 @@
 import { jsonToBinary } from '@/core/export/spineBinary';
 import { scaleSpineJson } from '@/core/export/scale';
 import { exportSpineJson } from '@/core/export/spineJson';
-import { composePage, packAtlas, trimBounds, writeAtlas } from '@/core/export/atlas';
+import { composePage, packAtlas, writeAtlas } from '@/core/export/atlas';
+import { makeRegion, scaledSize, usedImages } from '@/core/export/atlasBuild';
 import type { AtlasFilter, AtlasPage, PackInput } from '@/core/export/atlas';
-import { attachmentPictures } from '@/core/sequence';
 import { createZip } from '@/core/export/zip';
+import { activeIndex, skeletonList } from '@/core/skeletons';
 import type { ZipEntry } from '@/core/export/zip';
 import { assets } from '@/store/assets';
 import { docStore } from '@/store/doc';
@@ -29,6 +30,8 @@ export interface ExportOptions {
   filter?: AtlasFilter;
   /** Write the single-file preview page that plays the export. */
   includePreview?: boolean;
+  /** Which skeleton of the project (index in its list; default: the edited one). */
+  skeletonIndex?: number;
   /** Animations left out of the export (an animation a slider uses always stays). */
   excludeAnimations?: string[];
   baseName?: string;
@@ -37,24 +40,13 @@ export interface ExportOptions {
 export interface ExportResult {
   zip: Uint8Array;
   files: { name: string; size: number }[];
+  /** The files themselves, as they are in the zip. */
+  entries: ZipEntry[];
   pages: number;
   missing: string[];
   json: unknown;
   /** Self-contained preview page (official Spine player). */
   preview?: string;
-}
-
-/** The images the skeleton uses; `mesh` marks those a mesh uses too (a mesh can sample outside the opaque part, so such a picture is never trimmed). */
-function usedImages(): { name: string; mesh: boolean }[] {
-  const used = new Map<string, boolean>();
-  for (const skin of docStore.get().skeleton.skins) {
-    for (const slot of Object.values(skin.attachments)) {
-      for (const att of Object.values(slot)) {
-        for (const image of attachmentPictures(att)) used.set(image, (used.get(image) ?? false) || att.type === 'mesh');
-      }
-    }
-  }
-  return [...used].map(([name, mesh]) => ({ name, mesh }));
 }
 
 /** The picture at the size it is exported at (a smaller one is drawn from the full picture with smoothing), as straight RGBA. */
@@ -120,11 +112,11 @@ new spine.SpinePlayer("player", {
 
 export async function buildSpineExport(opts: ExportOptions): Promise<ExportResult> {
   const project = docStore.get();
-  const full = project.skeleton;
+  const full = skeletonList(project)[opts.skeletonIndex ?? activeIndex(project)] ?? project.skeleton;
   const keep = new Set(full.constraints.flatMap((c) => (c.type === 'slider' && c.animation ? [c.animation] : [])));
   const doc = opts.excludeAnimations?.length ? { ...full, animations: full.animations.filter((a) => keep.has(a.id) || !opts.excludeAnimations!.includes(a.id)) } : full;
   const base = (opts.baseName ?? doc.name ?? 'skeleton').replace(/[^\w\-]+/g, '_') || 'skeleton';
-  const images = usedImages();
+  const images = usedImages(full);
   const missing = images.filter((i) => !assets.has(i.name)).map((i) => i.name);
   const scale = opts.scale && opts.scale > 0 ? opts.scale : 1;
   // the pixels of every region (the part of the picture that is packed) and what the packer is told about them
@@ -133,17 +125,10 @@ export async function buildSpineExport(opts: ExportOptions): Promise<ExportResul
   for (const { name, mesh } of images) {
     const a = assets.get(name);
     if (!a) continue;
-    const width = Math.max(1, Math.round(a.width * scale));
-    const height = Math.max(1, Math.round(a.height * scale));
-    const full = scaledPixels(name, width, height);
-    const b = opts.trim && !mesh ? trimBounds(full.data, width, height) : { x: 0, y: 0, w: width, h: height };
-    if (b.w === width && b.h === height) pixels.set(name, full.data);
-    else {
-      const part = new Uint8ClampedArray(b.w * b.h * 4);
-      for (let y = 0; y < b.h; y++) part.set(full.data.subarray(((b.y + y) * width + b.x) * 4, ((b.y + y) * width + b.x + b.w) * 4), y * b.w * 4);
-      pixels.set(name, part);
-    }
-    inputs.push({ name, width: b.w, height: b.h, offsetX: b.x, offsetY: height - (b.y + b.h), originalWidth: width, originalHeight: height });
+    const [width, height] = scaledSize(a.width, a.height, scale);
+    const region = makeRegion(name, mesh, width, height, scaledPixels(name, width, height).data, !!opts.trim);
+    pixels.set(name, region.pixels);
+    inputs.push(region.input);
   }
 
   const enc = new TextEncoder();
@@ -178,5 +163,27 @@ export async function buildSpineExport(opts: ExportOptions): Promise<ExportResul
     data: enc.encode(`Exported from Bone 2D.\n\n${skeletonFile.padEnd(base.length + 5)}  Spine 4.3 skeleton data (${binary ? 'binary' : 'JSON'})\n${base}.atlas         texture atlas (straight alpha, pma:false)\n${base}-preview.html  open in a browser: plays the animations with the official Spine 4.3 web player (needs internet for the player script)\n\nLoad with the official Spine 4.3 runtimes (spine-ts, Unity, Godot, ...).\n`),
   });
   const zip = createZip(files);
-  return { zip, files: files.map((f) => ({ name: f.name, size: f.data.length })), pages: pages.length, missing, json, preview };
+  return { zip, files: files.map((f) => ({ name: f.name, size: f.data.length })), entries: files, pages: pages.length, missing, json, preview };
+}
+
+/** Every skeleton of the project in one zip, each in a folder of its own (named like the skeleton). The pictures are packed separately for each. */
+export async function buildAllSkeletonsExport(opts: ExportOptions): Promise<ExportResult> {
+  const list = skeletonList(docStore.get());
+  const entries: ZipEntry[] = [];
+  const missing = new Set<string>();
+  let pages = 0;
+  let json: unknown;
+  const used = new Set<string>();
+  for (const [i, d] of list.entries()) {
+    let folder = (d.name || 'skeleton').replace(/[^\w-]+/g, '_') || 'skeleton';
+    while (used.has(folder)) folder += '_';
+    used.add(folder);
+    const r = await buildSpineExport({ ...opts, skeletonIndex: i, baseName: folder, includePreview: opts.includePreview });
+    json ??= r.json;
+    pages += r.pages;
+    r.missing.forEach((m) => missing.add(m));
+    for (const e of r.entries) if (e.name !== 'README.txt') entries.push({ ...e, name: `${folder}/${e.name}` });
+  }
+  entries.push({ name: 'README.txt', data: new TextEncoder().encode(`Exported from Bone 2D: ${list.length} skeletons, one folder each. Every folder holds Spine 4.3 skeleton data, its texture atlas and a preview page.\n`) });
+  return { zip: createZip(entries), files: entries.map((e) => ({ name: e.name, size: e.data.length })), entries, pages, missing: [...missing], json };
 }

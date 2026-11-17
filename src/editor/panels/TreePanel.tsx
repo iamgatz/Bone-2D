@@ -14,6 +14,7 @@ import { showAll } from '@/store/visibilityActions';
 import { getScene } from '../scene';
 import { IconButton, NumberField, TextField } from '../ui/controls';
 import { Field } from '../ui/Field';
+import { SkeletonBar } from './SkeletonBar';
 
 function InlineName({ value, editing, onDone }: { value: string; editing: boolean; onDone: (v: string | null) => void }) {
   if (!editing) return <span className="label">{value}</span>;
@@ -197,6 +198,7 @@ export function TreePanel() {
         <IconButton icon={Eye} title="Show everything hidden" small onClick={() => showAll()} />
         <IconButton icon={Trash2} title="Delete selected" small disabled={!selection.bones.length && !selection.slot} onClick={() => (selection.slot && !selection.bones.length ? deleteSlots([selection.slot]) : deleteBones(selection.bones))} />
       </div>
+      <SkeletonBar />
       <div className="tree-filter">
         <Search size={13} />
         <input

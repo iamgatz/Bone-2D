@@ -147,6 +147,7 @@
   --z-border: 3;
   --z-hud: 4;
   --z-split: 5;
+  --z-float: 20; /* floating tool windows: above the viewport and its HUD, below menus and dialogs */
   --z-menu: 50;
   --z-dialog: 100;
   --z-toast: 200;

@@ -2,7 +2,7 @@
  * Every action of the editor by name, for the command palette (Ctrl+K): type a few letters of what you want. Spine has no such thing.
  * The titles are English strings like the rest of the interface and get translated where they are shown.
  */
-import { closeCurrentLoop, selectAnimation, setMode, setTool, togglePlay } from '@/store/actions';
+import { closeCurrentLoop, keyEditedBones, keySelectedBones, selectAnimation, setMode, setTool, togglePlay } from '@/store/actions';
 import { docStore } from '@/store/doc';
 import { LAYOUTS, VIEW_LIST } from '@/store/layout';
 import { startSetParent } from '@/store/parentActions';
@@ -13,6 +13,7 @@ import { uiStore } from '@/store/ui';
 import { clearGuides } from '@/store/guideActions';
 import { isolateSelection, showAll } from '@/store/visibilityActions';
 import { applyLayout, toggleAllViews, toggleView } from '@/store/viewActions';
+import { FLOAT_LIST, toggleFloat } from '@/store/floats';
 import { KEYS } from './hotkeys';
 import { openSpineImport } from './importSpine';
 import { TOOLS, hotkeyOf } from './tools';
@@ -52,6 +53,8 @@ export function buildCommands(): Command[] {
     { id: 'edit.copypose', group: 'Edit', title: 'Copy pose', run: () => copyPose() },
     { id: 'edit.pastepose', group: 'Edit', title: 'Paste pose', run: () => pastePose() },
     { id: 'mode.toggle', group: 'Animation', title: 'Setup ⇄ Animate', keys: KEYS.mode, run: () => setMode(uiStore.get().mode === 'setup' ? 'animate' : 'setup') },
+    { id: 'anim.keyedited', group: 'Animation', title: 'Key edited channels', keys: KEYS.key, run: () => keyEditedBones() },
+    { id: 'anim.keyshown', group: 'Animation', title: 'Key all channels of the selected bones', keys: KEYS.keyShown, run: () => keySelectedBones() },
     { id: 'anim.play', group: 'Animation', title: 'Play / pause', keys: KEYS.play, run: () => togglePlay() },
     { id: 'view.frame', group: 'View', title: 'Frame skeleton', keys: KEYS.frame, run: () => viewportApi.frame() },
     { id: 'view.frameselection', group: 'View', title: 'Frame the selection', keys: KEYS.frameSelection, run: () => viewportApi.frameSelection() },
@@ -71,6 +74,7 @@ export function buildCommands(): Command[] {
   ];
   for (const t of TOOLS) list.push({ id: `tool.${t.tool}`, group: 'Tools', title: t.title, keys: hotkeyOf(t.tool), run: () => setTool(t.tool) });
   for (const v of VIEW_LIST) list.push({ id: `win.${v.id}`, group: 'Windows', title: v.label, run: () => toggleView(v.id) });
+  for (const w of FLOAT_LIST) list.push({ id: `float.${w.id}`, group: 'Windows', title: `Floating: ${w.label}`, run: () => toggleFloat(w.id) });
   for (const l of LAYOUTS) list.push({ id: `layout.${l.id}`, group: 'Windows', title: `Layout: ${l.label}`, run: () => applyLayout(l.id) });
   for (const a of doc.animations) list.push({ id: `anim.${a.id}`, group: 'Animations', title: a.name, run: () => (selectAnimation(a.id), setMode('animate')) });
   return list;

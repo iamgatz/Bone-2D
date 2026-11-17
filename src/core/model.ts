@@ -562,6 +562,8 @@ export interface SkeletonDoc {
   animations: Animation[];
   /** Groups of slots with a draw order of their own (absent = none). */
   drawOrderFolders?: DrawOrderFolder[];
+  /** Editor data that belongs to this skeleton and is kept here while another skeleton of the project is being edited (see core/skeletons.ts). */
+  aside?: { poses?: PoseEntry[]; mixes?: { default: number; pairs: { from: Id; to: Id; time: number }[] } };
 }
 
 export interface ImageRef {
@@ -596,7 +598,12 @@ export interface Project {
   format: 'bone2d';
   version: 1;
   name: string;
+  /** The skeleton being edited. */
   skeleton: SkeletonDoc;
+  /** The other skeletons of the project, in the order of the list without the edited one (absent = the project has one skeleton). */
+  others?: SkeletonDoc[];
+  /** Where the edited skeleton stands in the list of all of them. */
+  activeAt?: number;
   images: ImageRef[];
   /** The pose library of the editor (poses are not part of the Spine export). */
   poses?: PoseEntry[];
@@ -732,11 +739,13 @@ export function newTransformConstraint(partial: Partial<TransformConstraint> & {
 /** Fills fields that older project files lack. Safe to call repeatedly. */
 export function migrateProject(p: Project): Project {
   p.format = 'bone2d'; // files saved before the project was renamed from "Marrow" carry the old tag
-  for (const a of p.skeleton.animations) {
-    if (!a.transform) a.transform = {};
-    if (!a.slider) a.slider = {};
-    if (!a.path) a.path = {};
-    if (!a.physics) a.physics = {};
+  for (const doc of [p.skeleton, ...(p.others ?? [])]) {
+    for (const a of doc.animations) {
+      if (!a.transform) a.transform = {};
+      if (!a.slider) a.slider = {};
+      if (!a.path) a.path = {};
+      if (!a.physics) a.physics = {};
+    }
   }
   return p;
 }

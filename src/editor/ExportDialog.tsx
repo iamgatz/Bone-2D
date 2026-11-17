@@ -5,7 +5,8 @@ import type { ExportSettings } from '@/core/export/settings';
 import { docStore, useProject } from '@/store/doc';
 import { downloadBlob } from '@/store/project';
 import { toast, uiStore } from '@/store/ui';
-import { buildSpineExport } from './exportSpine';
+import { skeletonCount, skeletonList } from '@/core/skeletons';
+import { buildAllSkeletonsExport, buildSpineExport } from './exportSpine';
 import type { ExportResult } from './exportSpine';
 import { Button, Dialog, SelectField, Toggle } from './ui/controls';
 import { Segmented } from './ui/Segmented';
@@ -13,7 +14,12 @@ import { ExportAnimation } from './ExportAnimation';
 
 export function ExportDialog() {
   const project = useProject();
-  const doc = project.skeleton;
+  const [which, setWhich] = useState<string>('edited'); // 'edited', 'all', or the index of a skeleton
+  const skeletons = skeletonList(project);
+  const many = skeletonCount(project) > 1;
+  const all = many && which === 'all';
+  const picked = many && /^\d+$/.test(which) ? Math.min(Number(which), skeletons.length - 1) : undefined;
+  const doc = picked !== undefined ? skeletons[picked] : project.skeleton;
   const [settings, setSettings] = useState<ExportSettings>(loadExportSettings);
   const { format, scale, maxSize, padding, pretty, nonessential, pot, includePreview, trim, rotate, filter } = settings;
   const change = (patch: Partial<ExportSettings>) => setSettings((s) => ({ ...s, ...patch }));
@@ -31,17 +37,17 @@ export function ExportDialog() {
     if (tab !== 'data') return;
     setBusy(true);
     setError(null);
-    buildSpineExport({ format, scale, maxSize, padding, pretty, nonessential, pot, includePreview, trim, rotate, filter, excludeAnimations: excluded })
+    (all ? buildAllSkeletonsExport : buildSpineExport)({ format, scale, maxSize, padding, pretty, nonessential, pot, includePreview, trim, rotate, filter, excludeAnimations: excluded, skeletonIndex: picked })
       .then((r) => alive && setResult(r))
       .catch((e: Error) => alive && (setError(e.message), setResult(null)))
       .finally(() => alive && setBusy(false));
     return () => {
       alive = false;
     };
-  }, [format, scale, maxSize, padding, pretty, nonessential, pot, includePreview, trim, rotate, filter, excluded, tab]);
+  }, [format, scale, maxSize, padding, pretty, nonessential, pot, includePreview, trim, rotate, filter, excluded, tab, all, picked]);
 
   const close = () => uiStore.patch({ exportOpen: false });
-  const base = (doc.name || 'skeleton').replace(/[^\w\-]+/g, '_');
+  const base = (all ? project.name || 'project' : doc.name || 'skeleton').replace(/[^\w-]+/g, '_');
 
   const saveSettings = () => {
     downloadBlob(new Blob([exportSettingsToText(settings)], { type: 'application/json' }), 'bone2d-export-settings.json');
@@ -100,6 +106,12 @@ export function ExportDialog() {
         Produces <b>{format === 'binary' ? '.skel' : '.json'} + .atlas + .png</b> that load in the official Spine 4.3 runtimes (spine-ts, Unity, Godot, Pixi, Phaser…).
       </p>
       <div className="kv">
+        {many && (
+          <>
+            <label>Skeleton</label>
+            <SelectField value={which} options={[{ value: 'edited', label: `The edited one (${project.skeleton.name})` }, ...skeletons.map((s, i) => ({ value: String(i), label: s.name })), { value: 'all', label: 'All skeletons (a folder each)' }]} onChange={setWhich} />
+          </>
+        )}
         <label>Skeleton file</label>
         <SelectField value={format} options={[{ value: 'json', label: 'JSON (.json)' }, { value: 'binary', label: 'Binary (.skel), smaller' }]} onChange={(v) => change({ format: v })} />
         <label>Size</label>
@@ -154,7 +166,7 @@ export function ExportDialog() {
           <>
             <div className="hstack mb dim">
               <Package size={15} />
-              {`${doc.bones.length} bones · ${doc.slots.length} slots · ${doc.animations.length} animations · ${result.pages} atlas page${result.pages === 1 ? '' : 's'}`}
+              {all ? `${skeletons.length} skeletons · ${result.pages} atlas page${result.pages === 1 ? '' : 's'}` : `${doc.bones.length} bones · ${doc.slots.length} slots · ${doc.animations.length} animations · ${result.pages} atlas page${result.pages === 1 ? '' : 's'}`}
             </div>
             {result.files.map((f) => (
               <div key={f.name} className="spread dim">

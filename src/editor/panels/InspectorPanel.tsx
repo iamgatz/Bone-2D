@@ -19,6 +19,9 @@ import { getScene } from '../scene';
 import { Button, ColorSwatch, IconButton, NumberField, SelectField, TextField, Toggle } from '../ui/controls';
 import { Field, KeyButton } from '../ui/Field';
 import { Section } from '../ui/Section';
+import { activeIndex } from '@/core/skeletons';
+import { renameSkeletonAt } from '@/store/skeletonActions';
+import { useFloats } from '@/store/floats';
 import { ConvertToMeshGroup, LinkedMeshFields, MeshGroup } from './MeshInspector';
 import { SequenceSection } from './SequenceSection';
 import { ConstraintInspector } from './ConstraintInspector';
@@ -146,10 +149,50 @@ function TransformCreate({ boneIds }: { boneIds: Id[] }) {
   );
 }
 
+/** The tint of a slot (and its dark tint): in the Inspector, or in the floating Slot color window. In Animate mode the keys go with the playhead. */
+export function SlotColorFields({ slotId }: { slotId: Id }) {
+  const project = useProject();
+  const mode = useUi((s) => s.mode);
+  useUi((s) => (s.mode === 'animate' ? s.time : 0)); // the animated tint follows the playhead
+  const slot = project.skeleton.slots.find((x) => x.id === slotId);
+  if (!slot) return null;
+  const animate = mode === 'animate';
+  const sk = getScene().skeleton.slotById(slotId);
+  const color = animate && sk ? sk.color : slot.color;
+  const dark = animate && sk?.dark ? sk.dark : slot.dark; // the animated dark color in Animate mode
+  const darkNow = animate && dark ? dark : undefined; // keyed together with the light color
+  return (
+    <>
+      <Field label="Tint" keyButton={<KeyButton on={false} title="Key color" onClick={() => setSlotColor(slotId, [color[0], color[1], color[2], color[3]], darkNow)} />}>
+        <div className="hstack">
+          <ColorSwatch value={color} onChange={(rgb) => setSlotColor(slotId, [rgb[0], rgb[1], rgb[2], color[3]], darkNow)} />
+          <NumberField label="A" value={color[3]} step={0.01} precision={2} min={0} max={1} onChange={(v) => setSlotColor(slotId, [color[0], color[1], color[2], v], darkNow)} />
+        </div>
+      </Field>
+      {(!animate || dark) && (
+        <Field label="Dark tint">
+          <div className="hstack">
+            {!animate && <Toggle on={!!slot.dark} onChange={(on) => setSlotProps(slotId, { dark: on ? [0, 0, 0] : null }, 'Dark tint')} title="Two-color tint: a dark color that fills in where the image is dark (glow, hit flash)" />}
+            {dark && (
+              <ColorSwatch
+                value={dark}
+                title="Dark color"
+                onChange={(rgb) => (animate ? setSlotColor(slotId, [color[0], color[1], color[2], color[3]], rgb) : setSlotProps(slotId, { dark: rgb }, 'Dark color'))}
+              />
+            )}
+          </div>
+        </Field>
+      )}
+    </>
+  );
+}
+
 function SlotInspector({ slotId, attachmentName }: { slotId: Id; attachmentName: string | null }) {
   const project = useProject();
   const mode = useUi((s) => s.mode);
   const skinId = useUi((s) => s.skinId); // every hook goes above the early return: undo can remove the selected slot between two renders
+  const colorFloats = useFloats((s) => s.open.slotColor); // the tint lives in its own window while that is open
+  const meshFloats = useFloats((s) => s.open.meshTools);
   useUi((s) => (s.mode === 'animate' ? s.time : 0)); // the animated tint follows the playhead
   const doc = project.skeleton;
   const slot = doc.slots.find((s) => s.id === slotId);
@@ -158,9 +201,6 @@ function SlotInspector({ slotId, attachmentName }: { slotId: Id; attachmentName:
   const att = attachmentName ? atts[attachmentName] : undefined;
   const animate = mode === 'animate';
   const sk = getScene().skeleton.slotById(slotId);
-  const color = animate && sk ? sk.color : slot.color;
-  const dark = animate && sk?.dark ? sk.dark : slot.dark; // the animated dark color in Animate mode
-  const darkNow = animate && dark ? dark : undefined; // keyed together with the light color
   const current = animate && sk ? sk.attachmentName : slot.attachment;
   const attOptions = [{ value: '', label: '— none —' }, ...Object.keys(atts).map((n) => ({ value: n, label: n }))];
   const folder = folderOfSlot(doc, slotId);
@@ -209,29 +249,10 @@ function SlotInspector({ slotId, attachmentName }: { slotId: Id; attachmentName:
             <IconButton icon={X} small title="Delete the folder (its slots stay, its draw order keys go)" onClick={() => deleteFolder(folder.id)} />
           </Field>
         )}
-        <Field label="Tint" keyButton={<KeyButton on={false} title="Key color" onClick={() => setSlotColor(slotId, [color[0], color[1], color[2], color[3]], darkNow)} />}>
-          <div className="hstack">
-            <ColorSwatch value={color} onChange={(rgb) => setSlotColor(slotId, [rgb[0], rgb[1], rgb[2], color[3]], darkNow)} />
-            <NumberField label="A" value={color[3]} step={0.01} precision={2} min={0} max={1} onChange={(v) => setSlotColor(slotId, [color[0], color[1], color[2], v], darkNow)} />
-          </div>
-        </Field>
-        {(!animate || dark) && (
-          <Field label="Dark tint">
-            <div className="hstack">
-              {!animate && <Toggle on={!!slot.dark} onChange={(on) => setSlotProps(slotId, { dark: on ? [0, 0, 0] : null }, 'Dark tint')} title="Two-color tint: a dark color that fills in where the image is dark (glow, hit flash)" />}
-              {dark && (
-                <ColorSwatch
-                  value={dark}
-                  title="Dark color"
-                  onChange={(rgb) => (animate ? setSlotColor(slotId, [color[0], color[1], color[2], color[3]], rgb) : setSlotProps(slotId, { dark: rgb }, 'Dark color'))}
-                />
-              )}
-            </div>
-          </Field>
-        )}
+        {!colorFloats && <SlotColorFields slotId={slotId} />}
       </div>
       {att && att.type === 'region' && <RegionInspector slotId={slotId} att={att} disabled={animate} />}
-      {att && att.type === 'region' && !animate && <ConvertToMeshGroup slotId={slotId} name={att.name} />}
+      {att && att.type === 'region' && !animate && !meshFloats && <ConvertToMeshGroup slotId={slotId} name={att.name} />}
       {att && att.type === 'mesh' && <MeshGroup slotId={slotId} att={att} />}
       {att && (att.type === 'region' || att.type === 'mesh') && <SequenceSection slotId={slotId} att={att} />}
       {att && (att.type === 'clipping' || att.type === 'boundingbox') && <PolygonInspector slotId={slotId} att={att} disabled={animate} />}
@@ -400,7 +421,7 @@ export function InspectorPanel() {
           <>
             <Section id="skeleton" title="Skeleton" collapsible={false}>
               <div className="mb">
-                <TextField value={doc.name} onCommit={(v) => docStore.update('Rename skeleton', (d) => void (d.skeleton.name = v.trim() || d.skeleton.name))} wide />
+                <TextField value={doc.name} onCommit={(v) => renameSkeletonAt(activeIndex(project), v)} wide />
               </div>
               <Field label="FPS">
                 <NumberField label="fps" value={doc.fps} step={1} precision={0} min={1} max={240} onChange={(v) => setFps(v)} />

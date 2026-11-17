@@ -36,7 +36,7 @@ describe('key combinations of the commands', () => {
   });
 
   it('and a tool letter cannot take the key of a command, nor the other way round', () => {
-    expect(assignToolKey('rotate', 'k')).toBe('Key selected bone');
+    expect(assignToolKey('rotate', 'k')).toBe('Key edited channels');
     expect(hotkeyOf('rotate')).toBe('R');
     setBinding('frame', 'G');
     expect(assignToolKey('rotate', 'f')).toBeNull(); // F is free now

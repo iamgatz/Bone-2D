@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { ChevronDown, ChevronRight, Eraser, Folder, FolderUp, ImagePlus, Pencil, RefreshCw, Trash2, Upload } from 'lucide-react';
 import { baseOf, imageGroups, imageUsage } from '@/core/images';
+import { skeletonList } from '@/core/skeletons';
 import type { ImageRef } from '@/core/model';
 import { addImageToScene, importDropped, importFolderFiles, importImageFiles, reimportPsd, removeUnusedImages, renameImageAction, replaceImagePixels } from '@/store/actions';
 import { assets } from '@/store/assets';
@@ -37,7 +38,12 @@ export function AssetsPanel() {
   const replacing = useRef<string | null>(null);
   const [renaming, setRenaming] = useState<string | null>(null);
   const [closed, setClosed] = useState<Record<string, boolean>>({});
-  const uses = useMemo(() => imageUsage(project.skeleton), [project.skeleton]);
+  const uses = useMemo(() => {
+    // the pictures are shared by every skeleton of the project: one that another skeleton shows is in use
+    const all = new Map<string, number>();
+    for (const doc of skeletonList(project)) for (const [name, n] of imageUsage(doc)) all.set(name, (all.get(name) ?? 0) + n);
+    return all;
+  }, [project.skeleton, project.others]);
   const byName = useMemo(() => new Map(project.images.map((i) => [i.name, i] as const)), [project.images]);
   const groups = useMemo(() => imageGroups(project.images.map((i) => i.name)), [project.images]);
   const unused = project.images.filter((i) => !uses.has(i.name)).length;
