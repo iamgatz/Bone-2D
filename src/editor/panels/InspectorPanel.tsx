@@ -10,6 +10,8 @@ import { deleteKeys, keySelectedBones, removeSkinImage, renameBone, renameSlot, 
 import type { PoseProps } from '@/store/actions';
 import { docStore, useProject } from '@/store/doc';
 import { bindPathToBones, setPathClosed, unbindPath } from '@/store/pathActions';
+import { MAX_SPLIT } from '@/core/split';
+import { splitBone } from '@/store/splitActions';
 import { useUi } from '@/store/ui';
 import { getScene } from '../scene';
 import { Button, ColorSwatch, IconButton, NumberField, SelectField, TextField, Toggle } from '../ui/controls';
@@ -91,8 +93,32 @@ function BoneInspector({ id }: { id: Id }) {
           </div>
         </Field>
       </Section>
+      {!animate && <SplitSection id={id} rootBone={!bone.parent} />}
       {!animate && <TransformCreate boneIds={selectedIds} />}
     </>
+  );
+}
+
+function SplitSection({ id, rootBone }: { id: Id; rootBone: boolean }) {
+  const [count, setCount] = useState(3);
+  const [nested, setNested] = useState(true);
+  const [fibonacci, setFibonacci] = useState(false);
+  return (
+    <Section id="bone.split" title="Split" icon={Scissors}>
+      <p className="hint-text mb">Cut this bone into shorter bones along its length: a chain for a tail, a spine or a tentacle.</p>
+      <Field label="Parts">
+        <NumberField label="#" value={count} step={1} precision={0} min={2} max={MAX_SPLIT} onChange={(v) => setCount(Math.max(2, Math.min(MAX_SPLIT, Math.round(v))))} />
+      </Field>
+      <Field label="Nested">
+        <Toggle on={nested || rootBone} onChange={setNested} title="Each new bone is a child of the one before it. Off: they stand side by side under the parent" />
+      </Field>
+      <Field label="Fibonacci">
+        <Toggle on={fibonacci} onChange={setFibonacci} title="Each bone is shorter than the one before it (5 3 2 1 1). Off: equal lengths" />
+      </Field>
+      <Button icon={Scissors} onClick={() => splitBone(id, count, { nested: nested || rootBone, fibonacci })}>
+        Split bone
+      </Button>
+    </Section>
   );
 }
 

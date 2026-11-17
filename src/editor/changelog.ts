@@ -12,6 +12,12 @@ export interface Release {
 
 export const CHANGELOG: Release[] = [
   {
+    version: '0.30',
+    date: '2026-11-17',
+    en: ['Split bone (Inspector, Split section, in Setup mode): cuts the selected bone into 2 to 32 shorter bones along its length. Nested makes a chain (every new bone is a child of the one before: tails, spines, tentacles), without it the parts stand side by side under the parent of the bone. Fibonacci makes each part shorter than the one before (5 3 2 1 1), otherwise the lengths are equal. The original keeps its name, slots, weights and keys and becomes the first part. In a chain the children of the bone move to the part they sit on, so a hand at the end of a forearm follows the last part. One step in the history.'],
+    ru: ['Разрезать кость (Инспектор, раздел «Разрезать», режим Setup): делит выбранную кость вдоль на 2–32 коротких. «Цепочкой» — каждая новая кость ребёнок предыдущей (хвосты, позвоночники, щупальца), без неё части стоят рядом под родителем кости. «Фибоначчи» — каждая часть короче предыдущей (5 3 2 1 1), иначе длины равны. Исходная кость сохраняет имя, слоты, веса и ключи и становится первой частью. В цепочке дочерние кости переходят на ту часть, на которой сидят, поэтому кисть на конце предплечья идёт за последней частью. Один шаг в истории.'],
+  },
+  {
     version: '0.29',
     date: '2026-11-17',
     en: ['Set Parent (Shift+P, Edit menu, command palette): select bones (or a slot), start it, then click the new parent bone in the viewport or in the tree. The bones stay where they are, a selected slot moves to the clicked bone, the whole change is one step in the history, Esc or a click on nothing cancels. In Spine it is the P key; here P is the Point tool, so the key is Shift+P (and can be moved in Settings).'],
