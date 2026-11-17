@@ -4,7 +4,7 @@ import { scaleSpineJson } from '@/core/export/scale';
 import { exportSpineJson } from '@/core/export/spineJson';
 import { composePage, packAtlas, trimBounds, writeAtlas } from '@/core/export/atlas';
 import type { AtlasFilter, AtlasPage, PackInput } from '@/core/export/atlas';
-import { attachmentImage } from '@/core/model';
+import { attachmentPictures } from '@/core/sequence';
 import { createZip } from '@/core/export/zip';
 import type { ZipEntry } from '@/core/export/zip';
 import { assets } from '@/store/assets';
@@ -50,8 +50,7 @@ function usedImages(): { name: string; mesh: boolean }[] {
   for (const skin of docStore.get().skeleton.skins) {
     for (const slot of Object.values(skin.attachments)) {
       for (const att of Object.values(slot)) {
-        const image = attachmentImage(att);
-        if (image) used.set(image, (used.get(image) ?? false) || att.type === 'mesh');
+        for (const image of attachmentPictures(att)) used.set(image, (used.get(image) ?? false) || att.type === 'mesh');
       }
     }
   }

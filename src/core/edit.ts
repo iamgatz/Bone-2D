@@ -75,7 +75,9 @@ export function removeSlots(doc: SkeletonDoc, slotIds: Set<Id>) {
     for (const id of slotIds) {
       delete a.slots[id];
       for (const skinId in a.deform) delete a.deform[skinId][id];
+      for (const skinId in a.sequence ?? {}) delete a.sequence![skinId][id];
     }
+    pruneSequences(a);
     a.drawOrder = a.drawOrder.map((k) => ({ ...k, order: k.order.filter((s) => !slotIds.has(s)) }));
   }
 }
@@ -137,6 +139,26 @@ export function removeBones(doc: SkeletonDoc, ids: Iterable<Id>, bindPose?: Bone
   return gone;
 }
 
+/** Removes the empty parts of the sequence timelines of an animation. */
+export function pruneSequences(a: Animation) {
+  if (!a.sequence) return;
+  for (const skinId of Object.keys(a.sequence)) {
+    const per = a.sequence[skinId];
+    for (const slotId of Object.keys(per)) {
+      for (const name of Object.keys(per[slotId])) if (!per[slotId][name].length) delete per[slotId][name];
+      if (Object.keys(per[slotId]).length === 0) delete per[slotId];
+    }
+    if (Object.keys(per).length === 0) delete a.sequence[skinId];
+  }
+  if (Object.keys(a.sequence).length === 0) delete a.sequence;
+}
+
+/** Removes the sequence timeline of one attachment (in every skin). */
+export function dropSequenceTimeline(a: Animation, slotId: Id, attName: string) {
+  for (const skinId of Object.keys(a.sequence ?? {})) delete a.sequence![skinId][slotId]?.[attName];
+  pruneSequences(a);
+}
+
 export function dropDeformTimeline(a: Animation, skinId: Id, slotId: Id, attName: string) {
   const perSlot = a.deform[skinId]?.[slotId];
   if (!perSlot) return;
@@ -184,6 +206,7 @@ export function reconcileDeform(doc: SkeletonDoc, slotId: Id, attName: string, b
 export function purgeAttachment(doc: SkeletonDoc, slotId: Id, name: string) {
   for (const a of doc.animations) {
     for (const skinId of Object.keys(a.deform)) dropDeformTimeline(a, skinId, slotId, name);
+    dropSequenceTimeline(a, slotId, name);
     // an attachment key naming a deleted attachment shows nothing, exactly like a hide key
     for (const k of a.slots[slotId]?.attachment ?? []) if (k.name === name) k.name = null;
   }

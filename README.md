@@ -59,6 +59,7 @@ $env:FUZZ_SEEDS='300'; $env:FUZZ_STEPS='100'; npx vitest run tests/fuzz.test.ts
 - **Poses** window: a library of poses kept by name; one click puts a pose on the selected bones (setup pose in Setup mode, keys at the playhead in Animate mode), optionally only part of the way. Saved in the project file, not exported.
 - **Hierarchy filter** by name, **Ctrl+H** shows everything hidden, **Ctrl+Shift+H** shows only the selection.
 - **Close the loop**: the end of an animation takes the value of its start, for seamless cycles.
+- **Sequences** (frame-by-frame pictures on a region or mesh) with all seven Spine modes, in the editor, the JSON / binary export and the import.
 - **Texture packer**: strip whitespace, rotate, Linear / Nearest filter, padding, power-of-two, page size; export settings are remembered and can be saved to / loaded from a file.
 - Playback, loop, frame stepping. **Onion skin** (faded poses before and after the playhead), **Clean Up** (removes the keys that change nothing), **Alt-drag a key** to shift the keys after it too, an Animations window with folders (`emotes/wave`).
 

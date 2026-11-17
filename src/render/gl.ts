@@ -5,6 +5,7 @@
 import { clipOutline, fanIndices, planClipping } from '@/core/clip';
 import type { ClipState } from '@/core/clip';
 import type { BlendMode, RGB, RGBA } from '@/core/model';
+import { resolveSequenceIndex, sequenceFramePath } from '@/core/sequence';
 import { REGION_TRIANGLES, REGION_UVS, meshWorldVertices, regionWorldVertices } from '@/core/skeleton';
 import type { Skeleton, Slot } from '@/core/skeleton';
 
@@ -361,7 +362,8 @@ export class GLRenderer {
           if (this.clipping) active = want;
         }
       }
-      const t = this.texture(att.path);
+      const seq = att.src.sequence;
+      const t = this.texture(seq ? sequenceFramePath(att.path, seq, resolveSequenceIndex(seq, slot.sequenceIndex)) : att.path);
       if (att.kind === 'region') {
         regionWorldVertices(att, slot.bone, this.scratch);
         this.pushGeometry(this.scratch, REGION_UVS, REGION_TRIANGLES, 4, 6, color, t?.tex ?? null, slot.data.blend, slot.dark);

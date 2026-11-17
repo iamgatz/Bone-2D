@@ -16,6 +16,7 @@ import { Button, ColorSwatch, IconButton, NumberField, SelectField, TextField, T
 import { Field, KeyButton } from '../ui/Field';
 import { Section } from '../ui/Section';
 import { ConvertToMeshGroup, MeshGroup } from './MeshInspector';
+import { SequenceSection } from './SequenceSection';
 import { ConstraintInspector } from './ConstraintInspector';
 
 function hasKeyAt(anim: Animation | undefined, boneId: Id, prop: 'rotate' | 'translate' | 'scale' | 'shear', time: number): boolean {
@@ -184,6 +185,7 @@ function SlotInspector({ slotId, attachmentName }: { slotId: Id; attachmentName:
       {att && att.type === 'region' && <RegionInspector slotId={slotId} att={att} disabled={animate} />}
       {att && att.type === 'region' && !animate && <ConvertToMeshGroup slotId={slotId} name={att.name} />}
       {att && att.type === 'mesh' && <MeshGroup slotId={slotId} att={att} />}
+      {att && (att.type === 'region' || att.type === 'mesh') && <SequenceSection slotId={slotId} att={att} />}
       {att && (att.type === 'clipping' || att.type === 'boundingbox') && <PolygonInspector slotId={slotId} att={att} disabled={animate} />}
       {att && att.type === 'path' && <PathAttachmentInspector slotId={slotId} att={att} disabled={animate} />}
       {att && att.type === 'point' && <PointInspector slotId={slotId} att={att} disabled={animate} />}

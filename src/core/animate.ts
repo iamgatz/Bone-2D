@@ -1,6 +1,7 @@
 /** Applies an animation (bone, slot, IK, deform, draw order timelines) to a skeleton pose at a given time. */
 import { deformProgress, findKeyIndex, sampleKeys } from './curve';
 import { GLOBAL_PHYSICS, PHYSICS_PARAMS } from './model';
+import { sequenceIndexAt } from './sequence';
 import type { Animation, Id, Key, Timeline } from './model';
 import type { PhysicsConstraintRT, Skeleton, Slot } from './skeleton';
 
@@ -63,6 +64,7 @@ export function animationEndTime(anim: Animation): number {
     scan(t.rgba);
     scan(t.rgba2);
   }
+  for (const skin of Object.values(anim.sequence ?? {})) for (const slot of Object.values(skin)) for (const keys of Object.values(slot)) scan(keys);
   for (const id in anim.ik) scan(anim.ik[id]);
   for (const id in anim.transform ?? {}) scan(anim.transform[id]);
   for (const id in anim.slider ?? {}) {
@@ -204,6 +206,31 @@ export function applyAnimation(skeleton: Skeleton, anim: Animation | null, time:
       }
     }
   }
+
+  applySequences(skeleton, anim, time, false);
+}
+
+/**
+ * The sequence timelines of an animation: the frame of the slot's current picture sequence. `onto` is a slider applying the animation over
+ * the current pose: before the first key it leaves the frame as it is, otherwise it is the setup frame (-1).
+ */
+function applySequences(skeleton: Skeleton, anim: Animation, time: number, onto: boolean) {
+  for (const skinId in anim.sequence ?? {}) {
+    const skin = skeleton.data.skinById.get(skinId);
+    if (!skin) continue;
+    for (const slotId in anim.sequence![skinId]) {
+      const slot = skeleton.slotById(slotId);
+      if (!slot || !slot.bone.active) continue;
+      const perAtt = anim.sequence![skinId][slotId];
+      for (const attName in perAtt) {
+        const keys = perAtt[attName];
+        const att = skin.attachments[slot.data.index]?.get(attName);
+        if (!keys.length || !att || att !== skeleton.slotAttachment(slot) || (att.kind !== 'region' && att.kind !== 'mesh') || !att.src.sequence) continue;
+        const i = sequenceIndexAt(keys, time, att.src.sequence.count);
+        if (i >= 0 || !onto) slot.sequenceIndex = i;
+      }
+    }
+  }
 }
 
 /**
@@ -256,6 +283,7 @@ export function applyAnimationOnto(skeleton: Skeleton, anim: Animation, time: nu
         // a slot that changes its attachment starts over without the deformation of the old one (the official `SlotPose.setAttachment`)
         slot.attachmentName = tl.attachment[i].name;
         slot.deform = [];
+        slot.sequenceIndex = -1;
       }
     }
     if (tl.rgba?.length && sampleKeys(tl.rgba, time, tmp)) mixColor(slot, tmp, alpha, false);
@@ -350,6 +378,8 @@ export function applyAnimationOnto(skeleton: Skeleton, anim: Animation, time: nu
       }
     }
   }
+
+  applySequences(skeleton, anim, time, true);
 }
 
 /** Interpolates per vertex deform deltas. Returns null before the first key. */

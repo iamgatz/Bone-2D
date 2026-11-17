@@ -2,7 +2,7 @@
 import { KEY_EPS, sortKeys } from './edit';
 import type { Animation, Id } from './model';
 
-export type KeyKind = 'bone' | 'slot' | 'ik' | 'deform' | 'drawOrder' | 'event' | 'slider' | 'transform' | 'path' | 'physics';
+export type KeyKind = 'bone' | 'slot' | 'ik' | 'deform' | 'sequence' | 'drawOrder' | 'event' | 'slider' | 'transform' | 'path' | 'physics';
 
 export interface KeyRef {
   kind: KeyKind;
@@ -42,6 +42,10 @@ export function resolveKeys(anim: Animation, ref: Pick<KeyRef, 'kind' | 'target'
     case 'deform': {
       const [skinId, att] = ref.prop.split('\u0001');
       return anim.deform[skinId]?.[ref.target]?.[att];
+    }
+    case 'sequence': {
+      const [skinId, att] = ref.prop.split('');
+      return anim.sequence?.[skinId]?.[ref.target]?.[att];
     }
     case 'physics':
       return (anim.physics?.[ref.target] as Record<string, AnyKeys | undefined> | undefined)?.[ref.prop];
@@ -153,6 +157,15 @@ export function pruneEmpty(anim: Animation) {
     for (const p of Object.keys(t)) if (!t[p] || t[p]!.length === 0) delete t[p];
     if (Object.keys(t).length === 0) delete anim.physics[id];
   }
+  for (const skin in anim.sequence ?? {}) {
+    const per = anim.sequence![skin];
+    for (const slot in per) {
+      for (const att in per[slot]) if (per[slot][att].length === 0) delete per[slot][att];
+      if (Object.keys(per[slot]).length === 0) delete per[slot];
+    }
+    if (Object.keys(per).length === 0) delete anim.sequence![skin];
+  }
+  if (anim.sequence && Object.keys(anim.sequence).length === 0) delete anim.sequence;
   for (const skin in anim.deform) {
     for (const slot in anim.deform[skin]) {
       for (const att in anim.deform[skin][slot]) if (anim.deform[skin][slot][att].length === 0) delete anim.deform[skin][slot][att];

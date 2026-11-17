@@ -4,7 +4,7 @@
  */
 import { curveToAbsolute } from '../curve';
 import { deformLength } from '../mesh';
-import type { Animation, Attachment, Id, IkKey, Influence, Key, SkeletonDoc, Timeline } from '../model';
+import type { Animation, Attachment, Id, IkKey, Influence, Key, SequenceDef, SkeletonDoc, Timeline } from '../model';
 import { GLOBAL_PHYSICS, PHYSICS_PARAMS, polygonVertexCount } from '../model';
 import { animationEndTime } from '../animate';
 import { compileSkeleton, createSkeleton } from '../skeleton';
@@ -360,6 +360,7 @@ function exportAttachment(att: Attachment, key: string, boneIndex: Map<Id, numbe
     o.height = r5(att.height);
     const col = hexColor(att.color, true);
     if (col !== 'ffffffff') o.color = col;
+    if (att.sequence) o.sequence = exportSequence(att.sequence);
     return o;
   }
   o.type = 'mesh';
@@ -372,6 +373,16 @@ function exportAttachment(att: Attachment, key: string, boneIndex: Map<Id, numbe
   o.triangles = att.triangles.slice();
   o.hull = att.hull;
   o.vertices = exportVertices(att, boneIndex);
+  if (att.sequence) o.sequence = exportSequence(att.sequence);
+  return o;
+}
+
+/** The loader's defaults: start 1, digits 0, setup 0. */
+function exportSequence(s: SequenceDef): Json {
+  const o: Json = { count: s.count };
+  setIf(o, 'start', s.start, 1);
+  setIf(o, 'digits', s.digits, 0);
+  setIf(o, 'setup', s.setupIndex, 0);
   return o;
 }
 
@@ -633,6 +644,31 @@ function exportAnimation(doc: SkeletonDoc, a: Animation, n: Names): Json {
       if (Object.keys(perSlot).length) perSkin[sn] = perSlot;
     }
     if (Object.keys(perSkin).length) attachments[skin.name] = perSkin;
+  }
+  // sequence keys sit beside the deform keys, per attachment
+  for (const skinId in a.sequence ?? {}) {
+    const skin = n.skinById.get(skinId);
+    if (!skin) continue;
+    for (const slotId in a.sequence![skinId]) {
+      const sn = n.slotName(slotId);
+      if (!sn) continue;
+      for (const attName in a.sequence![skinId][slotId]) {
+        const keys = a.sequence![skinId][slotId][attName];
+        const att = skin.attachments[slotId]?.[attName];
+        if (!keys.length || !att || (att.type !== 'region' && att.type !== 'mesh') || !att.sequence) continue;
+        const perSkin = (attachments[skin.name] ??= {}) as Json;
+        const perSlot = (perSkin[sn] ??= {}) as Json;
+        const target = (perSlot[attName] ??= {}) as Json;
+        target.sequence = keys.map((k) => {
+          const e: Json = {};
+          withTime(e, k.time);
+          if (k.mode !== 'hold') e.mode = k.mode;
+          if (k.index !== 0) e.index = k.index;
+          e.delay = r5(k.delay);
+          return e;
+        });
+      }
+    }
   }
   if (Object.keys(attachments).length) out.attachments = attachments;
 

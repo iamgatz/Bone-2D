@@ -5,7 +5,7 @@ import { DEFAULT_TOLERANCE, bakeAnimation, scaleTolerance, simplifyAnimation } f
 import type { BakeOptions } from '@/core/bake';
 import { cleanUpAnimation } from '@/core/cleanup';
 import { closeLoop } from '@/core/loops';
-import { findAnimation, freshName, makeCurve, normalizeBoneOrder, purgeAttachment, removeBones, removeSlots, rgbaToRgba2, setSlotDarkColor, snapTime, upsertKey, decompose } from '@/core/edit';
+import { findAnimation, freshName, makeCurve, normalizeBoneOrder, pruneSequences, purgeAttachment, removeBones, removeSlots, rgbaToRgba2, setSlotDarkColor, snapTime, upsertKey, decompose } from '@/core/edit';
 import type { BoneMats } from '@/core/mesh';
 import { moveKeys, removeKeys, resolveKeys } from '@/core/keyrefs';
 import { duplicateSkin, setSkinRequired, setSkinScope, toggleOverride } from '@/core/skins';
@@ -15,7 +15,7 @@ import { RAD2DEG, atan2Deg, matInvert, matMul } from '@/core/math';
 import type { Mat } from '@/core/math';
 import { newAnimation, newBone, newSkin, newSlot } from '@/core/model';
 import { playSpan } from '@/core/playback';
-import { cleanImageName, renameImage, unusedImages } from '@/core/images';
+import { cleanImageName, renameImage, sequenceFrameOwner, unusedImages } from '@/core/images';
 import type { Animation, Bone, Id, Inherit, Project, RGB, RGBA, Slot } from '@/core/model';
 import { getScene, getSetupSkeleton } from '@/editor/scene';
 import { assets } from './assets';
@@ -347,7 +347,7 @@ export function setBonePose(updates: { id: Id; props: PoseProps }[], label = 'Ed
   });
 }
 
-function extendDuration(a: Draft<Animation>, time: number) {
+export function extendDuration(a: Draft<Animation>, time: number) {
   if (time > a.duration) a.duration = time;
 }
 
@@ -855,7 +855,11 @@ export function deleteSkin(id: Id) {
   }
   docStore.update('Delete skin', (d) => {
     d.skeleton.skins = d.skeleton.skins.filter((s) => s.id !== id);
-    for (const a of d.skeleton.animations) delete a.deform[id];
+    for (const a of d.skeleton.animations) {
+      delete a.deform[id];
+      if (a.sequence) delete a.sequence[id];
+      pruneSequences(a);
+    }
   });
   if (uiStore.get().skinId === id) setActiveSkin(null);
 }
@@ -902,6 +906,10 @@ export function renameImageAction(from: string, raw: string): string | null {
     return null;
   }
   if (to === from) return from;
+  if (sequenceFrameOwner(project().skeleton, from)) {
+    toast('This picture is a frame of a sequence: its name is the sequence path and a number, so it is renamed there', 'error');
+    return null;
+  }
   if (project().images.some((i) => i.name === to)) {
     toast(`There is already an image called "${to}"`, 'error');
     return null;
@@ -1051,6 +1059,9 @@ export function pasteKeys(time: number): KeyRef[] {
         else if (c.kind === 'deform') {
           const [skinId, att] = c.prop.split('\u0001');
           keys = (((a.deform[skinId] ??= {})[c.target] ??= {})[att] = []) as unknown as { time: number }[];
+        } else if (c.kind === 'sequence') {
+          const [skinId, att] = c.prop.split('\u0001');
+          keys = ((((a.sequence ??= {})[skinId] ??= {})[c.target] ??= {})[att] = []) as unknown as { time: number }[];
         }
       }
       if (!keys) continue;

@@ -26,6 +26,8 @@ export function duplicateSkin(doc: SkeletonDoc, skinId: Id): Skin | null {
   for (const anim of doc.animations) {
     const deform = anim.deform[src.id];
     if (deform) anim.deform[copy.id] = clone(deform);
+    const sequence = anim.sequence?.[src.id];
+    if (sequence) (anim.sequence ??= {})[copy.id] = clone(sequence);
   }
   return copy;
 }

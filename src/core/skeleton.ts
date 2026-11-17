@@ -1072,6 +1072,8 @@ export class Slot {
   attachmentName: string | null = null;
   /** Deform deltas for the current attachment (empty = none). */
   deform: number[] = [];
+  /** The frame of the current attachment's sequence that a sequence timeline chose; -1 = none (the setup frame shows). */
+  sequenceIndex = -1;
 
   constructor(data: SlotData, bone: Bone) {
     this.data = data;
@@ -1085,6 +1087,7 @@ export class Slot {
     this.dark = d.dark ? [d.dark[0], d.dark[1], d.dark[2]] : null;
     this.attachmentName = d.attachment;
     this.deform = [];
+    this.sequenceIndex = -1;
   }
 }
 

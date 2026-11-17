@@ -18,6 +18,7 @@ const SPACING_MODE = ['length', 'fixed', 'percent', 'proportional'];
 const ROTATE_MODE = ['tangent', 'chain', 'chainScale'];
 const FROM_PROP = ['rotate', 'x', 'y', 'scaleX', 'scaleY', 'shearY'];
 const PHYSICS_TYPE: Record<string, number> = { inertia: 0, strength: 1, damping: 2, mass: 4, wind: 5, gravity: 6, mix: 7 };
+const SEQUENCE_MODE: string[] = ['hold', 'once', 'loop', 'pingpong', 'onceReverse', 'loopReverse', 'pingpongReverse'];
 const PHYSICS_RESET = 8;
 
 /** Growable byte buffer with the primitives of the Spine binary format (big endian). */
@@ -451,6 +452,13 @@ export function jsonToBinary(json: J): Uint8Array {
   };
   const isWeighted = (vertices: number[], vertexCount: number) => vertices.length !== vertexCount * 2;
 
+  const writeSequence = (s: J) => {
+    body.varint(num(s.count, 1), true);
+    body.varint(num(s.start, 1), true);
+    body.varint(num(s.digits, 0), true);
+    body.varint(num(s.setup, 0), true);
+  };
+
   const writeAttachment = (att: J, placeholder: string) => {
     const name: string = att.name ?? placeholder;
     const type: string = att.type ?? 'region';
@@ -466,11 +474,13 @@ export function jsonToBinary(json: J): Uint8Array {
         let flags = 0 | hasName;
         if (hasPath) flags |= 16;
         if (colorValue !== whiteColor) flags |= 32;
+        if (att.sequence) flags |= 64;
         if (rotation !== 0) flags |= 128;
         body.byte(flags);
         if (flags & 8) ref(body, name);
         if (flags & 16) ref(body, path);
         if (flags & 32) body.int32(colorValue);
+        if (flags & 64) writeSequence(att.sequence);
         if (flags & 128) body.float(rotation);
         body.float(num(att.x, 0));
         body.float(num(att.y, 0));
@@ -491,11 +501,13 @@ export function jsonToBinary(json: J): Uint8Array {
         let flags = 2 | hasName;
         if (path !== name) flags |= 16;
         if (colorValue !== whiteColor) flags |= 32;
+        if (att.sequence) flags |= 64;
         if (weighted) flags |= 128;
         body.byte(flags);
         if (flags & 8) ref(body, name);
         if (flags & 16) ref(body, path);
         if (flags & 32) body.int32(colorValue);
+        if (flags & 64) writeSequence(att.sequence);
         // the reader derives the triangle count from the hull: (2 * vertices - hull - 2) triangles
         let hull = num(att.hull, 0);
         const expected = 2 * vertexCount - hull - 2;
@@ -794,12 +806,26 @@ export function jsonToBinary(json: J): Uint8Array {
       out2.varint(slotsList.length, true);
       for (const [slotName, perAtt] of slotsList) {
         out2.varint(slot(slotName), true);
-        const atts = Object.entries<J>(perAtt);
+        // every attachment has one entry per kind of timeline: deform (0) and sequence (1)
+        const atts: [string, 'deform' | 'sequence', J[]][] = [];
+        for (const [attName, tl] of Object.entries<J>(perAtt)) {
+          if (tl.deform) atts.push([attName, 'deform', tl.deform]);
+          if (tl.sequence) atts.push([attName, 'sequence', tl.sequence]);
+        }
         out2.varint(atts.length, true);
-        for (const [attName, tl] of atts) {
+        for (const [attName, kind, keys] of atts) {
           ref(out2, attName);
-          const keys: J[] = tl.deform;
           count++;
+          if (kind === 'sequence') {
+            out2.byte(1);
+            out2.varint(keys.length, true);
+            for (const k of keys) {
+              out2.float(num(k.time, 0));
+              out2.int32(Math.max(0, SEQUENCE_MODE.indexOf(k.mode ?? 'hold')) | (num(k.index, 0) << 4));
+              out2.float(num(k.delay, 0));
+            }
+            continue;
+          }
           out2.byte(0);
           out2.varint(keys.length, true);
           out2.varint(bezierCount(keys, 1), true);
