@@ -12,6 +12,18 @@ export interface Release {
 
 export const CHANGELOG: Release[] = [
   {
+    version: '0.18',
+    date: '2026-11-17',
+    en: ['Texture packer options in the Export window: Strip whitespace (cuts the empty border off pictures, the atlas file records where it was; pictures a mesh uses stay whole), Rotate pictures (a quarter turn on the page when that saves room) and Texture filter (Linear, or Nearest for pixel art). The atlas is read back by the official Spine runtime in the tests, and every point of every region has to land on the right pixel. Export settings are remembered, and Save settings / Load settings keep them in a small JSON file to share with a team.'],
+    ru: ['Параметры упаковщика текстур в окне экспорта: «Обрезать пустоту» (убирает пустую кайму у картинок, файл атласа помнит, где она была; картинки мешей остаются целыми), «Поворачивать картинки» (боком на странице, если это экономит место) и «Фильтр текстуры» (Linear или Nearest для пиксельной графики). В тестах атлас читает официальный рантайм Spine, и каждая точка каждого региона должна попасть на свой пиксель. Настройки экспорта запоминаются, а «Сохранить настройки» / «Загрузить настройки» кладут их в небольшой JSON-файл, который можно передать команде.'],
+  },
+  {
+    version: '0.17',
+    date: '2026-11-17',
+    en: ['Hierarchy filter: type part of a name to see only the matching bones, slots (also by the name of their images), constraints, skins and events, with the bones above them. Ctrl+H shows everything that was hidden in the viewport, Ctrl+Shift+H hides everything except the selection (a slot, or the bones with their children and slots). Both are in the Edit menu and the command palette, and their keys can be moved in Settings.'],
+    ru: ['Фильтр иерархии: введите часть имени, и останутся только подходящие кости, слоты (в том числе по имени их картинок), констрейнты, скины и события вместе с костями над ними. Ctrl+H показывает всё, что скрыто во вьюпорте, Ctrl+Shift+H скрывает всё, кроме выбранного (слота или костей с детьми и слотами). Обе команды есть в меню «Правка» и в палитре, клавиши можно поменять в настройках.'],
+  },
+  {
     version: '0.16',
     date: '2026-11-17',
     en: ['Poses window (Windows menu): a library of poses kept by name (a guard stance, a wave, a hand shape). Press + to keep the pose of the selected bones (all when none is selected); click a pose to put it on the bones. In Setup mode it sets the setup pose, in Animate mode it keys the bones at the playhead. A Blend percentage puts a pose on only part of the way, angles turning the short way round. Rename, replace with the current pose, delete. The library is saved in the project file and is not part of the Spine export.'],

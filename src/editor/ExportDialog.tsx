@@ -1,5 +1,7 @@
-import { useEffect, useState } from 'react';
-import { Download, Package } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+import { Download, FolderOpen, Package, Save } from 'lucide-react';
+import { exportSettingsFromText, exportSettingsToText, loadExportSettings, rememberExportSettings } from '@/core/export/settings';
+import type { ExportSettings } from '@/core/export/settings';
 import { docStore, useProject } from '@/store/doc';
 import { downloadBlob } from '@/store/project';
 import { toast, uiStore } from '@/store/ui';
@@ -12,36 +14,49 @@ import { ExportAnimation } from './ExportAnimation';
 export function ExportDialog() {
   const project = useProject();
   const doc = project.skeleton;
-  const [format, setFormat] = useState<'json' | 'binary'>('json');
-  const [scale, setScale] = useState('1');
-  const [maxSize, setMaxSize] = useState('2048');
-  const [padding, setPadding] = useState('2');
-  const [pretty, setPretty] = useState(false);
-  const [nonessential, setNonessential] = useState(true);
-  const [pot, setPot] = useState(true);
-  const [includePreview, setIncludePreview] = useState(true);
+  const [settings, setSettings] = useState<ExportSettings>(loadExportSettings);
+  const { format, scale, maxSize, padding, pretty, nonessential, pot, includePreview, trim, rotate, filter } = settings;
+  const change = (patch: Partial<ExportSettings>) => setSettings((s) => ({ ...s, ...patch }));
   const [excluded, setExcluded] = useState<string[]>([]);
   const [tab, setTab] = useState<'data' | 'animation'>('data');
   const [busy, setBusy] = useState(false);
   const [result, setResult] = useState<ExportResult | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => rememberExportSettings(settings), [settings]);
 
   useEffect(() => {
     let alive = true;
     if (tab !== 'data') return;
     setBusy(true);
     setError(null);
-    buildSpineExport({ format, scale: +scale, maxSize: +maxSize, padding: +padding, pretty, nonessential, pot, includePreview, excludeAnimations: excluded })
+    buildSpineExport({ format, scale, maxSize, padding, pretty, nonessential, pot, includePreview, trim, rotate, filter, excludeAnimations: excluded })
       .then((r) => alive && setResult(r))
       .catch((e: Error) => alive && (setError(e.message), setResult(null)))
       .finally(() => alive && setBusy(false));
     return () => {
       alive = false;
     };
-  }, [format, scale, maxSize, padding, pretty, nonessential, pot, includePreview, excluded, tab]);
+  }, [format, scale, maxSize, padding, pretty, nonessential, pot, includePreview, trim, rotate, filter, excluded, tab]);
 
   const close = () => uiStore.patch({ exportOpen: false });
   const base = (doc.name || 'skeleton').replace(/[^\w\-]+/g, '_');
+
+  const saveSettings = () => {
+    downloadBlob(new Blob([exportSettingsToText(settings)], { type: 'application/json' }), 'bone2d-export-settings.json');
+    toast('Export settings saved', 'ok');
+  };
+  const loadSettings = async (file: File | undefined) => {
+    if (!file) return;
+    const loaded = exportSettingsFromText(await file.text());
+    if (!loaded) {
+      toast('That file is not a Bone 2D export settings file', 'error');
+      return;
+    }
+    setSettings(loaded);
+    toast('Export settings loaded', 'ok');
+  };
 
   return (
     <Dialog
@@ -86,25 +101,40 @@ export function ExportDialog() {
       </p>
       <div className="kv">
         <label>Skeleton file</label>
-        <SelectField value={format} options={[{ value: 'json', label: 'JSON (.json)' }, { value: 'binary', label: 'Binary (.skel), smaller' }]} onChange={setFormat} />
+        <SelectField value={format} options={[{ value: 'json', label: 'JSON (.json)' }, { value: 'binary', label: 'Binary (.skel), smaller' }]} onChange={(v) => change({ format: v })} />
         <label>Size</label>
-        <SelectField value={scale} options={[{ value: '1', label: '100% (as drawn)' }, { value: '0.75', label: '75%' }, { value: '0.5', label: '50%' }, { value: '0.25', label: '25%' }, { value: '2', label: '200%' }]} onChange={setScale} />
+        <SelectField value={String(scale)} options={[{ value: '1', label: '100% (as drawn)' }, { value: '0.75', label: '75%' }, { value: '0.5', label: '50%' }, { value: '0.25', label: '25%' }, { value: '2', label: '200%' }]} onChange={(v) => change({ scale: +v })} />
         <label>Atlas page size</label>
-        <SelectField value={maxSize} options={['1024', '2048', '4096'].map((v) => ({ value: v, label: `${v} px` }))} onChange={setMaxSize} />
+        <SelectField value={String(maxSize)} options={['1024', '2048', '4096'].map((v) => ({ value: v, label: `${v} px` }))} onChange={(v) => change({ maxSize: +v })} />
         <label>Padding</label>
-        <SelectField value={padding} options={['0', '1', '2', '4'].map((v) => ({ value: v, label: `${v} px` }))} onChange={setPadding} />
+        <SelectField value={String(padding)} options={['0', '1', '2', '4'].map((v) => ({ value: v, label: `${v} px` }))} onChange={(v) => change({ padding: +v })} />
+        <label>Texture filter</label>
+        <SelectField value={filter} options={[{ value: 'Linear', label: 'Smooth (Linear)' }, { value: 'Nearest', label: 'Sharp pixels (Nearest)' }]} onChange={(v) => change({ filter: v })} />
+        <label>Strip whitespace</label>
+        <Toggle on={trim} onChange={(v) => change({ trim: v })} title="Cut the empty border off every picture so the atlas is smaller. Pictures a mesh uses are left whole." />
+        <label>Rotate pictures</label>
+        <Toggle on={rotate} onChange={(v) => change({ rotate: v })} title="Turn a picture a quarter turn on the page when that saves room" />
         <label>Editor data</label>
-        <Toggle on={nonessential} onChange={setNonessential} title="Bone colors, fps, image path" />
+        <Toggle on={nonessential} onChange={(v) => change({ nonessential: v })} title="Bone colors, fps, image path" />
         {format === 'json' && (
           <>
             <label>Pretty JSON</label>
-            <Toggle on={pretty} onChange={setPretty} />
+            <Toggle on={pretty} onChange={(v) => change({ pretty: v })} />
           </>
         )}
         <label>Power-of-two pages</label>
-        <Toggle on={pot} onChange={setPot} title="Atlas page sizes are powers of two" />
+        <Toggle on={pot} onChange={(v) => change({ pot: v })} title="Atlas page sizes are powers of two" />
         <label>Preview page</label>
-        <Toggle on={includePreview} onChange={setIncludePreview} title="A page that plays the export with the official Spine player" />
+        <Toggle on={includePreview} onChange={(v) => change({ includePreview: v })} title="A page that plays the export with the official Spine player" />
+      </div>
+      <div className="hstack mb">
+        <Button ghost icon={Save} onClick={saveSettings} title="Save these settings to a file to share with a team">
+          Save settings
+        </Button>
+        <Button ghost icon={FolderOpen} onClick={() => fileRef.current?.click()} title="Load export settings from a file">
+          Load settings
+        </Button>
+        <input ref={fileRef} type="file" accept="application/json,.json" hidden onChange={(e) => (void loadSettings(e.target.files?.[0]), (e.target.value = ''))} />
       </div>
       {doc.animations.length > 0 && (
         <div className="anim-pick">

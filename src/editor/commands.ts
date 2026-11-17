@@ -9,6 +9,7 @@ import { copyPose, duplicateSelection, pastePose, resetPose } from '@/store/pose
 import { newProject, openProjectFile, saveProjectFile } from '@/store/project';
 import { loadSample } from '@/store/sample';
 import { uiStore } from '@/store/ui';
+import { isolateSelection, showAll } from '@/store/visibilityActions';
 import { applyLayout, toggleAllViews, toggleView } from '@/store/viewActions';
 import { KEYS } from './hotkeys';
 import { openSpineImport } from './importSpine';
@@ -41,6 +42,8 @@ export function buildCommands(): Command[] {
     { id: 'edit.redo', group: 'Edit', title: 'Redo', keys: KEYS.redo, run: () => docStore.redo() },
     { id: 'edit.duplicate', group: 'Edit', title: 'Duplicate bones', keys: KEYS.duplicate, run: () => duplicateSelection(false) },
     { id: 'edit.mirror', group: 'Edit', title: 'Mirror bones', keys: KEYS.mirror, run: () => duplicateSelection(true) },
+    { id: 'view.showall', group: 'View', title: 'Show everything hidden', keys: KEYS.showAll, run: () => void showAll() },
+    { id: 'view.isolate', group: 'View', title: 'Show only the selection', keys: KEYS.isolate, run: () => void isolateSelection() },
     { id: 'edit.reset', group: 'Edit', title: 'Reset pose', run: () => resetPose() },
     { id: 'edit.copypose', group: 'Edit', title: 'Copy pose', run: () => copyPose() },
     { id: 'edit.pastepose', group: 'Edit', title: 'Paste pose', run: () => pastePose() },

@@ -1832,3 +1832,29 @@ a.btn {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+
+.tree-filter {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0 8px 6px;
+  padding: 0 4px 0 8px;
+  height: var(--h-control);
+  background: var(--panel-3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--muted);
+}
+.tree-filter:focus-within {
+  border-color: var(--border-strong);
+}
+.tree-filter input {
+  flex: 1;
+  min-width: 0;
+  background: transparent;
+  border: 0;
+  outline: none;
+  color: var(--text);
+  font-size: var(--fs-sm);
+}
