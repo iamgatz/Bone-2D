@@ -12,6 +12,7 @@ import { COLORS } from './overlay';
 import type { OverlayInput } from './overlay';
 import { slotWorldVertices } from './hit';
 import { alpha, token } from '../ui/tokens';
+import { boneCss, boundBones, overlayColors, pieVertices } from './weightColors';
 
 type Drag =
   | { kind: 'vertices'; moves: Map<number, [number, number]>; p0: [number, number]; base: number[] | null }
@@ -270,6 +271,7 @@ export class MeshTool {
         ctx.arc(bx, by, ui.brush.size * cam.zoom + 1.5, 0, Math.PI * 2);
         ctx.stroke();
       }
+      if (ui.tool === 'weights' && ui.weightView.pies && am.mesh.weights) this.drawPies(o, am.mesh.weights, (i) => P(i));
       return;
     }
     const sel = new Set(ui.selection.vertices);
@@ -303,17 +305,51 @@ export class MeshTool {
     }
   };
 
-  /** Weight heat map for the active bone drawn into the GL layer. */
+  /** Pies: one pie chart per vertex, a slice per bone in the colour of that bone, selected vertices larger. */
+  private drawPies(o: OverlayInput, weights: MeshAttachment['weights'] & object, P: (i: number) => [number, number]) {
+    const { ctx, ui } = o;
+    const order = docStore.get().skeleton.bones.map((b) => b.id);
+    const bound = boundBones(weights, order);
+    const index = new Map(bound.map((b, i) => [b, i] as const));
+    const picked = new Set(ui.selection.vertices);
+    const list = pieVertices(weights, picked, new Set(ui.selection.bones), ui.weightView.selected);
+    ctx.lineWidth = 1;
+    ctx.strokeStyle = token('--handle-outline');
+    for (const v of list) {
+      const [x, y] = P(v);
+      const r = picked.has(v) ? 10 : 6.5;
+      let at = -Math.PI / 2;
+      for (const e of weights[v]) {
+        const end = at + e[3] * Math.PI * 2;
+        ctx.fillStyle = boneCss(index.get(e[0]) ?? 0);
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+        ctx.arc(x, y, r, at, end);
+        ctx.closePath();
+        ctx.fill();
+        at = end;
+      }
+      ctx.beginPath();
+      ctx.arc(x, y, r, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+  }
+
+  /** Weight heat map for the active bone (or, with Overlay, the bone colours) drawn into the GL layer. */
   drawHeat(renderer: GLRenderer, scene: Scene) {
     const ui = uiStore.get();
     if (ui.tool !== 'weights') return;
     const am = activeMesh();
-    if (!am || !am.mesh.weights || !ui.brush.bone) return;
+    if (!am || !am.mesh.weights) return;
+    if (!ui.weightView.overlay && !ui.brush.bone) return;
     const geo = this.worldVerts(scene, am.slotId);
     if (!geo) return;
     const n = geo.count;
-    const colors = new Array<number>(n * 4);
-    for (let i = 0; i < n; i++) heatColor(am.mesh.weights[i]?.find((e) => e[0] === ui.brush.bone)?.[3] ?? 0, colors, i * 4);
+    let colors = new Array<number>(n * 4);
+    if (ui.weightView.overlay) {
+      const bound = boundBones(am.mesh.weights, docStore.get().skeleton.bones.map((b) => b.id));
+      colors = overlayColors(am.mesh.weights, bound, ui.weightView.selected ? new Set(ui.selection.bones) : null);
+    } else for (let i = 0; i < n; i++) heatColor(am.mesh.weights[i]?.find((e) => e[0] === ui.brush.bone)?.[3] ?? 0, colors, i * 4);
     renderer.pushColored(geo.vertices, colors, am.mesh.triangles, n, am.mesh.triangles.length);
     renderer.flush();
   }

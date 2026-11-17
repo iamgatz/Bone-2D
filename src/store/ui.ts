@@ -70,6 +70,14 @@ export interface WeightBrush {
   locked: Id[];
 }
 
+/** What the weights view draws on the mesh (Spine's Pies, Overlay and Selected boxes). */
+export interface WeightView {
+  pies: boolean;
+  overlay: boolean;
+  /** Pies only for the selected vertices and the vertices weighted to selected bones; Overlay shows the other bones black. */
+  selected: boolean;
+}
+
 export interface UiState {
   mode: Mode;
   tool: Tool;
@@ -98,6 +106,7 @@ export interface UiState {
   /** Expanded entity rows in the dopesheet. */
   expanded: Record<string, boolean>;
   brush: WeightBrush;
+  weightView: WeightView;
   toast: { id: number; text: string; kind: 'info' | 'error' | 'ok' } | null;
   panel: { left: number; right: number; bottom: number };
   /** Which windows are open (see layout.ts). */
@@ -140,6 +149,7 @@ export const uiStore = createStore<UiState>({
   selectedKeys: [],
   expanded: {},
   brush: { size: 40, strength: 0.5, mode: 'add', bone: null, feather: 100, locked: [] },
+  weightView: { pies: false, overlay: false, selected: false },
   toast: null,
   panel: saved.panel ?? (typeof window !== 'undefined' && window.innerWidth < 1150 ? { left: 210, right: 240, bottom: 250 } : { left: 270, right: 300, bottom: 300 }),
   views: saved.views ?? DEFAULT_VIEWS,
