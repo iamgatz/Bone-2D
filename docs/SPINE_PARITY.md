@@ -37,6 +37,7 @@
 | Pose tools: Reset pose / Reset selected / Set to setup pose / Copy–paste pose / Mirror pose | ❌ | меню Pose + клавиши | **P1** |
 | Duplicate bone с детьми и слотами, зеркальное дублирование (X/Y) | ❌ | «Duplicate» и «Mirror» для костей, слотов, вложений, ключей | **P1** |
 | Bone: Parent tool, bone selection modes, lock, hide | ✅ Set Parent (Shift+P: клик по новой родительской кости во вьюпорте или в дереве), drag в дереве, lock, hide | — | |
+| Bone: Split (Nested, Fibonacci) | ✅ Раздел «Разрезать» в инспекторе: 2–32 части, цепочкой или рядом, поровну или по Фибоначчи; дети на конце идут за последней частью (в доках Spine про детей, веса и ключи не сказано — это наш выбор) | — | |
 | Bone creation options: Auto parent / Length | ✅ | — | |
 | Mesh tools: Edit mesh, Auto-trace, Hull, Triangulate, Generate | ✅ | Hull-edges, «Edit mesh outline», Smooth | P2 |
 | Mesh: Linked mesh, Sequence | ✅ | — (linked mesh: настоящая связь, общая деформация, другой слот / скин; создаётся через «В скине» и при импорте) | |
