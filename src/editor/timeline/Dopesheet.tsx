@@ -3,10 +3,12 @@ import { decodeKey, encodeKey } from '@/core/keyrefs';
 import type { KeyRef } from '@/core/keyrefs';
 import { moveKeysBy, setTime } from '@/store/actions';
 import { docStore } from '@/store/doc';
+import { markerNear, markersOf } from '@/core/markers';
 import { openKeyDialog } from '@/store/keyDialog';
+import { openMarkerDialog } from '@/store/markerActions';
 import { uiStore } from '@/store/ui';
 import type { Row } from './rows';
-import { alpha, token } from '../ui/tokens';
+import { MARKER_TOKENS, alpha, token } from '../ui/tokens';
 
 export const ROW_H = 24;
 
@@ -158,6 +160,23 @@ export function Dopesheet({ rows, duration, fps, onMenu }: Props) {
         rctx.fillRect(x0 - 1, 0, 2, 28);
         rctx.fillRect(x1 - 1, 0, 2, 28);
       }
+      // markers: a flag with the name on the ruler and a faint line down the keys
+      for (const m of markersOf(docStore.get().skeleton.animations.find((a) => a.id === ui.animationId))) {
+        const mx = timeToX(m.time, scroll, zoom);
+        if (mx < -4 || mx > w + 200) continue;
+        rctx.fillStyle = token(MARKER_TOKENS[m.color]);
+        rctx.fillRect(Math.round(mx) - 0.5, 0, 1.5, 28);
+        rctx.beginPath();
+        rctx.moveTo(mx, 0);
+        rctx.lineTo(mx + 7, 3.5);
+        rctx.lineTo(mx, 7);
+        rctx.closePath();
+        rctx.fill();
+        if (m.name) {
+          rctx.font = '10px ui-sans-serif, system-ui, sans-serif';
+          rctx.fillText(m.name, mx + 10, 4);
+        }
+      }
       const px = timeToX(ui.time, scroll, zoom);
       rctx.fillStyle = token('--animate');
       rctx.beginPath();
@@ -186,6 +205,10 @@ export function Dopesheet({ rows, duration, fps, onMenu }: Props) {
           ctx.fillStyle = token('--tl-row-alt');
           ctx.fillRect(0, y, cw, ROW_H);
         }
+      }
+      for (const m of markersOf(docStore.get().skeleton.animations.find((a) => a.id === ui.animationId))) {
+        ctx.fillStyle = alpha(MARKER_TOKENS[m.color], 0.3);
+        ctx.fillRect(Math.round(timeToX(m.time, scroll, zoom)) - 0.5, 0, 1, ch);
       }
       // vertical grid (every second, and every frame when zoomed in)
       ctx.strokeStyle = token('--tl-grid');
@@ -303,6 +326,16 @@ export function Dopesheet({ rows, duration, fps, onMenu }: Props) {
       const [x] = local(e, ruler);
       setTime(xToTime(x));
     };
+    /** The marker under a point of the ruler (the flag or its line). */
+    const markerAt = (x: number) => {
+      const ui = uiStore.get();
+      return markerNear(docStore.get().skeleton.animations.find((a) => a.id === ui.animationId), (x - 3) / ui.tlZoom + ui.tlScroll, 8 / ui.tlZoom);
+    };
+    const onRulerDouble = (e: MouseEvent) => {
+      const m = markerAt(local(e, ruler)[0]);
+      if (m) openMarkerDialog(m.id);
+    };
+    ruler.addEventListener('dblclick', onRulerDouble);
     const onRulerDown = (e: PointerEvent) => {
       if (e.button !== 0) return;
       ruler.setPointerCapture(e.pointerId);
@@ -460,6 +493,7 @@ export function Dopesheet({ rows, duration, fps, onMenu }: Props) {
       ruler.removeEventListener('wheel', onWheel);
       canvas.removeEventListener('contextmenu', noCtx);
       canvas.removeEventListener('dblclick', onDouble);
+      ruler.removeEventListener('dblclick', onRulerDouble);
     };
   }, [onMenu]);
 

@@ -5,6 +5,7 @@ import { exportSpineJson } from '@/core/export/spineJson';
 import { composePage, packAtlas, writeAtlas } from '@/core/export/atlas';
 import { makeRegion, scaledSize, usedImages } from '@/core/export/atlasBuild';
 import type { AtlasFilter, AtlasPage, PackInput } from '@/core/export/atlas';
+import { mixesToText } from '@/core/export/mixes';
 import { createZip } from '@/core/export/zip';
 import { activeIndex, skeletonList } from '@/core/skeletons';
 import type { ZipEntry } from '@/core/export/zip';
@@ -28,6 +29,8 @@ export interface ExportOptions {
   rotate?: boolean;
   /** How the engine should smooth the atlas: Linear, or Nearest for pixel art. */
   filter?: AtlasFilter;
+  /** Write the mix table of the skeleton as a JSON file for the game. */
+  includeMixes?: boolean;
   /** Write the single-file preview page that plays the export. */
   includePreview?: boolean;
   /** Which skeleton of the project (index in its list; default: the edited one). */
@@ -158,9 +161,12 @@ export async function buildSpineExport(opts: ExportOptions): Promise<ExportResul
       files.push({ name: `${base}-preview.html`, data: enc.encode(preview) });
     }
   }
+  // the mix table belongs to the edited skeleton (project.mixes) or waits in the aside of another one
+  const mixText = opts.includeMixes === false ? null : mixesToText(doc.animations, full === project.skeleton ? project.mixes : full.aside?.mixes);
+  if (mixText) files.push({ name: `${base}.mixes.json`, data: enc.encode(mixText) });
   files.push({
     name: 'README.txt',
-    data: enc.encode(`Exported from Bone 2D.\n\n${skeletonFile.padEnd(base.length + 5)}  Spine 4.3 skeleton data (${binary ? 'binary' : 'JSON'})\n${base}.atlas         texture atlas (straight alpha, pma:false)\n${base}-preview.html  open in a browser: plays the animations with the official Spine 4.3 web player (needs internet for the player script)\n\nLoad with the official Spine 4.3 runtimes (spine-ts, Unity, Godot, ...).\n`),
+    data: enc.encode(`Exported from Bone 2D.\n\n${skeletonFile.padEnd(base.length + 5)}  Spine 4.3 skeleton data (${binary ? 'binary' : 'JSON'})\n${base}.atlas         texture atlas (straight alpha, pma:false)\n${base}-preview.html  open in a browser: plays the animations with the official Spine 4.3 web player (needs internet for the player script)\n${mixText ? `${base}.mixes.json  crossfade times between animations (defaultMix and setMix of AnimationStateData)\n` : ''}\nLoad with the official Spine 4.3 runtimes (spine-ts, Unity, Godot, ...).\n`),
   });
   const zip = createZip(files);
   return { zip, files: files.map((f) => ({ name: f.name, size: f.data.length })), entries: files, pages: pages.length, missing, json, preview };

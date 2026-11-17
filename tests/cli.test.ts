@@ -65,6 +65,24 @@ describe('cli export', () => {
     expect(JSON.parse(readFileSync(join(out2, 'hero.json'), 'utf8')).skeleton.fps).toBeUndefined();
   });
 
+  it('writes the mix table next to the skeleton when there is one, and --no-mixes leaves it out', () => {
+    const { path, project } = sample();
+    const idle = project.skeleton.animations[0];
+    const run2 = newAnimation('run', 1);
+    project.skeleton.animations.push(run2);
+    const text = readFileSync(path, 'utf8');
+    const file = JSON.parse(text);
+    file.project.mixes = { default: 0.1, pairs: [{ from: idle.id, to: run2.id, time: 0.4 }] };
+    file.project.skeleton.animations = project.skeleton.animations;
+    writeFileSync(path, JSON.stringify(file));
+    const out = join(dir, 'mix');
+    expect(run(['export', path, out, '--no-images'], io())).toBe(0);
+    expect(JSON.parse(readFileSync(join(out, 'hero.mixes.json'), 'utf8'))).toMatchObject({ defaultMix: 0.1, mixes: [{ from: 'idle', to: 'run', duration: 0.4 }] });
+    const out2 = join(dir, 'nomix');
+    run(['export', path, out2, '--no-images', '--no-mixes'], io());
+    expect(existsSync(join(out2, 'hero.mixes.json'))).toBe(false);
+  });
+
   it('refuses bad options and files, and a picture name cannot leave the images folder', () => {
     const { path } = sample({ '../../escape': PNG });
     const out = join(dir, 'safe');

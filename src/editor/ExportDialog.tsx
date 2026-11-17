@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Download, FolderOpen, Package, Save } from 'lucide-react';
+import { Copy, Download, FolderOpen, Package, Save } from 'lucide-react';
 import { exportSettingsFromText, exportSettingsToText, loadExportSettings, rememberExportSettings } from '@/core/export/settings';
 import type { ExportSettings } from '@/core/export/settings';
 import { docStore, useProject } from '@/store/doc';
@@ -21,7 +21,7 @@ export function ExportDialog() {
   const picked = many && /^\d+$/.test(which) ? Math.min(Number(which), skeletons.length - 1) : undefined;
   const doc = picked !== undefined ? skeletons[picked] : project.skeleton;
   const [settings, setSettings] = useState<ExportSettings>(loadExportSettings);
-  const { format, scale, maxSize, padding, pretty, nonessential, pot, includePreview, trim, rotate, filter } = settings;
+  const { format, scale, maxSize, padding, pretty, nonessential, pot, includePreview, trim, rotate, filter, mixes } = settings;
   const change = (patch: Partial<ExportSettings>) => setSettings((s) => ({ ...s, ...patch }));
   const [excluded, setExcluded] = useState<string[]>([]);
   const [tab, setTab] = useState<'data' | 'animation'>('data');
@@ -37,14 +37,14 @@ export function ExportDialog() {
     if (tab !== 'data') return;
     setBusy(true);
     setError(null);
-    (all ? buildAllSkeletonsExport : buildSpineExport)({ format, scale, maxSize, padding, pretty, nonessential, pot, includePreview, trim, rotate, filter, excludeAnimations: excluded, skeletonIndex: picked })
+    (all ? buildAllSkeletonsExport : buildSpineExport)({ format, scale, maxSize, padding, pretty, nonessential, pot, includePreview, trim, rotate, filter, includeMixes: mixes, excludeAnimations: excluded, skeletonIndex: picked })
       .then((r) => alive && setResult(r))
       .catch((e: Error) => alive && (setError(e.message), setResult(null)))
       .finally(() => alive && setBusy(false));
     return () => {
       alive = false;
     };
-  }, [format, scale, maxSize, padding, pretty, nonessential, pot, includePreview, trim, rotate, filter, excluded, tab, all, picked]);
+  }, [format, scale, maxSize, padding, pretty, nonessential, pot, includePreview, trim, rotate, filter, mixes, excluded, tab, all, picked]);
 
   const close = () => uiStore.patch({ exportOpen: false });
   const base = (all ? project.name || 'project' : doc.name || 'skeleton').replace(/[^\w-]+/g, '_');
@@ -52,6 +52,12 @@ export function ExportDialog() {
   const saveSettings = () => {
     downloadBlob(new Blob([exportSettingsToText(settings)], { type: 'application/json' }), 'bone2d-export-settings.json');
     toast('Export settings saved', 'ok');
+  };
+  const copySettings = () => {
+    navigator.clipboard.writeText(exportSettingsToText(settings)).then(
+      () => toast('Export settings copied', 'ok'),
+      () => toast('Could not copy: the browser blocked the clipboard', 'error'),
+    );
   };
   const loadSettings = async (file: File | undefined) => {
     if (!file) return;
@@ -136,12 +142,17 @@ export function ExportDialog() {
         )}
         <label>Power-of-two pages</label>
         <Toggle on={pot} onChange={(v) => change({ pot: v })} title="Atlas page sizes are powers of two" />
+        <label>Mix table</label>
+        <Toggle on={mixes} onChange={(v) => change({ mixes: v })} title="Write the crossfade times between animations as a JSON file for the game (only when the mix table has any)" />
         <label>Preview page</label>
         <Toggle on={includePreview} onChange={(v) => change({ includePreview: v })} title="A page that plays the export with the official Spine player" />
       </div>
       <div className="hstack mb">
         <Button ghost icon={Save} onClick={saveSettings} title="Save these settings to a file to share with a team">
           Save settings
+        </Button>
+        <Button ghost icon={Copy} onClick={copySettings} title="Copy these settings as text to paste into a message">
+          Copy settings
         </Button>
         <Button ghost icon={FolderOpen} onClick={() => fileRef.current?.click()} title="Load export settings from a file">
           Load settings

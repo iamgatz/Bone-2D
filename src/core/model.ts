@@ -563,7 +563,19 @@ export interface Animation {
   events: EventKey[];
   /** How the editor plays this animation (loop, ping-pong, play range). Editor metadata: not part of the Spine export. Absent = looping, whole animation. */
   play?: PlaySettings;
+  /** Notes on the timeline (a beat, a sound cue, a comment for the team). Editor metadata: not part of the Spine export. */
+  markers?: Marker[];
 }
+
+/** A flag on the timeline of one animation. `color` is a position in the marker palette (0 to MARKER_COLORS - 1). */
+export interface Marker {
+  id: Id;
+  time: number;
+  name: string;
+  color: number;
+  text: string;
+}
+export const MARKER_COLORS = 6;
 
 export interface PlaySettings {
   loop: boolean;
