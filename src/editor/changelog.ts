@@ -12,6 +12,12 @@ export interface Release {
 
 export const CHANGELOG: Release[] = [
   {
+    version: '0.38',
+    date: '2026-11-17',
+    en: ['Command line: `npm run cli -- export project.bone2d out/` writes the Spine 4.3 skeleton data (JSON or binary, scale, pretty, without editor-only data) and the pictures of the project without opening the editor, for a build step or CI; `info` counts what a project holds, `check` lists what is damaged (exit code 1). The atlas is still packed by the editor.'],
+    ru: ['Командная строка: `npm run cli -- export project.bone2d out/` пишет данные скелета Spine 4.3 (JSON или binary, масштаб, с отступами, без данных только для редактора) и картинки проекта, не открывая редактор, для шага сборки или CI; `info` считает, что в проекте, `check` перечисляет повреждения (код выхода 1). Атлас по-прежнему пакует редактор.'],
+  },
+  {
     version: '0.37',
     date: '2026-11-17',
     en: [
