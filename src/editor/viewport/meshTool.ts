@@ -11,6 +11,7 @@ import type { Scene } from '../scene';
 import { COLORS } from './overlay';
 import type { OverlayInput } from './overlay';
 import { slotWorldVertices } from './hit';
+import { settingsStore } from '@/store/settings';
 import { alpha, token } from '../ui/tokens';
 import { boneCss, boundBones, overlayColors, pieVertices } from './weightColors';
 
@@ -148,6 +149,7 @@ export class MeshTool {
       else vertices = cur.includes(hit) ? cur : [hit];
       setSelection({ ...ui.selection, vertices });
       if (!vertices.includes(hit)) return true;
+      if (ui.meshView.freeze) return true; // frozen: selecting only
       const moves = new Map<number, [number, number]>();
       for (const v of vertices) moves.set(v, [geo.vertices[v * 2], geo.vertices[v * 2 + 1]]);
       docStore.beginGesture(ui.mode === 'animate' ? 'Deform' : 'Move vertices');
@@ -249,10 +251,26 @@ export class MeshTool {
     const v = geo.vertices;
     const tri = am.mesh.triangles;
     const P = (i: number) => worldToScreen(cam, w, h, v[i * 2], v[i * 2 + 1]);
+    if (edit && (ui.meshView.dim || ui.meshView.isolate)) {
+      // everything outside the outline of the mesh: dimmed, or (Isolate) painted over with the viewport colour
+      ctx.save();
+      ctx.beginPath();
+      ctx.rect(0, 0, w, h);
+      for (let i = 0; i < am.mesh.hull; i++) {
+        const p = P(i);
+        if (i === 0) ctx.moveTo(p[0], p[1]);
+        else ctx.lineTo(p[0], p[1]);
+      }
+      ctx.closePath();
+      const bg = settingsStore.get().viewportBg.map((c) => Math.round(c * 255));
+      ctx.fillStyle = `rgba(${bg[0]},${bg[1]},${bg[2]},${ui.meshView.isolate ? 1 : 0.7})`;
+      ctx.fill('evenodd');
+      ctx.restore();
+    }
     ctx.lineWidth = 1;
     ctx.strokeStyle = edit ? alpha('--accent', 0.55) : alpha('--accent', 0.22);
     ctx.beginPath();
-    for (let t = 0; t < tri.length; t += 3) {
+    for (let t = 0; !(edit && !ui.meshView.wireframe) && t < tri.length; t += 3) {
       const a = P(tri[t]);
       const b = P(tri[t + 1]);
       const c = P(tri[t + 2]);

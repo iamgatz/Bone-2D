@@ -26,6 +26,7 @@ import { validateProject } from '../src/core/validate';
 import * as A from '../src/store/actions';
 import { docStore } from '../src/store/doc';
 import * as I from '../src/store/ikActions';
+import * as MX from '../src/store/mixActions';
 import * as M from '../src/store/meshActions';
 import * as PA from '../src/store/pathActions';
 import * as PC from '../src/store/pathConstraintActions';
@@ -279,6 +280,8 @@ export const ops: Op[] = [
   { name: 'selectAnimation', run: (c) => { const a = c.pick(doc().animations); if (a) A.selectAnimation(a.id); } },
   { name: 'duplicateAnimation', run: (c) => { const a = c.pick(doc().animations); if (a) A.duplicateAnimation(a.id); } },
   { name: 'renameAnimation', run: (c) => { const a = c.pick(doc().animations); if (a) A.renameAnimation(a.id, c.pick(NAMES)!); } },
+  { name: 'setDefaultMix', run: (c) => { MX.setDefaultMix(c.chance(0.3) ? 0 : c.num(0, 1.5)); } },
+  { name: 'setMixPair', run: (c) => { const a = c.pick(doc().animations); const b = c.pick(doc().animations); if (a && b) MX.setMixPair(a.id, b.id, c.chance(0.3) ? 0 : c.num(0, 2)); } },
   { name: 'deleteAnimation', run: (c) => { const a = c.pick(doc().animations); if (a) A.deleteAnimation(a.id); } },
   { name: 'setAnimationDuration', run: (c) => { const a = c.pick(doc().animations); if (a) A.setAnimationDuration(a.id, c.num(0, 3)); } },
   { name: 'setFps', run: (c) => { A.setFps(c.pick([12, 24, 30, 60, 240, 0, 1000])!); } },

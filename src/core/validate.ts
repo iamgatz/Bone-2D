@@ -13,6 +13,7 @@ import { cleanSequence, cleanSequenceKey } from './sequence';
 import { cleanPlay } from './playback';
 import { cleanGuides } from './snap';
 import { repairPoses } from './poses';
+import { repairMixes } from './preview';
 import {
   BLEND_MODES,
   DEFAULT_BOUNDING_BOX_COLOR,
@@ -88,6 +89,8 @@ export function repairProject(project: Project): string[] {
     if (!same) note('the guides were repaired');
     project.guides = clean;
   }
+
+  if (project.mixes !== undefined && repairMixes(project)) note('the mix table was repaired');
 
   if (project.poses !== undefined) {
     const fixed = repairPoses(project.poses);

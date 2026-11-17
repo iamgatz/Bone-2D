@@ -40,6 +40,7 @@ import { AnimationToolsPanel } from './panels/AnimationToolsPanel';
 import { PosesPanel } from './panels/PosesPanel';
 import { PlaybackPanel } from './panels/PlaybackPanel';
 import { MetricsPanel } from './panels/MetricsPanel';
+import { PreviewPanel } from './panels/PreviewPanel';
 import { HistoryPanel } from './panels/HistoryPanel';
 import { LAYOUTS, VIEW_LIST, sameViews } from '@/store/layout';
 import { applyLayout, startLayoutPersist, toggleAllViews, toggleView } from '@/store/viewActions';
@@ -430,7 +431,7 @@ export function App() {
     uiStore.patch({ panel: { ...p, [key]: Math.min(max, Math.max(min, p[key] + sign * d)) } });
   };
 
-  const leftOn = views.tree || views.images || views.animations || views.skins || views.playback || views.tools || views.poses || views.metrics || views.history;
+  const leftOn = views.tree || views.images || views.animations || views.skins || views.playback || views.tools || views.poses || views.metrics || views.history || views.preview;
 
   return (
     <div className="app">
@@ -447,6 +448,7 @@ export function App() {
               {views.poses && <PosesPanel />}
               {views.metrics && <MetricsPanel />}
               {views.history && <HistoryPanel />}
+              {views.preview && <PreviewPanel />}
               {views.images && <AssetsPanel />}
             </aside>
             <Splitter dir="v" onDrag={drag('left', 1, 200, 480)} />
