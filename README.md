@@ -57,7 +57,7 @@ $env:FUZZ_SEEDS='300'; $env:FUZZ_STEPS='100'; npx vitest run tests/fuzz.test.ts
 - Playback, loop, frame stepping. **Onion skin** (faded poses before and after the playhead), **Clean Up** (removes the keys that change nothing), **Alt-drag a key** to shift the keys after it too, an Animations window with folders (`emotes/wave`).
 
 **Files**
-- `.bone2d` project (images embedded), autosave to IndexedDB, File System Access API. Older `.marrow` files (the project's former working name) still open.
+- `.bone2d` project (images embedded), autosave to IndexedDB, File System Access API (Ctrl+S saves to the same file, Ctrl+Shift+S asks where; the Welcome window lists recent projects). Older `.marrow` files (the project's former working name) still open.
   A file is **validated and repaired** on open (dangling references, stale deform keys, NaN, duplicate names); a broken image never wipes the open session.
 - Export ZIP: Spine 4.3 JSON **or binary `.skel`** (about half the size) + atlas (MaxRects, edge extrusion, page size, padding, power of two) + `*-preview.html` (plays the export with the **official** Spine player); choose which animations go in.
 - **Render an animation to a GIF** (transparent, own encoder), **a PNG sequence** (ZIP) or **a WebM video** — File → Export → Animation tab.

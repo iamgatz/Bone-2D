@@ -65,8 +65,25 @@ class AssetRegistry {
   remove(name: string) {
     const a = this.map.get(name);
     if (!a) return;
-    a.bitmap.close?.();
+    // a renamed image is kept under both names (so undo and redo find their pixels): the bitmap is shared, close it with the last one
+    if (![...this.map.values()].some((o) => o !== a && o.bitmap === a.bitmap)) a.bitmap.close?.();
     this.map.delete(name);
+    this.emit();
+  }
+
+  /** Makes the pixels of `from` available under `to` as well (renaming an image; the old name stays for undo). */
+  alias(from: string, to: string) {
+    const a = this.map.get(from);
+    if (!a || this.map.has(to)) return;
+    this.map.set(to, { ...a, name: to });
+    this.emit();
+  }
+
+  /** Puts new pixels behind a name (replace image). The version changes, so textures are uploaded again. */
+  set(name: string, asset: ImageAsset) {
+    const old = this.map.get(name);
+    if (old && ![...this.map.values()].some((o) => o !== old && o.bitmap === old.bitmap)) old.bitmap.close?.();
+    this.map.set(name, { ...asset, name });
     this.emit();
   }
 

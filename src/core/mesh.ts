@@ -412,6 +412,89 @@ export function normalizeInfluences(list: Influence[], maxInfluences = 4): Influ
   return out;
 }
 
+/**
+ * Prune (Spine's weights tool): drops the influences lighter than `threshold`, keeps the strongest `max` of a vertex and scales what
+ * is left back to 1. A vertex always keeps at least its strongest bone. The setup pose does not change (every influence of a vertex
+ * points at the same world position), only how the vertex follows the bones.
+ */
+export function pruneWeights(weights: Influence[][], threshold = 0.05, max = 4): Influence[][] {
+  return weights.map((list) => {
+    if (list.length === 0) return list;
+    const sorted = [...list].sort((a, b) => b[3] - a[3]);
+    let kept = sorted.filter((i) => i[3] >= threshold).slice(0, Math.max(1, max));
+    if (kept.length === 0) kept = [sorted[0]];
+    const sum = kept.reduce((s, i) => s + i[3], 0);
+    return kept.map((i) => [i[0], i[1], i[2], sum > 0 ? i[3] / sum : 1 / kept.length] as Influence);
+  });
+}
+
+/**
+ * Mirror weights: the vertices on one side of the vertical axis `axisX` (world) give their weights to the vertex on the other side
+ * that sits where they would be reflected, with every bone replaced by its mirror twin (`twin`; a bone without one stays itself).
+ * The target keeps its position: its influences are re-expressed in the local space of the twin bones. Vertices with no partner
+ * within `tolerance` are left alone. Returns the new weights and how many vertices were set.
+ */
+export function mirrorWeights(
+  weights: Influence[][],
+  world: ArrayLike<number>,
+  axisX: number,
+  fromLeft: boolean,
+  twin: (bone: Id) => Id,
+  bones: BoneMats,
+  tolerance = 3,
+): { weights: Influence[][]; changed: number } {
+  const n = weights.length;
+  const out = weights.map((l) => l.map((i) => [...i] as Influence));
+  const inverse = new Map<Id, Mat>();
+  const inv = (id: Id): Mat | null => {
+    let m = inverse.get(id);
+    if (!m) {
+      const base = bones.get(id);
+      if (!base) return null;
+      m = matInvert(base);
+      inverse.set(id, m);
+    }
+    return m;
+  };
+  let changed = 0;
+  for (let i = 0; i < n; i++) {
+    const x = world[i * 2];
+    const y = world[i * 2 + 1];
+    // the source side: left of the axis for "left to right"; vertices on the axis are their own mirror and stay
+    if (fromLeft ? x >= axisX - 1e-6 : x <= axisX + 1e-6) continue;
+    const mx = 2 * axisX - x;
+    let best = -1;
+    let bestD = tolerance * tolerance;
+    for (let j = 0; j < n; j++) {
+      if (j === i) continue;
+      const dx = world[j * 2] - mx;
+      const dy = world[j * 2 + 1] - y;
+      const d = dx * dx + dy * dy;
+      if (d <= bestD) {
+        bestD = d;
+        best = j;
+      }
+    }
+    if (best < 0 || weights[i].length === 0) continue;
+    const tx = world[best * 2];
+    const ty = world[best * 2 + 1];
+    const list: Influence[] = [];
+    for (const [bone, , , w] of weights[i]) {
+      const target = twin(bone);
+      const im = inv(target);
+      if (!im) continue;
+      const p = matApply(im, tx, ty);
+      const existing = list.find((e) => e[0] === target);
+      if (existing) existing[3] += w;
+      else list.push([target, p[0], p[1], w]);
+    }
+    if (list.length === 0) continue;
+    out[best] = normalizeInfluences(list);
+    changed++;
+  }
+  return { weights: out, changed };
+}
+
 /** Inverse-distance weights from bone segments, limited to `maxInfluences` bones per vertex. */
 export function autoWeights(world: ArrayLike<number>, segs: BoneSegment[], opts: { maxInfluences?: number; falloff?: number } = {}): { bone: Id; w: number }[][] {
   const maxInfl = opts.maxInfluences ?? 4;

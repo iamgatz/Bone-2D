@@ -2,7 +2,8 @@
 import { makeCurve, reconcileDeform, upsertKey } from '@/core/edit';
 import { RAD2DEG } from '@/core/math';
 import type { Mat } from '@/core/math';
-import { adjacency, autoWeights, bindMesh, generateMeshFromImage, locateInMesh, meshFromRegion, meshWorldPositions, normalizeInfluences, removeMeshVertices, setBoneWeight, smoothWeights, triangulate, unbindMesh } from '@/core/mesh';
+import { adjacency, autoWeights, bindMesh, generateMeshFromImage, locateInMesh, meshFromRegion, meshWorldPositions, mirrorWeights, normalizeInfluences, pruneWeights, removeMeshVertices, setBoneWeight, smoothWeights, triangulate, unbindMesh } from '@/core/mesh';
+import { mirrorName } from '@/core/duplicate';
 import type { BoneMats, TraceOptions, VertexMap } from '@/core/mesh';
 import { matInvert } from '@/core/math';
 import type { Id, Influence, MeshAttachment, RegionAttachment } from '@/core/model';
@@ -275,6 +276,40 @@ export function smoothMeshWeights(slotId: Id, name: string, passes = 1) {
     ),
   );
   writeMesh(slotId, name, { ...mesh, weights }, 'Smooth weights');
+}
+
+/** Drops the faint influences of every vertex and keeps at most `max` bones per vertex (Spine's Prune). */
+export function pruneMeshWeights(slotId: Id, name: string, threshold = 0.05, max = 4) {
+  const mesh = getMesh(slotId, name);
+  if (!mesh || !mesh.weights) return;
+  const weights = pruneWeights(mesh.weights, threshold, max);
+  writeMesh(slotId, name, { ...mesh, weights }, 'Prune weights');
+}
+
+/**
+ * Copies the weights of one half of the mesh to the other, reflected across the skeleton's vertical axis, with every bone swapped for
+ * its mirror twin (a bone named "arm L" for "arm R", "leftLeg" for "rightLeg"). Returns how many vertices were set.
+ */
+export function mirrorMeshWeights(slotId: Id, name: string, fromLeft: boolean): number {
+  const mesh = getMesh(slotId, name);
+  if (!mesh || !mesh.weights) return 0;
+  const doc = docStore.get().skeleton;
+  const byName = new Map(doc.bones.map((b) => [b.name, b.id] as const));
+  const nameOf = new Map(doc.bones.map((b) => [b.id, b.name] as const));
+  const twin = (id: Id): Id => {
+    const bone = nameOf.get(id);
+    const other = bone ? byName.get(mirrorName(bone)) : undefined;
+    return other ?? id;
+  };
+  const { mats, slotMat } = setupMats();
+  const world = meshWorldPositions(mesh, slotMat(slotId), mats);
+  const result = mirrorWeights(mesh.weights, world, 0, fromLeft, twin, mats);
+  if (result.changed === 0) {
+    toast("No vertex has a mirrored partner on the other side. Mirror weights needs a mesh that is symmetric about the skeleton's center line.", 'info');
+    return 0;
+  }
+  writeMesh(slotId, name, { ...mesh, weights: result.weights }, 'Mirror weights');
+  return result.changed;
 }
 
 export interface BrushStroke {

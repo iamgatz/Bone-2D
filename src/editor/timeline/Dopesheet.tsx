@@ -35,7 +35,7 @@ interface Props {
 type Drag =
   | { kind: 'scrub' }
   | { kind: 'pan'; x: number; scroll: number }
-  | { kind: 'keys'; anchor: KeyRef; grab: number; refs: KeyRef[]; ripple: boolean }
+  | { kind: 'keys'; anchor: KeyRef; grab: number; refs: KeyRef[]; ripple: boolean; loop: boolean }
   | { kind: 'marquee'; x0: number; y0: number; x1: number; y1: number; base: string[] };
 
 function timeToX(t: number, scroll: number, zoom: number) {
@@ -147,6 +147,16 @@ export function Dopesheet({ rows, duration, fps, onMenu }: Props) {
         rctx.fillStyle = 'rgba(0,0,0,0.4)';
         rctx.fillRect(Math.max(0, endX), 0, w, 28);
       }
+      if (ui.range) {
+        // the play range (Playback window): a band on the ruler
+        const x0 = timeToX(ui.range[0], scroll, zoom);
+        const x1 = timeToX(ui.range[1], scroll, zoom);
+        rctx.fillStyle = alpha('--animate', 0.2);
+        rctx.fillRect(x0, 0, x1 - x0, 28);
+        rctx.fillStyle = token('--animate');
+        rctx.fillRect(x0 - 1, 0, 2, 28);
+        rctx.fillRect(x1 - 1, 0, 2, 28);
+      }
       const px = timeToX(ui.time, scroll, zoom);
       rctx.fillStyle = token('--animate');
       rctx.beginPath();
@@ -228,6 +238,14 @@ export function Dopesheet({ rows, duration, fps, onMenu }: Props) {
           ctx.lineWidth = 1.2;
           ctx.stroke();
         }
+      }
+      if (ui.range) {
+        // what is outside the play range is dimmed
+        const x0 = Math.max(0, timeToX(ui.range[0], scroll, zoom));
+        const x1 = Math.min(cw, timeToX(ui.range[1], scroll, zoom));
+        ctx.fillStyle = 'rgba(0,0,0,0.3)';
+        if (x0 > 0) ctx.fillRect(0, 0, x0, ch);
+        if (x1 < cw) ctx.fillRect(x1, 0, cw - x1, ch);
       }
       // playhead
       ctx.fillStyle = alpha('--animate', 0.9);
@@ -332,13 +350,16 @@ export function Dopesheet({ rows, duration, fps, onMenu }: Props) {
         const enc = hit.key.refs.map(encodeKey);
         let selected: string[];
         const already = enc.every((s) => ui.selectedKeys.includes(s));
-        if (e.shiftKey || e.ctrlKey || e.metaKey) {
+        // Ctrl+Alt: Offset keys (the keys go round the loop); the modifiers do not toggle the selection then
+        const loop = e.altKey && (e.ctrlKey || e.metaKey);
+        if (loop) selected = already ? ui.selectedKeys : enc;
+        else if (e.shiftKey || e.ctrlKey || e.metaKey) {
           selected = already ? ui.selectedKeys.filter((s) => !enc.includes(s)) : [...new Set([...ui.selectedKeys, ...enc])];
         } else selected = already ? ui.selectedKeys : enc;
         uiStore.patch({ selectedKeys: selected });
-        if (selected.length && !(already && (e.shiftKey || e.ctrlKey || e.metaKey))) {
-          docStore.beginGesture('Move keys');
-          drag.current = { kind: 'keys', anchor: hit.key.refs[0], grab: xToTime(x) - hit.key.time, refs: selected.map(decodeKey), ripple: e.altKey };
+        if (selected.length && (loop || !(already && (e.shiftKey || e.ctrlKey || e.metaKey)))) {
+          docStore.beginGesture(loop ? 'Offset keys' : 'Move keys');
+          drag.current = { kind: 'keys', anchor: hit.key.refs[0], grab: xToTime(x) - hit.key.time, refs: selected.map(decodeKey), ripple: e.altKey && !loop, loop };
         }
         return;
       }
@@ -355,11 +376,11 @@ export function Dopesheet({ rows, duration, fps, onMenu }: Props) {
         uiStore.patch({ tlScroll: d.scroll - (e.clientX - d.x) / ui.tlZoom });
       } else if (d.kind === 'keys') {
         const fps = propsRef.current.fps;
-        const target = Math.max(0, Math.round((xToTime(x) - d.grab) * fps) / fps);
+        const target = d.loop ? Math.round((xToTime(x) - d.grab) * fps) / fps : Math.max(0, Math.round((xToTime(x) - d.grab) * fps) / fps);
         const delta = target - d.anchor.time;
         if (Math.abs(delta) > 1e-6) {
           const anchorIndex = d.refs.findIndex((r) => encodeKey(r) === encodeKey(d.anchor));
-          const moved = moveKeysBy(d.refs, delta, d.ripple);
+          const moved = moveKeysBy(d.refs, delta, d.ripple, d.loop);
           d.anchor = { ...d.anchor, time: (moved[anchorIndex] ?? moved[0]).time };
           d.refs = moved;
           uiStore.patch({ selectedKeys: moved.map(encodeKey) });

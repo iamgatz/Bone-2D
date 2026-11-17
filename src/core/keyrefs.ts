@@ -66,8 +66,11 @@ export function removeKeys(anim: Animation, refs: KeyRef[]) {
   pruneEmpty(anim);
 }
 
-/** Shifts the referenced keys by dt (clamped to >= 0). Keys landing on an unmoved key replace it. Returns the refs after the move. */
-export function moveKeys(anim: Animation, refs: KeyRef[], dt: number, ripple = false): KeyRef[] {
+/**
+ * Shifts the referenced keys by dt (clamped to >= 0). Keys landing on an unmoved key replace it. Returns the refs after the move.
+ * With `wrap` (the animation's duration) the keys travel around the loop instead — Spine's Offset keys: what leaves the end comes back at the start.
+ */
+export function moveKeys(anim: Animation, refs: KeyRef[], dt: number, ripple = false, wrap = 0): KeyRef[] {
   const groups = new Map<AnyKeys, { kind: KeyKind; times: number[]; moved: Map<number, number> }>();
   for (const ref of refs) {
     const keys = resolveKeys(anim, ref);
@@ -78,7 +81,9 @@ export function moveKeys(anim: Animation, refs: KeyRef[], dt: number, ripple = f
   }
   let minTime = Infinity;
   for (const r of refs) minTime = Math.min(minTime, r.time);
-  const shift = Math.max(dt, -minTime);
+  const looping = wrap > KEY_EPS && !ripple;
+  const shift = looping ? dt : Math.max(dt, -minTime);
+  const at = (t: number) => (looping ? ((t % wrap) + wrap) % wrap : Math.max(0, t));
   for (const [keys, g] of groups) {
     const moved = new Set<{ time: number }>();
     // ripple: the keys after the last moved one of this timeline travel with them (Spine's Shift)
@@ -87,7 +92,7 @@ export function moveKeys(anim: Animation, refs: KeyRef[], dt: number, ripple = f
     for (const k of keys) {
       const from = g.times.find((t) => Math.abs(t - k.time) <= KEY_EPS);
       if (from !== undefined) {
-        k.time = Math.max(0, k.time + shift);
+        k.time = at(k.time + shift);
         g.moved.set(from, k.time);
         moved.add(k);
       }
@@ -104,6 +109,12 @@ export function moveKeys(anim: Animation, refs: KeyRef[], dt: number, ripple = f
       }
     }
     sortKeys(keys);
+    // going round the loop two moved keys can meet (the key at 0 and the one at the end are the same moment): one of them goes
+    if (looping && g.kind !== 'event') {
+      for (let i = keys.length - 1; i > 0; i--) {
+        if (moved.has(keys[i]) && moved.has(keys[i - 1]) && Math.abs(keys[i].time - keys[i - 1].time) <= KEY_EPS) keys.splice(i, 1);
+      }
+    }
   }
   // one result per input ref, in the input order; a ref whose key was not found is returned unchanged
   return refs.map((ref) => {

@@ -18,11 +18,12 @@ class FakeTexture extends S.Texture {
 }
 
 /** Loads exported JSON + atlas text with the official `SkeletonJson`. Throws exactly like the real loader does. */
-export function loadOfficial(json: unknown, atlasText: string) {
+export function loadOfficial(json: unknown, atlasText: string, scale = 1) {
   const atlas = new S.TextureAtlas(atlasText);
   for (const page of atlas.pages) page.setTexture(new FakeTexture({ width: page.width, height: page.height }));
   const loader = new S.AtlasAttachmentLoader(atlas);
   const sj = new S.SkeletonJson(loader);
+  sj.scale = scale;
   return sj.readSkeletonData(JSON.stringify(json));
 }
 

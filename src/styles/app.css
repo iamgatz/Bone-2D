@@ -531,6 +531,33 @@ textarea {
   font-size: var(--fs-xs);
   color: var(--muted);
 }
+.asset.unused {
+  border-style: dashed;
+}
+.asset.unused .thumb {
+  opacity: 0.55;
+}
+.asset-rename {
+  width: 100%;
+  background: var(--sunken);
+  border: 1px solid var(--accent-line);
+  border-radius: var(--radius-xs);
+  padding: 1px 4px;
+  outline: none;
+  color: var(--text);
+  font-size: var(--fs-sm);
+}
+.asset-actions {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  display: flex;
+  opacity: 0;
+}
+.asset:hover .asset-actions,
+.asset:focus-within .asset-actions {
+  opacity: 1;
+}
 .drop-hint {
   margin: 10px;
   border: 1.5px dashed var(--border-strong);
@@ -1764,4 +1791,41 @@ a.btn {
   flex: none;
   margin: 0 2px;
   accent-color: var(--accent);
+}
+
+/* ---------------------------------------------------------------- recent projects (welcome window) */
+.recent-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.recent-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.recent-open {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: none;
+  color: var(--text-dim);
+  text-align: left;
+  cursor: pointer;
+}
+.recent-open:hover {
+  background: var(--hover);
+  color: var(--text);
+}
+.recent-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }

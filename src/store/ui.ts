@@ -68,6 +68,10 @@ export interface UiState {
   time: number;
   playing: boolean;
   loop: boolean;
+  /** Play forward, then backward, instead of jumping back to the start. */
+  pingPong: boolean;
+  /** Seconds [start, end] that play and loop instead of the whole animation (Spine's loop range), or null. */
+  range: [number, number] | null;
   speed: number;
   autoKey: boolean;
   defaultCurve: CurveKind;
@@ -109,6 +113,8 @@ export const uiStore = createStore<UiState>({
   time: 0,
   playing: false,
   loop: true,
+  pingPong: false,
+  range: null,
   speed: 1,
   autoKey: true,
   defaultCurve: 'bezier',

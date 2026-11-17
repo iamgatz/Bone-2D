@@ -1,0 +1,80 @@
+/**
+ * The images of a project: which attachments use them, renaming (the name is the atlas region name, so every attachment that shows
+ * the image follows), and folders — Spine groups images by the part of the name before the last "/" ("hero/arm").
+ */
+import { attachmentImage } from './model';
+import type { Project, SkeletonDoc } from './model';
+
+/** The folder part of an image name ("hero/arm" -> "hero"), or "" for an image in the root. */
+export function folderOf(name: string): string {
+  const i = name.lastIndexOf('/');
+  return i < 0 ? '' : name.slice(0, i);
+}
+
+/** The name without its folder. */
+export function baseOf(name: string): string {
+  return name.slice(name.lastIndexOf('/') + 1);
+}
+
+/** How many attachments (in every skin) show each image. Images nobody shows are not in the map. */
+export function imageUsage(doc: SkeletonDoc): Map<string, number> {
+  const uses = new Map<string, number>();
+  for (const skin of doc.skins) {
+    for (const slot of Object.values(skin.attachments)) {
+      for (const att of Object.values(slot)) {
+        const image = attachmentImage(att);
+        if (image) uses.set(image, (uses.get(image) ?? 0) + 1);
+      }
+    }
+  }
+  return uses;
+}
+
+/** Names of the images that no attachment shows. */
+export function unusedImages(project: Project): string[] {
+  const uses = imageUsage(project.skeleton);
+  return project.images.filter((i) => !uses.has(i.name)).map((i) => i.name);
+}
+
+/** Cleans a name typed by the user: trimmed, no empty folder parts, no leading or trailing "/". Empty when nothing is left. */
+export function cleanImageName(raw: string): string {
+  return raw
+    .split('/')
+    .map((p) => p.trim())
+    .filter(Boolean)
+    .join('/');
+}
+
+export type RenameResult = { ok: true; name: string } | { ok: false; reason: 'empty' | 'taken' | 'missing' };
+
+/**
+ * Renames an image and points every attachment that shows it at the new name. Works on a draft. Refuses an empty name and a name that
+ * another image already has (two images with one name would become one atlas region).
+ */
+export function renameImage(project: Project, from: string, rawTo: string): RenameResult {
+  const to = cleanImageName(rawTo);
+  if (!to) return { ok: false, reason: 'empty' };
+  const image = project.images.find((i) => i.name === from);
+  if (!image) return { ok: false, reason: 'missing' };
+  if (to === from) return { ok: true, name: to };
+  if (project.images.some((i) => i.name === to)) return { ok: false, reason: 'taken' };
+  image.name = to;
+  for (const skin of project.skeleton.skins) {
+    for (const slot of Object.values(skin.attachments)) {
+      for (const att of Object.values(slot)) {
+        if ((att.type === 'region' || att.type === 'mesh') && att.path === from) att.path = to;
+      }
+    }
+  }
+  return { ok: true, name: to };
+}
+
+/** Groups image names by folder, folders sorted, the root first; the names inside keep their order. */
+export function imageGroups(names: string[]): [string, string[]][] {
+  const map = new Map<string, string[]>();
+  for (const n of names) {
+    const f = folderOf(n);
+    map.set(f, [...(map.get(f) ?? []), n]);
+  }
+  return [...map.entries()].sort(([a], [b]) => (a === '' ? -1 : b === '' ? 1 : a.localeCompare(b)));
+}
