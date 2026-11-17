@@ -26,6 +26,7 @@ import * as M from '../src/store/meshActions';
 import * as PA from '../src/store/pathActions';
 import * as PC from '../src/store/pathConstraintActions';
 import * as PH from '../src/store/physicsActions';
+import * as PO from '../src/store/poseActions';
 import * as P from '../src/store/polygonActions';
 import * as SL from '../src/store/sliderActions';
 import * as T from '../src/store/transformActions';
@@ -136,6 +137,9 @@ export const ops: Op[] = [
   { name: 'setBoneProps', run: (c) => { const b = c.pick(doc().bones)!; A.setBoneProps(b.id, { length: c.num(0, 120), inherit: c.pick(INHERIT_MODES)!, hidden: c.chance(0.2) }); } },
   { name: 'setBonePose', run: (c) => { const b = c.pick(doc().bones)!; A.setBonePose([{ id: b.id, props: c.chance(0.5) ? { rotation: c.num(-180, 180) } : { x: c.num(-100, 100), y: c.num(-100, 100), scaleX: c.num(-2, 2), scaleY: c.num(0.2, 2), shearX: c.num(-30, 30) } }]); } },
   { name: 'keySelectedBones', run: (c) => { A.selectBone(c.pick(doc().bones)!.id); A.keySelectedBones(c.chance(0.5) ? ['rotate'] : undefined); } },
+  { name: 'duplicateBones', run: (c) => { A.setMode('setup'); A.selectBone(c.pick(doc().bones)!.id); PO.duplicateSelection(c.chance(0.5)); } },
+  { name: 'resetPose', run: (c) => { A.setMode('animate'); A.selectBone(c.pick(doc().bones)!.id); PO.resetPose(); } },
+  { name: 'copyPastePose', run: (c) => { A.setMode('animate'); A.setSelection({ bones: [c.pick(doc().bones)!.id, c.pick(doc().bones)!.id] }); PO.copyPose(); A.selectBone(c.pick(doc().bones)!.id); PO.pastePose(); } },
   // ---- slots / images / attachments
   { name: 'addImageToScene', run: (c) => { const img = c.pick(project().images); if (img) A.addImageToScene(img.name, c.num(-150, 150), c.num(-50, 250), c.chance(0.5) ? c.pick(doc().bones)!.id : null); } },
   { name: 'setSlotProps', run: (c) => { const s = c.pick(doc().slots); if (s) A.setSlotProps(s.id, { blend: c.pick(BLEND_MODES)!, hidden: c.chance(0.2), dark: c.chance(0.3) ? [c.r(), c.r(), c.r()] : null }); } },

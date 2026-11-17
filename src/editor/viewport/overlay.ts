@@ -380,6 +380,23 @@ export function drawGizmo(o: OverlayInput) {
     ctx.beginPath();
     ctx.arc(x + Math.cos(a) * 46, y + Math.sin(a) * 46, 5, 0, Math.PI * 2);
     ctx.fill();
+  } else if (ui.tool === 'shear') {
+    ctx.strokeStyle = alpha('--gizmo-shear', 0.95);
+    ctx.fillStyle = alpha('--gizmo-shear', 0.95);
+    const a = -bone.worldRotationX * (Math.PI / 180);
+    const c = Math.cos(a);
+    const s = Math.sin(a);
+    // a parallelogram with the bone axes slanted, and an arrow along each way it can be pulled
+    ctx.beginPath();
+    ctx.moveTo(x - c * 22 - s * 14, y - s * 22 + c * 14);
+    ctx.lineTo(x + c * 22 - s * 14 + c * 8, y + s * 22 + c * 14 + s * 8);
+    ctx.lineTo(x + c * 22 + s * 14 + c * 8, y + s * 22 - c * 14 + s * 8);
+    ctx.lineTo(x - c * 22 + s * 14, y - s * 22 - c * 14);
+    ctx.closePath();
+    ctx.stroke();
+    ctx.globalAlpha = 0.18;
+    ctx.fill();
+    ctx.globalAlpha = 1;
   } else if (ui.tool === 'scale') {
     ctx.strokeStyle = alpha('--gizmo-scale', 0.95);
     ctx.fillStyle = alpha('--gizmo-scale', 0.95);
