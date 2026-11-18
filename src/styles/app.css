@@ -945,6 +945,17 @@ textarea {
 .vp-overlay {
   pointer-events: none;
 }
+.ref-video {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+.ref-video video {
+  position: absolute;
+  display: block;
+  pointer-events: none;
+}
 .vp-border {
   position: absolute;
   inset: 0;

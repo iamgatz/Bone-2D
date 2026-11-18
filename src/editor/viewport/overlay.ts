@@ -669,6 +669,22 @@ export function drawConstraintInfo(o: OverlayInput) {
   ctx.restore();
 }
 
+/** The pivot of the rotate tool: a ring with a cross, while the rotate tool is chosen. */
+export function drawPivot(o: OverlayInput) {
+  const { ctx, w, h, cam, ui } = o;
+  if (ui.tool !== 'rotate' || !ui.pivot) return;
+  const [x, y] = worldToScreen(cam, w, h, ui.pivot.x, ui.pivot.y);
+  ctx.strokeStyle = token('--animate');
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.arc(x, y, 7, 0, Math.PI * 2);
+  ctx.moveTo(x - 11, y);
+  ctx.lineTo(x + 11, y);
+  ctx.moveTo(x, y - 11);
+  ctx.lineTo(x, y + 11);
+  ctx.stroke();
+}
+
 export function drawOverlay(o: OverlayInput) {
   const { ctx, w, h, ui } = o;
   ctx.clearRect(0, 0, w, h);
@@ -682,6 +698,7 @@ export function drawOverlay(o: OverlayInput) {
   drawTrails(o);
   o.extra?.(o);
   drawGizmo(o);
+  drawPivot(o);
   drawInteraction(o);
   drawGuidesAndRulers(o);
 }

@@ -12,6 +12,18 @@ export interface Release {
 
 export const CHANGELOG: Release[] = [
   {
+    version: '0.51',
+    date: '2026-11-19',
+    en: [
+      "Temporary pivot for the rotate tool: with the rotate tool chosen, the Pivot section of the bone inspector sets a point the selected bones turn about instead of their own origin (pick it in the viewport, type it, or put it on the bone's origin or tip). The bone's origin goes round the point, so a turn about a wrist or a neck is one drag; in Animate mode it keys the rotation and the position together. A ring with a cross marks the pivot while the rotate tool is on.",
+      "Reference video (Animation tools window): load a filmed take and it is drawn over the scene, faded (opacity, size, position, and an offset against the animation time, or Start at playhead), kept in step with the playhead: moved to the frame when paused, played along while the animation plays. For tracing the motion. The video stays in the tab: nothing is saved or exported.",
+    ],
+    ru: [
+      "Временный центр вращения для инструмента вращения: при выбранном вращении раздел «Центр вращения» в инспекторе кости задаёт точку, вокруг которой поворачиваются выбранные кости, а не вокруг их начала (указать во вьюпорте, ввести числами или поставить в начало или конец кости). Начало кости идёт по кругу вокруг точки, так что поворот вокруг запястья или шеи делается одним движением; в режиме Animate ключи ставятся и на поворот, и на позицию. Пока включено вращение, центр отмечен кольцом с крестом.",
+      "Опорное видео (окно «Инструменты анимации»): загрузи снятый дубль, и он рисуется поверх сцены полупрозрачным (непрозрачность, размер, позиция и сдвиг относительно времени анимации, или «Начать с playhead») в такт с playhead: на паузе перематывается на кадр, при воспроизведении анимации играет вместе с ней. Чтобы обводить движение. Видео остаётся во вкладке: ничего не сохраняется и не экспортируется.",
+    ],
+  },
+  {
     version: '0.50',
     date: '2026-11-19',
     en: [

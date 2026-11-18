@@ -1,5 +1,7 @@
 /** Pointer / wheel interaction for the viewport: camera, selection, and the bone/attachment tools. */
 import { clamp, distToSegmentSq, wrapAngle } from '@/core/math';
+import { turnAbout, turnSign } from '@/core/pivot';
+import type { TurnFrame } from '@/core/pivot';
 import type { Id } from '@/core/model';
 import {
   clearSelection,
@@ -37,7 +39,7 @@ type Drag =
   | { kind: 'pan'; sx: number; sy: number; camX: number; camY: number }
   | { kind: 'create'; parent: Id | null; ox: number; oy: number }
   | { kind: 'guide'; axis: 'x' | 'y'; index: number }
-  | { kind: 'rotate'; ids: Id[]; cx: Record<Id, [number, number]>; a0: Record<Id, number>; r0: Record<Id, number>; sign: Record<Id, number> }
+  | { kind: 'rotate'; ids: Id[]; cx: Record<Id, [number, number]>; a0: Record<Id, number>; r0: Record<Id, number>; sign: Record<Id, number>; pivot?: { x: number; y: number; frames: Record<Id, TurnFrame> } }
   | { kind: 'translate'; ids: Id[]; p0: [number, number]; w0: [number, number]; start: Record<Id, { x: number; y: number }>; inv: Record<Id, Mat4>; axis: 'x' | 'y' | null }
   | { kind: 'shear'; ids: Id[]; o: Record<Id, [number, number]>; ang: Record<Id, number>; p0: [number, number]; start: Record<Id, { shx: number; shy: number }>; mode: 'xy' | 'x' | 'y' }
   | { kind: 'scale'; ids: Id[]; o: Record<Id, [number, number]>; d0: Record<Id, number>; start: Record<Id, { sx: number; sy: number }>; mode: 'xy' | 'x' | 'y' }
@@ -129,6 +131,14 @@ export class ViewportController {
     const [wx, wy] = screenToWorld(cam, w, h, sx, sy);
     const scene = getScene();
     const blocked = this.blocked();
+
+    // the pivot of the rotate tool is waiting for its point
+    if (ui.pivotPick) {
+      const [px, py] = this.snapped(wx, wy);
+      uiStore.patch({ pivot: { x: px, y: py }, pivotPick: false });
+      this.invalidate();
+      return;
+    }
 
     // Set Parent is waiting: the next click names the new parent (a click on nothing cancels)
     if (ui.pickParent) {
@@ -318,6 +328,34 @@ export class ViewportController {
       }
       const first = scene.skeleton.boneById(ids[0]);
       this.begin(e, { kind: 'translate', ids, p0: [wx, wy], w0: first ? [first.worldX, first.worldY] : [0, 0], start, inv, axis });
+    } else if (kind === 'rotate' && ui.pivot) {
+      // turning about a point: the origin of each bone goes round it, so the pose gets both its rotate and its translate. A bone below a bone that turns too goes along with it.
+      const set = new Set(ids);
+      ids = ids.filter((id) => {
+        let p = scene.skeleton.boneById(id)?.parent;
+        while (p) {
+          if (set.has(p.data.id)) return false;
+          p = p.parent;
+        }
+        return true;
+      });
+      const frames: Record<Id, TurnFrame> = {};
+      const cx: Record<Id, [number, number]> = {};
+      const a0: Record<Id, number> = {};
+      const r0: Record<Id, number> = {};
+      const sign: Record<Id, number> = {};
+      for (const id of ids) {
+        const live = scene.skeleton.boneById(id)!;
+        const p = live.parent;
+        const parent = p ? { a: p.a, b: p.b, c: p.c, d: p.d, x: p.worldX, y: p.worldY } : null;
+        const pose = currentPose(id)!;
+        frames[id] = { x: pose.x, y: pose.y, rotation: pose.rotation, sign: turnSign(parent), parent };
+        cx[id] = [ui.pivot.x, ui.pivot.y];
+        a0[id] = Math.atan2(wy - ui.pivot.y, wx - ui.pivot.x) * (180 / Math.PI);
+        r0[id] = pose.rotation;
+        sign[id] = frames[id].sign;
+      }
+      this.begin(e, { kind: 'rotate', ids, cx, a0, r0, sign, pivot: { x: ui.pivot.x, y: ui.pivot.y, frames } });
     } else if (kind === 'rotate') {
       const cx: Record<Id, [number, number]> = {};
       const a0: Record<Id, number> = {};
@@ -400,7 +438,7 @@ export class ViewportController {
         this.hoverBone = id;
         this.invalidate();
       }
-      this.el.style.cursor = this.spaceDown ? 'grab' : ui.tool === 'create' ? 'crosshair' : id ? 'pointer' : 'default';
+      this.el.style.cursor = this.spaceDown ? 'grab' : ui.tool === 'create' || ui.pivotPick ? 'crosshair' : id ? 'pointer' : 'default';
       return;
     }
     if (e.pointerId !== this.pointerId) return;
@@ -441,6 +479,7 @@ export class ViewportController {
         const updates = d.ids.map((id) => {
           const [cx, cy] = d.cx[id];
           const a = Math.atan2(wy - cy, wx - cx) * (180 / Math.PI);
+          if (d.pivot) return { id, props: turnAbout(d.pivot.frames[id], d.pivot.x, d.pivot.y, wrapAngle(a - d.a0[id])) };
           return { id, props: { rotation: d.r0[id] + d.sign[id] * wrapAngle(a - d.a0[id]) } };
         });
         setBonePose(updates, 'Rotate');
