@@ -5,6 +5,8 @@ import { moveKeysBy, setTime } from '@/store/actions';
 import { docStore } from '@/store/doc';
 import { markerNear, markersOf } from '@/core/markers';
 import { peakAt } from '@/core/waveform';
+import { sequenceFramePath, sequenceSpans } from '@/core/sequence';
+import { assets } from '@/store/assets';
 import { soundShape, soundStore } from '@/store/sounds';
 import { openKeyDialog } from '@/store/keyDialog';
 import { openMarkerDialog } from '@/store/markerActions';
@@ -256,6 +258,34 @@ export function Dopesheet({ rows, duration, fps, onMenu }: Props) {
           for (let x = Math.max(0, Math.floor(x0)); x <= Math.min(cw, Math.ceil(x1)); x += 2) {
             const h = peakAt(shape, (x - x0) / zoom) * (ROW_H - 4);
             if (h > 0.4) ctx.fillRect(x, top + (ROW_H - h) / 2, 1.5, h);
+          }
+        }
+      }
+      // the pictures of a sequence between its keys: a thumbnail where a frame shows, a line where the next one starts
+      for (let i = 0; i < rows.length; i++) {
+        const seq = rows[i].sequence;
+        if (!seq) continue;
+        const top = i * ROW_H + 2;
+        const h = ROW_H - 4;
+        for (const span of sequenceSpans(seq.keys, seq.def.count, duration, scroll - 0.05, scroll + cw / zoom + 0.05)) {
+          const x0 = timeToX(span.start, scroll, zoom);
+          const x1 = timeToX(span.end, scroll, zoom);
+          if (x1 < 0 || x0 > cw || x1 - x0 < 2) continue;
+          ctx.fillStyle = alpha(TONES.slot, 0.16);
+          ctx.fillRect(x0, top, x1 - x0, h);
+          ctx.fillStyle = alpha(TONES.slot, 0.55);
+          ctx.fillRect(Math.round(x0), top, 1, h);
+          const bitmap = x1 - x0 >= 10 ? assets.get(sequenceFramePath(seq.path, seq.def, span.index))?.bitmap : undefined;
+          if (!bitmap) continue;
+          const scale = Math.min((x1 - x0 - 3) / bitmap.width, h / bitmap.height);
+          if (!(scale > 0)) continue;
+          const dw = bitmap.width * scale;
+          ctx.drawImage(bitmap, x0 + 2, top + (h - bitmap.height * scale) / 2, dw, bitmap.height * scale);
+          if (x1 - x0 > dw + 22) {
+            ctx.fillStyle = token('--text-dim');
+            ctx.font = '9px ui-sans-serif, system-ui, sans-serif';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(String(span.index + 1), x0 + dw + 6, top + h / 2);
           }
         }
       }

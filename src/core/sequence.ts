@@ -60,6 +60,50 @@ export function sequenceIndexAt(keys: readonly SequenceKey[], time: number, coun
   }
 }
 
+/** A stretch of time in which a sequence shows one frame. */
+export interface SequenceSpan {
+  start: number;
+  end: number;
+  /** The frame (0 is the first), already inside the sequence. */
+  index: number;
+}
+
+/**
+ * Where each frame of a sequence shows between `from` and `to` seconds, from the keys of its timeline: a span per frame, with the time
+ * before the first key left out (the setup frame shows there). It follows `sequenceIndexAt`, so the thumbnails on the timeline show what
+ * plays. A span past the last key runs to `end` (the animation's duration). At most `limit` spans are made, so a very small delay stays cheap.
+ */
+export function sequenceSpans(keys: readonly SequenceKey[], count: number, end: number, from = 0, to = end, limit = 2000): SequenceSpan[] {
+  const out: SequenceSpan[] = [];
+  const push = (start: number, stop: number) => {
+    const a = Math.max(start, from);
+    const b = Math.min(stop, to, end);
+    if (b <= a) return;
+    const index = Math.min(count - 1, Math.max(0, sequenceIndexAt(keys, (a + b) / 2, count)));
+    const last = out[out.length - 1];
+    if (last && last.index === index && Math.abs(last.end - a) < 1e-9) last.end = b;
+    else out.push({ start: a, end: b, index });
+  };
+  for (let i = 0; i < keys.length && out.length < limit; i++) {
+    const key = keys[i];
+    const stop = i + 1 < keys.length ? keys[i + 1].time : end;
+    if (stop <= from || key.time >= to) continue;
+    if (key.mode === 'hold' || !(key.delay > 0)) {
+      push(key.time, stop);
+      continue;
+    }
+    // the frame number moves on every `delay` seconds (the official loader adds a little to the quotient before it truncates)
+    const startOf = (n: number) => (n <= 0 ? key.time : key.time + (n - 0.00001) * key.delay);
+    const n0 = Math.max(0, Math.floor((Math.max(from, key.time) - key.time) / key.delay) - 1);
+    for (let n = n0; out.length < limit; n++) {
+      const a = startOf(n);
+      if (a >= stop || a >= to) break;
+      push(a, Math.min(startOf(n + 1), stop));
+    }
+  }
+  return out;
+}
+
 /** The sequence of an attachment, if it has one (only a region or a mesh can). */
 export const sequenceOf = (a: Attachment | undefined | null): SequenceDef | undefined => (a && (a.type === 'region' || a.type === 'mesh') ? a.sequence : undefined);
 

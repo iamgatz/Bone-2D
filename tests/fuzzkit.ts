@@ -52,6 +52,7 @@ import * as PO from '../src/store/poseActions';
 import * as P from '../src/store/polygonActions';
 import * as SL from '../src/store/sliderActions';
 import * as SQ from '../src/store/sequenceActions';
+import { sheetSequence } from '../src/core/spritesheet';
 import * as T from '../src/store/transformActions';
 import { emptySelection, uiStore } from '../src/store/ui';
 import { getScene } from '../src/editor/scene';
@@ -396,6 +397,18 @@ export const ops: Op[] = [
     A.setTime(Math.round(c.r() * 20) / 10);
     SQ.keySequence(r.slotId, r.name, { mode: c.pick(SEQUENCE_MODES)!, index: Math.floor(c.r() * 6), delay: c.pick([0.04, 0.1, 0.0333, 0.25])! });
   } },
+  // the frames of a cut sprite sheet: numbered pictures (their names from the sheet rules) put on the scene as one sequence, in one step
+  {
+    name: 'framesFromSheet',
+    run: (c) => {
+      const count = 2 + Math.floor(c.num(0, 5));
+      const { names } = sheetSequence(`fs${Math.floor(c.num(0, 3))}`, count);
+      docStore.update('fuzz sheet frames', (d) => {
+        for (const n of names) if (!d.images.some((i) => i.name === n)) d.images.push({ id: uid(), name: n, width: 16, height: 16 });
+      });
+      SQ.placeSequences(names, c.num(-150, 150), c.num(-50, 250));
+    },
+  },
   { name: 'sequenceOff', run: (c) => { const withSeq = [...regions(), ...meshes()]; const r = c.pick(withSeq); if (r && c.chance(0.5)) SQ.setSequence(r.slotId, r.name, null); } },
   { name: 'closeLoop', run: (c) => { A.closeCurrentLoop(c.chance(0.7) ? 'first' : 'last', c.chance(0.3)); } },
   { name: 'deleteKeys', run: (c) => { const a = A.currentAnimation(); if (!a) return; const refs = allKeyRefs(a); A.deleteKeys(refs.filter(() => c.chance(0.15))); } },

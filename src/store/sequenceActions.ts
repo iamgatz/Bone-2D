@@ -96,9 +96,9 @@ export function keySequence(slotId: Id, name: string, patch: Partial<Omit<Sequen
 
 /**
  * Pictures of a dropped folder that make numbered series (frame01 … frame24) are put on the scene as a slot with a sequence each, instead of a
- * slot per frame. One history step. Returns how many series were placed (0: nothing in the folder is a series, nothing was changed).
+ * slot per frame. One history step (unless `ownStep` is off: the caller has a step open). Returns how many series were placed (0: nothing in the folder is a series, nothing was changed).
  */
-export function placeSequences(names: readonly string[], worldX: number, worldY: number): number {
+export function placeSequences(names: readonly string[], worldX: number, worldY: number, ownStep = true): number {
   const consumed = new Set<string>();
   const series: { setup: string }[] = [];
   for (const first of names) {
@@ -111,7 +111,7 @@ export function placeSequences(names: readonly string[], worldX: number, worldY:
     series.push({ setup: frames[found.sequence.setupIndex] ?? frames[0] });
   }
   if (!series.length) return 0;
-  docStore.beginGesture('Add sequences');
+  if (ownStep) docStore.beginGesture('Add sequences');
   let off = 0;
   let made = 0;
   try {
@@ -121,7 +121,7 @@ export function placeSequences(names: readonly string[], worldX: number, worldY:
       off += 24;
     }
   } finally {
-    docStore.endGesture();
+    if (ownStep) docStore.endGesture();
   }
   return made;
 }
