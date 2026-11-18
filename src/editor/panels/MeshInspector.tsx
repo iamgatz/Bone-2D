@@ -316,6 +316,17 @@ export function MeshGroup({ slotId, att, part }: { slotId: Id; att: MeshAttachme
               <Field label="Strength">
                 <NumberField label="%" value={brush.strength * 100} step={1} precision={0} min={1} max={100} onChange={(v) => uiStore.patch({ brush: { ...brush, strength: v / 100 } })} />
               </Field>
+              <Field label="Strength curve">
+                <SelectField
+                  value={brush.curve ?? 'linear'}
+                  options={[
+                    { value: 'linear', label: 'Even' },
+                    { value: 'fine', label: 'Fine (gentle at the low end)' },
+                    { value: 'bold', label: 'Bold (strong at the low end)' },
+                  ]}
+                  onChange={(v) => uiStore.patch({ brush: { ...brush, curve: v } })}
+                />
+              </Field>
               <p className="hint-text">
                 Press <span className="kbd">W</span>, then paint over the mesh. Click an influencing bone in the viewport to switch the brush bone.
               </p>

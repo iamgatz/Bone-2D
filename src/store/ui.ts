@@ -1,5 +1,5 @@
 import type { Id } from '@/core/model';
-import type { BrushShape } from '@/core/brush';
+import type { BrushShape, StrengthCurve } from '@/core/brush';
 import type { SoftShape } from '@/core/soft';
 import { createStore, useStore } from './store';
 import { DEFAULT_VIEWS, loadLayout } from './layout';
@@ -72,6 +72,8 @@ export interface WeightBrush {
   feather: number;
   /** How the brush fades inside the feather zone (soft when missing). */
   shape?: BrushShape;
+  /** How the strength slider maps to the strength painted (linear when missing). */
+  curve?: StrengthCurve;
   /** Bones whose weights the brush leaves alone. */
   locked: Id[];
 }

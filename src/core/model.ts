@@ -620,6 +620,8 @@ export interface ImageRef {
   height: number;
   /** Where the middle of this picture was in the scene when it came from a PSD layer (editor metadata, not exported): "Update from PSD" moves the attachments by how far the layer moved. */
   psd?: [number, number];
+  /** How many times the pixels behind this picture were replaced (editor metadata: it makes a same-size repaint a step of the history). */
+  rev?: number;
 }
 
 /** The local transform of one bone. */

@@ -1497,4 +1497,8 @@ export const RU: Record<string, string> = {
   'no change': 'без изменений',
   'Result': 'Итог',
   'shear {}°': 'сдвиг {}°',
+  'Strength curve': 'Кривая силы',
+  'Even': 'Ровная',
+  'Fine (gentle at the low end)': 'Тонкая (мягко в начале шкалы)',
+  'Bold (strong at the low end)': 'Смелая (сильно в начале шкалы)',
 };

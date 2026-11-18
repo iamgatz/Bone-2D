@@ -12,6 +12,18 @@ export interface Release {
 
 export const CHANGELOG: Release[] = [
   {
+    version: '0.48',
+    date: '2026-11-19',
+    en: [
+      "Undo now brings back the old pixels of a replaced picture (Replace image, Update from PSD), not only its size; Redo puts the new ones back, and the History window jumps through such steps the same way. A same-size repaint is a step of its own.",
+      "Weight brush Strength curve: Even (the slider as before), Fine (10% paints 1%, for careful touch-ups) or Bold (10% paints about 32%, for quick strong strokes).",
+    ],
+    ru: [
+      "Undo теперь возвращает старые пиксели заменённой картинки (Replace image, «Обновить из PSD»), а не только её размер; Redo возвращает новые, а окно History переходит по таким шагам так же. Перекраска того же размера — отдельный шаг.",
+      "«Кривая силы» кисти весов: «Ровная» (ползунок как раньше), «Тонкая» (10% красит на 1%, для аккуратных правок) или «Смелая» (10% красит примерно на 32%, для быстрых сильных мазков).",
+    ],
+  },
+  {
     version: '0.47',
     date: '2026-11-19',
     en: [

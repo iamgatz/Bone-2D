@@ -87,6 +87,16 @@ class AssetRegistry {
     this.emit();
   }
 
+  /**
+   * Puts an asset (or nothing) behind a name without closing the bitmap it replaces: undo and redo of a replaced picture swap the
+   * pixels back and forth, so both sets must stay alive.
+   */
+  swap(name: string, asset: ImageAsset | undefined) {
+    if (asset) this.map.set(name, asset);
+    else this.map.delete(name);
+    this.emit();
+  }
+
   clear() {
     for (const a of this.map.values()) a.bitmap.close?.();
     this.map.clear();

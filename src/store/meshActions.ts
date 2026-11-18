@@ -1,6 +1,6 @@
 /** Mesh / weight / deform operations on the document. */
 import { makeCurve, reconcileDeform, upsertKey } from '@/core/edit';
-import { brushFalloff } from '@/core/brush';
+import { brushFalloff, strengthAmount } from '@/core/brush';
 import { RAD2DEG } from '@/core/math';
 import type { Mat } from '@/core/math';
 import { deformHome } from '@/core/links';
@@ -543,7 +543,7 @@ export function paintWeights(slotId: Id, name: string, stroke: BrushStroke, bone
   for (let i = 0; i < n; i++) {
     const d = Math.hypot(world[i * 2] - stroke.x, world[i * 2 + 1] - stroke.y);
     if (d > radius) continue;
-    const f = brushFalloff(d, radius, brush.feather, brush.shape) * brush.strength;
+    const f = brushFalloff(d, radius, brush.feather, brush.shape) * strengthAmount(brush.strength, brush.curve);
     const list = weights[i];
     const cur = list.find((e) => e[0] === bone)?.[3] ?? 0;
     const bindFor = (): [number, number] => [inv.a * world[i * 2] + inv.b * world[i * 2 + 1] + inv.x, inv.c * world[i * 2] + inv.d * world[i * 2 + 1] + inv.y];
