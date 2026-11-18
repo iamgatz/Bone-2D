@@ -2031,3 +2031,52 @@ a.btn {
   min-width: 0;
   accent-color: var(--animate);
 }
+
+.change-row .label {
+  white-space: normal;
+}
+.change-sign {
+  width: 14px;
+  text-align: center;
+  font-weight: 700;
+  flex: none;
+}
+.change-sign.added {
+  color: var(--accent);
+}
+.change-sign.removed {
+  color: var(--danger);
+}
+.change-sign.changed {
+  color: var(--animate);
+}
+
+.effects {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  font-size: 12px;
+}
+.effect-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  align-items: baseline;
+}
+.effect-row.total {
+  border-top: 1px solid var(--border);
+  padding-top: 3px;
+  margin-top: 2px;
+  font-weight: 600;
+}
+.effect-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.effect-num {
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  white-space: nowrap;
+}

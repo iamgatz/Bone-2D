@@ -7,7 +7,8 @@ import { assets } from '@/store/assets';
 import { docStore } from '@/store/doc';
 import { toast, uiStore } from '@/store/ui';
 import { getScene, screenToWorld } from '../scene';
-import { ghostsFor, referenceGhost } from '../ghosts';
+import { checkpointStore } from '@/store/checkpoints';
+import { checkpointGhost, ghostsFor, referenceGhost } from '../ghosts';
 import { ViewportController } from './controller';
 import { drawOverlay } from './overlay';
 
@@ -149,6 +150,18 @@ export function Viewport() {
         if (ui.reference === 'setup' || other) {
           const g = referenceGhost(scene, other ?? null, ui.mode === 'animate' ? ui.time : 0, ui.loop, ui.skinId);
           renderer!.drawSkeleton(g.skeleton, { skip: (s) => hiddenSlots.has(s.data.id), alpha: g.alpha, tint: g.tint });
+        }
+      }
+      if (ui.compare) {
+        // a checkpoint: the pose the skeleton had when it was marked, in the same animation at the same time
+        const cp = checkpointStore.get().list.find((c) => c.id === ui.compare);
+        if (cp) {
+          try {
+            const g = checkpointGhost(cp.skeleton, ui.mode === 'animate' ? ui.animationId : null, ui.mode === 'animate' ? ui.time : 0, ui.loop, ui.skinId);
+            if (g) renderer!.drawSkeleton(g.skeleton, { skip: (s) => hiddenSlots.has(s.data.id), alpha: g.alpha, tint: g.tint });
+          } catch (e) {
+            console.error(e);
+          }
         }
       }
       if (ui.view.images) renderer!.drawSkeleton(scene.skeleton, { skip: (s) => hiddenSlots.has(s.data.id) });

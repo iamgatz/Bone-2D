@@ -1,4 +1,5 @@
 import { SoftControls } from './SoftControls';
+import { ConstraintEffects } from './ConstraintEffects';
 import { Bone as BoneIcon, BoxSelect, Crosshair, Image as ImageIcon, Layers, Link2, Scissors, Spline, Triangle, X } from 'lucide-react';
 import { useState } from 'react';
 import { createTransformConstraint, PRESET_LABEL } from '@/store/transformActions';
@@ -142,6 +143,7 @@ function BoneInspector({ id }: { id: Id }) {
         </Field>
       </Section>
       <LimitSection id={id} animate={animate} />
+      <ConstraintEffects id={id} />
       {!animate && <ChainSection id={id} />}
       {!animate && <SplitSection id={id} rootBone={!bone.parent} />}
       {!animate && <TransformCreate boneIds={selectedIds} />}

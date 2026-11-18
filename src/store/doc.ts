@@ -27,6 +27,8 @@ export class DocStore implements Store<Project> {
   private gesture: { entry: HistoryEntry | null; label: string } | null = null;
   /** Bumps on every change (also undo/redo/replace) — handy for cheap "did anything change" checks. */
   revision = 0;
+  /** Bumps when a different project is put in place (open, new, sample): things kept for the session about the old one (checkpoints) are then stale. */
+  epoch = 0;
   dirty = false;
 
   get = () => this.state;
@@ -53,6 +55,7 @@ export class DocStore implements Store<Project> {
   replace(project: Project, keepHistory = false) {
     this.state = project;
     if (!keepHistory) {
+      this.epoch++;
       this.undoStack = [];
       this.redoStack = [];
     }
