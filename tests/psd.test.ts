@@ -72,3 +72,14 @@ describe('PSD import', () => {
     expect(pictureName('  ', 'layer 3')).toBe('layer 3');
   });
 });
+
+describe('the shift a bigger canvas gives every layer', () => {
+  it('is what most layers agree on, and nothing for a few or scattered moves', async () => {
+    const { commonShift } = await import('../src/core/import/psd');
+    expect(commonShift([[-50, 0], [-50.2, 0], [-49.9, 0.1], [12, 0]])).toEqual([expect.closeTo(-50.03, 1), expect.closeTo(0.03, 1)]);
+    expect(commonShift([[-50, 0], [-50, 0]])).toEqual([0, 0]); // two layers prove nothing
+    expect(commonShift([[1, 0], [2, 0], [3, 0], [4, 0]])).toEqual([0, 0]); // no majority
+    expect(commonShift([null, null, [0, 0.2]])).toEqual([0, 0]);
+    expect(commonShift([[-50, 0], [-50, 0], [-50, 0], null])).toEqual([-50, 0]);
+  });
+});

@@ -285,6 +285,23 @@ describe('sequence actions', () => {
     expect(attOf(r).sequence).toBeUndefined();
   });
 
+  it('a dropped folder with a numbered series becomes one slot with a sequence, in one history step', () => {
+    const r = setUp();
+    const names = docStore.get().images.map((i) => i.name);
+    const slots0 = docStore.get().skeleton.slots.length;
+    expect(SQ.placeSequences([...names, 'single'], 10, 20)).toBe(1);
+    const slots = docStore.get().skeleton.slots;
+    expect(slots.length).toBe(slots0 + 1);
+    const made = slots[slots.length - 1];
+    const att = Object.values(docStore.get().skeleton.skins[0].attachments[made.id])[0] as RegionAttachment;
+    expect(att.sequence).toEqual({ count: 6, start: 3, digits: 2, setupIndex: 0 });
+    expect(att.path).toBe('flame_');
+    docStore.undo();
+    expect(docStore.get().skeleton.slots.length).toBe(slots0);
+    expect(SQ.placeSequences(['a', 'b'], 0, 0)).toBe(0);
+    void r;
+  });
+
   it('keys the sequence at the playhead, taking what is not given from the key in force', () => {
     const r = setUp();
     SQ.makeSequence(r.slotId, 'flame');

@@ -5,8 +5,17 @@
  */
 import type { EventDef, EventKey } from '@/core/model';
 import { soundKey } from '@/core/preview';
+import { peaksOf } from '@/core/waveform';
+import type { Peaks } from '@/core/waveform';
+import { createStore } from './store';
 
 const urls = new Map<string, string>();
+const soundFiles = new Map<string, File>();
+/** The shapes of the sounds that were decoded (null: decoding failed, do not try again). */
+const shapes = new Map<string, Peaks | null>();
+/** Counts every change of the loaded sounds / shapes, so a view that draws them knows to draw again. */
+export const soundStore = createStore<{ version: number }>({ version: 0 });
+const changed = () => soundStore.set({ version: soundStore.get().version + 1 });
 let context: AudioContext | null = null;
 
 export function addSounds(files: readonly File[]): number {
@@ -17,16 +26,45 @@ export function addSounds(files: readonly File[]): number {
     const old = urls.get(key);
     if (old) URL.revokeObjectURL(old);
     urls.set(key, URL.createObjectURL(f));
+    soundFiles.set(key, f);
+    shapes.delete(key);
     n++;
   }
   return n;
 }
 
 export const soundCount = () => urls.size;
+
+/**
+ * The shape of the sound of an event path for the timeline, or null while it is not known (no such sound loaded, still being decoded, or not
+ * decodable). The first call starts the decoding; the sound store changes when it is done.
+ */
+export function soundShape(path: string): Peaks | null {
+  const key = soundKey(path);
+  if (shapes.has(key)) return shapes.get(key) ?? null;
+  const file = soundFiles.get(key);
+  if (!file || typeof AudioContext === 'undefined') return null;
+  shapes.set(key, null);
+  void (async () => {
+    try {
+      const ctx = new AudioContext();
+      const audio = await ctx.decodeAudioData(await file.arrayBuffer());
+      void ctx.close();
+      shapes.set(key, peaksOf(Array.from({ length: audio.numberOfChannels }, (_, c) => audio.getChannelData(c)), audio.sampleRate));
+    } catch {
+      shapes.set(key, null);
+    }
+    changed();
+  })();
+  return null;
+}
 export const hasSound = (path: string) => urls.has(soundKey(path));
 export function clearSounds() {
   for (const u of urls.values()) URL.revokeObjectURL(u);
   urls.clear();
+  soundFiles.clear();
+  shapes.clear();
+  changed();
 }
 
 /** Plays the sound of an event; false when none was loaded for that path. */
@@ -64,6 +102,7 @@ export function pickSounds(done?: (count: number) => void) {
   input.accept = 'audio/*,.wav,.ogg,.mp3,.m4a,.flac,.aac';
   input.onchange = () => {
     addSounds([...(input.files ?? [])]);
+    changed();
     done?.(soundCount());
   };
   input.click();
