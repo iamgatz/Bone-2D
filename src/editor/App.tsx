@@ -19,6 +19,7 @@ import { Segmented } from './ui/Segmented';
 import { TooltipHost } from './ui/Tooltip';
 import { FloatingPanels } from './panels/FloatingPanels';
 import { KeyDialogHost } from './timeline/KeyDialog';
+import { AskHost } from './ui/AskHost';
 import { MarkerDialogHost } from './timeline/MarkerDialog';
 import { FLOAT_LIST, toggleFloat, useFloats } from '@/store/floats';
 import { Viewport, viewportApi } from './viewport/Viewport';
@@ -48,6 +49,8 @@ import { PreviewPanel } from './panels/PreviewPanel';
 import { HistoryPanel } from './panels/HistoryPanel';
 import { LAYOUTS, VIEW_LIST, sameViews } from '@/store/layout';
 import { applyLayout, startLayoutPersist, toggleAllViews, toggleView } from '@/store/viewActions';
+import { microMove } from '@/store/nudgeActions';
+import { applySavedLayout,deleteSavedLayout, saveLayoutDialog, useNamedLayouts } from '@/store/layoutActions';
 
 function LangToggle() {
   const lang = useLang();
@@ -60,6 +63,7 @@ function TopBar() {
   const mode = useUi((s) => s.mode);
   const view = useUi((s) => s.view);
   const views = useUi((s) => s.views);
+  const savedLayouts = useNamedLayouts();
   const floats = useFloats((s) => s.open);
   const updatesOpen = useUi((s) => s.updatesOpen); // the dot goes out once the window has been opened
   const [, force] = useState(0);
@@ -161,6 +165,17 @@ function TopBar() {
                 {`Layout: ${l.label}`}
               </MenuItem>
             ))}
+            {savedLayouts.map((l) => (
+              <div key={l.id} className="menu-row">
+                <MenuItem close={close} checked={sameViews(views, l.views)} onClick={() => applySavedLayout(l.id)}>
+                  {`Layout: ${l.name}`}
+                </MenuItem>
+                <IconButton icon={Trash2} title="Delete this saved layout" small onClick={() => deleteSavedLayout(l.id)} />
+              </div>
+            ))}
+            <MenuItem close={close} icon={Save} onClick={() => void saveLayoutDialog()}>
+              Save layout as…
+            </MenuItem>
             <div className="menu-sep" />
             <MenuItem close={close} hotkey={KEYS.hideViews} onClick={() => toggleAllViews()}>
               Hide / show all windows
@@ -380,6 +395,12 @@ export function App() {
         }
         return;
       }
+      // micro-move: Alt + arrows nudge the selected bones, or the selected keys of the timeline (Shift: ten steps)
+      if (e.altKey && (key === 'arrowleft' || key === 'arrowright' || key === 'arrowup' || key === 'arrowdown')) {
+        e.preventDefault();
+        microMove(key, e.shiftKey, focusArea() === 'timeline');
+        return;
+      }
       const tool = toolForKey(key);
       if (tool) {
         setTool(tool);
@@ -500,6 +521,7 @@ export function App() {
       {paletteOpen && <Palette />}
       <FloatingPanels />
       <KeyDialogHost />
+      <AskHost />
       <MarkerDialogHost />
       <Toast />
       <TooltipHost />

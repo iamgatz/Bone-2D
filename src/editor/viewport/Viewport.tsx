@@ -7,7 +7,7 @@ import { assets } from '@/store/assets';
 import { docStore } from '@/store/doc';
 import { toast, uiStore } from '@/store/ui';
 import { getScene, screenToWorld } from '../scene';
-import { ghostsFor } from '../ghosts';
+import { ghostsFor, referenceGhost } from '../ghosts';
 import { ViewportController } from './controller';
 import { drawOverlay } from './overlay';
 
@@ -142,6 +142,14 @@ export function Viewport() {
       renderer!.begin({ x: ui.camera.x, y: ui.camera.y, scale: ui.camera.zoom * dpr, width: glCanvas.width, height: glCanvas.height }, [...prefs.viewportBg, 1]);
       if (ui.view.onion && ui.mode === 'animate' && scene.animation) {
         for (const g of ghostsFor(scene, scene.animation, ui.time, doc.fps, { before: prefs.onionBefore, after: prefs.onionAfter, gap: prefs.onionGap }, ui.loop, ui.skinId)) renderer!.drawSkeleton(g.skeleton, { skip: (s) => hiddenSlots.has(s.data.id), alpha: g.alpha, tint: g.tint });
+      }
+      if (ui.reference) {
+        // the reference (another animation or the setup pose) under the pose being edited
+        const other = ui.reference === 'setup' ? null : doc.animations.find((a) => a.id === ui.reference);
+        if (ui.reference === 'setup' || other) {
+          const g = referenceGhost(scene, other ?? null, ui.mode === 'animate' ? ui.time : 0, ui.loop, ui.skinId);
+          renderer!.drawSkeleton(g.skeleton, { skip: (s) => hiddenSlots.has(s.data.id), alpha: g.alpha, tint: g.tint });
+        }
       }
       if (ui.view.images) renderer!.drawSkeleton(scene.skeleton, { skip: (s) => hiddenSlots.has(s.data.id) });
       controller.meshTool.drawHeat(renderer!, scene);

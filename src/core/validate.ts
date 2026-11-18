@@ -63,6 +63,7 @@ export function repairProject(project: Project): string[] {
   repairBones(doc, note);
   repairSlots(doc, note);
   repairFolders(doc, note);
+  repairSelectionSets(doc, note);
   repairSkins(doc, note);
   repairConstraints(doc, note);
   repairEvents(doc, note);
@@ -264,6 +265,28 @@ function repairFolders(doc: SkeletonDoc, note: Note) {
   const before = JSON.stringify(doc.drawOrderFolders.map((f) => f.slots));
   const gone = pruneFolders(doc);
   if (gone.length || JSON.stringify((doc.drawOrderFolders ?? []).map((f) => f.slots)) !== before) note('draw order folders repaired (unknown or shared slots, empty folders)');
+}
+
+/** Selection sets: a list of {id, name, bones}; a set keeps only the bones that exist and a set with none is dropped. */
+function repairSelectionSets(doc: SkeletonDoc, note: Note) {
+  if (doc.selectionSets === undefined) return;
+  if (!Array.isArray(doc.selectionSets)) {
+    delete doc.selectionSets;
+    note('selection sets were not a list');
+    return;
+  }
+  const alive = new Set(doc.bones.map((b) => b.id));
+  const before = JSON.stringify(doc.selectionSets);
+  const valid = doc.selectionSets.filter((s) => s && typeof s === 'object' && isString(s.id) && Array.isArray(s.bones));
+  for (const s of valid) {
+    s.bones = [...new Set(s.bones.filter((id) => isString(id) && alive.has(id)))];
+    if (!isString(s.name) || !s.name.trim()) s.name = 'Set';
+  }
+  doc.selectionSets = valid.filter((s) => s.bones.length > 0);
+  dedupeIds(doc.selectionSets, 'selection set', note);
+  dedupeNames(doc.selectionSets, 'Set', 'selection set', note);
+  if (!doc.selectionSets.length) delete doc.selectionSets;
+  if (JSON.stringify(doc.selectionSets ?? []) !== before && before !== '[]') note('selection sets repaired (damaged entries, unknown bones, empty sets)');
 }
 
 function repairSlots(doc: SkeletonDoc, note: Note) {

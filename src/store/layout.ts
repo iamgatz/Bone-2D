@@ -73,5 +73,56 @@ export function saveLayout(layout: SavedLayout) {
   }
 }
 
+// ---------------------------------------------------------------- arrangements the person saved under a name
+
+export interface NamedLayout extends SavedLayout {
+  id: string;
+  name: string;
+}
+
+const NAMED_KEY = 'bone2d.layouts';
+
+/** Takes the stored list for what it is worth: entries without a name are dropped, windows that are unknown keep their defaults, names are made unique. */
+export function readNamedLayouts(raw: string | null): NamedLayout[] {
+  if (!raw) return [];
+  try {
+    const list = JSON.parse(raw) as unknown;
+    if (!Array.isArray(list)) return [];
+    const out: NamedLayout[] = [];
+    for (const item of list as Partial<NamedLayout>[]) {
+      if (!item || typeof item !== 'object' || typeof item.name !== 'string' || !item.name.trim() || typeof item.id !== 'string') continue;
+      const own = readLayout(JSON.stringify({ views: item.views, panel: item.panel }));
+      out.push({ id: item.id, name: uniqueLayoutName(out, item.name), views: own.views ?? { ...DEFAULT_VIEWS }, panel: own.panel ?? { left: 240, right: 280, bottom: 240 } });
+    }
+    return out;
+  } catch {
+    return [];
+  }
+}
+
+/** The name as it is, or with a number when another saved arrangement already has it. */
+export function uniqueLayoutName(list: readonly { name: string }[], wanted: string): string {
+  const base = wanted.trim() || 'Layout';
+  const taken = new Set(list.map((l) => l.name.toLowerCase()));
+  if (!taken.has(base.toLowerCase())) return base;
+  for (let n = 2; ; n++) if (!taken.has(`${base} ${n}`.toLowerCase())) return `${base} ${n}`;
+}
+
+export function loadNamedLayouts(): NamedLayout[] {
+  try {
+    return readNamedLayouts(localStorage.getItem(NAMED_KEY));
+  } catch {
+    return [];
+  }
+}
+
+export function saveNamedLayouts(list: readonly NamedLayout[]) {
+  try {
+    localStorage.setItem(NAMED_KEY, JSON.stringify(list));
+  } catch {
+    /* storage can be blocked */
+  }
+}
+
 /** True when the views are exactly this arrangement. */
 export const sameViews = (a: Views, b: Views) => VIEW_LIST.every((v) => a[v.id] === b[v.id]);

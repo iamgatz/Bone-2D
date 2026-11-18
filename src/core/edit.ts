@@ -1,5 +1,6 @@
 /** Pure document edit helpers. They mutate the passed (draft) document in place, so they work under immer and in tests. */
 import { pruneFolders } from './folders';
+import { dropBonesFromSets } from './selsets';
 import { uniqueName } from './ids';
 import { remapDeformValues, vertexWorldPositions } from './mesh';
 import type { BoneMats, VertexMap } from './mesh';
@@ -140,6 +141,7 @@ export function removeBones(doc: SkeletonDoc, ids: Iterable<Id>, bindPose?: Bone
       if (a.physics) delete a.physics[id];
     }
   }
+  dropBonesFromSets(doc, gone);
   return gone;
 }
 

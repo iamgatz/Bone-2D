@@ -150,6 +150,7 @@ export const hotkeyGroups = (): HotkeyGroup[] => [
       row('play'),
       { label: 'Step frame', keys: ['←', '→'] },
       { label: 'Step 10 frames', keys: ['Shift+←', 'Shift+→'] },
+      { label: 'Micro-move: bones by a unit; keys by a frame (← →) and their values (↑ ↓). Shift: ten', keys: ['Alt+←', 'Alt+→', 'Alt+↑', 'Alt+↓'] },
       { label: 'Go to the start', keys: ['Home'] },
       row('key'),
       row('keyShown'),

@@ -33,6 +33,9 @@ import * as MK from '../src/store/markerActions';
 import * as AT from '../src/store/animToolActions';
 import * as LIM from '../src/store/limitActions';
 import * as CH from '../src/store/chainActions';
+import * as PRE from '../src/store/presetActions';
+import * as NU from '../src/store/nudgeActions';
+import * as SS from '../src/store/selectionSetActions';
 import { rotationLimits } from '../src/core/limits';
 import { chainBones, CHAIN_PARAMS, CHAIN_SHAPES } from '../src/core/chains';
 import { skeletonCount } from '../src/core/skeletons';
@@ -175,6 +178,21 @@ export const ops: Op[] = [
     else if (limits.length) { const l = c.pick(limits)!; A.setBonePose([{ id: c.chance(0.5) ? l.bone : l.control, props: { rotation: c.num(-300, 300) } }]); }
   } },
   { name: 'tween', run: (c) => { A.setMode('animate'); A.setTime(c.num(0, 2)); A.selectBone(c.pick(doc().bones)!.id); AT.tweenSelected(c.num(-0.3, 1.3)); } },
+  {
+    name: 'constraintPreset',
+    run: (c) => {
+      const all = doc().constraints;
+      const from = c.pick(all);
+      if (!from) return;
+      const to = c.pick(all.filter((x) => x.type === from.type));
+      if (process.env.SKIP_PRESET) return;
+      const preset = PRE.savePreset(from.id, `fuzz ${from.type}`);
+      if (preset && to) PRE.applyPreset(to.id, preset.id);
+      PRE.deletePreset(preset!.id);
+    },
+  },
+  { name: 'nudge', run: (c) => { A.setMode(c.chance(0.6) ? 'setup' : 'animate'); A.setTime(c.num(0, 2)); A.setSelection({ bones: [c.pick(doc().bones)!.id, c.pick(doc().bones)!.id] }); const dx = c.num(-12, 12); const dy = c.num(-12, 12); if (!process.env.SKIP_NUDGE) NU.nudgeBones(dx, dy); } },
+  { name: 'selectionSet', run: (c) => { A.setSelection({ bones: [c.pick(doc().bones)!.id, c.pick(doc().bones)!.id] }); const id = SS.saveSelectionSet(); if (id) { A.setSelection({}); SS.selectSet(id); if (c.chance(0.3)) SS.deleteSelectionSet(id); } } },
   { name: 'swapSides', run: (c) => { A.setMode(c.chance(0.6) ? 'animate' : 'setup'); if (c.chance(0.5)) A.selectBone(c.pick(doc().bones)!.id); PO.swapSides(); } },
   { name: 'chainCurve', run: (c) => {
     A.setMode('setup');
@@ -681,9 +699,18 @@ function colorMismatch(p: Project, ours: ReturnType<typeof createSkeleton>, offi
       const seq = mine && (mine.kind === 'region' || mine.kind === 'mesh') ? mine.src.sequence : undefined;
       pairs.push([`sequence frame (ours: ${mine ? mine.kind + ' ' + mine.name : 'none'} seq=${JSON.stringify(seq)} idx=${slot.sequenceIndex}; official: ${shown.name} ${shown.sequence.regions.length} frames)`, seq ? resolveSequenceIndex(seq, slot.sequenceIndex) : NaN, shown.sequence.resolveIndex(os.appliedPose)]);
     }
-    for (const [what, x, y] of pairs) if (!(Math.abs(x - y) <= 1.5e-2)) return { bone: `slot "${os.data.name}"`, what, ours: x, official: y };
+    // a slider whose mix is 13 hands the 8-bit rounding of the colour keys back 13 times larger
+    for (const [what, x, y] of pairs) if (!(Math.abs(x - y) <= 1.5e-2 * colorAmplification(p))) return { bone: `slot "${os.data.name}"`, what, ours: x, official: y };
   }
   return null;
+}
+
+/** The biggest mix a slider can have (set up or keyed), at least 1: how much the rounding of a colour in the file can grow in the pose. */
+function colorAmplification(p: Project): number {
+  let amp = 1;
+  for (const c of p.skeleton.constraints) if (c.type === 'slider') amp = Math.max(amp, Math.abs(c.mix));
+  for (const a of p.skeleton.animations) for (const t of Object.values(a.slider ?? {})) for (const k of t.mix ?? []) amp = Math.max(amp, Math.abs(k.value[0]));
+  return amp;
 }
 
 /** Bone indices that influence a weighted attachment (`bones` = per vertex [count, bone…] as compiled by `compileSkeleton`). */
@@ -789,6 +816,13 @@ export function bakeMismatch(p: Project): string | null {
     // ...and neither is anything below such a pair: the child follows the parent it is given, whatever its own pose says
     const unexplained = new Set<number>();
     const pairs = new Set<number>();
+    // A path constraint whose slot has no path attachment on some frame (an attachment key that turns it off) does not touch its bones then, and a
+    // constrained bone is not updated on its own: it keeps the world pose of the last frame that solved. That is in the official runtime too,
+    // and a baked local pose cannot say it, so the bones of such a path are not compared (nor what hangs on them).
+    for (const c of doc.constraints) {
+      if (c.type !== 'path' || !anim.slots[c.target]?.attachment?.some((k) => k.name === null)) continue;
+      for (const id of c.bones) pairs.add(doc.bones.findIndex((b) => b.id === id));
+    }
     for (let i = 0; i < probe.bones.length; i++) {
       const parent = probe.bones[i].parent;
       if (!parent) continue;
