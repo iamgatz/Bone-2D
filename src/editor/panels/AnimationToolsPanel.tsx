@@ -1,5 +1,5 @@
-import { Pencil, Trash2 } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { Pencil, Trash2, Video } from 'lucide-react';
+import { useMemo, useRef, useState } from 'react';
 import { DEFAULT_TOLERANCE, DEFAULT_BAKE, countSimplifiable, scaleTolerance } from '@/core/bake';
 import { DEFAULT_SLIDE, footSlides } from '@/core/animtools';
 import type { Slide, SlideOptions } from '@/core/animtools';
@@ -10,10 +10,71 @@ import type { Animation } from '@/core/model';
 import { bakeCurrentAnimation, closeCurrentLoop, currentAnimation, setTime, simplifyCurrentAnimation } from '@/store/actions';
 import { useProject } from '@/store/doc';
 import { addMarkerAtPlayhead, deleteMarker, openMarkerDialog, splitAtMarkersAction } from '@/store/markerActions';
+import { clearRefVideo, loadRefVideo, setRefVideoShow, setRefVideoView, startRefVideoHere, useRefVideo } from '@/store/refVideo';
 import { uiStore, useUi } from '@/store/ui';
 import { Field } from '../ui/Field';
 import { MARKER_TOKENS } from '../ui/tokens';
 import { Button, IconButton, NumberField, SelectField, Toggle } from '../ui/controls';
+
+/** The reference video (rotoscoping): load a video, place it under the pose, and set where it starts. Nothing is saved or exported. */
+function RefVideoControls() {
+  const rv = useRefVideo();
+  const input = useRef<HTMLInputElement>(null);
+  const view = rv.view;
+  return (
+    <>
+      <div className="section-label">Reference video</div>
+      <p className="hint-text">Draws a video over the scene, faded, and keeps it in step with the playhead: trace the motion of a filmed take. The video stays in this tab; nothing is saved or exported.</p>
+      <input
+        ref={input}
+        type="file"
+        accept="video/*"
+        hidden
+        onChange={(e) => {
+          const file = e.target.files?.[0];
+          e.target.value = '';
+          if (file) loadRefVideo(file);
+        }}
+      />
+      <div className="hstack wrap mb">
+        <Button small primary={!rv.url} icon={Video} onClick={() => input.current?.click()}>
+          {rv.url ? 'Change video' : 'Load video'}
+        </Button>
+        {rv.url && (
+          <Button small ghost icon={Trash2} onClick={() => clearRefVideo()} title="Take the video away">
+            Remove
+          </Button>
+        )}
+      </div>
+      {rv.url && (
+        <>
+          <p className="hint-text">{`${rv.name}${rv.duration > 0 ? ` · ${rv.duration.toFixed(2)} s · ${rv.width}×${rv.height}` : ''}`}</p>
+          <Field label="Show" title="Draw the video">
+            <Toggle on={rv.show} onChange={setRefVideoShow} title="Draw the video" />
+          </Field>
+          <Field label="Opacity" title="How strongly the video shows through, in percent">
+            <NumberField label="%" value={Math.round(view.opacity * 100)} step={5} precision={0} min={0} max={100} onChange={(v) => setRefVideoView({ opacity: v / 100 })} />
+          </Field>
+          <Field label="Offset" title="Seconds added to the time of the animation to get the time of the video">
+            <NumberField label="s" value={view.offset} step={0.05} precision={3} onChange={(v) => setRefVideoView({ offset: v })} />
+          </Field>
+          <div className="hstack wrap mb">
+            <Button small onClick={() => startRefVideoHere()} title="The first frame of the video goes with the frame the playhead is on">
+              Start at playhead
+            </Button>
+          </div>
+          <Field label="Size" title="Percent of the size of the video's own pixels">
+            <NumberField label="%" value={view.scale} step={5} precision={0} min={1} max={2000} onChange={(v) => setRefVideoView({ scale: v })} />
+          </Field>
+          <Field label="Position" title="Where the middle of the video is in the scene">
+            <NumberField label="x" value={view.x} step={5} precision={1} onChange={(v) => setRefVideoView({ x: v })} />
+            <NumberField label="y" value={view.y} step={5} precision={1} onChange={(v) => setRefVideoView({ y: v })} />
+          </Field>
+        </>
+      )}
+    </>
+  );
+}
 
 /** Keys in the bone timelines of an animation. */
 function boneKeyCount(anim: Animation): number {
@@ -74,6 +135,8 @@ export function AnimationToolsPanel() {
           onChange={(v) => uiStore.patch({ reference: v || null })}
           wide
         />
+
+        <RefVideoControls />
 
         <div className="section-label">Markers</div>
         <p className="hint-text">Flags on the timeline for a beat, a sound cue or a note. Double-click one on the ruler to edit it. Cut the animation into clips at the markers.</p>

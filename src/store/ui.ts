@@ -154,6 +154,10 @@ export interface UiState {
   paletteOpen: boolean;
   /** Set Parent is waiting for the click on the new parent bone. */
   pickParent: boolean;
+  /** A point of the world the rotate tool turns the selected bones about, instead of the origin of each bone (kept for the session). */
+  pivot: { x: number; y: number } | null;
+  /** The next click in the viewport sets the pivot. */
+  pivotPick: boolean;
 }
 
 export const emptySelection: Selection = { bones: [], slot: null, attachment: null, constraint: null, vertices: [] };
@@ -200,6 +204,8 @@ export const uiStore = createStore<UiState>({
   welcomeOpen: false,
   paletteOpen: false,
   pickParent: false,
+  pivot: null,
+  pivotPick: false,
 });
 
 export function useUi<S>(selector: (s: UiState) => S, equals?: (a: S, b: S) => boolean): S {

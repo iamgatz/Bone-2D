@@ -11,6 +11,7 @@ import { checkpointStore } from '@/store/checkpoints';
 import { checkpointGhost, ghostsFor, referenceGhost } from '../ghosts';
 import { ViewportController } from './controller';
 import { drawOverlay } from './overlay';
+import { ReferenceVideo } from './ReferenceVideo';
 
 export const viewportApi: { controller: ViewportController | null; frame: () => void; frameSelection: () => void; zoom100: () => void; size: () => [number, number] } = {
   controller: null,
@@ -237,6 +238,7 @@ export function Viewport() {
   return (
     <div ref={hostRef} className="viewport" tabIndex={0} onDragOver={onDragOver} onDrop={onDrop}>
       <canvas ref={glRef} className="vp-canvas" />
+      <ReferenceVideo />
       <canvas ref={overlayRef} className="vp-canvas vp-overlay" />
     </div>
   );
