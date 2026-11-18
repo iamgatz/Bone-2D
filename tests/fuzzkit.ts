@@ -36,6 +36,8 @@ import * as CH from '../src/store/chainActions';
 import * as PRE from '../src/store/presetActions';
 import * as NU from '../src/store/nudgeActions';
 import * as SS from '../src/store/selectionSetActions';
+import * as CP from '../src/store/checkpoints';
+import { diffSkeletons } from '../src/core/checkpoints';
 import { softMoves, softWeights } from '../src/core/soft';
 import { rotationLimits } from '../src/core/limits';
 import { chainBones, CHAIN_PARAMS, CHAIN_SHAPES } from '../src/core/chains';
@@ -195,6 +197,8 @@ export const ops: Op[] = [
   { name: 'nudge', run: (c) => { A.setMode(c.chance(0.6) ? 'setup' : 'animate'); A.setTime(c.num(0, 2)); A.setSelection({ bones: [c.pick(doc().bones)!.id, c.pick(doc().bones)!.id] }); const dx = c.num(-12, 12); const dy = c.num(-12, 12); if (!process.env.SKIP_NUDGE) NU.nudgeBones(dx, dy); } },
   { name: 'selectionSet', run: (c) => { A.setSelection({ bones: [c.pick(doc().bones)!.id, c.pick(doc().bones)!.id] }); const id = SS.saveSelectionSet(); if (id) { A.setSelection({}); SS.selectSet(id); if (c.chance(0.3)) SS.deleteSelectionSet(id); } } },
   { name: 'softMove', run: (c) => { const m = c.pick(meshes()); if (!m) return; const { mats, slotMat } = M.setupMats(); const w = meshWorldPositions(M.getMesh(m.slotId, m.name)!, slotMat(m.slotId), mats); const n = w.length / 2; const picked = Array.from({ length: 1 + Math.floor(c.r() * 3) }, () => Math.floor(c.r() * n)); M.moveMeshVertices(m.slotId, m.name, softMoves(w, softWeights(w, picked, c.num(0, 120), c.pick(['smooth', 'linear', 'sharp'] as const)!), c.num(-30, 30), c.num(-30, 30))); } },
+  { name: 'checkpoint', run: () => void CP.markCheckpoint() },
+  { name: 'backToCheckpoint', run: (c) => { const cp = c.pick(CP.checkpointsOfActive()); if (!cp) return; if (CP.restoreCheckpoint(cp.id) && (docStore.get().skeleton !== cp.skeleton || diffSkeletons(cp.skeleton, docStore.get().skeleton).length)) throw new Error('a restored checkpoint differs from what was marked'); getScene(); } },
   { name: 'skinMix', run: (c) => { const s = c.pick(doc().skins); if (s) A.toggleSkinMix(s.id); getScene(); } },
   { name: 'swapSides', run: (c) => { A.setMode(c.chance(0.6) ? 'animate' : 'setup'); if (c.chance(0.5)) A.selectBone(c.pick(doc().bones)!.id); PO.swapSides(); } },
   { name: 'chainCurve', run: (c) => {

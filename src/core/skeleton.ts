@@ -2458,7 +2458,7 @@ export class Skeleton {
    * Computes every world transform and applies the constraints. Constraints work on the *applied* local transform
    * (`a*` fields), which starts each update as a copy of the animated pose â€” the pose itself is never modified.
    */
-  updateWorldTransform(physics: PhysicsMode = 'none') {
+  updateWorldTransform(physics: PhysicsMode = 'none', probe?: (item: Skeleton['cache'][number], after: boolean) => void) {
     this.physicsMode = physics;
     this.updateId++;
     for (const b of this.bones) {
@@ -2470,7 +2470,16 @@ export class Skeleton {
       b.ashearX = b.shearX;
       b.ashearY = b.shearY;
     }
-    for (const item of this.cache) item.update();
+    if (!probe) {
+      for (const item of this.cache) item.update();
+      return;
+    }
+    // a caller that wants to look between the steps (the constraint numbers of a bone) is told before and after every item
+    for (const item of this.cache) {
+      probe(item, false);
+      item.update();
+      probe(item, true);
+    }
   }
 
   /** World AABB of visible region/mesh attachments in the current pose: [x, y, width, height]. */

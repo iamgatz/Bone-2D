@@ -134,6 +134,8 @@ export interface UiState {
   muted: string[];
   /** Drawn faded under the pose being edited, to compare with: an animation id, `'setup'` for the setup pose, or null (kept for the session, never saved or exported). */
   reference: string | null;
+  /** The checkpoint whose pose is drawn under the current one, to compare with (kept for the session, never saved or exported). */
+  compare: string | null;
   brush: WeightBrush;
   weightView: WeightView;
   meshView: MeshView;
@@ -181,6 +183,7 @@ export const uiStore = createStore<UiState>({
   expanded: {},
   muted: [],
   reference: null,
+  compare: null,
   brush: { size: 40, strength: 0.5, mode: 'add', bone: null, feather: 100, locked: [] },
   weightView: { pies: false, overlay: false, selected: false },
   meshView: { wireframe: true, dim: false, isolate: false, freeze: false, soft: false, softRadius: 60, softShape: 'smooth' },

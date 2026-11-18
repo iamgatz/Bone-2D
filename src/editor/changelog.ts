@@ -12,6 +12,18 @@ export interface Release {
 
 export const CHANGELOG: Release[] = [
   {
+    version: '0.47',
+    date: '2026-11-19',
+    en: [
+      "Checkpoints (History window → Checkpoints): mark the skeleton as it is now, then compare. A violet ghost of the checkpoint's pose (the same animation at the same time) is drawn under the current one, and the list shows what changed since: bones, slots, skins, constraints, events and animations added, removed or changed, with the number of keys. One click goes back to a checkpoint (one step of the history, so Undo brings the work back). They are kept until the project is closed.",
+      "Constraint effects (Inspector, for a bone that a constraint moves): the pose the animation gives the bone, what each IK, transform or path constraint adds to it in the order they run (turn, move, scale, shear), and the result. Physics is left out: it depends on the time before.",
+    ],
+    ru: [
+      "Контрольные точки (окно History → «Контрольные точки»): запомни скелет таким, какой он сейчас, и сравнивай. Фиолетовый призрак позы точки (та же анимация в то же время) рисуется под текущей, а список показывает, что изменилось: добавленные, удалённые и изменённые кости, слоты, скины, констрейнты, события и анимации, с числом ключей. Один клик возвращает к точке (один шаг истории, Undo возвращает работу назад). Живут, пока проект открыт.",
+      "Действие констрейнтов (Inspector, для кости, которую двигает констрейнт): поза из анимации, что добавляет каждый IK, transform или path в порядке работы (поворот, сдвиг, масштаб, скос) и итог. Физика не показана: она зависит от предыдущего времени.",
+    ],
+  },
+  {
     version: '0.46',
     date: '2026-11-19',
     en: [

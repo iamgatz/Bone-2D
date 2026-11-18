@@ -6,6 +6,7 @@ import { docStore } from '@/store/doc';
 import { backupCurrent, restoreBackup } from '@/store/project';
 import { toast } from '@/store/ui';
 import { IconButton } from '../ui/controls';
+import { Checkpoints } from './Checkpoints';
 
 const WHY: Record<BackupWhy, string> = { auto: 'Automatic', manual: 'Saved by hand', open: 'Before opening another file', new: 'Before a new project', restore: 'Before a restore' };
 
@@ -73,6 +74,7 @@ export function HistoryPanel() {
             <span className="label">{label}</span>
           </div>
         ))}
+        <Checkpoints />
         <Backups />
       </div>
     </div>

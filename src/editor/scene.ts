@@ -47,19 +47,7 @@ export function getScene(): Scene {
   const data = compileSkeleton(doc);
   const reuse = !!c && c.scene.data === data && c.skinId === ui.skinId && c.skinMix === ui.skinMix;
   const skeleton = reuse ? c!.scene.skeleton : createSkeleton(data, ui.skinId && doc.skins.some((s) => s.id === ui.skinId) ? ui.skinId : null, ui.skinMix);
-  applyAnimation(skeleton, anim && ui.muted.length ? withoutMuted(anim, new Set(ui.muted)) : anim, time);
-  for (const id in overrides) {
-    const b = skeleton.boneById(id);
-    if (!b) continue;
-    const o = overrides[id];
-    if (o.x !== undefined) b.x = o.x;
-    if (o.y !== undefined) b.y = o.y;
-    if (o.rotation !== undefined) b.rotation = o.rotation;
-    if (o.scaleX !== undefined) b.scaleX = o.scaleX;
-    if (o.scaleY !== undefined) b.scaleY = o.scaleY;
-    if (o.shearX !== undefined) b.shearX = o.shearX;
-    if (o.shearY !== undefined) b.shearY = o.shearY;
-  }
+  poseSkeleton(skeleton, anim, time, overrides, ui.muted);
   // Physics only simulates while an animation plays: a step forward advances it, the same frame again keeps what it has
   // computed (pause, a bone dragged), any other time starts it again from rest. In Setup mode it does not run at all.
   let physics: PhysicsMode = 'none';
@@ -90,6 +78,41 @@ export function getScene(): Scene {
 }
 
 const EMPTY: Record<Id, PoseOverride> = {};
+
+/** Puts a skeleton into the pose the editor shows: the animation at the time (without the muted timelines), then the bones being dragged. The world transform is not updated. */
+export function poseSkeleton(skeleton: Skeleton, anim: Animation | null, time: number, overrides: Record<Id, PoseOverride>, muted: readonly string[]) {
+  applyAnimation(skeleton, anim && muted.length ? withoutMuted(anim, new Set(muted)) : anim, time);
+  for (const id in overrides) {
+    const b = skeleton.boneById(id);
+    if (!b) continue;
+    const o = overrides[id];
+    if (o.x !== undefined) b.x = o.x;
+    if (o.y !== undefined) b.y = o.y;
+    if (o.rotation !== undefined) b.rotation = o.rotation;
+    if (o.scaleX !== undefined) b.scaleX = o.scaleX;
+    if (o.scaleY !== undefined) b.scaleY = o.scaleY;
+    if (o.shearX !== undefined) b.shearX = o.shearX;
+    if (o.shearY !== undefined) b.shearY = o.shearY;
+  }
+}
+
+let probeCache: { data: SkeletonData; skinId: Id | null; skinMix: Id[]; skeleton: Skeleton } | null = null;
+/**
+ * A second skeleton in the pose of the scene, for looking at without touching the one on screen (the constraint numbers of a bone run the update
+ * again with a look between the steps, and a second update of the shown skeleton could move a physics or path bone). Physics starts from rest here.
+ */
+export function getProbeSkeleton(): Skeleton {
+  const scene = getScene();
+  const ui = uiStore.get();
+  const skinId = ui.skinId && scene.doc.skins.some((s) => s.id === ui.skinId) ? ui.skinId : null;
+  if (!probeCache || probeCache.data !== scene.data || probeCache.skinId !== skinId || probeCache.skinMix !== ui.skinMix) {
+    probeCache = { data: scene.data, skinId, skinMix: ui.skinMix, skeleton: createSkeleton(scene.data, skinId, ui.skinMix) };
+  }
+  const skeleton = probeCache.skeleton;
+  const animate = ui.mode === 'animate';
+  poseSkeleton(skeleton, scene.animation, animate ? ui.time : 0, animate ? ui.overrides : EMPTY, ui.muted);
+  return skeleton;
+}
 
 let setupCache: { doc: SkeletonDoc; skeleton: Skeleton } | null = null;
 /** The skeleton in its pure setup pose (no animation, no overrides). */

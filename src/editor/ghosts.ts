@@ -3,9 +3,9 @@
  * so the motion can be judged without playing it.
  */
 import { applyAnimation } from '@/core/animate';
-import type { Animation } from '@/core/model';
-import { createSkeleton } from '@/core/skeleton';
-import type { Skeleton } from '@/core/skeleton';
+import type { Animation, SkeletonDoc } from '@/core/model';
+import { compileSkeleton, createSkeleton } from '@/core/skeleton';
+import type { Skeleton, SkeletonData } from '@/core/skeleton';
 import type { Scene } from './scene';
 
 export interface OnionConfig {
@@ -93,4 +93,28 @@ export function referenceGhost(scene: Scene, anim: Animation | null, time: numbe
   if (anim) applyAnimation(skeleton, anim, referenceTime(time, anim.duration, loop));
   skeleton.updateWorldTransform(scene.data.constraints.some((c) => c.kind === 'physics') ? 'reset' : 'none');
   return { skeleton, alpha: 0.45, tint: TINT_REFERENCE };
+}
+
+// ---------------------------------------------------------------- a checkpoint: the pose of the skeleton as it was, drawn under the current one
+
+const TINT_CHECKPOINT: Ghost['tint'] = [0.74, 0.64, 1, 1];
+
+let cpPool: { doc: SkeletonDoc; skinId: string | null; data: SkeletonData; skeleton: Skeleton } | null = null;
+
+/**
+ * The checkpoint's skeleton posed like the one being edited: the animation with the same id at the same time (the setup pose when the animation
+ * is not in the checkpoint, or in Setup mode), faded and tinted violet. Null when the checkpoint cannot be posed.
+ */
+export function checkpointGhost(doc: SkeletonDoc, animationId: string | null, time: number, loop: boolean, skinId: string | null): Ghost | null {
+  const skin = skinId && doc.skins.some((s) => s.id === skinId) ? skinId : null;
+  if (!cpPool || cpPool.doc !== doc || cpPool.skinId !== skin) {
+    const data = compileSkeleton(doc);
+    cpPool = { doc, skinId: skin, data, skeleton: createSkeleton(data, skin) };
+  }
+  const { skeleton, data } = cpPool;
+  skeleton.setToSetupPose();
+  const anim = animationId ? doc.animations.find((a) => a.id === animationId) : undefined;
+  if (anim) applyAnimation(skeleton, anim, referenceTime(time, anim.duration, loop));
+  skeleton.updateWorldTransform(data.constraints.some((c) => c.kind === 'physics') ? 'reset' : 'none');
+  return { skeleton, alpha: 0.5, tint: TINT_CHECKPOINT };
 }
