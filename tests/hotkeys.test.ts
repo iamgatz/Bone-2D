@@ -51,9 +51,10 @@ describe('the shortcuts window', () => {
       const parts = combo.split('+');
       const key = parts[parts.length - 1];
       if (BINDINGS.some((b) => !b.fixed && (b.combo === combo || b.aliases?.includes(combo)))) return null; // a movable command: checked below
-      const lower: Record<string, string> = { Tab: 'tab', Space: ' ', Del: 'delete', Backspace: 'backspace', Home: 'home', Enter: 'enter', Esc: 'escape', '←': 'arrowleft', '→': 'arrowright', '?': '?' };
+      const lower: Record<string, string> = { Tab: 'tab', Space: ' ', Del: 'delete', Backspace: 'backspace', Home: 'home', Enter: 'enter', Esc: 'escape', '←': 'arrowleft', '→': 'arrowright', '↑': 'arrowup', '↓': 'arrowdown', '?': '?' };
       const name = lower[key] ?? key.toLowerCase();
       if (parts.includes('Ctrl')) return `key === '${name}'`;
+      if (parts.includes('Alt')) return `e.altKey`; // Alt with an arrow: micro-move
       if (parts.includes('Shift')) return `e.shiftKey`; // Shift with an arrow: ten frames
       if (/^[A-Z]$/.test(key) && TOOLS.some((t) => t.hotkey === key)) return 'toolForKey(key)';
       return `case '${name}'`;

@@ -586,6 +586,13 @@ export interface PlaySettings {
 
 // ---------------------------------------------------------------- project
 
+/** A group of bones kept under a name so that one click selects them (editor data, not exported; see core/selsets.ts). */
+export interface SelectionSet {
+  id: Id;
+  name: string;
+  bones: Id[];
+}
+
 export interface SkeletonDoc {
   name: string;
   fps: number;
@@ -599,6 +606,8 @@ export interface SkeletonDoc {
   animations: Animation[];
   /** Groups of slots with a draw order of their own (absent = none). */
   drawOrderFolders?: DrawOrderFolder[];
+  /** Groups of bones the animator selects with one click (absent = none). Editor data: the export does not carry it. */
+  selectionSets?: SelectionSet[];
   /** Editor data that belongs to this skeleton and is kept here while another skeleton of the project is being edited (see core/skeletons.ts). */
   aside?: { poses?: PoseEntry[]; mixes?: { default: number; pairs: { from: Id; to: Id; time: number }[] } };
 }

@@ -18,6 +18,8 @@ import { toast, uiStore } from '@/store/ui';
 import { clearGuides } from '@/store/guideActions';
 import { isolateSelection, showAll } from '@/store/visibilityActions';
 import { applyLayout, toggleAllViews, toggleView } from '@/store/viewActions';
+import { applySavedLayout, namedLayoutsStore, saveLayoutDialog } from '@/store/layoutActions';
+import { saveSelectionSet, selectSet } from '@/store/selectionSetActions';
 import { FLOAT_LIST, toggleFloat } from '@/store/floats';
 import { KEYS } from './hotkeys';
 import { openSpineImport } from './importSpine';
@@ -102,6 +104,10 @@ export function buildCommands(): Command[] {
   for (const v of VIEW_LIST) list.push({ id: `win.${v.id}`, group: 'Windows', title: v.label, run: () => toggleView(v.id) });
   for (const w of FLOAT_LIST) list.push({ id: `float.${w.id}`, group: 'Windows', title: `Floating: ${w.label}`, run: () => toggleFloat(w.id) });
   for (const l of LAYOUTS) list.push({ id: `layout.${l.id}`, group: 'Windows', title: `Layout: ${l.label}`, run: () => applyLayout(l.id) });
+  list.push({ id: 'layout.save', group: 'Windows', title: 'Save layout as…', run: () => void saveLayoutDialog() });
+  for (const l of namedLayoutsStore.get().list) list.push({ id: `layout.saved.${l.id}`, group: 'Windows', title: `Layout: ${l.name}`, run: () => applySavedLayout(l.id) });
+  list.push({ id: 'edit.saveset', group: 'Edit', title: 'Keep the selected bones as a selection set', run: () => void saveSelectionSet() });
+  for (const s of doc.selectionSets ?? []) list.push({ id: `set.${s.id}`, group: 'Selection sets', title: `Select set: ${s.name}`, run: () => selectSet(s.id) });
   for (const a of doc.animations) list.push({ id: `anim.${a.id}`, group: 'Animations', title: a.name, run: () => (selectAnimation(a.id), setMode('animate')) });
   return list;
 }

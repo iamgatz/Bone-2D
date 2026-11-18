@@ -68,3 +68,29 @@ export function ghostsFor(scene: Scene, anim: Animation, time: number, fps: numb
     return { skeleton, alpha: 0.42 * (1 - (g.index - 1) / Math.max(1, reach + 0.5)), tint: g.side === 'before' ? TINT_BEFORE : TINT_AFTER };
   });
 }
+
+// ---------------------------------------------------------------- a reference: another animation (or the setup pose) drawn under the pose being edited
+
+const TINT_REFERENCE: Ghost['tint'] = [0.62, 1, 0.66, 1];
+
+/**
+ * The moment of the reference animation that goes with the playhead: the same time, wrapped round a loop when the reference is shorter,
+ * held at its last frame otherwise. An animation with no length shows its first frame.
+ */
+export function referenceTime(time: number, duration: number, loop: boolean): number {
+  if (!(duration > 0)) return 0;
+  if (time <= duration) return Math.max(0, time);
+  return loop ? ((time % duration) + duration) % duration : duration;
+}
+
+let refPool: { data: Scene['data']; skinId: string | null; skeleton: Skeleton } | null = null;
+
+/** The skeleton posed as the reference animation is at the moment that goes with the playhead (`anim` null: the setup pose), faded and tinted green. */
+export function referenceGhost(scene: Scene, anim: Animation | null, time: number, loop: boolean, skinId: string | null): Ghost {
+  if (!refPool || refPool.data !== scene.data || refPool.skinId !== skinId) refPool = { data: scene.data, skinId, skeleton: createSkeleton(scene.data, skinId) };
+  const skeleton = refPool.skeleton;
+  skeleton.setToSetupPose();
+  if (anim) applyAnimation(skeleton, anim, referenceTime(time, anim.duration, loop));
+  skeleton.updateWorldTransform(scene.data.constraints.some((c) => c.kind === 'physics') ? 'reset' : 'none');
+  return { skeleton, alpha: 0.45, tint: TINT_REFERENCE };
+}

@@ -345,6 +345,13 @@ textarea {
 .dialog:focus {
   outline: none;
 }
+.menu-row {
+  display: flex;
+  align-items: center;
+}
+.menu-row .menu-item {
+  flex: 1;
+}
 .menu-sep {
   height: 1px;
   background: var(--border);
@@ -1893,6 +1900,36 @@ a.btn {
   outline: none;
   color: var(--text);
   font-size: var(--fs-sm);
+}
+.sel-sets {
+  flex: none;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  margin: 0 8px 6px;
+}
+.sel-set {
+  display: inline-flex;
+  align-items: center;
+  background: var(--panel-3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+}
+.sel-set.on {
+  border-color: var(--accent);
+}
+.sel-set-name {
+  background: transparent;
+  border: 0;
+  color: var(--text);
+  font-size: var(--fs-sm);
+  padding: 2px 7px;
+  cursor: pointer;
+  max-width: 130px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .chip.warn {
   background: var(--danger-soft);

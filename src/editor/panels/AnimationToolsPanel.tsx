@@ -10,7 +10,7 @@ import type { Animation } from '@/core/model';
 import { bakeCurrentAnimation, closeCurrentLoop, currentAnimation, setTime, simplifyCurrentAnimation } from '@/store/actions';
 import { useProject } from '@/store/doc';
 import { addMarkerAtPlayhead, deleteMarker, openMarkerDialog, splitAtMarkersAction } from '@/store/markerActions';
-import { useUi } from '@/store/ui';
+import { uiStore, useUi } from '@/store/ui';
 import { Field } from '../ui/Field';
 import { MARKER_TOKENS } from '../ui/tokens';
 import { Button, IconButton, NumberField, SelectField, Toggle } from '../ui/controls';
@@ -31,7 +31,7 @@ type BakeBones = 'constrained' | 'all' | 'selected';
 export function AnimationToolsPanel() {
   const project = useProject();
   const doc = project.skeleton;
-  const { animationId, selection, skinId, mode } = useUi((s) => ({ animationId: s.animationId, selection: s.selection, skinId: s.skinId, mode: s.mode }));
+  const { animationId, selection, skinId, mode, reference } = useUi((s) => ({ animationId: s.animationId, selection: s.selection, skinId: s.skinId, mode: s.mode, reference: s.reference }));
   const anim = doc.animations.find((a) => a.id === animationId) ?? currentAnimation();
 
   const [strength, setStrength] = useState(1);
@@ -62,7 +62,20 @@ export function AnimationToolsPanel() {
       <div className="panel-body pad">
         {!anim && <p className="hint-text">Select an animation to work on it.</p>}
 
-        <div className="section-label flush">Markers</div>
+        <div className="section-label flush">Reference</div>
+        <p className="hint-text">Draws another animation, or the setup pose, faded green under the pose you edit, at the same time, to compare with. Nothing is saved or exported.</p>
+        <SelectField
+          value={reference === 'setup' || doc.animations.some((a) => a.id === reference && a.id !== anim?.id) ? reference! : ''}
+          options={[
+            { value: '', label: 'None' },
+            { value: 'setup', label: 'Setup pose' },
+            ...doc.animations.filter((a) => a.id !== anim?.id).map((a) => ({ value: a.id, label: a.name })),
+          ]}
+          onChange={(v) => uiStore.patch({ reference: v || null })}
+          wide
+        />
+
+        <div className="section-label">Markers</div>
         <p className="hint-text">Flags on the timeline for a beat, a sound cue or a note. Double-click one on the ruler to edit it. Cut the animation into clips at the markers.</p>
         {markers.map((m) => (
           <div key={m.id} className="marker-row">

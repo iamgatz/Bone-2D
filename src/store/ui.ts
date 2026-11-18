@@ -119,6 +119,8 @@ export interface UiState {
   expanded: Record<string, boolean>;
   /** Bones, slots and constraints whose timelines the editor does not play (Mute; kept for the session, never saved or exported). */
   muted: string[];
+  /** Drawn faded under the pose being edited, to compare with: an animation id, `'setup'` for the setup pose, or null (kept for the session, never saved or exported). */
+  reference: string | null;
   brush: WeightBrush;
   weightView: WeightView;
   meshView: MeshView;
@@ -164,6 +166,7 @@ export const uiStore = createStore<UiState>({
   selectedKeys: [],
   expanded: {},
   muted: [],
+  reference: null,
   brush: { size: 40, strength: 0.5, mode: 'add', bone: null, feather: 100, locked: [] },
   weightView: { pies: false, overlay: false, selected: false },
   meshView: { wireframe: true, dim: false, isolate: false, freeze: false },

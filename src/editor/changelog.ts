@@ -12,6 +12,24 @@ export interface Release {
 
 export const CHANGELOG: Release[] = [
   {
+    version: '0.44',
+    date: '2026-11-19',
+    en: [
+      "Constraint presets: the Presets menu at the top of every constraint keeps its settings under a name (the spring of a physics constraint, the stiffness of an IK, the modes of a path) and puts them on another constraint of the same kind in one undo step. What the constraint points at is not kept, so a preset fits any rig. The library is yours, in the browser, for every project.",
+      "Selection sets: under the Hierarchy filter, + keeps the selected bones under a name; one click selects them again, Shift+click adds them or takes them out. They are saved with the skeleton and are not exported. A rename does not break a set.",
+      "Micro-move: Alt + the arrow keys move the selected bones by a unit in the scene (Shift: ten); with keys selected in the timeline, ← → move the keys by a frame and ↑ ↓ change their values.",
+      "Saved layouts: Windows → Save layout as… keeps the open windows and their sizes under a name; the saved layouts are in the Windows menu and the command palette.",
+      "Reference (Animation tools): another animation, or the setup pose, drawn faded green under the pose you edit, at the same time, to compare a frame with it. Nothing of it is saved or exported."
+    ],
+    ru: [
+      "Пресеты констрейнтов: меню «Пресеты» вверху каждого констрейнта сохраняет его настройки под именем (пружину физики, жёсткость IK, режимы path) и накладывает их на другой констрейнт того же вида одним шагом отмены. На что указывает констрейнт, в пресет не входит, поэтому пресет подходит к любому ригу. Библиотека твоя, в браузере, общая для всех проектов.",
+      "Наборы выделения: под фильтром иерархии кнопка + запоминает выбранные кости под именем; один клик выбирает их снова, Shift+клик добавляет их или убирает. Хранятся вместе со скелетом, в экспорт не попадают. Переименование кости набор не ломает.",
+      "Микро-сдвиг: Alt + стрелки двигают выбранные кости на единицу по сцене (Shift: на десять); если в таймлайне выбраны ключи, ← → двигают ключи на кадр, а ↑ ↓ меняют их значения.",
+      "Сохранённые раскладки: Windows → «Сохранить раскладку как…» запоминает открытые окна и их размеры под именем; сохранённые раскладки есть в меню Windows и в палитре команд.",
+      "Эталон (Animation tools): другая анимация или поза Setup рисуется бледно-зелёным под редактируемой позой, в то же время, чтобы сравнить кадр с ней. Ничего из этого не сохраняется и не экспортируется."
+    ],
+  },
+  {
     version: '0.43',
     date: '2026-11-19',
     en: [

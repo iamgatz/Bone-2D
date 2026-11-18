@@ -15,6 +15,7 @@ import { showAll } from '@/store/visibilityActions';
 import { getScene } from '../scene';
 import { IconButton, NumberField, TextField } from '../ui/controls';
 import { Field } from '../ui/Field';
+import { SelectionSets } from './SelectionSets';
 import { SkeletonBar } from './SkeletonBar';
 
 function InlineName({ value, editing, onDone }: { value: string; editing: boolean; onDone: (v: string | null) => void }) {
@@ -235,6 +236,7 @@ export function TreePanel() {
         />
         {query && <IconButton icon={X} title="Clear the filter" small onClick={() => setQuery('')} />}
       </div>
+      <SelectionSets />
       <div
         className="panel-body"
         onClick={(e) => e.target === e.currentTarget && setSelection({})}
