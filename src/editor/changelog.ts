@@ -12,6 +12,20 @@ export interface Release {
 
 export const CHANGELOG: Release[] = [
   {
+    version: '0.50',
+    date: '2026-11-19',
+    en: [
+      "Sprite sheets: the grid button on a picture in the Images window cuts it into numbered pictures (Cut by columns and rows or by cell size, with a margin and spacing, numbered along the rows or down the columns). The cells at the end of the sheet that are empty are left out, a preview shows the grid, and the frames can go on the scene as one slot that plays them, looped at the frame rate you give from the start of the open animation. All of it is one step of the history.",
+      "Animated GIF import (the film button in the Images window; needs a browser that can read GIF frames, such as Chrome or Edge): every frame becomes a picture, the sequence loops at the average delay of the frames.",
+      "Sequence thumbnails on the dopesheet: between the keys of a sequence row the pictures that play are drawn in the frame cells (with the frame number when there is room), so you can see which frame is where. It follows the same rules as the player, modes and delays included.",
+    ],
+    ru: [
+      "Листы спрайтов: кнопка с сеткой на картинке в окне «Картинки» режет её на пронумерованные картинки (по столбцам и строкам или по размеру ячейки, с полями и интервалом, нумерация по строкам или по столбцам). Пустые ячейки в конце листа не берутся, предпросмотр показывает сетку, а кадры можно положить на сцену одним слотом, который их проигрывает по кругу с заданной частотой с начала открытой анимации. Всё это один шаг истории.",
+      "Импорт анимированного GIF (кнопка с плёнкой в окне «Картинки»; нужен браузер, умеющий читать кадры GIF, например Chrome или Edge): каждый кадр становится картинкой, последовательность зацикливается со средней задержкой кадров.",
+      "Миниатюры последовательностей на таймлайне: между ключами строки последовательности в клетках кадров рисуются играющие картинки (с номером кадра, когда хватает места), так что видно, какой кадр где. Работает по тем же правилам, что и плеер, с режимами и задержками.",
+    ],
+  },
+  {
     version: '0.49',
     date: '2026-11-19',
     en: [

@@ -1,11 +1,13 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { ChevronDown, ChevronRight, Eraser, Folder, FolderUp, ImagePlus, Pencil, RefreshCw, Trash2, Upload } from 'lucide-react';
+import { ChevronDown, ChevronRight, Eraser, Film, Folder, FolderUp, Grid3x3, ImagePlus, Pencil, RefreshCw, Trash2, Upload } from 'lucide-react';
 import { baseOf, imageGroups, imageUsage } from '@/core/images';
 import { skeletonList } from '@/core/skeletons';
 import type { ImageRef } from '@/core/model';
 import { addImageToScene, importDropped, importFolderFiles, importImageFiles, reimportPsd, removeUnusedImages, renameImageAction, replaceImagePixels } from '@/store/actions';
 import { assets } from '@/store/assets';
 import { docStore, useProject } from '@/store/doc';
+import { canReadGif, importGif } from '@/store/frameImport';
+import { openSliceDialog } from '@/store/sliceDialog';
 import { toast, uiStore } from '@/store/ui';
 import { IconButton } from '../ui/controls';
 
@@ -35,6 +37,7 @@ export function AssetsPanel() {
   const replaceRef = useRef<HTMLInputElement>(null);
   const psdRef = useRef<HTMLInputElement>(null);
   const folderRef = useRef<HTMLInputElement>(null);
+  const gifRef = useRef<HTMLInputElement>(null);
   const replacing = useRef<string | null>(null);
   const [renaming, setRenaming] = useState<string | null>(null);
   const [closed, setClosed] = useState<Record<string, boolean>>({});
@@ -102,6 +105,7 @@ export function AssetsPanel() {
           {used === 0 ? ' · unused' : ''}
         </span>
         <span className="asset-actions">
+          <IconButton icon={Grid3x3} title="Cut into frames: a sprite sheet becomes numbered pictures that play as a sequence" small onClick={(e) => (e.stopPropagation(), openSliceDialog(img.name))} />
           <IconButton icon={Pencil} title="Rename image (a / in the name makes a folder)" small onClick={(e) => (e.stopPropagation(), setRenaming(img.name))} />
           <IconButton
             icon={Upload}
@@ -137,6 +141,18 @@ export function AssetsPanel() {
             const list = [...(e.target.files ?? [])];
             e.target.value = '';
             await importFolderFiles(list);
+          }}
+        />
+        <IconButton icon={Film} title={canReadGif() ? 'Import an animated GIF: every frame becomes a picture, played as a sequence' : 'This browser cannot take a GIF apart: cut a sprite sheet instead'} small disabled={!canReadGif()} onClick={() => gifRef.current?.click()} />
+        <input
+          ref={gifRef}
+          type="file"
+          accept=".gif,image/gif"
+          hidden
+          onChange={async (e) => {
+            const file = e.target.files?.[0];
+            e.target.value = '';
+            if (file) await importGif(file, { scene: true });
           }}
         />
         <IconButton icon={RefreshCw} title="Update from PSD: layers with the name of a picture give it new pixels, new layers become slots" small disabled={project.images.length === 0} onClick={() => psdRef.current?.click()} />

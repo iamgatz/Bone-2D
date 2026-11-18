@@ -3,7 +3,8 @@ import { KEY_EPS } from '@/core/edit';
 import type { KeyRef } from '@/core/keyrefs';
 import { deformProp } from '@/core/keyrefs';
 import { BONE_PROPS, PHYSICS_PARAMS } from '@/core/model';
-import type { Animation, Id, SkeletonDoc } from '@/core/model';
+import type { Animation, Id, SequenceDef, SequenceKey, SkeletonDoc } from '@/core/model';
+import { sequenceOf } from '@/core/sequence';
 
 export interface RowKeyInfo {
   time: number;
@@ -23,6 +24,8 @@ export interface Row {
   /** Selecting this row's entity in the editor. */
   target?: { kind: 'bone' | 'slot' | 'ik'; id: Id };
   selected?: boolean;
+  /** A sequence row: the pictures it plays, so the dopesheet can show them between the keys. */
+  sequence?: { path: string; def: SequenceDef; keys: SequenceKey[] };
   /** Tint of the row's diamonds. */
   tone?: 'bone' | 'slot' | 'ik' | 'deform' | 'order' | 'event';
 }
@@ -194,6 +197,8 @@ export function buildRows(doc: SkeletonDoc, anim: Animation | null, selectedBone
       for (const att in anim.sequence![skinId][slotId]) {
         const keys = anim.sequence![skinId][slotId][att];
         if (!keys.length) continue;
+        const def = sequenceOf(skin?.attachments[slotId]?.[att]);
+        const shown = skin?.attachments[slotId]?.[att];
         sequenceRows.push({
           id: `sequence:${skinId}:${slotId}:${att}`,
           label: `${slot?.name ?? '?'} / ${att}${skin && skin.name !== 'default' ? ` (${skin.name})` : ''}`,
@@ -203,6 +208,7 @@ export function buildRows(doc: SkeletonDoc, anim: Animation | null, selectedBone
           expanded: false,
           keys: keys.map((k) => ({ time: k.time, refs: [{ kind: 'sequence' as const, target: slotId, prop: deformProp(skinId, att), time: k.time }] })),
           target: slot ? { kind: 'slot', id: slotId } : undefined,
+          sequence: def && shown && (shown.type === 'region' || shown.type === 'mesh') ? { path: shown.path, def, keys } : undefined,
           tone: 'slot',
         });
       }

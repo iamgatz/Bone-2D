@@ -21,6 +21,7 @@ import { FloatingPanels } from './panels/FloatingPanels';
 import { KeyDialogHost } from './timeline/KeyDialog';
 import { AskHost } from './ui/AskHost';
 import { MarkerDialogHost } from './timeline/MarkerDialog';
+import { SliceDialogHost } from './panels/SliceDialog';
 import { FLOAT_LIST, toggleFloat, useFloats } from '@/store/floats';
 import { Viewport, viewportApi } from './viewport/Viewport';
 import { ExportDialog } from './ExportDialog';
@@ -524,6 +525,7 @@ export function App() {
       <KeyDialogHost />
       <AskHost />
       <MarkerDialogHost />
+      <SliceDialogHost />
       <Toast />
       <TooltipHost />
     </div>
