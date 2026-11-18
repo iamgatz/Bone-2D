@@ -268,6 +268,22 @@ export const ops: Op[] = [
   { name: 'renameSkin', run: (c) => { const s = c.pick(doc().skins)!; A.renameSkin(s.id, c.pick(NAMES)!); } },
   { name: 'deleteSkin', run: (c) => { A.deleteSkin(c.pick(doc().skins)!.id); } },
   { name: 'setSkinImage', run: (c) => { const s = c.pick(doc().skins.slice(1)); const r = c.pick(regions()); const img = c.pick(project().images); if (s && r && img) A.setSkinImage(s.id, r.slotId, r.name, img.name); } },
+  // a skin from pictures: pictures named like attachments with a prefix are added, then the skin is made (more pictures later add to the same skin)
+  {
+    name: 'skinFromImages',
+    run: (c) => {
+      const prefix = `fz${Math.floor(c.num(0, 3))}`;
+      const picked = [...regions(), ...meshes()].filter(() => c.chance(0.5)).slice(0, 4);
+      const seps = picked.map(() => c.pick(['/', '-', '_'])!);
+      docStore.update('fuzz skin pictures', (d) => {
+        picked.forEach((t, i) => {
+          const name = `${prefix}${seps[i]}${t.name}`;
+          if (!d.images.some((im) => im.name === name)) d.images.push({ id: uid(), name, width: 16, height: 16 });
+        });
+      });
+      A.createSkinFromImages(prefix);
+    },
+  },
   // a linked mesh: the skin picture of a mesh, and a mesh in another slot that follows one
   { name: 'setSkinImageMesh', run: (c) => { const s = c.pick(doc().skins.slice(1)); const m = c.pick(meshes()); const img = c.pick(project().images); if (s && m && img) A.setSkinImage(s.id, m.slotId, m.name, img.name); } },
   {

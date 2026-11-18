@@ -12,6 +12,16 @@ export interface Release {
 
 export const CHANGELOG: Release[] = [
   {
+    version: '0.49',
+    date: '2026-11-19',
+    en: [
+      "Skin from pictures (Skins window → the folder button): pictures named like an attachment with a prefix in front (arctic/head, arctic-head, arctic_head) become the pictures of that attachment in the skin arctic. A region gets a region with the picture's size, a mesh gets a linked mesh that keeps its shape, weights and deform. The window suggests the prefixes your pictures make up, or type one and see how many attachments get a picture. A skin of that name that already exists gets the new pictures added; it is one step of the history. A mesh whose new picture has another size is reported.",
+    ],
+    ru: [
+      "Скин из картинок (окно «Скины» → кнопка с папкой): картинки, названные как вложение, с префиксом впереди (arctic/head, arctic-head, arctic_head), становятся картинками этого вложения в скине arctic. Региону достаётся регион с размером картинки, сетке — linked mesh, который сохраняет форму, веса и деформацию. Окно предлагает префиксы, из которых складываются твои картинки, или введи свой и посмотри, сколько вложений получат картинку. Скин с таким именем, если он уже есть, пополняется новыми картинками; это один шаг истории. Если у сетки новая картинка другого размера, об этом скажут.",
+    ],
+  },
+  {
     version: '0.48',
     date: '2026-11-19',
     en: [
