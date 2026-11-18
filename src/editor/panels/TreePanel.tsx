@@ -1,8 +1,9 @@
 import { useMemo, useState } from 'react';
 import type { ReactElement } from 'react';
-import { Bone as BoneIcon, BoxSelect, ChevronDown, ChevronRight, Crosshair, Diamond, Eye, EyeOff, Image as ImageIcon, Layers, Link2, Lock, Plus, Scissors, Shirt, Search, Spline, Trash2, Unlock, Waves, X, Zap } from 'lucide-react';
+import { Bone as BoneIcon, BoxSelect, ChevronDown, ChevronRight, Crosshair, Diamond, Eye, EyeOff, Folder, Image as ImageIcon, Layers, Link2, Lock, Plus, Scissors, Shirt, Search, Spline, Trash2, Unlock, Waves, X, Zap } from 'lucide-react';
 import type { Bone, Id, Slot } from '@/core/model';
 import { createEvent, createSkin, deleteBones, deleteEvent, deleteSkin, deleteSlots, keyEvent, moveSlot, renameBone, renameSkin, renameSlot, reparentBone, selectBone, selectSlot, setActiveSkin, setBoneProps, setSelection, setSlotBone, setSlotProps, updateEvent } from '@/store/actions';
+import { folderOfSlot } from '@/core/folders';
 import { filterTree } from '@/core/treeFilter';
 import { useProject } from '@/store/doc';
 import { createPathConstraint } from '@/store/pathConstraintActions';
@@ -50,6 +51,28 @@ export function TreePanel() {
   const [query, setQuery] = useState('');
   const [openEvent, setOpenEvent] = useState<string | null>(null);
   const match = useMemo(() => filterTree(doc, query), [doc, query]);
+
+  // the draw order list: slots of one draw order folder that sit next to each other are grouped under the folder's name (a group can be folded)
+  type OrderItem = { head: { key: string; name: string; count: number } } | { s: Slot; i: number; indent: boolean };
+  const orderItems: OrderItem[] = [];
+  {
+    const list = orderedSlots.map((s, i) => ({ s, i })).reverse().filter(({ s }) => !match.active || match.slots.has(s.id));
+    let run: string | null = null;
+    let folded = false;
+    for (let k = 0; k < list.length; k++) {
+      const f = folderOfSlot(doc, list[k].s.id);
+      if (f && f.id !== run) {
+        let count = 0;
+        while (k + count < list.length && folderOfSlot(doc, list[k + count].s.id)?.id === f.id) count++;
+        const key = 'f:' + list[k].s.id;
+        orderItems.push({ head: { key, name: f.name, count } });
+        folded = !!collapsed[key];
+      }
+      run = f ? f.id : null;
+      if (!f) folded = false;
+      if (!folded) orderItems.push({ s: list[k].s, i: list[k].i, indent: !!f });
+    }
+  }
 
   const childrenOf = useMemo(() => {
     const m = new Map<Id | null, Bone[]>();
@@ -224,15 +247,26 @@ export function TreePanel() {
         {doc.slots.length > 1 && (!match.active || match.slots.size > 0) && (
           <>
             <div className="section-label">Draw order{mode === 'animate' ? ' · keyed at playhead' : ''}</div>
-            {orderedSlots
-              .map((s, i) => ({ s, i }))
-              .reverse()
-              .filter(({ s }) => !match.active || match.slots.has(s.id))
-              .map(({ s, i }) => (
+            {orderItems.map((it) => {
+              if ('head' in it) {
+                const open = !collapsed[it.head.key];
+                return (
+                  <div key={it.head.key} className="row folder" style={{ paddingLeft: 14 }} onClick={() => toggle(it.head.key)}>
+                    <span className="chev">{open ? <ChevronDown size={13} /> : <ChevronRight size={13} />}</span>
+                    <span className="ico">
+                      <Folder size={13} />
+                    </span>
+                    <span className="label">{it.head.name}</span>
+                    <span className="chip" title="Slots of this draw order folder next to each other">{it.head.count}</span>
+                  </div>
+                );
+              }
+              const { s, i, indent } = it;
+              return (
                 <div
                   key={s.id}
                   className={`row${selection.slot === s.id ? ' selected' : ''}${dropOn === 'o:' + s.id ? ' drop' : ''}`}
-                  style={{ paddingLeft: 14 }}
+                  style={{ paddingLeft: indent ? 30 : 14 }}
                   draggable
                   onDragStart={(e) => {
                     e.dataTransfer.setData('application/x-bone2d-order', s.id);
@@ -257,7 +291,8 @@ export function TreePanel() {
                   </span>
                   <span className="label">{s.name}</span>
                 </div>
-              ))}
+              );
+            })}
           </>
         )}
 

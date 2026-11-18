@@ -12,6 +12,24 @@ export interface Release {
 
 export const CHANGELOG: Release[] = [
   {
+    version: '0.42',
+    date: '2026-11-19',
+    en: [
+      "Timeline markers: flags with a name, a colour and a note (Animation tools → Markers, or the command palette). They show on the ruler and as a faint line down the keys; double-click one to edit it. Split at markers cuts the animation into one clip per stretch, each clip moving exactly like the original did there.",
+      "Animation tools: Wiggle (random noise on the selected keys' timelines, with a seed so it is repeatable), Mirror a half cycle (animate one step, get the whole cycle with left and right swapped, as a new animation), Foot slide (finds where a planted foot drags along the ground), Hide bones without keys.",
+      "Split bone can now share the weights of the meshes that follow the bone: each vertex goes to the part it lies on, or blends smoothly around each cut, and the deform keys follow. Splitting the first bone of an IK chain nested is refused with a note (the second bone would leave the first one).",
+      "Export: the mix table (crossfade times between animations) is written as <name>.mixes.json next to the skeleton, in the editor and with the command line (--no-mixes leaves it out). The export dialog can copy its settings as text.",
+      "Draw order list: slots of a draw order folder that sit next to each other are grouped under the folder's name and can be folded. Dropping a folder of numbered pictures (frame01 …) on the scene makes one slot with a sequence for each series. Update from PSD ignores the shift a bigger canvas gives every layer. The event waveform shows on the events row of the dopesheet when the sound is loaded. The Preview can open in a window of its own."
+    ],
+    ru: [
+      "Маркеры на таймлайне: флажки с именем, цветом и заметкой (Animation tools → Markers или палитра команд). Видны на линейке и тонкой линией сквозь ключи; двойной щелчок открывает правку. «Разрезать по маркерам» делает клип на каждый отрезок, и каждый клип двигается точно как оригинал на этом отрезке.",
+      "Animation tools: «Дрожь» (случайный шум на таймлайнах выбранных ключей, с зерном, чтобы повторялось), «Зеркало полуцикла» (анимируете один шаг, получаете весь цикл с поменянными левым и правым, новой анимацией), «Скольжение стопы» (находит, где стопа на земле ползёт), «Скрыть кости без ключей».",
+      "Разрезание кости теперь может поделить веса мешей, которые за ней следуют: каждая вершина уходит в часть, на которой лежит, или плавно делится у каждого разреза, ключи деформации идут следом. Разрезать цепочкой первую кость IK-цепи нельзя: об этом говорится в заметке (вторая кость ушла бы из-под первой).",
+      "Экспорт: таблица переходов (времена перехода между анимациями) пишется файлом <имя>.mixes.json рядом со скелетом, в редакторе и в командной строке (--no-mixes отключает). В диалоге экспорта настройки можно скопировать текстом.",
+      "Список порядка отрисовки: слоты папки порядка отрисовки, идущие подряд, собраны под именем папки и сворачиваются. Папка пронумерованных картинок (frame01 …), брошенная на сцену, даёт один слот с последовательностью на каждую серию. «Обновить из PSD» не считает правкой сдвиг, который расширенный холст даёт всем слоям. Волна звука события видна на ряду событий в доупшите, когда звук загружен. Просмотр можно открыть в отдельном окне."
+    ],
+  },
+  {
     version: '0.41',
     date: '2026-11-18',
     en: [

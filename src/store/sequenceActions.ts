@@ -1,7 +1,7 @@
 import { dropSequenceTimeline, upsertKey } from '@/core/edit';
 import type { Id, SequenceDef, SequenceKey } from '@/core/model';
-import { cleanSequence, cleanSequenceKey, detectSequence, setupPicture } from '@/core/sequence';
-import { currentAnimation, extendDuration } from './actions';
+import { cleanSequence, cleanSequenceKey, detectSequence, sequenceFrameNames, setupPicture } from '@/core/sequence';
+import { addImageToScene, currentAnimation, extendDuration } from './actions';
 import { docStore } from './doc';
 import { toast, uiStore } from './ui';
 
@@ -92,4 +92,36 @@ export function keySequence(slotId: Id, name: string, patch: Partial<Omit<Sequen
     upsertKey(keys, key);
     extendDuration(a, ui.time);
   });
+}
+
+/**
+ * Pictures of a dropped folder that make numbered series (frame01 … frame24) are put on the scene as a slot with a sequence each, instead of a
+ * slot per frame. One history step. Returns how many series were placed (0: nothing in the folder is a series, nothing was changed).
+ */
+export function placeSequences(names: readonly string[], worldX: number, worldY: number): number {
+  const consumed = new Set<string>();
+  const series: { setup: string }[] = [];
+  for (const first of names) {
+    if (consumed.has(first)) continue;
+    const found = detectSequence(names, first);
+    if (!found) continue;
+    const frames = sequenceFrameNames(found.path, found.sequence);
+    if (!frames.every((f) => names.includes(f))) continue;
+    for (const f of frames) consumed.add(f);
+    series.push({ setup: frames[found.sequence.setupIndex] ?? frames[0] });
+  }
+  if (!series.length) return 0;
+  docStore.beginGesture('Add sequences');
+  let off = 0;
+  let made = 0;
+  try {
+    for (const s of series) {
+      const placed = addImageToScene(s.setup, worldX + off, worldY - off);
+      if (placed && makeSequence(placed.slotId, s.setup) > 0) made++;
+      off += 24;
+    }
+  } finally {
+    docStore.endGesture();
+  }
+  return made;
 }

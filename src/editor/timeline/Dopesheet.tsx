@@ -4,6 +4,8 @@ import type { KeyRef } from '@/core/keyrefs';
 import { moveKeysBy, setTime } from '@/store/actions';
 import { docStore } from '@/store/doc';
 import { markerNear, markersOf } from '@/core/markers';
+import { peakAt } from '@/core/waveform';
+import { soundShape, soundStore } from '@/store/sounds';
 import { openKeyDialog } from '@/store/keyDialog';
 import { openMarkerDialog } from '@/store/markerActions';
 import { uiStore } from '@/store/ui';
@@ -92,7 +94,7 @@ export function Dopesheet({ rows, duration, fps, onMenu }: Props) {
     const mark = () => {
       dirty.current = true;
     };
-    const unsubs = [uiStore.subscribe(mark), docStore.subscribe(mark)];
+    const unsubs = [uiStore.subscribe(mark), docStore.subscribe(mark), soundStore.subscribe(mark)];
 
     const selectedSet = () => new Set(uiStore.get().selectedKeys);
 
@@ -236,6 +238,26 @@ export function Dopesheet({ rows, duration, fps, onMenu }: Props) {
         ctx.fillRect(Math.max(0, endX), 0, cw, ch);
         ctx.fillStyle = alpha('--animate', 0.5);
         ctx.fillRect(Math.round(endX), 0, 1, ch);
+      }
+      // the sound of each event on the events row: its waveform from the time of the key, as far as it plays
+      const eventRow = rows.findIndex((r) => r.id === 'events');
+      if (eventRow >= 0) {
+        const project = docStore.get();
+        const anim = project.skeleton.animations.find((a) => a.id === ui.animationId);
+        const top = eventRow * ROW_H;
+        for (const k of anim?.events ?? []) {
+          const def = project.skeleton.events.find((e) => e.id === k.event);
+          const shape = def?.audio ? soundShape(def.audio) : null;
+          if (!shape) continue;
+          const x0 = timeToX(k.time, scroll, zoom);
+          const x1 = timeToX(k.time + shape.duration, scroll, zoom);
+          if (x1 < 0 || x0 > cw) continue;
+          ctx.fillStyle = alpha(TONES.event, 0.45);
+          for (let x = Math.max(0, Math.floor(x0)); x <= Math.min(cw, Math.ceil(x1)); x += 2) {
+            const h = peakAt(shape, (x - x0) / zoom) * (ROW_H - 4);
+            if (h > 0.4) ctx.fillRect(x, top + (ROW_H - h) / 2, 1.5, h);
+          }
+        }
       }
       // keys
       for (let i = 0; i < rows.length; i++) {

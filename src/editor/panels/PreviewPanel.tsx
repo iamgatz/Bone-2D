@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Maximize2, Pause, Play, Plus, RotateCcw, Volume2, VolumeX } from 'lucide-react';
+import { ExternalLink, Maximize2, Pause, Play, Plus, RotateCcw, Volume2, VolumeX } from 'lucide-react';
 import { GLRenderer } from '@/render/gl';
 import type { EventDef, EventKey, Id } from '@/core/model';
 import { PreviewPlayer, poseMixed } from '@/core/preview';
@@ -10,8 +10,9 @@ import { docStore, useProject } from '@/store/doc';
 import { setDefaultMix, setMixPair } from '@/store/mixActions';
 import { settingsStore } from '@/store/settings';
 import { hasSound, pickSounds, playEventSound, soundCount } from '@/store/sounds';
-import { uiStore } from '@/store/ui';
+import { toast, uiStore } from '@/store/ui';
 import { Button, IconButton, NumberField, SelectField, Toggle } from '../ui/controls';
+import { mirrorToPopout, openPopout } from '../popout';
 import { Field } from '../ui/Field';
 
 const SETUP = '';
@@ -150,6 +151,7 @@ export function PreviewPanel() {
       const hidden = new Set(p.skeleton.slots.filter((x) => x.hidden).map((x) => x.id));
       renderer.drawSkeleton(s, { skip: (slot) => hidden.has(slot.data.id) });
       renderer.end();
+      mirrorToPopout(el, [prefs.viewportBg[0], prefs.viewportBg[1], prefs.viewportBg[2]]);
     };
 
     const reportEvent = (k: EventKey, defs: readonly { id: Id; name: string }[]): Fired => {
@@ -175,6 +177,15 @@ export function PreviewPanel() {
         <IconButton icon={playing ? Pause : Play} title={playing ? 'Pause' : 'Play'} small onClick={() => setPlaying(!playing)} />
         <IconButton icon={RotateCcw} title="Play the animation again from the start" small onClick={() => choose(animId)} />
         <IconButton icon={Maximize2} title="Fit the view to the animation" small onClick={() => (fit.current = true)} />
+        <IconButton
+          icon={ExternalLink}
+          title="Open the preview in its own window (for a second monitor)"
+          small
+          onClick={() => {
+            const bg = settingsStore.get().viewportBg;
+            if (!openPopout([bg[0], bg[1], bg[2]])) toast('The browser blocked the window: allow pop-ups for this site', 'error');
+          }}
+        />
         <IconButton icon={soundCount() ? Volume2 : VolumeX} title="Load sound files: an event plays the one with the name of its sound (folders and extension do not count)" small onClick={() => pickSounds(setSounds)} />
       </div>
       <div className="panel-body" style={{ padding: 8 }}>

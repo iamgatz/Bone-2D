@@ -19,7 +19,7 @@ import type { Mat } from '@/core/math';
 import { AXIS_GROUPS, newAnimation, newBone, newSkin, newSlot } from '@/core/model';
 import { cleanPlay, playOf, playSpan, samePlay } from '@/core/playback';
 import { cleanMixes, withoutAnimation } from '@/core/preview';
-import { isPsd, layerCenter, readPsdFile } from '@/core/import/psd';
+import { commonShift, isPsd, layerCenter, readPsdFile } from '@/core/import/psd';
 import type { PsdLayer, PsdPixels } from '@/core/import/psd';
 import { fitRegion, planPsdSync } from '@/core/import/psdSync';
 import { cleanImageName, renameImage, sequenceFrameOwner, unusedImages } from '@/core/images';
@@ -613,6 +613,14 @@ export async function reimportPsd(file: File): Promise<{ updated: number; added:
   const boneId = live ? live.data.id : root!.id;
   let meshes = 0;
   for (const { asset } of fresh.values()) assets.set(asset.name, asset);
+  // a canvas that was made bigger (or smaller) moves every layer by the same amount: that part is not an edit of the artwork
+  const common = commonShift(
+    plan.updates.map(({ layer, image }) => {
+      if (!image.psd) return null;
+      const c = layerCenter(psd, layer);
+      return [c[0] - image.psd[0], c[1] - image.psd[1]] as [number, number];
+    }),
+  );
   docStore.update('Update from PSD', (d) => {
     if (root && plan.added.length) d.skeleton.bones.push(root);
     const skin0 = d.skeleton.skins[0];
@@ -624,7 +632,7 @@ export async function reimportPsd(file: File): Promise<{ updated: number; added:
       const from = { width: img.width, height: img.height };
       const to = { width: entry.asset.width, height: entry.asset.height };
       const center = layerCenter(psd, entry.layer);
-      const moved: [number, number] | null = img.psd ? [center[0] - img.psd[0], center[1] - img.psd[1]] : null;
+      const moved: [number, number] | null = img.psd ? [center[0] - img.psd[0] - common[0], center[1] - img.psd[1] - common[1]] : null;
       img.width = to.width;
       img.height = to.height;
       img.psd = center;

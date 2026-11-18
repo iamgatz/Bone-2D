@@ -781,11 +781,13 @@ export function bakeMismatch(p: Project): string | null {
       for (let i = 0; i < want[f].length; i++) {
         if (!probe.bones[i].active) continue;
         if (pairs.has(i)) continue;
+        // a world position beyond 1e9 (a runaway scale chain) has lost the float32 precision a baked local pose is read back with
+        if (want[f][i].some((v) => Math.abs(v) > 1e9)) continue;
         if (unexplained.has(i)) {
           // allowed to differ only because the parent differs: a child that differs under a parent that matches is a real bake error
           const p = probe.bones[i].parent!.data.index;
           const differs = (j: number) => want[f][j].some((x, k) => !(Math.abs(x - got[f][j][k]) <= (k < 4 ? 1e-3 : 5e-3) * Math.max(1, Math.abs(x), Math.abs(got[f][j][k]))));
-          if (differs(i) && !differs(p)) return `animation "${anim.name}" frame ${f} bone "${names[i]}" differs from its baked pose although its parent matches`;
+          if (differs(i) && !differs(p)) return `animation "${anim.name}" frame ${f} bone "${names[i]}" differs from its baked pose although its parent matches (original ${want[f][i].map((v) => v.toFixed(4))}, baked ${got[f][i].map((v) => v.toFixed(4))}; parent original ${want[f][p].map((v) => v.toFixed(4))}, baked ${got[f][p].map((v) => v.toFixed(4))})`;
           continue;
         }
         for (let k = 0; k < 6; k++) {

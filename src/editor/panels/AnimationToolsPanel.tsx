@@ -72,7 +72,7 @@ export function AnimationToolsPanel() {
             <IconButton icon={Trash2} title="Delete marker" small onClick={() => deleteMarker(m.id)} />
           </div>
         ))}
-        <div className="hstack">
+        <div className="hstack wrap">
           <Button small primary disabled={!anim} onClick={() => addMarkerAtPlayhead()}>
             Add marker at playhead
           </Button>

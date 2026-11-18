@@ -117,6 +117,22 @@ export function layerCenter(file: { width: number; height: number }, layer: { le
   return [layer.left + layer.width / 2 - file.width / 2, file.height - (layer.top + layer.height / 2)];
 }
 
+/**
+ * The shift that nearly all layers of a re-imported file share. When the canvas of the document grows (or shrinks) with an anchor, every layer
+ * "moves" by the same amount although nothing in the artwork moved; that amount is what most layers agree on. Returns [0, 0] unless at least
+ * three layers moved and more than half of them by the same vector (within half a pixel).
+ */
+export function commonShift(moves: readonly ([number, number] | null)[]): [number, number] {
+  const list = moves.filter((m): m is [number, number] => !!m && (Math.abs(m[0]) > 0.5 || Math.abs(m[1]) > 0.5));
+  if (list.length < 3) return [0, 0];
+  let best: { m: [number, number]; n: number } | null = null;
+  for (const a of list) {
+    const group = list.filter((b) => Math.abs(b[0] - a[0]) <= 0.5 && Math.abs(b[1] - a[1]) <= 0.5);
+    if (!best || group.length > best.n) best = { m: [group.reduce((t, g) => t + g[0], 0) / group.length, group.reduce((t, g) => t + g[1], 0) / group.length], n: group.length };
+  }
+  return best && best.n * 2 > moves.filter(Boolean).length ? best.m : [0, 0];
+}
+
 export function isPsd(file: { name: string; type?: string }): boolean {
   return /\.psd$/i.test(file.name) || file.type === 'image/vnd.adobe.photoshop';
 }
