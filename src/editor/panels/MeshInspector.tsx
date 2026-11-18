@@ -145,6 +145,7 @@ export function MeshGroup({ slotId, att, part }: { slotId: Id; att: MeshAttachme
                 ['dim', 'Dim', 'Dim everything outside this mesh'],
                 ['isolate', 'Isolate', 'Hide everything outside this mesh'],
                 ['freeze', 'Freeze', 'The vertices cannot be dragged, only selected'],
+                ['soft', 'Soft', 'Soft selection: dragging the selected vertices also pulls the ones near them, less and less with the distance'],
               ] as const
             ).map(([key, label, title]) => (
               <Button key={key} primary={meshView[key]} title={title} onClick={() => uiStore.patch({ meshView: { ...meshView, [key]: !meshView[key] } })}>
@@ -152,6 +153,24 @@ export function MeshGroup({ slotId, att, part }: { slotId: Id; att: MeshAttachme
               </Button>
             ))}
           </div>
+        )}
+        {tool === 'mesh' && meshView.soft && (
+          <>
+            <Field label="Soft radius">
+              <NumberField label="px" value={meshView.softRadius} step={5} precision={0} min={1} max={2000} onChange={(v) => uiStore.patch({ meshView: { ...meshView, softRadius: v } })} />
+            </Field>
+            <Field label="Soft falloff">
+              <SelectField
+                value={meshView.softShape}
+                options={[
+                  { value: 'smooth', label: 'Smooth' },
+                  { value: 'linear', label: 'Linear' },
+                  { value: 'sharp', label: 'Sharp' },
+                ]}
+                onChange={(v) => uiStore.patch({ meshView: { ...meshView, softShape: v } })}
+              />
+            </Field>
+          </>
         )}
         {linked && att.link && <LinkedMeshFields skinId={project.skeleton.skins[0].id} slotId={slotId} name={att.name} mesh={att} />}
         {setup && !linked && (

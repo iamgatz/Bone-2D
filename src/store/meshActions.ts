@@ -9,6 +9,7 @@ import type { BoneMats, TraceOptions, VertexMap } from '@/core/mesh';
 import { matInvert } from '@/core/math';
 import type { Id, Influence, MeshAttachment, RegionAttachment } from '@/core/model';
 import { setupPicture } from '@/core/sequence';
+import { skinHolding } from '@/core/skeleton';
 import { getScene, getSetupSkeleton } from '@/editor/scene';
 import { assets } from './assets';
 import { docStore } from './doc';
@@ -628,7 +629,8 @@ export function setDeformKey(slotId: Id, name: string, base: number[], moves: { 
     }
   }
   const doc = docStore.get().skeleton;
-  const skinId = ui.skinId && scene.skeleton.skin?.attachments[slot.data.index]?.get(name) ? ui.skinId : doc.skins[0].id;
+  // the skin the shown mesh belongs to: with skins worn together, the last of them that has it
+  const skinId = skinHolding(scene.data, [...(ui.skinId ? [ui.skinId] : []), ...ui.skinMix], slot.data.index, name);
   // a linked mesh that shares the deform of its source has no deform of its own: the keys go to the source
   const home = deformHome(doc, skinId, slotId, name);
   docStore.update('Deform mesh', (d) => {

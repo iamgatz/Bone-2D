@@ -1,6 +1,7 @@
 /** Viewport behaviour for the Mesh and Weights tools (vertex editing, deform keys, weight painting, heat map). */
 import { deformedVertices } from '@/core/deformMarks';
 import type { Id, MeshAttachment } from '@/core/model';
+import { softMoves, softWeights } from '@/core/soft';
 import type { GLRenderer } from '@/render/gl';
 import { addMeshVertex, toggleMeshEdge, currentDeform, deleteMeshVertices, getMesh, moveMeshVertices, paintWeights, setDeformKey } from '@/store/meshActions';
 import { docStore } from '@/store/doc';
@@ -16,7 +17,7 @@ import { alpha, token } from '../ui/tokens';
 import { boneCss, boundBones, overlayColors, pieVertices } from './weightColors';
 
 type Drag =
-  | { kind: 'vertices'; moves: Map<number, [number, number]>; p0: [number, number]; base: number[] | null }
+  | { kind: 'vertices'; start: Float32Array; weights: Map<number, number>; p0: [number, number]; base: number[] | null }
   | { kind: 'marquee'; x0: number; y0: number; x1: number; y1: number; base: number[] }
   | { kind: 'paint' }
   | { kind: 'edge'; from: number; x: number; y: number };
@@ -150,10 +151,10 @@ export class MeshTool {
       setSelection({ ...ui.selection, vertices });
       if (!vertices.includes(hit)) return true;
       if (ui.meshView.freeze) return true; // frozen: selecting only
-      const moves = new Map<number, [number, number]>();
-      for (const v of vertices) moves.set(v, [geo.vertices[v * 2], geo.vertices[v * 2 + 1]]);
+      const start = geo.vertices.slice(0, geo.count * 2);
+      const weights = softWeights(start, vertices, ui.meshView.soft ? ui.meshView.softRadius : 0, ui.meshView.softShape);
       docStore.beginGesture(ui.mode === 'animate' ? 'Deform' : 'Move vertices');
-      this.drag = { kind: 'vertices', moves, p0: [wx, wy], base: ui.mode === 'animate' ? currentDeform(am.slotId) : null };
+      this.drag = { kind: 'vertices', start, weights, p0: [wx, wy], base: ui.mode === 'animate' ? currentDeform(am.slotId) : null };
       return true;
     }
     if ((e.ctrlKey || e.metaKey || e.detail >= 2) && ui.mode === 'setup') {
@@ -184,8 +185,8 @@ export class MeshTool {
     if (d.kind === 'vertices') {
       const dx = wx - d.p0[0];
       const dy = wy - d.p0[1];
-      if (ui.mode === 'setup') moveMeshVertices(am.slotId, am.name, [...d.moves].map(([index, p]) => ({ index, x: p[0] + dx, y: p[1] + dy })));
-      else if (d.base) setDeformKey(am.slotId, am.name, d.base, [...d.moves.keys()].map((index) => ({ index, dx, dy })));
+      if (ui.mode === 'setup') moveMeshVertices(am.slotId, am.name, softMoves(d.start, d.weights, dx, dy));
+      else if (d.base) setDeformKey(am.slotId, am.name, d.base, [...d.weights].map(([index, w]) => ({ index, dx: dx * w, dy: dy * w })));
     } else if (d.kind === 'marquee') {
       d.x1 = wx;
       d.y1 = wy;
@@ -329,6 +330,9 @@ export class MeshTool {
       return;
     }
     const sel = new Set(ui.selection.vertices);
+    // soft selection: the vertices that follow the selected ones, tinted by how much (the weights are those of the drag while one is going)
+    const dragging = this.drag?.kind === 'vertices' ? this.drag : null;
+    const soft = dragging ? dragging.weights : ui.meshView.soft && sel.size ? softWeights(v, ui.selection.vertices, ui.meshView.softRadius, ui.meshView.softShape) : null;
     // in Animate mode the vertices the current pose deforms stand out
     const slot = scene.skeleton.slotById(am.slotId);
     const shown = slot ? scene.skeleton.slotAttachment(slot) : null;
@@ -346,6 +350,13 @@ export class MeshTool {
       ctx.rect(x - r, y - r, r * 2, r * 2);
       ctx.fill();
       ctx.stroke();
+      const pull = !selected ? soft?.get(i) : undefined;
+      if (pull) {
+        ctx.fillStyle = alpha('--accent', 0.25 + 0.7 * pull);
+        ctx.beginPath();
+        ctx.arc(x, y, 3 + 6 * pull, 0, Math.PI * 2);
+        ctx.fill();
+      }
     }
     const d = this.drag;
     if (d?.kind === 'marquee') {

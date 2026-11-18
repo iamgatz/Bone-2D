@@ -10,7 +10,7 @@
  *   - undoing everything restores the starting document exactly, and redoing everything restores the final one.
  */
 import { expect } from 'vitest';
-import { bakeAnimation, constrainedBoneIndices, poseFrames } from '../src/core/bake';
+import { bakeAnimation, bakeSkips, constrainedBoneIndices, poseFrames } from '../src/core/bake';
 import { applyAnimation, applyPhysicsResets } from '../src/core/animate';
 import { exportSpineJson } from '../src/core/export/spineJson';
 import { deformProp } from '../src/core/keyrefs';
@@ -36,6 +36,7 @@ import * as CH from '../src/store/chainActions';
 import * as PRE from '../src/store/presetActions';
 import * as NU from '../src/store/nudgeActions';
 import * as SS from '../src/store/selectionSetActions';
+import { softMoves, softWeights } from '../src/core/soft';
 import { rotationLimits } from '../src/core/limits';
 import { chainBones, CHAIN_PARAMS, CHAIN_SHAPES } from '../src/core/chains';
 import { skeletonCount } from '../src/core/skeletons';
@@ -193,6 +194,8 @@ export const ops: Op[] = [
   },
   { name: 'nudge', run: (c) => { A.setMode(c.chance(0.6) ? 'setup' : 'animate'); A.setTime(c.num(0, 2)); A.setSelection({ bones: [c.pick(doc().bones)!.id, c.pick(doc().bones)!.id] }); const dx = c.num(-12, 12); const dy = c.num(-12, 12); if (!process.env.SKIP_NUDGE) NU.nudgeBones(dx, dy); } },
   { name: 'selectionSet', run: (c) => { A.setSelection({ bones: [c.pick(doc().bones)!.id, c.pick(doc().bones)!.id] }); const id = SS.saveSelectionSet(); if (id) { A.setSelection({}); SS.selectSet(id); if (c.chance(0.3)) SS.deleteSelectionSet(id); } } },
+  { name: 'softMove', run: (c) => { const m = c.pick(meshes()); if (!m) return; const { mats, slotMat } = M.setupMats(); const w = meshWorldPositions(M.getMesh(m.slotId, m.name)!, slotMat(m.slotId), mats); const n = w.length / 2; const picked = Array.from({ length: 1 + Math.floor(c.r() * 3) }, () => Math.floor(c.r() * n)); M.moveMeshVertices(m.slotId, m.name, softMoves(w, softWeights(w, picked, c.num(0, 120), c.pick(['smooth', 'linear', 'sharp'] as const)!), c.num(-30, 30), c.num(-30, 30))); } },
+  { name: 'skinMix', run: (c) => { const s = c.pick(doc().skins); if (s) A.toggleSkinMix(s.id); getScene(); } },
   { name: 'swapSides', run: (c) => { A.setMode(c.chance(0.6) ? 'animate' : 'setup'); if (c.chance(0.5)) A.selectBone(c.pick(doc().bones)!.id); PO.swapSides(); } },
   { name: 'chainCurve', run: (c) => {
     A.setMode('setup');
@@ -819,8 +822,10 @@ export function bakeMismatch(p: Project): string | null {
     // A path constraint whose slot has no path attachment on some frame (an attachment key that turns it off) does not touch its bones then, and a
     // constrained bone is not updated on its own: it keeps the world pose of the last frame that solved. That is in the official runtime too,
     // and a baked local pose cannot say it, so the bones of such a path are not compared (nor what hangs on them).
+    // (The same when the slot shows something that is not a path at all: a mesh, or no attachment, in the setup pose or on a key; bakeSkips says which.)
+    const off = new Set(bakeSkips(doc, anim));
     for (const c of doc.constraints) {
-      if (c.type !== 'path' || !anim.slots[c.target]?.attachment?.some((k) => k.name === null)) continue;
+      if (c.type !== 'path' || !off.has(c.name)) continue;
       for (const id of c.bones) pairs.add(doc.bones.findIndex((b) => b.id === id));
     }
     for (let i = 0; i < probe.bones.length; i++) {
@@ -837,6 +842,9 @@ export function bakeMismatch(p: Project): string | null {
         if (pairs.has(i)) continue;
         // a world position beyond 1e9 (a runaway scale chain) has lost the float32 precision a baked local pose is read back with
         if (want[f][i].some((v) => Math.abs(v) > 1e9)) continue;
+        // a flat world matrix (a scale of 0 on one axis, determinant 0) has no local pose that the applied-transform read-back finds: the rotation of a
+        // matrix whose first column is 0 is undefined, the baked pose comes out as all zeros
+        if (Math.abs(want[f][i][0] * want[f][i][3] - want[f][i][1] * want[f][i][2]) < 1e-9) continue;
         if (unexplained.has(i)) {
           // allowed to differ only because the parent differs: a child that differs under a parent that matches is a real bake error
           const p = probe.bones[i].parent!.data.index;

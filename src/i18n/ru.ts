@@ -1442,4 +1442,11 @@ export const RU: Record<string, string> = {
   'Unlink mesh': 'Отвязка сетки',
   'This mesh follows the shape of "{}": edit that mesh, or unlink this one first': 'Эта сетка повторяет форму «{}»: правьте ту сетку или сначала отвяжите эту',
   '{} (missing)': '{} (нет)',
+  'Soft': 'Мягко',
+  'Soft selection: dragging the selected vertices also pulls the ones near them, less and less with the distance': 'Мягкое выделение: выбранные вершины тянут за собой соседние, чем дальше, тем слабее',
+  'Soft radius': 'Радиус мягкости',
+  'Soft falloff': 'Спад мягкости',
+  'Sharp': 'Резкий',
+  'Show together with the chosen skin (a preview of skins worn at once; its attachments replace the earlier ones, the export does not change)': 'Показать вместе с выбранным скином (предпросмотр нескольких скинов сразу; его вложения заменяют прежние, экспорт не меняется)',
+  'Baked into "{}", but path constraint "{}" has no path on some frames: its bones are not baked': 'Запечено в «{1}», но у констрейнта пути «{2}» на части кадров нет пути: его кости не запечены',
 };

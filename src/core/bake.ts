@@ -144,6 +144,23 @@ export function constrainedBoneIndices(data: SkeletonData): number[] {
 }
 
 /** True when the skeleton has anything to bake. */
+/**
+ * The path constraints whose bones a bake cannot carry over: a path constraint does nothing while its slot shows no path (no attachment, or
+ * something that is not a path), and a bone it moved before stays in the world pose of the last frame that solved. That is the same in the
+ * official runtime, and a local pose cannot say it. The names, one per constraint.
+ */
+export function bakeSkips(doc: SkeletonDoc, anim: Animation): string[] {
+  const isPath = (slotId: string, name: string | null | undefined) => name != null && doc.skins[0]?.attachments[slotId]?.[name]?.type === 'path';
+  const out: string[] = [];
+  for (const c of doc.constraints) {
+    if (c.type !== 'path') continue;
+    const slot = doc.slots.find((x) => x.id === c.target);
+    const keys = anim.slots[c.target]?.attachment ?? [];
+    if (!isPath(c.target, slot?.attachment) || keys.some((k) => !isPath(c.target, k.name))) out.push(c.name);
+  }
+  return out;
+}
+
 export function hasConstraints(doc: SkeletonDoc): boolean {
   return doc.constraints.length > 0;
 }
