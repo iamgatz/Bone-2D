@@ -1,8 +1,11 @@
 /** Actions for the animation tools: wiggle, mirror a half cycle, hide the bones an animation does not touch. */
 import { mirrorCycle, unkeyedBones, wiggleKeys } from '@/core/animtools';
 import type { MirrorOptions, WiggleOptions } from '@/core/animtools';
+import { makeCurve, upsertKey } from '@/core/edit';
 import { decodeKey, resolveKeys } from '@/core/keyrefs';
-import type { Key } from '@/core/model';
+import { rotationLimitOf } from '@/core/limits';
+import { tweenBone } from '@/core/tween';
+import type { BoneProp, Key } from '@/core/model';
 import { currentAnimation } from './actions';
 import { docStore } from './doc';
 import { toast, uiStore } from './ui';
@@ -40,6 +43,8 @@ export function wiggleSelected(options: Omit<WiggleOptions, 'fps'>): number {
       if (!keys || keys.length < 2) continue;
       const next = wiggleKeys(JSON.parse(JSON.stringify(keys)) as Key[], { ...options, fps });
       if (next === keys) continue;
+      // a colour outside 0..1 never shows and cannot be exported, so the shake stays inside
+      if (ref.kind === 'slot' && ref.prop.startsWith('rgba')) for (const k of next) k.value = (k.value as number[]).map((x) => Math.min(1, Math.max(0, x)));
       keys.splice(0, keys.length, ...next);
       changed++;
     }
@@ -84,4 +89,49 @@ export function hideUnkeyedBones(): number {
     for (const b of d.skeleton.bones) b.hidden = ids.has(b.id);
   });
   return ids.size;
+}
+
+/**
+ * Puts the selected bones between their previous and next keys at the playhead (0 = the previous key, 1 = the next, outside 0..1 overshoots).
+ * Every channel a bone has keys on gets a key at the playhead; an existing key there keeps its curve. Returns how many bones were posed.
+ */
+export function tweenSelected(amount: number): number {
+  const ui = uiStore.get();
+  const anim = currentAnimation();
+  if (!anim || ui.mode !== 'animate') return 0;
+  const doc = docStore.get().skeleton;
+  const ids = ui.selection.bones.filter((id) => doc.bones.some((b) => b.id === id));
+  if (!ids.length) return 0;
+  const t = ui.time;
+  let posed = 0;
+  docStore.update('Tween', (d) => {
+    const a = d.skeleton.animations.find((x) => x.id === anim.id);
+    if (!a) return;
+    for (const id of ids) {
+      // a bone with a rotation limit is turned by its control bone, so the rotation keys are there
+      const limit = rotationLimitOf(d.skeleton, id);
+      const values = tweenBone(a, id, t, amount, limit ? limit.control : id);
+      let any = false;
+      for (const prop of Object.keys(values) as BoneProp[]) {
+        const owner = prop === 'rotate' && limit ? limit.control : id;
+        const tl = ((a.bones[owner] ??= {}) as Record<string, { time: number; value: number[]; curve?: unknown }[]>);
+        const keys = (tl[prop] ??= []);
+        const hit = keys.find((k) => Math.abs(k.time - t) < 1e-4);
+        if (hit) hit.value = values[prop]!;
+        else {
+          const curve = makeCurve(ui.defaultCurve, values[prop]!.length);
+          upsertKey(keys, { time: t, value: values[prop]!, ...(curve !== undefined ? { curve } : {}) });
+        }
+        any = true;
+      }
+      if (any) posed++;
+    }
+    if (posed && t > a.duration) a.duration = t;
+  });
+  if (posed) {
+    const overrides = { ...uiStore.get().overrides };
+    for (const id of ids) delete overrides[id]; // the keys now say where these bones are
+    uiStore.patch({ overrides });
+  }
+  return posed;
 }

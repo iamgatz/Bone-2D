@@ -5,17 +5,22 @@ import type { TransformPreset } from '@/store/transformActions';
 import { AXIS_GROUPS, INHERIT_MODES } from '@/core/model';
 import { isSplit } from '@/core/axes';
 import { setAxesSplit } from '@/store/axisActions';
-import type { Animation, AxisGroup, BlendMode, BoneProp, Id, Inherit, MeshAttachment, PathAttachment, PointAttachment, PolygonAttachment, RGBA, RegionAttachment } from '@/core/model';
+import type { Animation, AxisGroup, BlendMode, BoneProp, Id, Inherit, MeshAttachment, PhysicsParam, PathAttachment, PointAttachment, PolygonAttachment, RGBA, RegionAttachment } from '@/core/model';
 import { BLEND_MODES, attachmentImage, pathNodeCount, polygonVertexCount } from '@/core/model';
 import { findKeyIndex } from '@/core/curve';
 import { folderOfSlot } from '@/core/folders';
 import { deleteFolder, renameFolder, setSlotFolder } from '@/store/folderActions';
-import { deleteKeys, keySelectedBones, removeSkinImage, renameBone, renameSlot, setAnimationDuration, setAttachmentProps, setBonePose, setBoneProps, setFps, setSkinImage, setSlotAttachment, setSlotBone, setSlotColor, setSlotProps, setTool, currentAnimation } from '@/store/actions';
+import { setSelection, deleteKeys, keySelectedBones, removeSkinImage, renameBone, renameSlot, setAnimationDuration, setAttachmentProps, setBonePose, setBoneProps, setFps, setSkinImage, setSlotAttachment, setSlotBone, setSlotColor, setSlotProps, setTool, currentAnimation } from '@/store/actions';
 import type { PoseProps } from '@/store/actions';
 import { docStore, useProject } from '@/store/doc';
 import { bindPathToBones, setPathClosed, unbindPath } from '@/store/pathActions';
 import { MAX_SPLIT } from '@/core/split';
 import { splitBone } from '@/store/splitActions';
+import { limitDrivenBy, rotationLimitOf } from '@/core/limits';
+import { CHAIN_PARAMS, CHAIN_SHAPES, chainBones, chainValues, shapeAt } from '@/core/chains';
+import type { ChainShape } from '@/core/chains';
+import { applyChainCurve } from '@/store/chainActions';
+import { addLimit, removeLimit, setLimit } from '@/store/limitActions';
 import { useUi } from '@/store/ui';
 import { getScene } from '../scene';
 import { Button, ColorSwatch, IconButton, NumberField, SelectField, TextField, Toggle } from '../ui/controls';
@@ -52,9 +57,15 @@ function BoneInspector({ id }: { id: Id }) {
   const sb = getScene().skeleton.boneById(id);
   const pose: Required<PoseProps> = animate && sb ? { x: sb.x, y: sb.y, rotation: sb.rotation, scaleX: sb.scaleX, scaleY: sb.scaleY, shearX: sb.shearX, shearY: sb.shearY } : { x: bone.x, y: bone.y, rotation: bone.rotation, scaleX: bone.scaleX, scaleY: bone.scaleY, shearX: bone.shearX, shearY: bone.shearY };
   const set = (props: PoseProps) => setBonePose([{ id, props }], 'Edit bone');
-  const keyed = (p: BoneProp) => animate && hasKeyAt(anim, id, p, time);
+  // a bone with a rotation limit is turned by its control bone: that is the rotation shown, keyed and edited here
+  const limit = rotationLimitOf(doc, id);
+  const control = limit ? doc.bones.find((b) => b.id === limit.control) : undefined;
+  const controlScene = limit ? getScene().skeleton.boneById(limit.control) : undefined;
+  if (limit && control) pose.rotation = animate && controlScene ? controlScene.rotation : control.rotation;
+  const keyedOn = (p: BoneProp) => (p === 'rotate' && limit ? limit.control : id);
+  const keyed = (p: BoneProp) => animate && hasKeyAt(anim, keyedOn(p), p, time);
   const keyButton = (p: BoneProp, label: string) => (
-    <KeyButton on={keyed(p)} title={`${keyed(p) ? 'Remove' : 'Set'} ${label} key at the playhead`} onClick={() => (keyed(p) ? deleteKeys([{ kind: 'bone', target: id, prop: p, time }]) : keySelectedBones([p]))} />
+    <KeyButton on={keyed(p)} title={`${keyed(p) ? 'Remove' : 'Set'} ${label} key at the playhead`} onClick={() => (keyed(p) ? deleteKeys([{ kind: 'bone', target: keyedOn(p), prop: p, time }]) : keySelectedBones([p]))} />
   );
   const tl = anim?.bones[id];
   /** One row for a group of two values, or one row per axis once the group is split (each axis then has its own key button). */
@@ -129,9 +140,139 @@ function BoneInspector({ id }: { id: Id }) {
           </div>
         </Field>
       </Section>
+      <LimitSection id={id} animate={animate} />
+      {!animate && <ChainSection id={id} />}
       {!animate && <SplitSection id={id} rootBone={!bone.parent} />}
       {!animate && <TransformCreate boneIds={selectedIds} />}
     </>
+  );
+}
+
+/** The sector a bone may swing in: a control bone and a clamped transform constraint (see core/limits). */
+function LimitSection({ id, animate }: { id: Id; animate: boolean }) {
+  const project = useProject();
+  const [half, setHalf] = useState(60);
+  const doc = project.skeleton;
+  const limit = rotationLimitOf(doc, id);
+  const driven = limitDrivenBy(doc, id);
+  const shown = limit ?? driven;
+  if (!shown && (animate || !doc.bones.find((b) => b.id === id)?.parent)) return null;
+  const nameOf = (b: Id) => doc.bones.find((x) => x.id === b)?.name ?? '';
+  return (
+    <Section id="bone.limit" title="Rotation limit" icon={Crosshair} kind="transform">
+      {shown ? (
+        <>
+          <p className="hint-text mb">
+            {limit
+              ? `Rotate "${nameOf(limit.control)}" (the control bone): "${nameOf(limit.bone)}" follows it inside the sector and stops at its ends.`
+              : `This is the control bone of the limit on "${nameOf(shown.bone)}": it can turn all the way round, that bone stays in the sector.`}
+          </p>
+          <Field label="Sector">
+            <NumberField label="−" value={shown.min} step={1} precision={0} onChange={(v) => setLimit(shown.bone, Math.min(v, shown.max - 1), shown.max)} />
+            <NumberField label="+" value={shown.max} step={1} precision={0} onChange={(v) => setLimit(shown.bone, shown.min, Math.max(v, shown.min + 1))} />
+          </Field>
+          <div className="hstack">
+            <Button small onClick={() => setSelection({ bones: [limit ? limit.control : shown.bone] })}>
+              {limit ? 'Select control bone' : 'Select limited bone'}
+            </Button>
+            {!animate && (
+              <Button small onClick={() => removeLimit(shown.bone)}>
+                Remove limit
+              </Button>
+            )}
+          </div>
+        </>
+      ) : (
+        <>
+          <p className="hint-text mb">Keep this bone inside a sector of angles (a knee that does not bend backwards, a neck that does not spin). It is a transform constraint with a clamp, so it exports and plays in every Spine runtime.</p>
+          <Field label="Half width">
+            <NumberField label="°" value={half} step={5} precision={0} min={1} max={179} onChange={(v) => setHalf(Math.max(1, Math.min(179, Math.round(v))))} />
+          </Field>
+          <Button icon={Crosshair} onClick={() => addLimit(id, half)}>
+            Add rotation limit
+          </Button>
+        </>
+      )}
+    </Section>
+  );
+}
+
+/** Defaults of the chain curve per parameter: the first bone's value and the last bone's. */
+const CHAIN_DEFAULTS: Record<PhysicsParam, [number, number]> = {
+  strength: [300, 60],
+  damping: [0.9, 0.7],
+  inertia: [0.9, 0.4],
+  mass: [1, 1],
+  mix: [1, 1],
+  wind: [0, 1],
+  gravity: [0, 1],
+};
+
+const CHAIN_PARAM_LABEL: Record<PhysicsParam, string> = { strength: 'Strength', damping: 'Damping', inertia: 'Inertia', mass: 'Mass', mix: 'Mix', wind: 'Wind', gravity: 'Gravity' };
+
+const CHAIN_SHAPE_LABEL: Record<ChainShape, string> = { linear: 'Straight', in: 'Slow start', out: 'Fast start', smooth: 'S-curve' };
+
+/** One physics parameter spread over the bones of a chain (tail, spine) along a curve: stiff at the root, loose at the tip. */
+function ChainSection({ id }: { id: Id }) {
+  const project = useProject();
+  const [param, setParam] = useState<PhysicsParam>('strength');
+  const [from, setFrom] = useState(CHAIN_DEFAULTS.strength[0]);
+  const [to, setTo] = useState(CHAIN_DEFAULTS.strength[1]);
+  const [shape, setShape] = useState<ChainShape>('linear');
+  const [power, setPower] = useState(2);
+  const [create, setCreate] = useState(true);
+  const selected = useUi((s) => s.selection.bones);
+  const doc = project.skeleton;
+  const chain = chainBones(doc, selected.length ? selected : [id]).filter((b) => doc.bones.some((x) => x.id === b && x.parent));
+  if (chain.length < 2) return null;
+  const values = chainValues(chain.length, from, to, shape, power);
+  const lo = Math.min(...values, from, to);
+  const hi = Math.max(...values, from, to);
+  const span = hi - lo || 1;
+  const pick = (p: PhysicsParam) => {
+    setParam(p);
+    setFrom(CHAIN_DEFAULTS[p][0]);
+    setTo(CHAIN_DEFAULTS[p][1]);
+  };
+  const W = 200;
+  const H = 54;
+  const pts = values.map((v, i) => [chain.length === 1 ? 0 : 8 + (i / (chain.length - 1)) * (W - 16), H - 8 - ((v - lo) / span) * (H - 16)] as const);
+  const curve = Array.from({ length: 41 }, (_, i) => {
+    const t = i / 40;
+    const v = from + (to - from) * shapeAt(t, shape, power);
+    return `${(8 + t * (W - 16)).toFixed(1)},${(H - 8 - ((v - lo) / span) * (H - 16)).toFixed(1)}`;
+  }).join(' ');
+  return (
+    <Section id="bone.chain" title="Chain curve" icon={Spline}>
+      <p className="hint-text mb">{`Spreads one physics value over ${chain.length} bones along a curve, so a tail or a spine gets its stiffness without typing it bone by bone.`}</p>
+      <Field label="Value">
+        <SelectField<PhysicsParam> value={param} options={CHAIN_PARAMS.map((p) => ({ value: p, label: CHAIN_PARAM_LABEL[p] }))} onChange={pick} />
+      </Field>
+      <Field label="First → last">
+        <NumberField label="1" value={from} step={param === 'strength' ? 10 : 0.05} precision={param === 'strength' ? 0 : 2} onChange={setFrom} />
+        <NumberField label="n" value={to} step={param === 'strength' ? 10 : 0.05} precision={param === 'strength' ? 0 : 2} onChange={setTo} />
+      </Field>
+      <Field label="Curve">
+        <SelectField<ChainShape> value={shape} options={CHAIN_SHAPES.map((s) => ({ value: s, label: CHAIN_SHAPE_LABEL[s] }))} onChange={setShape} />
+      </Field>
+      {shape !== 'linear' && (
+        <Field label="Bend">
+          <NumberField label="×" value={power} step={0.25} precision={2} min={0.25} max={6} onChange={(v) => setPower(Math.max(0.25, Math.min(6, v)))} />
+        </Field>
+      )}
+      <svg className="chain-preview" viewBox={`0 0 ${W} ${H}`} width="100%" height={H} role="img" aria-label="Chain curve">
+        <polyline points={curve} fill="none" stroke="var(--accent)" strokeWidth="1.5" opacity="0.7" />
+        {pts.map(([x, y], i) => (
+          <circle key={i} cx={x} cy={y} r="3" fill="var(--accent)" />
+        ))}
+      </svg>
+      <Field label="Add missing constraints">
+        <Toggle on={create} onChange={setCreate} title="Bones of the chain without a physics constraint get one. Off: only the constraints that exist are changed" />
+      </Field>
+      <Button icon={Spline} onClick={() => applyChainCurve(chain, { param, from, to, shape, power, create })}>
+        Apply to the chain
+      </Button>
+    </Section>
   );
 }
 

@@ -235,6 +235,19 @@ export function upsertKey<K extends { time: number }>(keys: K[], key: K, eps = K
   return key;
 }
 
+/** Whether two keys hold the same value (time and the curve do not count): numbers within a hair of each other, anything else equal. */
+export function sameKeyValue(a: object, b: object): boolean {
+  const same = (x: unknown, y: unknown): boolean => {
+    if (typeof x === 'number' && typeof y === 'number') return Math.abs(x - y) <= 1e-6 * Math.max(1, Math.abs(x), Math.abs(y));
+    if (Array.isArray(x) && Array.isArray(y)) return x.length === y.length && x.every((v, i) => same(v, y[i]));
+    if (x && y && typeof x === 'object' && typeof y === 'object') return sameKeyValue(x, y);
+    return x === y;
+  };
+  const ka = Object.keys(a).filter((k) => k !== 'time' && k !== 'curve');
+  const kb = Object.keys(b).filter((k) => k !== 'time' && k !== 'curve');
+  return ka.length === kb.length && ka.every((k) => k in b && same((a as Record<string, unknown>)[k], (b as Record<string, unknown>)[k]));
+}
+
 export function removeKeyAt<K extends { time: number }>(keys: K[], time: number, eps = KEY_EPS): boolean {
   const i = keys.findIndex((k) => Math.abs(k.time - time) <= eps);
   if (i < 0) return false;

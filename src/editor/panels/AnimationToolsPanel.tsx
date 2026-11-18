@@ -4,7 +4,8 @@ import { DEFAULT_TOLERANCE, DEFAULT_BAKE, countSimplifiable, scaleTolerance } fr
 import { DEFAULT_SLIDE, footSlides } from '@/core/animtools';
 import type { Slide, SlideOptions } from '@/core/animtools';
 import { markersOf } from '@/core/markers';
-import { hideUnkeyedBones, mirrorCurrentCycle, wiggleSelected } from '@/store/animToolActions';
+import { hideUnkeyedBones, mirrorCurrentCycle, tweenSelected, wiggleSelected } from '@/store/animToolActions';
+import { docStore } from '@/store/doc';
 import type { Animation } from '@/core/model';
 import { bakeCurrentAnimation, closeCurrentLoop, currentAnimation, setTime, simplifyCurrentAnimation } from '@/store/actions';
 import { useProject } from '@/store/doc';
@@ -30,7 +31,7 @@ type BakeBones = 'constrained' | 'all' | 'selected';
 export function AnimationToolsPanel() {
   const project = useProject();
   const doc = project.skeleton;
-  const { animationId, selection, skinId } = useUi((s) => ({ animationId: s.animationId, selection: s.selection, skinId: s.skinId }));
+  const { animationId, selection, skinId, mode } = useUi((s) => ({ animationId: s.animationId, selection: s.selection, skinId: s.skinId, mode: s.mode }));
   const anim = doc.animations.find((a) => a.id === animationId) ?? currentAnimation();
 
   const [strength, setStrength] = useState(1);
@@ -44,6 +45,7 @@ export function AnimationToolsPanel() {
 
   const [wiggle, setWiggle] = useState({ amount: 3, every: 4, seed: 1, smooth: true, keepEnds: true });
   const [flipCentre, setFlipCentre] = useState(true);
+  const [tween, setTween] = useState(50);
   const [slide, setSlide] = useState<SlideOptions>(DEFAULT_SLIDE);
   const [slides, setSlides] = useState<Slide[] | null>(null);
   const markers = markersOf(anim);
@@ -93,6 +95,44 @@ export function AnimationToolsPanel() {
         <Button small primary disabled={!anim || removable === 0 || (selectedOnly && selection.bones.length === 0)} onClick={() => simplifyCurrentAnimation(strength, selectedOnly)}>
           Simplify
         </Button>
+
+        <div className="section-label">Tween</div>
+        <p className="hint-text">Puts the selected bones between the keys before and after the playhead and keys them there: 0% is the previous key, 100% the next, below 0 or above 100 overshoots. Drag the slider; it is one undo step.</p>
+        <div className="hstack">
+          <input
+            type="range"
+            className="tween-slider"
+            min={-25}
+            max={125}
+            step={1}
+            value={tween}
+            disabled={!anim || mode !== 'animate' || selection.bones.length === 0}
+            aria-label="Tween"
+            onPointerDown={() => docStore.beginGesture('Tween')}
+            onChange={(e) => {
+              setTween(Number(e.target.value));
+              tweenSelected(Number(e.target.value) / 100);
+            }}
+            onPointerUp={() => docStore.endGesture()}
+            onPointerCancel={() => docStore.endGesture()}
+          />
+          <span className="dim" style={{ minWidth: 40, textAlign: 'right' }}>{`${tween}%`}</span>
+        </div>
+        <div className="hstack wrap">
+          {[0, 25, 50, 75, 100].map((p) => (
+            <Button
+              key={p}
+              small
+              disabled={!anim || mode !== 'animate' || selection.bones.length === 0}
+              onClick={() => {
+                setTween(p);
+                tweenSelected(p / 100);
+              }}
+            >
+              {`${p}%`}
+            </Button>
+          ))}
+        </div>
 
         <div className="section-label">Wiggle</div>
         <p className="hint-text">Shakes the selected keys' timelines with random noise: a key every few frames, each moved a little from the curve. Select keys in the timeline first (click a row's name to take all its keys).</p>

@@ -11,7 +11,7 @@ import { docStore } from '@/store/doc';
 import { openKeyDialog } from '@/store/keyDialog';
 import { LAYOUTS, VIEW_LIST } from '@/store/layout';
 import { startSetParent } from '@/store/parentActions';
-import { copyPose, duplicateSelection, pastePose, resetPose } from '@/store/poseActions';
+import { copyPose, duplicateSelection, pastePose, resetPose, swapSides } from '@/store/poseActions';
 import { newProject, openProjectFile, saveProjectFile } from '@/store/project';
 import { loadSample } from '@/store/sample';
 import { toast, uiStore } from '@/store/ui';
@@ -63,6 +63,7 @@ export function buildCommands(): Command[] {
     { id: 'edit.parent', group: 'Edit', title: 'Set parent', keys: KEYS.parent, run: () => void startSetParent() },
     { id: 'edit.reset', group: 'Edit', title: 'Reset pose', run: () => resetPose() },
     { id: 'edit.copypose', group: 'Edit', title: 'Copy pose', run: () => copyPose() },
+    { id: 'edit.swapsides', group: 'Edit', title: 'Swap left and right pose', run: () => swapSides() },
     { id: 'edit.pastepose', group: 'Edit', title: 'Paste pose', run: () => pastePose() },
     { id: 'mode.toggle', group: 'Animation', title: 'Setup ⇄ Animate', keys: KEYS.mode, run: () => setMode(uiStore.get().mode === 'setup' ? 'animate' : 'setup') },
     { id: 'anim.keyedited', group: 'Animation', title: 'Key edited channels', keys: KEYS.key, run: () => keyEditedBones() },

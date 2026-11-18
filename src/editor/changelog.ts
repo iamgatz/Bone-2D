@@ -12,6 +12,22 @@ export interface Release {
 
 export const CHANGELOG: Release[] = [
   {
+    version: '0.43',
+    date: '2026-11-19',
+    en: [
+      "Rotation limit: a bone can be kept inside a sector of angles (Inspector → Rotation limit). The sector is drawn in the scene; the bone follows a control bone and stops at the ends of the sector. It is a Spine 4.3 transform constraint with a clamp, so it exports and plays in every runtime. Rotating or keying the limited bone goes to the control bone, so dragging past the sector keeps turning the control and the bone follows as soon as it is back.",
+      "Chain curve (Inspector, for a tail or a spine): spread one physics value (strength, damping, inertia, mass, mix, wind, gravity) over the bones of a chain along a curve instead of typing it bone by bone. Missing physics constraints are created.",
+      "Tween (Animation tools): a slider that puts the selected bones between the keys before and after the playhead (0% previous key, 100% next, beyond that overshoots) and keys them there; one drag is one undo step.",
+      "Mute: a speaker button on a bone, slot or constraint row of the timeline plays the animation without those keys, to compare with and without. The keys stay and the export does not change. The zoom button falls back to the loop range when no keys are selected. Pasting a key that repeats the value already there keeps the curve that was drawn on it."
+    ],
+    ru: [
+      "Предел поворота: кость можно удержать в секторе углов (Инспектор → «Предел поворота»). Сектор рисуется на сцене; кость следует за костью-управлением и останавливается на краях сектора. Это transform-констрейнт Spine 4.3 с clamp, поэтому он экспортируется и работает в любом рантайме. Вращение и ключи ограниченной кости уходят в кость-управление: если тянуть за сектор, управление продолжает крутиться, а кость следует, как только оно вернулось.",
+      "Кривая по цепочке (Инспектор, для хвоста или позвоночника): одно значение физики (сила, затухание, инерция, масса, mix, ветер, гравитация) раскладывается по костям цепочки вдоль кривой, а не вводится по одной кости. Недостающие физические констрейнты создаются.",
+      "Tween (Animation tools): ползунок ставит выбранные кости между ключами до и после текущего кадра (0% предыдущий ключ, 100% следующий, дальше — перелёт) и ключует их там; одно перетаскивание — один шаг отмены.",
+      "Mute: кнопка с динамиком на строке кости, слота или констрейнта в таймлайне проигрывает анимацию без этих ключей, чтобы сравнить «с» и «без». Ключи остаются, экспорт не меняется. Кнопка масштаба без выбранных ключей берёт диапазон цикла. Вставка ключа, повторяющего значение, которое уже там, оставляет нарисованную на нём кривую."
+    ],
+  },
+  {
     version: '0.42',
     date: '2026-11-19',
     en: [

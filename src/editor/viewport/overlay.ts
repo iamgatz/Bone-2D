@@ -2,6 +2,7 @@
 import type { Id } from '@/core/model';
 import type { Bone } from '@/core/skeleton';
 import { REGION_TRIANGLES } from '@/core/skeleton';
+import type { TransformConstraintRT } from '@/core/skeleton';
 import { gridStep } from '@/core/snap';
 import { docStore } from '@/store/doc';
 import { settingsStore } from '@/store/settings';
@@ -195,6 +196,50 @@ export function drawBones(o: OverlayInput) {
   }
 }
 
+/** The sector of a rotation limit (a transform constraint that clamps one bone's local rotation to min..max): a pie in the frame of the bone's parent. */
+function drawLimitSector(o: OverlayInput, c: TransformConstraintRT) {
+  const d = c.data;
+  if (!d.clamp || !d.localSource || !d.localTarget || d.additive || d.bones.length !== 1 || d.properties.length !== 1) return;
+  const from = d.properties[0];
+  const to = from.to[0];
+  if (from.prop !== 'rotate' || from.to.length !== 1 || !to || to.prop !== 'rotate' || to.scale !== 1 || !(to.max > to.offset)) return;
+  const bone = c.bones[0];
+  const parent = bone.parent;
+  const { ctx, w, h, cam } = o;
+  const involved = o.ui.selection.bones.includes(bone.data.id) || o.ui.selection.bones.includes(c.source.data.id);
+  const radius = Math.max(30, bone.data.length * 0.9);
+  const rad = Math.PI / 180;
+  const dir = (deg: number): [number, number] => {
+    const x = Math.cos(deg * rad);
+    const y = Math.sin(deg * rad);
+    const wx = parent ? parent.a * x + parent.b * y : x;
+    const wy = parent ? parent.c * x + parent.d * y : y;
+    const len = Math.hypot(wx, wy) || 1;
+    return [wx / len, wy / len];
+  };
+  const point = (deg: number): [number, number] => {
+    const [dx, dy] = dir(deg);
+    return worldToScreen(cam, w, h, bone.worldX + dx * radius, bone.worldY + dy * radius);
+  };
+  const [ox, oy] = worldToScreen(cam, w, h, bone.worldX, bone.worldY);
+  const steps = Math.max(4, Math.ceil((to.max - to.offset) / 6));
+  ctx.save();
+  ctx.fillStyle = alpha('--kind-transform', involved ? 0.22 : 0.1);
+  ctx.strokeStyle = token('--kind-transform');
+  ctx.globalAlpha = involved ? 0.95 : 0.5;
+  ctx.lineWidth = involved ? 1.6 : 1.1;
+  ctx.beginPath();
+  ctx.moveTo(ox, oy);
+  for (let i = 0; i <= steps; i++) {
+    const [px, py] = point(to.offset + ((to.max - to.offset) * i) / steps);
+    ctx.lineTo(px, py);
+  }
+  ctx.closePath();
+  ctx.fill();
+  ctx.stroke();
+  ctx.restore();
+}
+
 export function drawConstraints(o: OverlayInput) {
   const { ctx, w, h, cam, scene } = o;
   for (const c of scene.skeleton.constraints) {
@@ -235,6 +280,7 @@ export function drawConstraints(o: OverlayInput) {
         ctx.stroke();
       }
       ctx.restore();
+      drawLimitSector(o, c);
       continue;
     }
     if (c.kind === 'path') {

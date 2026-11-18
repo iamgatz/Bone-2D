@@ -1,13 +1,15 @@
 import { useCallback, useMemo, useRef, useState } from 'react';
-import { ChevronDown, ChevronRight, Copy, Diamond, Eraser, Film, KeyRound, Maximize, Pause, Pencil, Play, Plus, Repeat, SkipBack, SkipForward, Spline, Trash2, ZoomIn } from 'lucide-react';
+import { ChevronDown, ChevronRight, Copy, Diamond, Eraser, Film, KeyRound, Maximize, Pause, Pencil, Play, Plus, Repeat, SkipBack, SkipForward, Spline, Trash2, Volume2, VolumeX, ZoomIn } from 'lucide-react';
 import { GraphEditor } from './GraphEditor';
 import { CURVE_PRESETS } from '@/core/curve';
 import { decodeKey, encodeKey } from '@/core/keyrefs';
 import type { KeyRef } from '@/core/keyrefs';
 import { axisGroupOf } from '@/core/model';
+import { playOf } from '@/core/playback';
 import type { AxisGroup } from '@/core/model';
 import { setAxesSplit } from '@/store/axisActions';
 import { openKeyDialog } from '@/store/keyDialog';
+import { clearMute, toggleMute } from '@/store/muteActions';
 import { cleanUpKeys, copyKeys, createAnimation, currentAnimation, deleteAnimation, deleteKeys, duplicateAnimation, pasteKeys, renameAnimation, selectAnimation, selectBone, selectSlot, setAnimationDuration, setKeysCurve, setMode, setPlay, setSelection, setTime, togglePlay } from '@/store/actions';
 import { useProject } from '@/store/doc';
 import { useSettings } from '@/store/settings';
@@ -125,6 +127,7 @@ export function Timeline() {
   const height = useUi((s) => s.panel.bottom);
   const view = useUi((s) => s.timelineView);
   const selectedKeys = useUi((s) => s.selectedKeys);
+  const muted = useUi((s) => s.muted);
   const anim = doc.animations.find((a) => a.id === animationId) ?? null;
   const [renaming, setRenaming] = useState(false);
   const [menu, setMenu] = useState<TimelineMenuRequest | null>(null);
@@ -152,7 +155,9 @@ export function Timeline() {
   /** Zoom Keys: the timeline fits the selected keys (all of the animation when none is selected). */
   const zoomKeys = () => {
     if (!anim) return;
-    const times = selectedKeys.length ? selectedKeys.map((s) => decodeKey(s).time) : [0, anim.duration];
+    // selected keys first, then the loop range when one is set, else the whole animation
+    const range = playOf(anim).range;
+    const times = selectedKeys.length ? selectedKeys.map((s) => decodeKey(s).time) : range ? range : [0, anim.duration];
     let lo = Math.min(...times);
     let hi = Math.max(...times);
     if (hi - lo < 0.05) {
@@ -208,7 +213,7 @@ export function Timeline() {
           </div>
         )}
         <IconButton icon={Maximize} title="Fit timeline to the animation" onClick={fit} />
-        <IconButton icon={ZoomIn} title="Zoom to the selected keys (all keys when none is selected)" disabled={!anim} onClick={zoomKeys} />
+        <IconButton icon={ZoomIn} title="Zoom to the selected keys (the loop range when none is selected and one is set, else the whole animation)" disabled={!anim} onClick={zoomKeys} />
         <span className="sep tl-opt2" />
         <IconButton icon={Diamond} title="Dopesheet" active={view === 'dopesheet'} onClick={() => uiStore.patch({ timelineView: 'dopesheet' })} />
         <IconButton icon={Spline} title="Curve graph" active={view === 'graph'} onClick={() => uiStore.patch({ timelineView: 'graph' })} />
@@ -220,7 +225,14 @@ export function Timeline() {
         ) : (
         <>
         <div className="tl-labels">
-          <div className="tl-labels-head">{anim ? anim.name : 'Timeline'}</div>
+          <div className="tl-labels-head">
+            {anim ? anim.name : 'Timeline'}
+            {muted.length > 0 && (
+              <button type="button" className="tl-unmute" title="Play every timeline again" onClick={clearMute}>
+                Unmute all
+              </button>
+            )}
+          </div>
           <div className="tl-scroll" id="tl-label-scroll" style={{ scrollbarWidth: 'none' }} onScroll={(e) => {
             const host = document.querySelector('.tl-canvas-host') as HTMLElement | null;
             if (host && host.scrollTop !== e.currentTarget.scrollTop) host.scrollTop = e.currentTarget.scrollTop;
@@ -228,7 +240,7 @@ export function Timeline() {
             {rows.map((r) => (
               <div
                 key={r.id}
-                className={`tl-label${r.selected ? ' selected' : ''}${r.type === 'prop' ? ' child' : ''}`}
+                className={`tl-label${r.selected ? ' selected' : ''}${r.type === 'prop' ? ' child' : ''}${r.target && muted.includes(r.target.id) ? ' muted' : ''}`}
                 style={{ height: ROW_H, paddingLeft: 8 + r.depth * 12, fontWeight: r.type === 'group' ? 650 : 400, fontSize: r.type === 'group' ? 10.5 : undefined, textTransform: r.type === 'group' ? 'uppercase' : undefined, letterSpacing: r.type === 'group' ? 0.6 : undefined, color: r.type === 'group' ? 'var(--muted)' : undefined }}
                 onClick={(e) => r.type !== 'group' && clickRow(r, e)}
               >
@@ -238,6 +250,16 @@ export function Timeline() {
                   </span>
                 )}
                 <span className="lbl">{r.label}</span>
+                {r.type === 'entity' && r.target && (
+                  <button
+                    type="button"
+                    className={`tl-mute${muted.includes(r.target.id) ? ' on' : ''}`}
+                    title={muted.includes(r.target.id) ? 'Unmute: play these keys again' : 'Mute: play the animation without these keys (they stay, nothing is exported differently)'}
+                    onClick={(e) => (e.stopPropagation(), toggleMute(r.target!.id))}
+                  >
+                    {muted.includes(r.target.id) ? <VolumeX size={12} /> : <Volume2 size={12} />}
+                  </button>
+                )}
               </div>
             ))}
           </div>

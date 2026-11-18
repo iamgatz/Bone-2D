@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Bone, BoxSelect, Download, Eye, EyeOff, FilePlus2, FolderOpen, Grid3x3, Bell, Search, Home, Layers, ClipboardCopy, ClipboardPaste, Copy, FlipHorizontal2, GitBranch, RotateCcw, SlidersHorizontal, Image as ImageIcon, CircleHelp, MessageSquareText, Link2, Maximize, Play, Redo2, Route, Ruler, Magnet, Trash2, Save, Sparkles, Type, Undo2 } from 'lucide-react';
+import { ArrowLeftRight, Bone, BoxSelect, Download, Eye, EyeOff, FilePlus2, FolderOpen, Grid3x3, Bell, Search, Home, Layers, ClipboardCopy, ClipboardPaste, Copy, FlipHorizontal2, GitBranch, RotateCcw, SlidersHorizontal, Image as ImageIcon, CircleHelp, MessageSquareText, Link2, Maximize, Play, Redo2, Route, Ruler, Magnet, Trash2, Save, Sparkles, Type, Undo2 } from 'lucide-react';
 import { decodeKey } from '@/core/keyrefs';
 import { clearSelection, copyKeys, deleteBones, deleteKeys, keySelectedBones, pasteKeys, sanitizeSelection, setMode, setSelection, setTime, setTool, togglePlay } from '@/store/actions';
 import { docStore, useProject } from '@/store/doc';
@@ -34,7 +34,7 @@ import { WelcomeDialog } from './Welcome';
 import { Palette } from './Palette';
 import { settingsStore } from '@/store/settings';
 import { cancelSetParent, startSetParent } from '@/store/parentActions';
-import { copyPose, duplicateSelection, pastePose, resetPose } from '@/store/poseActions';
+import { copyPose, duplicateSelection, pastePose, resetPose, swapSides } from '@/store/poseActions';
 import { clearGuides } from '@/store/guideActions';
 import { isolateSelection, showAll } from '@/store/visibilityActions';
 import { useSettings } from '@/store/settings';
@@ -134,6 +134,9 @@ function TopBar() {
             </MenuItem>
             <MenuItem icon={ClipboardPaste} close={close} onClick={() => pastePose()}>
               Paste pose
+            </MenuItem>
+            <MenuItem icon={ArrowLeftRight} close={close} onClick={() => swapSides()}>
+              Swap left and right pose
             </MenuItem>
           </>
         )}

@@ -1,3 +1,4 @@
+import { sidePairs } from '@/core/animtools';
 import { duplicateBones } from '@/core/duplicate';
 import type { BonePose, Id, PoseEntry } from '@/core/model';
 import { blendPose, newPose, newPoseName } from '@/core/poses';
@@ -70,6 +71,36 @@ export function pastePose() {
     return;
   }
   setBonePose(updates, 'Paste pose');
+}
+
+/**
+ * Swaps the pose of every bone with the bone on the other side (arm near ⇄ arm far, Leg_L ⇄ Leg_R): the selected bones and their counterparts, or all
+ * of them when nothing is selected. Bones without a side stay. Animate mode keys the swapped poses at the playhead; Setup mode swaps the setup poses.
+ * Returns how many pairs were swapped.
+ */
+export function swapSides(): number {
+  const doc = docStore.get().skeleton;
+  const pairs = sidePairs(doc.bones);
+  const chosen = new Set(targets());
+  const done = new Set<Id>();
+  const updates: { id: Id; props: Required<PoseProps> }[] = [];
+  let swapped = 0;
+  for (const [a, b] of pairs) {
+    if (done.has(a) || done.has(b) || !(chosen.has(a) || chosen.has(b)) || pairs.get(b) !== a) continue;
+    const pa = currentPose(a);
+    const pb = currentPose(b);
+    if (!pa || !pb) continue;
+    done.add(a);
+    done.add(b);
+    updates.push({ id: a, props: pb }, { id: b, props: pa });
+    swapped++;
+  }
+  if (!swapped) {
+    toast('No pair of bones with a left and a right side in the selection');
+    return 0;
+  }
+  setBonePose(updates, 'Swap sides');
+  return swapped;
 }
 
 /** Copies the selected bones with their children, slots and images; a mirrored copy is reflected across the vertical axis. */
