@@ -9,10 +9,17 @@ import type { Store } from './store';
 enablePatches();
 setAutoFreeze(true);
 
+/** Something outside the document that goes with a step of the history (the pixels behind a picture): undone and redone with it. */
+export interface HistoryEffect {
+  undo: () => void;
+  redo: () => void;
+}
+
 interface HistoryEntry {
   label: string;
   patches: Patch[];
   inverse: Patch[];
+  effect?: HistoryEffect;
 }
 
 /**
@@ -89,6 +96,14 @@ export class DocStore implements Store<Project> {
     this.emit();
   }
 
+  /** Ties an effect to the last step of the history, so Undo and Redo run it too. Does nothing when the last update changed nothing. */
+  attachEffect(effect: HistoryEffect) {
+    const top = this.undoStack[this.undoStack.length - 1];
+    if (!top) return;
+    const before = top.effect;
+    top.effect = before ? { undo: () => (effect.undo(), before.undo()), redo: () => (before.redo(), effect.redo()) } : effect;
+  }
+
   beginGesture(label: string) {
     this.gesture = { entry: null, label };
   }
@@ -126,6 +141,7 @@ export class DocStore implements Store<Project> {
     const e = this.undoStack.pop();
     if (!e) return;
     this.state = applyPatches(this.state, e.inverse);
+    e.effect?.undo();
     this.redoStack.push(e);
     this.dirty = true;
     this.emit();
@@ -136,6 +152,7 @@ export class DocStore implements Store<Project> {
     const e = this.redoStack.pop();
     if (!e) return;
     this.state = applyPatches(this.state, e.patches);
+    e.effect?.redo();
     this.undoStack.push(e);
     this.dirty = true;
     this.emit();

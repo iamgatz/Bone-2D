@@ -1,6 +1,6 @@
 /** The weight brush's fade shapes: the default is the old brush, every shape is 1 in the core, 0 at the radius and never rises outward. */
 import { describe, expect, it } from 'vitest';
-import { BRUSH_SHAPES, brushFalloff, shapeCurve } from '../src/core/brush';
+import { BRUSH_SHAPES, STRENGTH_CURVES, brushFalloff, shapeCurve, strengthAmount } from '../src/core/brush';
 
 const oldFalloff = (d: number, radius: number, feather: number) => {
   const inner = radius * (1 - Math.max(0, Math.min(100, feather)) / 100);
@@ -44,5 +44,40 @@ describe('brushFalloff', () => {
   it('a feather out of range is clamped', () => {
     expect(brushFalloff(10, 50, 500, 'linear')).toBeCloseTo(brushFalloff(10, 50, 100, 'linear'), 12);
     expect(brushFalloff(10, 50, -20, 'linear')).toBe(1);
+  });
+});
+
+describe('strength curve', () => {
+  it('even is the slider as it was, and every curve keeps 0 and 1', () => {
+    for (const c of STRENGTH_CURVES) {
+      expect(strengthAmount(0, c)).toBe(0);
+      expect(strengthAmount(1, c)).toBe(1);
+    }
+    for (const s of [0.1, 0.37, 0.8]) {
+      expect(strengthAmount(s)).toBe(s);
+      expect(strengthAmount(s, 'linear')).toBe(s);
+    }
+  });
+
+  it('fine paints less than the slider, bold more, and both rise with it', () => {
+    for (const s of [0.05, 0.3, 0.6, 0.95]) {
+      expect(strengthAmount(s, 'fine')).toBeLessThan(s);
+      expect(strengthAmount(s, 'bold')).toBeGreaterThan(s);
+    }
+    for (const c of STRENGTH_CURVES) {
+      let prev = -1;
+      for (let i = 0; i <= 20; i++) {
+        const v = strengthAmount(i / 20, c);
+        expect(v).toBeGreaterThanOrEqual(prev);
+        prev = v;
+      }
+    }
+    expect(strengthAmount(0.1, 'fine')).toBeCloseTo(0.01, 12);
+    expect(strengthAmount(0.1, 'bold')).toBeCloseTo(Math.sqrt(0.1), 12);
+  });
+
+  it('out of range is clamped', () => {
+    expect(strengthAmount(-1, 'fine')).toBe(0);
+    expect(strengthAmount(3, 'bold')).toBe(1);
   });
 });

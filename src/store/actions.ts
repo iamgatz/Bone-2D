@@ -645,7 +645,12 @@ export async function reimportPsd(file: File): Promise<{ updated: number; added:
   const root = live ? null : newBone({ name: freshName('root', doc.bones) });
   const boneId = live ? live.data.id : root!.id;
   let meshes = 0;
-  for (const { asset } of fresh.values()) assets.set(asset.name, asset);
+  const pixelChanges: { name: string; before: ImageAsset | undefined; after: ImageAsset }[] = [];
+  for (const { asset } of fresh.values()) {
+    const before = assets.get(asset.name);
+    assets.set(asset.name, asset);
+    pixelChanges.push({ name: asset.name, before, after: assets.get(asset.name)! });
+  }
   // a canvas that was made bigger (or smaller) moves every layer by the same amount: that part is not an edit of the artwork
   const common = commonShift(
     plan.updates.map(({ layer, image }) => {
@@ -669,6 +674,7 @@ export async function reimportPsd(file: File): Promise<{ updated: number; added:
       img.width = to.width;
       img.height = to.height;
       img.psd = center;
+      img.rev = (img.rev ?? 0) + 1;
       for (const skin of d.skeleton.skins) {
         for (const [slotId, byName] of Object.entries(skin.attachments)) {
           const bone = setup.boneById(d.skeleton.slots.find((s) => s.id === slotId)?.bone ?? '');
@@ -707,6 +713,7 @@ export async function reimportPsd(file: File): Promise<{ updated: number; added:
       anchor = slot.id;
     }
   });
+  if (pixelChanges.length) keepPixelsForUndo(pixelChanges);
   const head = `Update from ${file.name}: ${plan.updates.length} updated, ${plan.added.length} new, ${plan.gone.length} not in the file`;
   toast(meshes ? `${head} (${meshes} meshes keep their shape)` : head, 'ok');
   return { updated: plan.updates.length, added: plan.added.length };
@@ -1331,18 +1338,29 @@ export function renameImageAction(from: string, raw: string): string | null {
   return ok ? to : null;
 }
 
+/** Makes Undo and Redo of the last step swap the pixels behind the pictures too (the document only holds their size). */
+function keepPixelsForUndo(changes: { name: string; before: ImageAsset | undefined; after: ImageAsset }[]) {
+  docStore.attachEffect({
+    undo: () => changes.forEach((c) => assets.swap(c.name, c.before)),
+    redo: () => changes.forEach((c) => assets.swap(c.name, c.after)),
+  });
+}
+
 /** Puts new pixels behind an image name. The attachments keep their size on screen; the atlas gets the new picture. */
 export async function replaceImagePixels(name: string, file: File | Blob): Promise<void> {
   try {
     const asset = await assets.decode(name, file);
+    const before = assets.get(name);
     assets.set(name, asset);
     docStore.update('Replace image', (d) => {
       const img = d.images.find((i) => i.name === name);
       if (img) {
         img.width = asset.width;
         img.height = asset.height;
+        img.rev = (img.rev ?? 0) + 1; // a same-size repaint still counts as a step of its own
       }
     });
+    keepPixelsForUndo([{ name, before, after: assets.get(name)! }]);
     toast(`Replaced "${name}" (${asset.width}×${asset.height})`, 'ok');
   } catch (e) {
     toast(`Could not read that image: ${(e as Error).message}`, 'error');
