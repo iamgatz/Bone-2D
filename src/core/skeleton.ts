@@ -2506,10 +2506,43 @@ export class Skeleton {
   }
 }
 
-export function createSkeleton(data: SkeletonData, skinId?: Id | null): Skeleton {
+export function createSkeleton(data: SkeletonData, skinId?: Id | null, mix: readonly Id[] = []): Skeleton {
   const s = new Skeleton(data);
-  if (skinId) s.setSkin(data.skinById.get(skinId) ?? null);
+  const ids = mix.length ? [...(skinId ? [skinId] : []), ...mix] : skinId ? [skinId] : [];
+  if (ids.length) s.setSkin(composeSkins(data, ids));
   return s;
+}
+
+/** The skin an attachment shown by a skin mix comes from: the last of the worn skins that has it, else the default skin. */
+export function skinHolding(data: SkeletonData, worn: readonly Id[], slotIndex: number, name: string): Id {
+  for (let i = worn.length - 1; i >= 0; i--) {
+    const skin = data.skinById.get(worn[i]);
+    if (skin && skin !== data.defaultSkin && skin.attachments[slotIndex]?.has(name)) return skin.id;
+  }
+  return data.defaultSkin.id;
+}
+
+/**
+ * Several skins worn at once (the runtime's Skin.addSkin): a later skin's attachment replaces an earlier one at the same slot and name, and the
+ * bones and constraints that any of them lists are active. The default skin is always the base and unknown ids are skipped. Returns the one
+ * skin when only one is left, and null when none is.
+ */
+export function composeSkins(data: SkeletonData, ids: readonly Id[]): SkinData | null {
+  const skins: SkinData[] = [];
+  for (const id of ids) {
+    const skin = data.skinById.get(id);
+    if (skin && skin !== data.defaultSkin && !skins.includes(skin)) skins.push(skin);
+  }
+  if (skins.length < 2) return skins[0] ?? null;
+  const attachments = data.slots.map(() => new Map<string, AttachmentData>());
+  for (const skin of skins) skin.attachments.forEach((entries, slot) => entries.forEach((att, name) => attachments[slot].set(name, att)));
+  return {
+    id: skins.map((k) => k.id).join('+'),
+    name: skins.map((k) => k.name).join(' + '),
+    attachments,
+    bones: [...new Set(skins.flatMap((k) => k.bones))],
+    constraints: [...new Set(skins.flatMap((k) => k.constraints))],
+  };
 }
 
 // ------------------------------------------------------------------ geometry

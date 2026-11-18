@@ -1,8 +1,8 @@
 import { useMemo, useState } from 'react';
-import { Copy, Lock, LockOpen, Palette, Pencil, Plus, Trash2, Link2, Bone as BoneIcon } from 'lucide-react';
+import { Copy, Layers, Lock, LockOpen, Palette, Pencil, Plus, Trash2, Link2, Bone as BoneIcon } from 'lucide-react';
 import type { Bone, Constraint, Id, SkeletonDoc, Skin } from '@/core/model';
 import { overrideCount, overrideState } from '@/core/skins';
-import { createSkin, deleteSkin, duplicateSkinAction, renameSkin, setActiveSkin, setSkinRequiredAction, setSkinScopeAction, toggleSkinOverride } from '@/store/actions';
+import { createSkin, deleteSkin, duplicateSkinAction, renameSkin, setActiveSkin, toggleSkinMix, setSkinRequiredAction, setSkinScopeAction, toggleSkinOverride } from '@/store/actions';
 import { useProject } from '@/store/doc';
 import { useUi } from '@/store/ui';
 import { IconButton } from '../ui/controls';
@@ -52,6 +52,7 @@ export function SkinsPanel() {
   const project = useProject();
   const doc = project.skeleton;
   const skinId = useUi((s) => s.skinId);
+  const skinMix = useUi((s) => s.skinMix);
   const [renaming, setRenaming] = useState<string | null>(null);
   const defaultSkin = doc.skins[0];
   const current = doc.skins.find((s) => s.id === skinId) ?? defaultSkin;
@@ -103,6 +104,15 @@ export function SkinsPanel() {
               <span className="label">{s.name}</span>
             )}
             <span className="dim row-meta">{i === 0 ? 'default' : `${overrideCount(s)} own`}</span>
+            {i > 0 && s !== current && (
+              <IconButton
+                icon={Layers}
+                title="Show together with the chosen skin (a preview of skins worn at once; its attachments replace the earlier ones, the export does not change)"
+                small
+                active={skinMix.includes(s.id)}
+                onClick={(e) => (e.stopPropagation(), toggleSkinMix(s.id))}
+              />
+            )}
             {i > 0 && (
               <span className="actions">
                 <IconButton icon={Pencil} title="Rename skin" small onClick={(e) => (e.stopPropagation(), setRenaming(s.id))} />

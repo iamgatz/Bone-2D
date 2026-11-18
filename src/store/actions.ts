@@ -2,7 +2,7 @@
 import { current } from 'immer';
 import type { Draft } from 'immer';
 import { animationEndTime } from '@/core/animate';
-import { DEFAULT_TOLERANCE, bakeAnimation, scaleTolerance, simplifyAnimation } from '@/core/bake';
+import { DEFAULT_TOLERANCE, bakeAnimation, bakeSkips, scaleTolerance, simplifyAnimation } from '@/core/bake';
 import type { BakeOptions } from '@/core/bake';
 import { cleanUpAnimation } from '@/core/cleanup';
 import { closeLoop } from '@/core/loops';
@@ -985,7 +985,9 @@ export function bakeCurrentAnimation(options: Partial<BakeOptions>): Id | null {
     d.skeleton.animations.push(baked);
   });
   selectAnimation(baked.id);
-  toast(`Baked into "${baked.name}": ${Object.keys(baked.bones).length} bones carry keys`, 'ok');
+  const skipped = bakeSkips(doc, anim);
+  if (skipped.length) toast(`Baked into "${baked.name}", but path constraint "${skipped.join('", "')}" has no path on some frames: its bones are not baked`, 'info', 7000);
+  else toast(`Baked into "${baked.name}": ${Object.keys(baked.bones).length} bones carry keys`, 'ok');
   return baked.id;
 }
 
@@ -1171,7 +1173,16 @@ export function keyEvent(eventId: Id) {
 // ------------------------------------------------------------------ skins
 
 export function setActiveSkin(id: Id | null) {
-  uiStore.patch({ skinId: id });
+  const mix = uiStore.get().skinMix;
+  uiStore.patch({ skinId: id, skinMix: id && mix.includes(id) ? mix.filter((m) => m !== id) : mix });
+}
+
+/** Shows a skin together with the active one (and the others in the mix), or takes it out again. Editor only: the export does not change. */
+export function toggleSkinMix(id: Id) {
+  const ui = uiStore.get();
+  const doc = skeletonDoc();
+  if (doc.skins[0]?.id === id || ui.skinId === id || !doc.skins.some((s) => s.id === id)) return;
+  uiStore.patch({ skinMix: ui.skinMix.includes(id) ? ui.skinMix.filter((m) => m !== id) : [...ui.skinMix, id] });
 }
 
 export function createSkin(name?: string): Id {
@@ -1209,6 +1220,7 @@ export function deleteSkin(id: Id) {
     }
   });
   if (uiStore.get().skinId === id) setActiveSkin(null);
+  if (uiStore.get().skinMix.includes(id)) uiStore.patch({ skinMix: uiStore.get().skinMix.filter((m) => m !== id) });
 }
 
 /** In a non-default skin: shows `imageName` instead of the default attachment `placeholder` of a slot. */

@@ -1,4 +1,5 @@
 import type { Id } from '@/core/model';
+import type { SoftShape } from '@/core/soft';
 import { createStore, useStore } from './store';
 import { DEFAULT_VIEWS, loadLayout } from './layout';
 import type { Views } from './layout';
@@ -80,6 +81,11 @@ export interface MeshView {
   isolate: boolean;
   /** The vertices cannot be dragged (selecting them still works). */
   freeze: boolean;
+  /** Soft selection: dragged vertices pull the ones near them with a falloff (see core/soft.ts). */
+  soft: boolean;
+  /** How far the pull reaches, in world units. */
+  softRadius: number;
+  softShape: SoftShape;
 }
 
 /** What the weights view draws on the mesh (Spine's Pies, Overlay and Selected boxes). */
@@ -107,6 +113,8 @@ export interface UiState {
   defaultCurve: CurveKind;
   camera: Camera;
   skinId: Id | null;
+  /** Skins shown together with the active one (editor only, never exported). */
+  skinMix: Id[];
   view: ViewOptions;
   overrides: Record<Id, PoseOverride>;
   timelineView: 'dopesheet' | 'graph';
@@ -158,6 +166,7 @@ export const uiStore = createStore<UiState>({
   defaultCurve: 'bezier',
   camera: { x: 0, y: 120, zoom: 1.2 },
   skinId: null,
+  skinMix: [],
   view: { grid: true, images: true, bones: true, meshes: true, names: false, constraints: true, outlines: true, bonesOnTop: true, onion: false, trails: false, rulers: false, snap: false },
   overrides: {},
   timelineView: 'dopesheet',
@@ -169,7 +178,7 @@ export const uiStore = createStore<UiState>({
   reference: null,
   brush: { size: 40, strength: 0.5, mode: 'add', bone: null, feather: 100, locked: [] },
   weightView: { pies: false, overlay: false, selected: false },
-  meshView: { wireframe: true, dim: false, isolate: false, freeze: false },
+  meshView: { wireframe: true, dim: false, isolate: false, freeze: false, soft: false, softRadius: 60, softShape: 'smooth' },
   toast: null,
   panel: saved.panel ?? (typeof window !== 'undefined' && window.innerWidth < 1150 ? { left: 210, right: 240, bottom: 250 } : { left: 270, right: 300, bottom: 300 }),
   views: saved.views ?? DEFAULT_VIEWS,
@@ -188,10 +197,10 @@ export function useUi<S>(selector: (s: UiState) => S, equals?: (a: S, b: S) => b
 }
 
 let toastId = 1;
-export function toast(text: string, kind: 'info' | 'error' | 'ok' = 'info') {
+export function toast(text: string, kind: 'info' | 'error' | 'ok' = 'info', ms?: number) {
   const id = toastId++;
   uiStore.patch({ toast: { id, text, kind } });
   setTimeout(() => {
     if (uiStore.get().toast?.id === id) uiStore.patch({ toast: null });
-  }, kind === 'error' ? 6000 : 2600);
+  }, ms ?? (kind === 'error' ? 6000 : 2600));
 }

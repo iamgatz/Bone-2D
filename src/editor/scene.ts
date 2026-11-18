@@ -18,6 +18,7 @@ export interface Scene {
 let cache: {
   doc: SkeletonDoc;
   skinId: Id | null;
+  skinMix: Id[];
   anim: Animation | null;
   time: number;
   overrides: Record<Id, PoseOverride>;
@@ -41,11 +42,11 @@ export function getScene(): Scene {
   const time = anim ? ui.time : 0;
   const overrides = ui.mode === 'animate' ? ui.overrides : EMPTY;
   const c = cache;
-  if (c && c.doc === doc && c.skinId === ui.skinId && c.anim === anim && c.time === time && c.overrides === overrides && c.muted === ui.muted) return c.scene;
+  if (c && c.doc === doc && c.skinId === ui.skinId && c.skinMix === ui.skinMix && c.anim === anim && c.time === time && c.overrides === overrides && c.muted === ui.muted) return c.scene;
 
   const data = compileSkeleton(doc);
-  const reuse = !!c && c.scene.data === data && c.skinId === ui.skinId;
-  const skeleton = reuse ? c!.scene.skeleton : createSkeleton(data, ui.skinId && doc.skins.some((s) => s.id === ui.skinId) ? ui.skinId : null);
+  const reuse = !!c && c.scene.data === data && c.skinId === ui.skinId && c.skinMix === ui.skinMix;
+  const skeleton = reuse ? c!.scene.skeleton : createSkeleton(data, ui.skinId && doc.skins.some((s) => s.id === ui.skinId) ? ui.skinId : null, ui.skinMix);
   applyAnimation(skeleton, anim && ui.muted.length ? withoutMuted(anim, new Set(ui.muted)) : anim, time);
   for (const id in overrides) {
     const b = skeleton.boneById(id);
@@ -84,7 +85,7 @@ export function getScene(): Scene {
   }
   skeleton.updateWorldTransform(physics);
   const scene: Scene = { doc, data, skeleton, animation: anim };
-  cache = { doc, skinId: ui.skinId, anim, time, overrides, muted: ui.muted, scene };
+  cache = { doc, skinId: ui.skinId, skinMix: ui.skinMix, anim, time, overrides, muted: ui.muted, scene };
   return scene;
 }
 

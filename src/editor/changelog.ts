@@ -12,6 +12,20 @@ export interface Release {
 
 export const CHANGELOG: Release[] = [
   {
+    version: '0.45',
+    date: '2026-11-19',
+    en: [
+      "Soft selection (Mesh tool → Soft): dragging the selected vertices also pulls the ones near them, less and less with the distance. Radius and falloff (smooth, linear, sharp) are in the Inspector; the vertices that follow are tinted by how much. It works in Setup and for deform keys in Animate; one drag is one undo step.",
+      "Skins together: the layers button on a skin row of the Skins window shows that skin together with the chosen one, as the runtime does with several skins worn at once (a later skin replaces the earlier one's attachment, the bones and constraints of all of them are active). A preview only: the export does not change. Deform keys go to the skin the mesh comes from.",
+      "Bake: when a path constraint has no path on some frames (the slot shows a mesh, nothing, or an attachment key turns it off), the bake says which one: its bones keep the pose of the last frame that solved, the same as in the official runtime, and a local pose cannot carry that."
+    ],
+    ru: [
+      "Мягкое выделение (инструмент «Меш» → «Мягко»): выбранные вершины тянут за собой соседние, чем дальше, тем слабее. Радиус и спад (плавный, линейный, резкий) задаются в Инспекторе; вершины, которые следуют, подкрашены по силе. Работает в Setup и для ключей деформации в Animate; одно перетаскивание — один шаг отмены.",
+      "Скины вместе: кнопка со слоями в строке скина в окне Skins показывает этот скин вместе с выбранным, как рантайм с несколькими надетыми скинами (вложение позднего скина заменяет раннее, кости и констрейнты всех активны). Только предпросмотр: экспорт не меняется. Ключи деформации пишутся в тот скин, которому принадлежит сетка.",
+      "Запекание: если у констрейнта пути на части кадров нет пути (в слоте сетка, ничего или ключ вложения его выключает), запекание называет такой констрейнт: его кости остаются в позе последнего решённого кадра, как в официальном рантайме, а локальная поза этого передать не может."
+    ],
+  },
+  {
     version: '0.44',
     date: '2026-11-19',
     en: [
