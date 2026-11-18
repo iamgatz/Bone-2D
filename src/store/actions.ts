@@ -8,7 +8,7 @@ import { cleanUpAnimation } from '@/core/cleanup';
 import { closeLoop } from '@/core/loops';
 import { folderOrderAfterMove } from '@/core/folders';
 import { linkedTo, makeLink } from '@/core/links';
-import { findAnimation, freshName, makeCurve, normalizeBoneOrder, pruneSequences, purgeAttachment, removeBones, removeSlots, rgba2ToRgba, rgbaToRgba2, setSlotDarkColor, snapTime, upsertKey, decompose } from '@/core/edit';
+import { KEY_EPS, findAnimation, freshName, sameKeyValue, makeCurve, normalizeBoneOrder, pruneSequences, purgeAttachment, removeBones, removeSlots, rgba2ToRgba, rgbaToRgba2, setSlotDarkColor, snapTime, upsertKey, decompose } from '@/core/edit';
 import type { BoneMats } from '@/core/mesh';
 import { moveKeys, removeKeys, resolveKeys, retargetClip } from '@/core/keyrefs';
 import { duplicateSkin, setSkinRequired, setSkinScope, toggleOverride } from '@/core/skins';
@@ -24,6 +24,7 @@ import type { PsdLayer, PsdPixels } from '@/core/import/psd';
 import { fitRegion, planPsdSync } from '@/core/import/psdSync';
 import { cleanImageName, renameImage, sequenceFrameOwner, unusedImages } from '@/core/images';
 import { skeletonList } from '@/core/skeletons';
+import { rotationLimitOf } from '@/core/limits';
 import type { Animation, AxisGroup, Bone, BoneProp, Id, ImageRef, Inherit, Key, PlaySettings, Project, RGB, RGBA, Slot } from '@/core/model';
 import { getScene, getSetupSkeleton } from '@/editor/scene';
 import { assets } from './assets';
@@ -305,6 +306,14 @@ function ensureBoneTimelines(a: Draft<Animation>, id: Id) {
 function keyBoneInDraft(d: Draft<Project>, anim: Draft<Animation>, boneId: Id, pose: Required<PoseProps>, touched: Set<BoneProp>, time: number, curveKind: 'linear' | 'bezier' | 'stepped') {
   const setup = d.skeleton.bones.find((b) => b.id === boneId);
   if (!setup) return;
+  // a bone with a rotation limit is rotated by its control bone: the key goes there (the limited bone's own rotation is overwritten by the constraint)
+  const limit = touched.has('rotate') ? rotationLimitOf(d.skeleton, boneId) : null;
+  if (limit) {
+    const cp = currentPose(limit.control);
+    if (cp) keyBoneInDraft(d, anim, limit.control, { ...cp, ...uiStore.get().overrides[limit.control] }, new Set<BoneProp>(['rotate']), time, curveKind);
+    touched = new Set([...touched].filter((t) => t !== 'rotate'));
+    if (!touched.size) return;
+  }
   const tl = ensureBoneTimelines(anim, boneId);
   const key = (channels: number, value: number[]) => ({ time, value, ...(makeCurve(curveKind, channels) !== undefined ? { curve: makeCurve(curveKind, channels) } : {}) });
   const put = (prop: BoneProp, value: number[]) => {
@@ -334,6 +343,29 @@ function keyBoneInDraft(d: Draft<Project>, anim: Draft<Animation>, boneId: Id, p
   }
 }
 
+/**
+ * The rotation of a bone with a rotation limit is the control bone's, clamped by the constraint: an edit of that rotation is applied to the control
+ * bone, so dragging past the sector keeps turning the control (the bone waits at the end of its sector and follows as soon as the control is back).
+ */
+function routeLimited(updates: { id: Id; props: PoseProps }[]): { id: Id; props: PoseProps }[] {
+  const doc = skeletonDoc();
+  if (!updates.some((u) => u.props.rotation !== undefined)) return updates;
+  const out: { id: Id; props: PoseProps }[] = [];
+  for (const u of updates) {
+    const limit = u.props.rotation !== undefined ? rotationLimitOf(doc, u.id) : null;
+    if (!limit) {
+      out.push(u);
+      continue;
+    }
+    const { rotation, ...rest } = u.props;
+    if (Object.keys(rest).length) out.push({ id: u.id, props: rest });
+    const existing = out.find((x) => x.id === limit.control);
+    if (existing) existing.props = { ...existing.props, rotation };
+    else out.push({ id: limit.control, props: { rotation } });
+  }
+  return out;
+}
+
 /** Current local pose of a bone (setup + animation + overrides). */
 export function currentPose(id: Id): Required<PoseProps> | null {
   const b = getScene().skeleton.boneById(id);
@@ -348,6 +380,7 @@ export function currentPose(id: Id): Required<PoseProps> | null {
 export function setBonePose(updates: { id: Id; props: PoseProps }[], label = 'Edit pose') {
   const ui = uiStore.get();
   if (!updates.length) return;
+  updates = routeLimited(updates);
   if (ui.mode === 'setup') {
     docStore.update(label, (d) => {
       for (const u of updates) {
@@ -1444,7 +1477,9 @@ export function pasteKeys(time: number): KeyRef[] {
         }
       }
       if (!keys) continue;
-      upsertKey(keys as { time: number }[], { ...c.key, time: t } as { time: number });
+      // a pasted key that says what the key there already says changes nothing, so the curve that was drawn on it stays
+      const there = (keys as { time: number }[]).find((k) => Math.abs(k.time - t) <= KEY_EPS);
+      if (!there || !sameKeyValue(there, c.key)) upsertKey(keys as { time: number }[], { ...c.key, time: t } as { time: number });
       out.push({ kind: c.kind, target: c.target, prop: c.prop, time: t });
     }
     extendDuration(a, Math.max(...out.map((o) => o.time)));

@@ -72,7 +72,7 @@ type AnyKey = { time: number; value?: number[]; curve?: unknown };
  * the original passes through them), so the piece moves like the original did. A timeline of states (attachment, draw order, sequence) starts with
  * the state in force at t0. `events` are only the ones inside: [t0, t1) (the end belongs to the next piece unless it is the last one).
  */
-function cutKeys<T extends AnyKey>(keys: T[], t0: number, t1: number, kind: 'number' | 'state' | 'event', lastPiece: boolean): T[] {
+function cutKeys<T extends AnyKey>(keys: T[], t0: number, t1: number, kind: 'number' | 'colour' | 'state' | 'event', lastPiece: boolean): T[] {
   const inside = keys.filter((k) => k.time >= t0 - EPS && (kind === 'event' && !lastPiece ? k.time < t1 - EPS : k.time <= t1 + EPS));
   const shifted = inside.map((k) => ({ ...structuredClone(k), time: Math.max(0, k.time - t0) }) as T);
   if (kind === 'event' || !keys.length) return shifted;
@@ -84,7 +84,10 @@ function cutKeys<T extends AnyKey>(keys: T[], t0: number, t1: number, kind: 'num
   // numbers: sampled keys at both edges
   const sample = (t: number): number[] | null => {
     const out: number[] = [];
-    return sampleKeys(keys as never, t, out) ? out.slice(0, (keys[0].value ?? []).length) : null;
+    if (!sampleKeys(keys as never, t, out)) return null;
+    const v = out.slice(0, (keys[0].value ?? []).length);
+    // a colour never shows outside 0..1 (and the export cannot write it), so an overshooting curve is cut where the piece starts
+    return kind === 'colour' ? v.map((x) => Math.min(1, Math.max(0, x))) : v;
   };
   if (!inside.some((k) => Math.abs(k.time - t0) < EPS)) {
     const v = sample(t0);
@@ -128,8 +131,9 @@ export function cutAnimation(anim: Animation, t0: number, t1: number, name: stri
   for (const [id, tl] of Object.entries(anim.slots)) {
     const piece: Record<string, AnyKey[]> = {};
     if (tl.attachment) piece.attachment = states(tl.attachment as AnyKey[]);
-    if (tl.rgba) piece.rgba = nums(tl.rgba);
-    if (tl.rgba2) piece.rgba2 = nums(tl.rgba2);
+    const colours = (k: AnyKey[] | undefined) => (k?.length ? cutKeys(k, t0, t1, 'colour', lastPiece) : []);
+    if (tl.rgba) piece.rgba = colours(tl.rgba);
+    if (tl.rgba2) piece.rgba2 = colours(tl.rgba2);
     for (const p of Object.keys(piece)) if (!piece[p].length) delete piece[p];
     if (Object.keys(piece).length) out.slots[id] = piece as never;
   }

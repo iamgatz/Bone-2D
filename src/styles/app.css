@@ -1146,6 +1146,42 @@ textarea {
 .tl-label.child .lbl {
   color: var(--muted);
 }
+.tl-label .tl-mute {
+  display: grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  opacity: 0;
+}
+.tl-label:hover .tl-mute,
+.tl-label .tl-mute.on,
+.tl-label .tl-mute:focus-visible {
+  opacity: 1;
+}
+.tl-label .tl-mute.on {
+  color: var(--animate);
+}
+.tl-label.muted .lbl {
+  text-decoration: line-through;
+  opacity: 0.55;
+}
+.tl-labels-head .tl-unmute {
+  margin-left: 8px;
+  padding: 0 6px;
+  border: 1px solid var(--border-strong);
+  border-radius: 4px;
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-size: 10px;
+  cursor: pointer;
+}
 .tl-canvas-wrap {
   flex: 1;
   min-width: 0;
@@ -1951,4 +1987,10 @@ a.btn {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.tween-slider {
+  flex: 1;
+  min-width: 0;
+  accent-color: var(--animate);
 }

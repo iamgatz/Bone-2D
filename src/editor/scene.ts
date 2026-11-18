@@ -1,5 +1,6 @@
 /** Shared, memoized "what the document looks like right now": the posed skeleton for the current mode/animation/time. */
 import { applyAnimation, applyPhysicsResets } from '@/core/animate';
+import { withoutMuted } from '@/core/mute';
 import type { Animation, Id, SkeletonDoc } from '@/core/model';
 import { compileSkeleton, createSkeleton } from '@/core/skeleton';
 import type { PhysicsMode, Skeleton, SkeletonData } from '@/core/skeleton';
@@ -20,6 +21,7 @@ let cache: {
   anim: Animation | null;
   time: number;
   overrides: Record<Id, PoseOverride>;
+  muted: string[];
   scene: Scene;
 } | null = null;
 
@@ -39,12 +41,12 @@ export function getScene(): Scene {
   const time = anim ? ui.time : 0;
   const overrides = ui.mode === 'animate' ? ui.overrides : EMPTY;
   const c = cache;
-  if (c && c.doc === doc && c.skinId === ui.skinId && c.anim === anim && c.time === time && c.overrides === overrides) return c.scene;
+  if (c && c.doc === doc && c.skinId === ui.skinId && c.anim === anim && c.time === time && c.overrides === overrides && c.muted === ui.muted) return c.scene;
 
   const data = compileSkeleton(doc);
   const reuse = !!c && c.scene.data === data && c.skinId === ui.skinId;
   const skeleton = reuse ? c!.scene.skeleton : createSkeleton(data, ui.skinId && doc.skins.some((s) => s.id === ui.skinId) ? ui.skinId : null);
-  applyAnimation(skeleton, anim, time);
+  applyAnimation(skeleton, anim && ui.muted.length ? withoutMuted(anim, new Set(ui.muted)) : anim, time);
   for (const id in overrides) {
     const b = skeleton.boneById(id);
     if (!b) continue;
@@ -82,7 +84,7 @@ export function getScene(): Scene {
   }
   skeleton.updateWorldTransform(physics);
   const scene: Scene = { doc, data, skeleton, animation: anim };
-  cache = { doc, skinId: ui.skinId, anim, time, overrides, scene };
+  cache = { doc, skinId: ui.skinId, anim, time, overrides, muted: ui.muted, scene };
   return scene;
 }
 

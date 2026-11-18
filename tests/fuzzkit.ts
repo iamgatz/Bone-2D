@@ -31,6 +31,10 @@ import * as AX from '../src/store/axisActions';
 import * as SPL from '../src/store/splitActions';
 import * as MK from '../src/store/markerActions';
 import * as AT from '../src/store/animToolActions';
+import * as LIM from '../src/store/limitActions';
+import * as CH from '../src/store/chainActions';
+import { rotationLimits } from '../src/core/limits';
+import { chainBones, CHAIN_PARAMS, CHAIN_SHAPES } from '../src/core/chains';
 import { skeletonCount } from '../src/core/skeletons';
 import * as I from '../src/store/ikActions';
 import * as MX from '../src/store/mixActions';
@@ -161,6 +165,22 @@ export const ops: Op[] = [
   { name: 'setBoneProps', run: (c) => { const b = c.pick(doc().bones)!; A.setBoneProps(b.id, { length: c.num(0, 120), inherit: c.pick(INHERIT_MODES)!, hidden: c.chance(0.2) }); } },
   { name: 'setBonePose', run: (c) => { const b = c.pick(doc().bones)!; A.setBonePose([{ id: b.id, props: c.chance(0.5) ? { rotation: c.num(-180, 180) } : { x: c.num(-100, 100), y: c.num(-100, 100), scaleX: c.num(-2, 2), scaleY: c.num(0.2, 2), shearX: c.num(-30, 30) } }]); } },
   { name: 'splitBone', run: (c) => { A.setMode('setup'); const b = c.pick(doc().bones)!; SPL.splitBone(b.id, 2 + Math.floor(c.r() * 3), { nested: c.chance(0.7), fibonacci: c.chance(0.3), weights: c.pick(['keep', 'split', 'blend'] as const) }); } },
+  { name: 'rotationLimit', run: (c) => {
+    A.setMode(c.chance(0.7) ? 'setup' : 'animate');
+    const k = c.r();
+    const limits = rotationLimits(doc());
+    if (k < 0.45) LIM.addLimit(c.pick(doc().bones)!.id, c.num(10, 120));
+    else if (k < 0.6 && limits.length) LIM.removeLimit(c.pick(limits)!.bone);
+    else if (k < 0.8 && limits.length) { const l = c.pick(limits)!; const lo = c.num(-170, 0); LIM.setLimit(l.bone, lo, lo + c.num(5, 180)); }
+    else if (limits.length) { const l = c.pick(limits)!; A.setBonePose([{ id: c.chance(0.5) ? l.bone : l.control, props: { rotation: c.num(-300, 300) } }]); }
+  } },
+  { name: 'tween', run: (c) => { A.setMode('animate'); A.setTime(c.num(0, 2)); A.selectBone(c.pick(doc().bones)!.id); AT.tweenSelected(c.num(-0.3, 1.3)); } },
+  { name: 'swapSides', run: (c) => { A.setMode(c.chance(0.6) ? 'animate' : 'setup'); if (c.chance(0.5)) A.selectBone(c.pick(doc().bones)!.id); PO.swapSides(); } },
+  { name: 'chainCurve', run: (c) => {
+    A.setMode('setup');
+    const ids = chainBones(doc(), [c.pick(doc().bones)!.id]);
+    CH.applyChainCurve(ids, { param: c.pick(CHAIN_PARAMS)!, from: c.num(-1, 400), to: c.num(-1, 400), shape: c.pick(CHAIN_SHAPES)!, power: c.num(0.25, 6), create: c.chance(0.7) });
+  } },
   { name: 'marker', run: (c) => { A.setMode('animate'); A.setTime(c.num(0, 2)); const id = MK.addMarkerAtPlayhead(); MK.closeMarkerDialog(); if (id && c.chance(0.3)) MK.splitAtMarkersAction(); else if (id && c.chance(0.3)) MK.deleteMarker(id); } },
   { name: 'animTool', run: (c) => { A.setMode('animate'); const k = c.r(); if (k < 0.4) AT.mirrorCurrentCycle({ flipCentre: c.chance(0.5) }); else if (k < 0.7) AT.hideUnkeyedBones(); else AT.wiggleSelected({ amount: c.num(0, 5), every: 1 + Math.floor(c.r() * 6), seed: Math.floor(c.r() * 100), smooth: c.chance(0.5), keepEnds: c.chance(0.5) }); } },
   { name: 'splitAxes', run: (c) => { A.setMode('animate'); AX.setAxesSplit([c.pick(doc().bones)!.id], c.pick(['translate', 'scale', 'shear'] as const)!, c.chance(0.7)); } },

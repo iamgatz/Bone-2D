@@ -117,6 +117,8 @@ export interface UiState {
   selectedKeys: string[];
   /** Expanded entity rows in the dopesheet. */
   expanded: Record<string, boolean>;
+  /** Bones, slots and constraints whose timelines the editor does not play (Mute; kept for the session, never saved or exported). */
+  muted: string[];
   brush: WeightBrush;
   weightView: WeightView;
   meshView: MeshView;
@@ -161,6 +163,7 @@ export const uiStore = createStore<UiState>({
   tlScroll: -0.05,
   selectedKeys: [],
   expanded: {},
+  muted: [],
   brush: { size: 40, strength: 0.5, mode: 'add', bone: null, feather: 100, locked: [] },
   weightView: { pies: false, overlay: false, selected: false },
   meshView: { wireframe: true, dim: false, isolate: false, freeze: false },
