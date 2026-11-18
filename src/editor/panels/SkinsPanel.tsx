@@ -1,8 +1,9 @@
 import { useMemo, useState } from 'react';
-import { Copy, Layers, Lock, LockOpen, Palette, Pencil, Plus, Trash2, Link2, Bone as BoneIcon } from 'lucide-react';
-import type { Bone, Constraint, Id, SkeletonDoc, Skin } from '@/core/model';
+import { Copy, FolderInput, Layers, Lock, LockOpen, Palette, Pencil, Plus, Trash2, Link2, Bone as BoneIcon } from 'lucide-react';
+import type { Bone, Constraint, Id, Project, SkeletonDoc, Skin } from '@/core/model';
 import { overrideCount, overrideState } from '@/core/skins';
-import { createSkin, deleteSkin, duplicateSkinAction, renameSkin, setActiveSkin, toggleSkinMix, setSkinRequiredAction, setSkinScopeAction, toggleSkinOverride } from '@/store/actions';
+import { planSkinImages, suggestSkinPrefixes } from '@/core/skinImages';
+import { createSkin, createSkinFromImages, deleteSkin, duplicateSkinAction, renameSkin, setActiveSkin, toggleSkinMix, setSkinRequiredAction, setSkinScopeAction, toggleSkinOverride } from '@/store/actions';
 import { useProject } from '@/store/doc';
 import { useUi } from '@/store/ui';
 import { IconButton } from '../ui/controls';
@@ -44,6 +45,42 @@ function ScopeRow(props: { kind: 'bone' | 'constraint'; id: Id; name: string; ic
   );
 }
 
+/** Makes a skin from the pictures that carry a prefix: the prefixes the pictures suggest, or one typed. */
+function SkinFromImages({ doc, images, onDone }: { doc: SkeletonDoc; images: Project['images']; onDone: () => void }) {
+  const [prefix, setPrefix] = useState('');
+  const suggestions = useMemo(() => suggestSkinPrefixes(doc, images), [doc, images]);
+  const fits = useMemo(() => planSkinImages(doc, images, prefix).length, [doc, images, prefix]);
+  const make = (p: string) => {
+    if (createSkinFromImages(p)) onDone();
+  };
+  return (
+    <div className="skin-from">
+      <div className="hint-text skin-hint">A picture named like an attachment with a prefix in front (arctic/head, arctic-head) becomes the picture of that attachment in the skin arctic.</div>
+      {suggestions.length > 0 && (
+        <span className="skin-chips">
+          {suggestions.map((s) => (
+            <button key={s.prefix} type="button" className="chip skin-chip" data-tip="Make a skin from the pictures with this prefix" onClick={() => make(s.prefix)}>
+              {`${s.prefix} · ${s.count}`}
+            </button>
+          ))}
+        </span>
+      )}
+      <input
+        value={prefix}
+        placeholder="Prefix of the pictures"
+        aria-label="Prefix of the pictures"
+        style={{ width: '100%' }}
+        onChange={(e) => setPrefix(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') make(prefix);
+          e.stopPropagation();
+        }}
+      />
+      {prefix.trim() !== '' && <div className="hint-text skin-hint">{`Attachments that get a picture: ${fits}`}</div>}
+    </div>
+  );
+}
+
 /**
  * The Skins window (Spine's Skins view): the skins, what the chosen one overrides from the default skin, and its scope — the bones and
  * constraints that exist only in some skins (a skin with a different outfit, a hat, a second tail).
@@ -54,6 +91,7 @@ export function SkinsPanel() {
   const skinId = useUi((s) => s.skinId);
   const skinMix = useUi((s) => s.skinMix);
   const [renaming, setRenaming] = useState<string | null>(null);
+  const [fromImages, setFromImages] = useState(false);
   const defaultSkin = doc.skins[0];
   const current = doc.skins.find((s) => s.id === skinId) ?? defaultSkin;
   const isDefault = current === defaultSkin;
@@ -74,9 +112,11 @@ export function SkinsPanel() {
       <div className="panel-head">
         <span className="title">Skins</span>
         <IconButton icon={Copy} title="Duplicate skin" small disabled={isDefault} onClick={() => duplicateSkinAction(current.id)} />
+        <IconButton icon={FolderInput} title="Skin from pictures: the pictures that carry a prefix become the pictures of a new skin" small active={fromImages} onClick={() => setFromImages(!fromImages)} />
         <IconButton icon={Plus} title="New skin" small onClick={() => createSkin()} />
       </div>
       <div className="panel-body">
+        {fromImages && <SkinFromImages doc={doc} images={project.images} onDone={() => setFromImages(false)} />}
         {doc.skins.map((s, i) => (
           <div key={s.id} className={`row${s === current ? ' selected' : ''}`} onClick={() => setActiveSkin(i === 0 ? null : s.id)} onDoubleClick={() => i > 0 && setRenaming(s.id)}>
             <span className="ico">

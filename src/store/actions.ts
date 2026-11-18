@@ -23,9 +23,10 @@ import { commonShift, isPsd, layerCenter, readPsdFile } from '@/core/import/psd'
 import type { PsdLayer, PsdPixels } from '@/core/import/psd';
 import { fitRegion, planPsdSync } from '@/core/import/psdSync';
 import { cleanImageName, renameImage, sequenceFrameOwner, unusedImages } from '@/core/images';
+import { applySkinPicks, planSkinImages, putSkinImage } from '@/core/skinImages';
 import { skeletonList } from '@/core/skeletons';
 import { rotationLimitOf } from '@/core/limits';
-import type { Animation, AxisGroup, Bone, BoneProp, Id, ImageRef, Inherit, Key, PlaySettings, Project, RGB, RGBA, Slot } from '@/core/model';
+import type { Animation, AxisGroup, Bone, BoneProp, Id, ImageRef, Inherit, Key, PlaySettings, Project, RGB, RGBA, SkeletonDoc, Slot } from '@/core/model';
 import { getScene, getSetupSkeleton } from '@/editor/scene';
 import { assets } from './assets';
 import type { ImageAsset } from './assets';
@@ -1235,34 +1236,30 @@ export function setSkinImage(skinId: Id, slotId: Id, placeholder: string, imageN
   const img = project().images.find((i) => i.name === imageName);
   if (!img) return;
   docStore.update('Skin image', (d) => {
-    const def = d.skeleton.skins[0].attachments[slotId]?.[placeholder];
-    const skin = d.skeleton.skins.find((s) => s.id === skinId);
-    if (!skin || !def) return;
-    if (def.type === 'mesh') {
-      // a mesh keeps its shape, weights and deform: the skin gets a linked mesh that has the picture of its own
-      const source = def.link ? null : def;
-      if (!source) return;
-      const shape = structuredClone(current(source));
-      delete shape.sequence; // one picture
-      delete shape.region;
-      (skin.attachments[slotId] ??= {})[placeholder] = { ...shape, name: placeholder, path: img.name, color: [1, 1, 1, 1], link: makeLink(d.skeleton, slotId, { skinId: d.skeleton.skins[0].id, slotId, name: placeholder }) };
-      return;
-    }
-    const base = def.type === 'region' ? def : { x: 0, y: 0, rotation: 0, scaleX: 1, scaleY: 1 };
-    (skin.attachments[slotId] ??= {})[placeholder] = {
-      type: 'region',
-      name: placeholder,
-      path: img.name,
-      x: base.x,
-      y: base.y,
-      rotation: base.rotation,
-      scaleX: base.scaleX,
-      scaleY: base.scaleY,
-      width: img.width,
-      height: img.height,
-      color: [1, 1, 1, 1],
-    };
+    putSkinImage(d.skeleton as SkeletonDoc, skinId, slotId, placeholder, img);
   });
+}
+
+/**
+ * Makes the skin of a prefix from the pictures that carry it ("arctic/head", "arctic-head" -> the skin "arctic" shows that picture where the
+ * default skin has "head"). A skin of that name that already exists gets the new pictures. One step in the history. Returns the skin, or null
+ * when no picture of the prefix fits an attachment.
+ */
+export function createSkinFromImages(prefix: string): Id | null {
+  const picks = planSkinImages(skeletonDoc(), project().images, prefix);
+  if (!picks.length) {
+    toast('No picture with that prefix fits an attachment', 'error');
+    return null;
+  }
+  let result = { skinId: '' as Id, placed: 0 };
+  docStore.update('Skin from images', (d) => {
+    result = applySkinPicks(d.skeleton as SkeletonDoc, prefix, picks, d.images as ImageRef[]);
+  });
+  if (!result.placed) return null;
+  setActiveSkin(result.skinId);
+  const odd = picks.filter((p) => p.sizeDiffers).length;
+  toast(odd ? `Skin made from ${result.placed} pictures; ${odd} of a different size than the mesh` : `Skin made from ${result.placed} pictures`, odd ? 'info' : 'ok');
+  return result.skinId;
 }
 
 /**
