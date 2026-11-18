@@ -10,6 +10,7 @@ import { uiStore, useUi } from '@/store/ui';
 import { boneCss, boundBones } from '../viewport/weightColors';
 import { Button, ColorSwatch, IconButton, NumberField, SelectField, Toggle } from '../ui/controls';
 import { Field } from '../ui/Field';
+import { SoftControls } from './SoftControls';
 import { Section } from '../ui/Section';
 
 export function ConvertToMeshGroup({ slotId, name }: { slotId: Id; name: string }) {
@@ -145,7 +146,6 @@ export function MeshGroup({ slotId, att, part }: { slotId: Id; att: MeshAttachme
                 ['dim', 'Dim', 'Dim everything outside this mesh'],
                 ['isolate', 'Isolate', 'Hide everything outside this mesh'],
                 ['freeze', 'Freeze', 'The vertices cannot be dragged, only selected'],
-                ['soft', 'Soft', 'Soft selection: dragging the selected vertices also pulls the ones near them, less and less with the distance'],
               ] as const
             ).map(([key, label, title]) => (
               <Button key={key} primary={meshView[key]} title={title} onClick={() => uiStore.patch({ meshView: { ...meshView, [key]: !meshView[key] } })}>
@@ -154,24 +154,7 @@ export function MeshGroup({ slotId, att, part }: { slotId: Id; att: MeshAttachme
             ))}
           </div>
         )}
-        {tool === 'mesh' && meshView.soft && (
-          <>
-            <Field label="Soft radius">
-              <NumberField label="px" value={meshView.softRadius} step={5} precision={0} min={1} max={2000} onChange={(v) => uiStore.patch({ meshView: { ...meshView, softRadius: v } })} />
-            </Field>
-            <Field label="Soft falloff">
-              <SelectField
-                value={meshView.softShape}
-                options={[
-                  { value: 'smooth', label: 'Smooth' },
-                  { value: 'linear', label: 'Linear' },
-                  { value: 'sharp', label: 'Sharp' },
-                ]}
-                onChange={(v) => uiStore.patch({ meshView: { ...meshView, softShape: v } })}
-              />
-            </Field>
-          </>
-        )}
+        {tool === 'mesh' && <SoftControls />}
         {linked && att.link && <LinkedMeshFields skinId={project.skeleton.skins[0].id} slotId={slotId} name={att.name} mesh={att} />}
         {setup && !linked && (
           <>
@@ -317,6 +300,18 @@ export function MeshGroup({ slotId, att, part }: { slotId: Id; att: MeshAttachme
               </Field>
               <Field label="Feather">
                 <NumberField label="%" value={brush.feather} step={5} precision={0} min={0} max={100} onChange={(v) => uiStore.patch({ brush: { ...brush, feather: Math.max(0, Math.min(100, v)) } })} title="How much of the brush size fades out: 100% from the centre, 0% a hard edge" />
+              </Field>
+              <Field label="Fade">
+                <SelectField
+                  value={brush.shape ?? 'soft'}
+                  options={[
+                    { value: 'soft', label: 'Soft' },
+                    { value: 'linear', label: 'Linear' },
+                    { value: 'smooth', label: 'Smooth' },
+                    { value: 'sharp', label: 'Sharp' },
+                  ]}
+                  onChange={(v) => uiStore.patch({ brush: { ...brush, shape: v } })}
+                />
               </Field>
               <Field label="Strength">
                 <NumberField label="%" value={brush.strength * 100} step={1} precision={0} min={1} max={100} onChange={(v) => uiStore.patch({ brush: { ...brush, strength: v / 100 } })} />

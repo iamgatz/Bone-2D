@@ -12,6 +12,20 @@ export interface Release {
 
 export const CHANGELOG: Release[] = [
   {
+    version: '0.46',
+    date: '2026-11-19',
+    en: [
+      "Constraint arrows (View → Constraint arrows): an arrow from what drives each constraint (an IK target, a transform source, a slider's bone) to every bone it moves, labelled with the name and strength; paths and physics get a ring on their bones. Select a bone or a constraint and only the ones that touch it stay bright, the rest fade.",
+      "Weight brush Fade: soft (as before), linear, smooth or sharp falloff inside the feather zone, for a gentler or harder paint.",
+      "Soft selection also works for the vertices of clipping polygons and bounding boxes; the Soft controls moved into one place that both inspectors share."
+    ],
+    ru: [
+      "Стрелки констрейнтов (View → «Стрелки констрейнтов»): стрелка от того, что ведёт констрейнт (цель IK, источник transform, кость слайдера), к каждой кости, которую он двигает, с именем и силой; у путей и физики кольцо на костях. Выберите кость или констрейнт, и ярко остаются только те, что с ней связаны, остальные тускнеют.",
+      "Спад кисти весов («Спад кисти»): мягкий (как раньше), линейный, сглаженный или резкий спад внутри зоны растушёвки, для более мягкой или жёсткой покраски.",
+      "Мягкое выделение работает и для вершин clipping-полигонов и bounding box; элементы «Мягко» собраны в одном месте, общем для обоих инспекторов."
+    ],
+  },
+  {
     version: '0.45',
     date: '2026-11-19',
     en: [

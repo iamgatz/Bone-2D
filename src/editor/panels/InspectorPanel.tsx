@@ -1,3 +1,4 @@
+import { SoftControls } from './SoftControls';
 import { Bone as BoneIcon, BoxSelect, Crosshair, Image as ImageIcon, Layers, Link2, Scissors, Spline, Triangle, X } from 'lucide-react';
 import { useState } from 'react';
 import { createTransformConstraint, PRESET_LABEL } from '@/store/transformActions';
@@ -494,6 +495,7 @@ function PolygonInspector({ slotId, att, disabled }: { slotId: Id; att: PolygonA
           Edit vertices
         </Button>
       )}
+      {!disabled && tool === 'mesh' && <SoftControls />}
       <p className="hint-text mt">Drag vertices · Ctrl-click or double-click an edge adds one · Del removes the selected vertices.</p>
     </Section>
   );

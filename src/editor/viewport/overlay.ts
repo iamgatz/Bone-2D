@@ -3,6 +3,7 @@ import type { Id } from '@/core/model';
 import type { Bone } from '@/core/skeleton';
 import { REGION_TRIANGLES } from '@/core/skeleton';
 import type { TransformConstraintRT } from '@/core/skeleton';
+import { constraintLinks, focusLinks, linkLabel } from '@/core/constraintInfo';
 import { gridStep } from '@/core/snap';
 import { docStore } from '@/store/doc';
 import { settingsStore } from '@/store/settings';
@@ -595,6 +596,79 @@ export function drawInteraction(o: OverlayInput) {
   }
 }
 
+/** Constraint debug: an arrow from what drives each constraint to every bone it moves, labelled with the name and strength. */
+export function drawConstraintInfo(o: OverlayInput) {
+  const { ctx, w, h, cam, scene, ui } = o;
+  const links = constraintLinks(scene.skeleton);
+  const focus = focusLinks(links, ui.selection.constraint, ui.selection.bones);
+  const screen = (b: Bone): [number, number] => worldToScreen(cam, w, h, b.worldX, b.worldY);
+  ctx.save();
+  ctx.font = '11px Inter Variable, Inter, system-ui, sans-serif';
+  ctx.textBaseline = 'middle';
+  for (const l of links) {
+    const on = focus.has(l.id);
+    ctx.globalAlpha = on ? 1 : 0.2;
+    const color = token(`--kind-${l.kind}`) || COLORS.ik;
+    ctx.strokeStyle = color;
+    ctx.fillStyle = color;
+    ctx.lineWidth = on ? 2 : 1.2;
+    ctx.setLineDash([]);
+    let lx = 0;
+    let ly = 0;
+    let count = 0;
+    for (const b of l.driven) {
+      const [bx, by] = screen(b);
+      lx += bx;
+      ly += by;
+      count++;
+      if (!l.driver) {
+        ctx.beginPath();
+        ctx.arc(bx, by, on ? 7 : 5, 0, Math.PI * 2);
+        ctx.stroke();
+        continue;
+      }
+      const [dx, dy] = screen(l.driver);
+      const len = Math.hypot(bx - dx, by - dy);
+      if (len < 4) continue;
+      // the arrow runs from the driver to the bone and stops a little short of it so the head is not lost under the bone
+      const ux = (bx - dx) / len;
+      const uy = (by - dy) / len;
+      const ex = bx - ux * 6;
+      const ey = by - uy * 6;
+      ctx.beginPath();
+      ctx.moveTo(dx, dy);
+      ctx.lineTo(ex, ey);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(ex + ux * 6, ey + uy * 6);
+      ctx.lineTo(ex - uy * 4, ey + ux * 4);
+      ctx.lineTo(ex + uy * 4, ey - ux * 4);
+      ctx.closePath();
+      ctx.fill();
+    }
+    if (l.driver) {
+      const [dx, dy] = screen(l.driver);
+      ctx.beginPath();
+      ctx.arc(dx, dy, on ? 4.5 : 3, 0, Math.PI * 2);
+      ctx.fill();
+      lx += dx;
+      ly += dy;
+      count++;
+    }
+    if (!on || !count) continue;
+    const text = linkLabel(l);
+    const tw = ctx.measureText(text).width;
+    const x = lx / count;
+    const y = ly / count;
+    ctx.globalAlpha = 1;
+    ctx.fillStyle = alpha('--bg', 0.8);
+    ctx.fillRect(x - tw / 2 - 4, y - 8, tw + 8, 16);
+    ctx.fillStyle = color;
+    ctx.fillText(text, x - tw / 2, y);
+  }
+  ctx.restore();
+}
+
 export function drawOverlay(o: OverlayInput) {
   const { ctx, w, h, ui } = o;
   ctx.clearRect(0, 0, w, h);
@@ -604,6 +678,7 @@ export function drawOverlay(o: OverlayInput) {
   o.under?.(o);
   if (ui.view.bones) drawBones(o);
   if (ui.view.constraints) drawConstraints(o);
+  if (ui.view.constraintInfo) drawConstraintInfo(o);
   drawTrails(o);
   o.extra?.(o);
   drawGizmo(o);

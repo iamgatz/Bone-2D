@@ -4,6 +4,7 @@ import { meshWorldPositions } from '../src/core/mesh';
 import { softFalloff, softMoves, softWeights } from '../src/core/soft';
 import * as M from '../src/store/meshActions';
 import * as A from '../src/store/actions';
+import * as P from '../src/store/polygonActions';
 import { docStore } from '../src/store/doc';
 import { buildFixture } from './fixture';
 
@@ -105,4 +106,27 @@ describe('a soft drag of a mesh', () => {
       }
     });
   }
+});
+
+describe('a soft drag of a clipping polygon', () => {
+  it('moves the vertices near the selected one by their share, the far ones not at all', () => {
+    const { project } = buildFixture();
+    docStore.replace(project);
+    A.selectBone(project.skeleton.bones[0].id);
+    const made = P.createPolygon('clipping', [[0, 0], [100, 0], [100, 100], [0, 100], [50, 160]])!;
+    expect(made).not.toBeNull();
+    const poly = () => P.getPolygon(made.slotId, made.name)!;
+    const before = Array.from(poly().vertices);
+    const weights = softWeights(before, [0], 120, 'linear');
+    expect(weights.has(2)).toBe(false);
+    P.movePolygonVertices(made.slotId, made.name, softMoves(before, weights, 20, 0));
+    const after = poly().vertices;
+    const root = project.skeleton.bones[0];
+    expect(root.rotation).toBe(0);
+    for (let i = 0; i < before.length / 2; i++) {
+      const w = weights.get(i) ?? 0;
+      expect(after[i * 2] - before[i * 2]).toBeCloseTo(20 * w, 3);
+      expect(after[i * 2 + 1] - before[i * 2 + 1]).toBeCloseTo(0, 3);
+    }
+  });
 });
