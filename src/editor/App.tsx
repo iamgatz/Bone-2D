@@ -191,6 +191,7 @@ function TopBar() {
             <MenuItem close={close} icon={ImageIcon} checked={view.images} onClick={() => uiStore.patch({ view: { ...view, images: !view.images } })}>Images</MenuItem>
             <MenuItem close={close} icon={Bone} checked={view.bones} onClick={() => uiStore.patch({ view: { ...view, bones: !view.bones } })}>Bones</MenuItem>
             <MenuItem close={close} icon={Link2} checked={view.constraints} onClick={() => uiStore.patch({ view: { ...view, constraints: !view.constraints } })}>Constraints</MenuItem>
+            <MenuItem close={close} icon={Route} checked={view.constraintInfo} onClick={() => uiStore.patch({ view: { ...view, constraintInfo: !view.constraintInfo } })}>Constraint arrows</MenuItem>
             <MenuItem close={close} icon={BoxSelect} checked={view.outlines} onClick={() => uiStore.patch({ view: { ...view, outlines: !view.outlines } })}>Clips, boxes &amp; points</MenuItem>
             <MenuItem close={close} icon={Layers} checked={view.onion} onClick={() => uiStore.patch({ view: { ...view, onion: !view.onion } })}>Onion skin</MenuItem>
             <MenuItem close={close} icon={Ruler} checked={view.rulers} onClick={() => uiStore.patch({ view: { ...view, rulers: !view.rulers } })}>Rulers and guides</MenuItem>

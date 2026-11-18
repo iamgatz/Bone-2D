@@ -1,4 +1,5 @@
 /** Viewport behaviour for clipping polygons, bounding boxes and point attachments: creating them and editing polygon vertices. */
+import { softMoves, softWeights } from '@/core/soft';
 import { meshWorldVertices, pointWorld } from '@/core/skeleton';
 import type { Id, PolygonAttachment } from '@/core/model';
 import { setSelection } from '@/store/actions';
@@ -34,7 +35,7 @@ interface Draft {
 }
 
 type Drag =
-  | { kind: 'vertices'; moves: Map<number, [number, number]>; p0: [number, number] }
+  | { kind: 'vertices'; start: Float32Array; weights: Map<number, number>; p0: [number, number] }
   | { kind: 'marquee'; x0: number; y0: number; x1: number; y1: number; base: number[] };
 
 const rgba = (c: ArrayLike<number>, a: number) => `rgba(${Math.round(c[0] * 255)},${Math.round(c[1] * 255)},${Math.round(c[2] * 255)},${a})`;
@@ -144,10 +145,10 @@ export class PolygonTool {
       else vertices = cur.includes(hit) ? cur : [hit];
       setSelection({ ...ui.selection, vertices });
       if (!vertices.includes(hit)) return true;
-      const moves = new Map<number, [number, number]>();
-      for (const v of vertices) moves.set(v, [geo.vertices[v * 2], geo.vertices[v * 2 + 1]]);
+      const start = geo.vertices.slice(0, geo.count * 2);
+      const weights = softWeights(start, vertices, ui.meshView.soft ? ui.meshView.softRadius : 0, ui.meshView.softShape);
       docStore.beginGesture('Move vertices');
-      this.drag = { kind: 'vertices', moves, p0: [wx, wy] };
+      this.drag = { kind: 'vertices', start, weights, p0: [wx, wy] };
       return true;
     }
     if (e.ctrlKey || e.metaKey || e.detail >= 2) {
@@ -183,7 +184,7 @@ export class PolygonTool {
     if (d.kind === 'vertices') {
       const dx = wx - d.p0[0];
       const dy = wy - d.p0[1];
-      movePolygonVertices(ap.slotId, ap.name, [...d.moves].map(([index, p]) => ({ index, x: p[0] + dx, y: p[1] + dy })));
+      movePolygonVertices(ap.slotId, ap.name, softMoves(d.start, d.weights, dx, dy));
     } else {
       d.x1 = wx;
       d.y1 = wy;
@@ -287,6 +288,8 @@ export class PolygonTool {
         ctx.setLineDash([]);
         if (selected && editing) {
           const sel = new Set(ui.selection.vertices);
+          // soft selection: the vertices that follow the selected ones (the weights of the drag while one is going)
+          const soft = this.drag?.kind === 'vertices' ? this.drag.weights : ui.meshView.soft && sel.size ? softWeights(v, ui.selection.vertices, ui.meshView.softRadius, ui.meshView.softShape) : null;
           for (let i = 0; i < n; i++) {
             const [x, y] = worldToScreen(cam, w, h, v[i * 2], v[i * 2 + 1]);
             const on = sel.has(i);
@@ -299,6 +302,13 @@ export class PolygonTool {
             ctx.rect(x - r, y - r, r * 2, r * 2);
             ctx.fill();
             ctx.stroke();
+            const pull = !on ? soft?.get(i) : undefined;
+            if (pull) {
+              ctx.fillStyle = alpha('--accent', 0.25 + 0.7 * pull);
+              ctx.beginPath();
+              ctx.arc(x, y, 3 + 6 * pull, 0, Math.PI * 2);
+              ctx.fill();
+            }
           }
         }
       }

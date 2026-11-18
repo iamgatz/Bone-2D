@@ -1,4 +1,5 @@
 import type { Id } from '@/core/model';
+import type { BrushShape } from '@/core/brush';
 import type { SoftShape } from '@/core/soft';
 import { createStore, useStore } from './store';
 import { DEFAULT_VIEWS, loadLayout } from './layout';
@@ -39,6 +40,8 @@ export interface ViewOptions {
   meshes: boolean;
   names: boolean;
   constraints: boolean;
+  /** Constraint debug: arrows from what drives a constraint to the bones it moves, with its name and strength; the ones that do not touch the selection fade. */
+  constraintInfo: boolean;
   /** Outlines of clipping polygons, bounding boxes and point attachments. */
   outlines: boolean;
   /** Draw bones over images (otherwise behind). */
@@ -67,6 +70,8 @@ export interface WeightBrush {
   bone: Id | null;
   /** Percent of the size over which the brush fades to nothing (100 = from the centre, 0 = a hard edge). */
   feather: number;
+  /** How the brush fades inside the feather zone (soft when missing). */
+  shape?: BrushShape;
   /** Bones whose weights the brush leaves alone. */
   locked: Id[];
 }
@@ -167,7 +172,7 @@ export const uiStore = createStore<UiState>({
   camera: { x: 0, y: 120, zoom: 1.2 },
   skinId: null,
   skinMix: [],
-  view: { grid: true, images: true, bones: true, meshes: true, names: false, constraints: true, outlines: true, bonesOnTop: true, onion: false, trails: false, rulers: false, snap: false },
+  view: { grid: true, images: true, bones: true, meshes: true, names: false, constraints: true, constraintInfo: false, outlines: true, bonesOnTop: true, onion: false, trails: false, rulers: false, snap: false },
   overrides: {},
   timelineView: 'dopesheet',
   tlZoom: 220,
