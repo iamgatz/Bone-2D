@@ -569,6 +569,8 @@ export const ops: Op[] = [
     else if (k === 6) M.removeBoneFromMeshes(bone);
     else { uiStore.patch({ brush: { size: c.num(10, 300), strength: c.num(0.1, 1), mode: 'add', bone, feather: 100, locked: [] } }); M.paintWeightsGroup({ x: c.num(-100, 100), y: c.num(-100, 100) }, bone); }
   } },
+  { name: 'pasteHold', run: (c) => { const a = A.currentAnimation(); if (!a) return; const refs = allKeyRefs(a).filter((r) => r.kind !== 'drawOrder' && r.kind !== 'drawOrderFolder'); const k = c.pick(refs); if (!k) return; A.copyKeys([k]); A.pasteKeys(c.r() * a.duration, true); } },
+  { name: 'flipView', run: () => { A.flipViewport(); } },
   { name: 'fixProblems', run: (c) => { const w = c.pick(projectWarnings(project()).filter(canFix)); if (c.chance(0.5) || !w) PRB.fixAllSafeWarnings(); else PRB.fixWarning(w); } },
   // ---- history
   { name: 'undo', run: () => docStore.undo() },

@@ -22,6 +22,8 @@ export interface CameraView {
   /** canvas size in device pixels */
   width: number;
   height: number;
+  /** The picture is mirrored left to right (Flip Viewport). */
+  flip?: boolean;
 }
 
 const VS = `#version 300 es
@@ -219,7 +221,7 @@ export class GLRenderer {
     gl.useProgram(this.program);
     gl.bindVertexArray(this.vao);
     gl.uniform2f(this.uCenter, cam.x, cam.y);
-    gl.uniform2f(this.uScale, (2 * cam.scale) / cam.width, (2 * cam.scale) / cam.height);
+    gl.uniform2f(this.uScale, ((cam.flip ? -2 : 2) * cam.scale) / cam.width, (2 * cam.scale) / cam.height);
     this.vCount = 0;
     this.iCount = 0;
     this.curTex = null;

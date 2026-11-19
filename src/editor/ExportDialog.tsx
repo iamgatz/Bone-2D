@@ -22,7 +22,7 @@ export function ExportDialog() {
   const picked = many && /^\d+$/.test(which) ? Math.min(Number(which), skeletons.length - 1) : undefined;
   const doc = picked !== undefined ? skeletons[picked] : project.skeleton;
   const [settings, setSettings] = useState<ExportSettings>(loadExportSettings);
-  const { format, scale, maxSize, padding, pretty, nonessential, pot, includePreview, trim, rotate, filter, mixes, pma, square, alias, multipleOf4, cleanUp, splitColor } = settings;
+  const { format, scale, maxSize, padding, pretty, nonessential, pot, includePreview, trim, rotate, filter, mixes, pma, square, alias, multipleOf4, cleanUp, splitColor, atlasPerSkin } = settings;
   const change = (patch: Partial<ExportSettings>) => setSettings((s) => ({ ...s, ...patch }));
   const [excluded, setExcluded] = useState<string[]>([]);
   const [tab, setTab] = useState<'data' | 'animation'>('data');
@@ -38,14 +38,14 @@ export function ExportDialog() {
     if (tab !== 'data') return;
     setBusy(true);
     setError(null);
-    (all ? buildAllSkeletonsExport : buildSpineExport)({ format, scale, maxSize, padding, pretty, nonessential, pot, includePreview, trim, rotate, filter, pma, square, alias, multipleOf4, cleanUp, splitColor, includeMixes: mixes, excludeAnimations: excluded, skeletonIndex: picked })
+    (all ? buildAllSkeletonsExport : buildSpineExport)({ format, scale, maxSize, padding, pretty, nonessential, pot, includePreview, trim, rotate, filter, pma, square, alias, multipleOf4, cleanUp, splitColor, atlasPerSkin, includeMixes: mixes, excludeAnimations: excluded, skeletonIndex: picked })
       .then((r) => alive && setResult(r))
       .catch((e: Error) => alive && (setError(e.message), setResult(null)))
       .finally(() => alive && setBusy(false));
     return () => {
       alive = false;
     };
-  }, [format, scale, maxSize, padding, pretty, nonessential, pot, includePreview, trim, rotate, filter, pma, square, alias, multipleOf4, cleanUp, splitColor, mixes, excluded, tab, all, picked]);
+  }, [format, scale, maxSize, padding, pretty, nonessential, pot, includePreview, trim, rotate, filter, pma, square, alias, multipleOf4, cleanUp, splitColor, atlasPerSkin, mixes, excluded, tab, all, picked]);
 
   /** One HTML file with the skeleton, the pictures and a player in it: opens offline, for sending to a client. */
   const savePlayer = async () => {
@@ -59,7 +59,7 @@ export function ExportDialog() {
     }
   };
 
-  const needs = engineNeeds(doc, { format, scale, pma, rotate, filter });
+  const needs = engineNeeds(doc, { format, scale, pma, rotate, filter, atlasPerSkin });
   const close = () => uiStore.patch({ exportOpen: false });
   const base = (all ? project.name || 'project' : doc.name || 'skeleton').replace(/[^\w-]+/g, '_');
 
@@ -173,6 +173,8 @@ export function ExportDialog() {
         <Toggle on={pma} onChange={(v) => change({ pma: v })} title="Write the pages with the colour multiplied by the alpha (the atlas says pma:true); the engine must blend that way" />
         <label>Alias identical pictures</label>
         <Toggle on={alias} onChange={(v) => change({ alias: v })} title="Pictures with exactly the same pixels take one place in the atlas" />
+        <label>Atlas per skin</label>
+        <Toggle on={atlasPerSkin} onChange={(v) => change({ atlasPerSkin: v })} title="One atlas for the default skin and one for each other skin (only the pictures the default skin does not use), so a game loads a skin's pictures when it needs them. Nothing changes for a skeleton with one skin" />
         <label>Clean up animations</label>
         <Toggle on={cleanUp} onChange={(v) => change({ cleanUp: v })} title="Leave out the keys that change nothing (a key in the middle of a run of equal values). The project keeps them" />
         <label>Split colour keys</label>

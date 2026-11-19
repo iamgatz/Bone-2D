@@ -71,6 +71,8 @@ export interface Camera {
   y: number;
   /** CSS pixels per world unit. */
   zoom: number;
+  /** Flip Viewport (Spine 4.3): the view is mirrored left to right. Only how the scene is looked at; nothing in the file changes. */
+  flip?: boolean;
 }
 
 export interface WeightBrush {

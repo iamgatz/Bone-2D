@@ -4,7 +4,7 @@ import { scaleSpineJson } from '@/core/export/scale';
 import { exportSpineJson } from '@/core/export/spineJson';
 import { withCleanAnimations } from '@/core/cleanup';
 import { composePage, packAtlas, premultiplyAlpha, writeAtlas } from '@/core/export/atlas';
-import { findAliases, makeRegion, scaledSize, usedImages } from '@/core/export/atlasBuild';
+import { findAliases, makeRegion, scaledSize, skinAtlasGroups, usedImages } from '@/core/export/atlasBuild';
 import type { AtlasFilter, AtlasPage, PackInput } from '@/core/export/atlas';
 import { mixesToText } from '@/core/export/mixes';
 import { createZip } from '@/core/export/zip';
@@ -44,6 +44,8 @@ export interface ExportOptions {
   multipleOf4?: boolean;
   /** Take the keys that change nothing out of the exported animations. */
   cleanUp?: boolean;
+  /** An atlas for the default skin and one for each other skin (see `skinAtlasGroups`). */
+  atlasPerSkin?: boolean;
   /** Write `alpha` / `rgb` timelines where only that part of a colour changes. */
   splitColor?: boolean;
   /** Which skeleton of the project (index in its list; default: the edited one). */
@@ -159,21 +161,36 @@ export async function buildSpineExport(opts: ExportOptions): Promise<ExportResul
 
   let pages: AtlasPage[] = [];
   let preview: string | undefined;
+  // one atlas, or (atlas per skin) one for the default skin and one for each other skin
+  const perSkin = !!opts.atlasPerSkin && full.skins.length > 1;
+  const groups = perSkin ? skinAtlasGroups(full, base) : [{ skinId: '', stem: base, names: inputs.map((i) => i.name) }];
+  const atlasFiles: string[] = [];
   if (inputs.length) {
-    if (opts.alias) {
-      const aliases = findAliases(inputs.map((i) => ({ name: i.name, width: i.width, height: i.height, data: pixels.get(i.name)!, extra: `${i.offsetX ?? 0},${i.offsetY ?? 0},${i.originalWidth ?? i.width},${i.originalHeight ?? i.height}` })));
-      for (const i of inputs) if (aliases.has(i.name)) i.aliasOf = aliases.get(i.name);
-    }
-    pages = packAtlas(inputs, { maxSize: opts.maxSize, padding: opts.padding, pot: opts.pot ?? true, rotate: opts.rotate ?? false, square: opts.square ?? false, multipleOf4: opts.multipleOf4 ?? false });
-    const pageFile = (i: number) => (pages.length === 1 ? `${base}.png` : `${base}-${i + 1}.png`);
-    const atlasText = writeAtlas(pages, pageFile, { pma: !!opts.pma, filter: opts.filter ?? 'Linear' });
-    files.push({ name: `${base}.atlas`, data: enc.encode(atlasText) });
+    const atlasTexts: string[] = [];
     const pngs: { name: string; data: Uint8Array }[] = [];
-    for (const p of pages) {
-      const data = await pageToPng(p, pixels, opts.padding, !!opts.pma);
-      pngs.push({ name: pageFile(p.index), data });
-      files.push({ name: pageFile(p.index), data });
+    for (const group of groups) {
+      const wanted = new Set(group.names);
+      const part = inputs.filter((i) => wanted.has(i.name));
+      if (!part.length) continue;
+      if (opts.alias) {
+        const aliases = findAliases(part.map((i) => ({ name: i.name, width: i.width, height: i.height, data: pixels.get(i.name)!, extra: `${i.offsetX ?? 0},${i.offsetY ?? 0},${i.originalWidth ?? i.width},${i.originalHeight ?? i.height}` })));
+        for (const i of part) if (aliases.has(i.name)) i.aliasOf = aliases.get(i.name);
+      }
+      const groupPages = packAtlas(part, { maxSize: opts.maxSize, padding: opts.padding, pot: opts.pot ?? true, rotate: opts.rotate ?? false, square: opts.square ?? false, multipleOf4: opts.multipleOf4 ?? false });
+      pages = pages.concat(groupPages);
+      const pageFile = (i: number) => (groupPages.length === 1 ? `${group.stem}.png` : `${group.stem}-${i + 1}.png`);
+      const text = writeAtlas(groupPages, pageFile, { pma: !!opts.pma, filter: opts.filter ?? 'Linear' });
+      atlasTexts.push(text);
+      atlasFiles.push(`${group.stem}.atlas`);
+      files.push({ name: `${group.stem}.atlas`, data: enc.encode(text) });
+      for (const p of groupPages) {
+        const data = await pageToPng(p, pixels, opts.padding, !!opts.pma);
+        pngs.push({ name: pageFile(p.index), data });
+        files.push({ name: pageFile(p.index), data });
+      }
     }
+    // the preview plays the whole skeleton: all the atlases in one file (an atlas file may hold any number of pages)
+    const atlasText = atlasTexts.join('\n');
     if (opts.includePreview ?? true) {
       const firstAnim = doc.animations[0]?.name ?? null;
       preview = previewHtml(base, { file: skeletonFile, data: skeletonData, binary }, atlasText, pngs, firstAnim, doc.name || base, !!opts.pma);
@@ -185,7 +202,7 @@ export async function buildSpineExport(opts: ExportOptions): Promise<ExportResul
   if (mixText) files.push({ name: `${base}.mixes.json`, data: enc.encode(mixText) });
   files.push({
     name: 'README.txt',
-    data: enc.encode(`Exported from Bone 2D.\n\n${skeletonFile.padEnd(base.length + 5)}  Spine 4.3 skeleton data (${binary ? 'binary' : 'JSON'})\n${base}.atlas         texture atlas (${opts.pma ? 'premultiplied alpha, pma:true' : 'straight alpha, pma:false'})\n${base}-preview.html  open in a browser: plays the animations with the official Spine 4.3 web player (needs internet for the player script)\n${mixText ? `${base}.mixes.json  crossfade times between animations (defaultMix and setMix of AnimationStateData)\n` : ''}\nLoad with the official Spine 4.3 runtimes (spine-ts, Unity, Godot, ...).\n`),
+    data: enc.encode(`Exported from Bone 2D.\n\n${skeletonFile.padEnd(base.length + 5)}  Spine 4.3 skeleton data (${binary ? 'binary' : 'JSON'})\n${atlasFiles.length > 1 ? `${atlasFiles.join(', ')}  texture atlases, one for the default skin and one for each other skin (load the default one and the one of the skin you show; ${opts.pma ? 'premultiplied alpha, pma:true' : 'straight alpha, pma:false'})` : `${base}.atlas         texture atlas (${opts.pma ? 'premultiplied alpha, pma:true' : 'straight alpha, pma:false'})`}\n${base}-preview.html  open in a browser: plays the animations with the official Spine 4.3 web player (needs internet for the player script)\n${mixText ? `${base}.mixes.json  crossfade times between animations (defaultMix and setMix of AnimationStateData)\n` : ''}\nLoad with the official Spine 4.3 runtimes (spine-ts, Unity, Godot, ...).\n`),
   });
   const zip = createZip(files);
   return { zip, files: files.map((f) => ({ name: f.name, size: f.data.length })), entries: files, pages: pages.length, missing, json, preview };

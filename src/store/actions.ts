@@ -13,7 +13,7 @@ import { cleanUpAnimation } from '@/core/cleanup';
 import { closeLoop } from '@/core/loops';
 import { folderOrderAfterMove } from '@/core/folders';
 import { linkedTo, makeLink } from '@/core/links';
-import { KEY_EPS, findAnimation, freshName, sameKeyValue, makeCurve, normalizeBoneOrder, pruneSequences, purgeAttachment, removeBones, removeSlots, rgba2ToRgba, rgbaToRgba2, setSlotDarkColor, snapTime, upsertKey, decompose } from '@/core/edit';
+import { KEY_EPS, linearBetweenEqual, findAnimation, freshName, sameKeyValue, makeCurve, normalizeBoneOrder, pruneSequences, purgeAttachment, removeBones, removeSlots, rgba2ToRgba, rgbaToRgba2, setSlotDarkColor, snapTime, upsertKey, decompose } from '@/core/edit';
 import type { BoneMats } from '@/core/mesh';
 import { moveKeys, removeKeys, resolveKeys, retargetClip } from '@/core/keyrefs';
 import { duplicateSkin, mergeSkin, repointSkinPictures, setSkinRequired, setSkinScope, toggleOverride } from '@/core/skins';
@@ -124,6 +124,12 @@ export function sanitizeSelection() {
       extraSlots: extra,
     },
   });
+}
+
+/** Flip Viewport (Spine 4.3): mirrors the view left to right, or puts it back. Only the view: nothing in the document changes. */
+export function flipViewport() {
+  const cam = uiStore.get().camera;
+  uiStore.patch({ camera: { ...cam, flip: !cam.flip } });
 }
 
 export function selectBone(id: Id, additive = false) {
@@ -1606,7 +1612,8 @@ export function copyKeys(refs: KeyRef[]) {
   toast(`Copied ${clipboard.length} key${clipboard.length === 1 ? '' : 's'}`);
 }
 
-export function pasteKeys(time: number): KeyRef[] {
+/** Pastes the copied keys at `time`. With `hold` (Paste Keys - Hold) a segment between pasted keys that hold the same value becomes linear. */
+export function pasteKeys(time: number, hold = false): KeyRef[] {
   const anim = currentAnimation();
   if (!anim || !clipboard.length) return [];
   const out: KeyRef[] = [];
@@ -1657,6 +1664,14 @@ export function pasteKeys(time: number): KeyRef[] {
       out.push({ kind: c.kind, target: c.target, prop: c.prop, time: t });
     }
     extendDuration(a, Math.max(...out.map((o) => o.time)));
+    if (hold) {
+      const seen = new Map<unknown, number[]>();
+      for (const o of out) {
+        const keys = resolveKeys(a, o);
+        if (keys) seen.set(keys, [...(seen.get(keys) ?? []), o.time]);
+      }
+      for (const [keys, times] of seen) linearBetweenEqual(keys as { time: number; value?: number[]; curve?: unknown }[], times);
+    }
   });
   return out;
 }

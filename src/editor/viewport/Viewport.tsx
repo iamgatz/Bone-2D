@@ -118,7 +118,7 @@ export function Viewport() {
       const h = Math.max(host.clientHeight, 100);
       const pad = 80;
       const zoom = Math.min((w - pad * 2) / Math.max(maxX - minX, 40), (h - pad * 2) / Math.max(maxY - minY, 40), 4);
-      uiStore.patch({ camera: { x: (minX + maxX) / 2, y: (minY + maxY) / 2, zoom: Math.max(0.05, zoom) } });
+      uiStore.patch({ camera: { ...uiStore.get().camera, x: (minX + maxX) / 2, y: (minY + maxY) / 2, zoom: Math.max(0.05, zoom) } });
     };
     viewportApi.frame = () => frameBones();
     // the selected bones (and the bone of the selected slot); without a selection it is the same as framing the whole skeleton
@@ -147,7 +147,7 @@ export function Viewport() {
       const hiddenBones = new Set(doc.bones.filter((b) => b.hidden).map((b) => b.id));
       const prefs = settingsStore.get();
       renderer!.setSmoothing(prefs.smoothing);
-      renderer!.begin({ x: ui.camera.x, y: ui.camera.y, scale: ui.camera.zoom * dpr, width: glCanvas.width, height: glCanvas.height }, [...prefs.viewportBg, 1]);
+      renderer!.begin({ x: ui.camera.x, y: ui.camera.y, scale: ui.camera.zoom * dpr, width: glCanvas.width, height: glCanvas.height, flip: !!ui.camera.flip }, [...prefs.viewportBg, 1]);
       const onionOn = ui.view.onion && ui.mode === 'animate' && scene.animation;
       const onion = onionOn
         ? ghostsFor(

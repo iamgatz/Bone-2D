@@ -2,7 +2,7 @@
  * Every action of the editor by name, for the command palette (Ctrl+K): type a few letters of what you want. Spine has no such thing.
  * The titles are English strings like the rest of the interface and get translated where they are shown.
  */
-import { closeCurrentLoop, keyConstrainedBones, keyEditedBones, keySelectedBones, selectAnimation, setMode, setTool, togglePlay } from '@/store/actions';
+import { closeCurrentLoop, flipViewport, keyConstrainedBones, keyEditedBones, keySelectedBones, pasteKeys, selectAnimation, setMode, setTool, togglePlay } from '@/store/actions';
 import { setAxesSplit } from '@/store/axisActions';
 import { selectionBack, selectionForward } from '@/store/selHistory';
 import { hideUnkeyedBones, mirrorCurrentCycle } from '@/store/animToolActions';
@@ -84,6 +84,7 @@ export function buildCommands(): Command[] {
     { id: 'mode.toggle', group: 'Animation', title: 'Setup ⇄ Animate', keys: KEYS.mode, run: () => setMode(uiStore.get().mode === 'setup' ? 'animate' : 'setup') },
     { id: 'anim.keyedited', group: 'Animation', title: 'Key edited channels', keys: KEYS.key, run: () => keyEditedBones() },
     { id: 'anim.keyshown', group: 'Animation', title: 'Key all channels of the selected bones', keys: KEYS.keyShown, run: () => keySelectedBones() },
+    { id: 'anim.pastehold', group: 'Animation', title: 'Paste keys at the playhead, hold (linear between keys of the same value)', keys: KEYS.pasteHold, run: () => void pasteKeys(uiStore.get().time, true) },
     { id: 'anim.keyconstrained', group: 'Animation', title: 'Key the pose after the constraints', run: () => keyConstrainedBones() },
     { id: 'anim.marker.add', group: 'Animation', title: 'Add a marker at the playhead', run: () => void addMarkerAtPlayhead() },
     { id: 'anim.marker.next', group: 'Animation', title: 'Go to the next marker', run: () => goToMarker(1) },
@@ -101,6 +102,7 @@ export function buildCommands(): Command[] {
     { id: 'anim.play', group: 'Animation', title: 'Play / pause', keys: KEYS.play, run: () => togglePlay() },
     { id: 'view.frame', group: 'View', title: 'Frame skeleton', keys: KEYS.frame, run: () => viewportApi.frame() },
     { id: 'view.frameselection', group: 'View', title: 'Frame the selection', keys: KEYS.frameSelection, run: () => viewportApi.frameSelection() },
+    { id: 'view.flip', group: 'View', title: 'Flip the viewport', keys: KEYS.flipView, run: () => flipViewport() },
     { id: 'view.zoom100', group: 'View', title: 'Zoom to 100%', keys: KEYS.zoom100, run: () => viewportApi.zoom100() },
     { id: 'view.trails', group: 'View', title: 'Motion trails', run: () => uiStore.patch({ view: { ...uiStore.get().view, trails: !uiStore.get().view.trails } }) },
     { id: 'view.onion', group: 'View', title: 'Onion skin', run: () => uiStore.patch({ view: { ...uiStore.get().view, onion: !uiStore.get().view.onion } }) },

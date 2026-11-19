@@ -1,5 +1,6 @@
 /** Pasting copied keys onto the bone that is selected now (the swing of one arm onto the other). */
 import { beforeEach, describe, expect, it } from 'vitest';
+import { linearBetweenEqual } from '../src/core/edit';
 import { retargetClip } from '../src/core/keyrefs';
 import { validateProject } from '../src/core/validate';
 import * as A from '../src/store/actions';
@@ -126,6 +127,76 @@ describe('pasting keys', () => {
     const key = A.currentAnimation()!.slots[to.id].rgba![0];
     expect(key.value.length).toBe(4);
     expect(Array.isArray(key.curve) ? key.curve.length : 16).toBe(16);
+    expect(validateProject(docStore.get())).toEqual([]);
+  });
+});
+
+describe('Paste Keys - Hold', () => {
+  const bez = [0.3, 1.4, 0.7, -0.4];
+  it('makes the segment between two keys of the same value linear, and only when a pasted key touches it', () => {
+    const keys = [
+      { time: 0, value: [5], curve: bez },
+      { time: 1, value: [5], curve: bez },
+      { time: 2, value: [9], curve: bez },
+      { time: 3, value: [9] },
+      { time: 4, value: [9], curve: 'stepped' as const },
+      { time: 5, value: [9] },
+    ];
+    expect(linearBetweenEqual(keys, [1])).toBe(1); // the segment 1 -> 2 differs in value; 0 -> 1 ends on the pasted key
+    expect(keys[0].curve).toBeUndefined();
+    expect(keys[1].curve).toEqual(bez);
+    expect(linearBetweenEqual(keys, [4])).toBe(1); // 4 -> 5: stepped becomes linear
+    expect(keys[4].curve).toBeUndefined();
+    expect(linearBetweenEqual(keys, [3])).toBe(1); // 2 -> 3 ends on the pasted key; 3 -> 4 was already linear
+    expect(keys[2].curve).toBeUndefined();
+    expect(linearBetweenEqual(keys, [3])).toBe(0);
+  });
+
+  it('compares every channel of the key', () => {
+    const keys = [
+      { time: 0, value: [1, 2], curve: [...bez, ...bez] },
+      { time: 1, value: [1, 3] },
+    ];
+    expect(linearBetweenEqual(keys, [0])).toBe(0);
+    expect(keys[0].curve).toBeDefined();
+  });
+
+  it('skips keys that carry no number, and an empty list', () => {
+    expect(linearBetweenEqual([], [0])).toBe(0);
+    expect(linearBetweenEqual([{ time: 0 }, { time: 1 }], [0])).toBe(0);
+  });
+});
+
+describe('pasting with hold', () => {
+  beforeEach(() => {
+    const f = buildFixture();
+    docStore.replace(f.project);
+    uiStore.patch({ mode: 'animate', tool: 'select', animationId: f.project.skeleton.animations[0].id, skinId: null, time: 0, selection: emptySelection, overrides: {}, autoKey: true, playing: false });
+  });
+
+  it('pasted keys that hold one value get no curve; a plain paste keeps the curves it copied', () => {
+    const upper = docStore.get().skeleton.bones[3];
+    const bez = [0.2, 1.5, 0.8, -0.5];
+    docStore.update('prepare', (d) => {
+      const a = d.skeleton.animations.find((x) => x.id === A.currentAnimation()!.id)!;
+      (a.bones[upper.id] ??= {}).rotate = [
+        { time: 0.1, value: [7], curve: bez },
+        { time: 0.3, value: [7], curve: bez },
+        { time: 0.5, value: [7] },
+      ];
+    });
+    const refs = [0.1, 0.3, 0.5].map((t) => ({ kind: 'bone' as const, target: upper.id, prop: 'rotate', time: t }));
+    A.copyKeys(refs);
+    A.selectBone(upper.id);
+    A.pasteKeys(1);
+    const at = (t: number) => A.currentAnimation()!.bones[upper.id].rotate!.find((k) => Math.abs(k.time - t) < 1e-3)!;
+    expect(at(1).curve).toEqual(bez);
+    expect(at(1.2).curve).toEqual(bez);
+    A.pasteKeys(1.6, true);
+    expect(at(1.6).curve).toBeUndefined();
+    expect(at(1.8).curve).toBeUndefined();
+    docStore.undo();
+    expect(A.currentAnimation()!.bones[upper.id].rotate!.some((k) => Math.abs(k.time - 1.6) < 1e-3)).toBe(false);
     expect(validateProject(docStore.get())).toEqual([]);
   });
 });

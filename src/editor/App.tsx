@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { ArrowLeftRight, Bone, BoxSelect, Download, Eye, EyeOff, FilePlus2, FolderOpen, Package, Grid3x3, Bell, Search, Home, Layers, ClipboardCopy, ClipboardPaste, Copy, FlipHorizontal2, GitBranch, RotateCcw, SlidersHorizontal, Image as ImageIcon, CircleHelp, MessageSquareText, Link2, Map as MapIcon, Maximize, Play, Redo2, Route, Ruler, Magnet, Trash2, Save, Sparkles, Type, Undo2 } from 'lucide-react';
 import { decodeKey } from '@/core/keyrefs';
 import { selectionBack, selectionForward, startSelectionHistory } from '@/store/selHistory';
-import { clearSelection, copyKeys, deleteBones, deleteKeys, keySelectedBones, pasteKeys, sanitizeSelection, setMode, setSelection, setTime, setTool, togglePlay } from '@/store/actions';
+import { clearSelection, copyKeys, flipViewport, deleteBones, deleteKeys, keySelectedBones, pasteKeys, sanitizeSelection, setMode, setSelection, setTime, setTool, togglePlay } from '@/store/actions';
 import { docStore, useProject } from '@/store/doc';
 import { pickReviewFile } from '@/store/reviewActions';
 import { newProject, openProjectFile, packageProject, restoreAutosave, saveProjectFile, startAutosave } from '@/store/project';
@@ -211,6 +211,7 @@ function TopBar() {
             <MenuItem close={close} icon={Maximize} hotkey={KEYS.frame} onClick={() => viewportApi.frame()}>Frame skeleton</MenuItem>
             <MenuItem close={close} icon={Maximize} hotkey={KEYS.frameSelection} onClick={() => viewportApi.frameSelection()}>Frame the selection</MenuItem>
             <MenuItem close={close} icon={Maximize} hotkey={KEYS.zoom100} onClick={() => viewportApi.zoom100()}>Zoom to 100%</MenuItem>
+            <MenuItem close={close} icon={FlipHorizontal2} hotkey={KEYS.flipView} onClick={() => flipViewport()}>Flip the viewport</MenuItem>
           </>
         )}
       </Menu>
@@ -401,7 +402,7 @@ export function App() {
           copyKeys(ui.selectedKeys.map(decodeKey));
         } else if (key === 'v' && ui.mode === 'animate') {
           e.preventDefault();
-          const refs = pasteKeys(ui.time);
+          const refs = pasteKeys(ui.time, e.shiftKey); // Ctrl+Shift+V: Paste Keys - Hold
           if (refs.length) uiStore.patch({ selectedKeys: refs.map((r) => JSON.stringify([r.kind, r.target, r.prop, Math.round(r.time * 10000) / 10000])) });
         }
         return;

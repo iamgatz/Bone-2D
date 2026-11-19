@@ -21,6 +21,8 @@ export interface EngineNeedsOptions {
   pma?: boolean;
   rotate?: boolean;
   filter?: 'Linear' | 'Nearest';
+  /** One atlas per skin (only matters for a skeleton with more than one skin). */
+  atlasPerSkin?: boolean;
 }
 
 const TEXT = {
@@ -29,6 +31,7 @@ const TEXT = {
   scale: 'The export is scaled: pictures and data are scaled together, so leave the scale of the skeleton in the engine at 1.',
   pma: 'Premultiplied alpha pages: set the texture to premultiplied alpha and use the premultiplied blend function, or the edges get a light or dark halo.',
   nearest: 'Sharp pixels (Nearest): the engine has to sample the atlas without smoothing, or the pixel art blurs.',
+  perSkin: 'An atlas per skin: load the atlas of the default skin and the atlas of the skin you show; the pictures of a skin that the default skin does not use are only in its own atlas.',
   rotate: 'The atlas has pictures turned a quarter turn (rotate: 90): the loader has to read rotated regions (the official runtimes do).',
   twoColor: 'Two colour tint (slots with a dark colour): the engine needs the two colour tint shader and a vertex format with the second colour.',
   blend: 'Additive, multiply or screen blend modes: the engine needs a material with the matching blend function for each.',
@@ -53,6 +56,7 @@ export function engineNeeds(doc: SkeletonDoc, opts: EngineNeedsOptions = {}): En
   if (opts.pma) add('pma', 'note');
   if (opts.filter === 'Nearest') add('nearest', 'note');
   if (opts.rotate) add('rotate', 'note');
+  if (opts.atlasPerSkin && doc.skins.length > 1) add('perSkin', 'note');
 
   if (doc.slots.some((s) => s.dark)) add('twoColor', 'needs');
   if (doc.slots.some((s) => s.blend !== 'normal')) add('blend', 'needs');
