@@ -12,6 +12,18 @@ export interface Release {
 
 export const CHANGELOG: Release[] = [
   {
+    version: '0.64',
+    date: '2026-11-19',
+    en: [
+      "Weights of several meshes at once (Spine 4.3): Ctrl-click more slots in the tree next to the selected one. The Weights section then says how many meshes work together, and Bind, Add bones, Auto, Smooth, Prune, Swap, Unbind and removing a bone from the list act on all of them in one undo step. The weight brush paints every mesh of the group that follows its bone (the meshes the bone does not move are left alone). Selected vertices still limit the tools on the mesh they belong to; the others work on the whole mesh.",
+      "Trace several meshes at once (Spine 4.3): with several image slots selected, Trace mesh and Quad turn all their images into meshes in one step, and Re-trace does the same for the unweighted meshes of the group. The group stays selected afterwards.",
+    ],
+    ru: [
+      "Веса нескольких мешей сразу (Spine 4.3): Ctrl+щелчок по другим слотам в дереве рядом с выбранным. Раздел «Веса» тогда показывает, сколько мешей работают вместе, а «Привязать», «Добавить кости», Auto, Smooth, Prune, Swap, Unbind и удаление кости из списка действуют на все они одним шагом отмены. Кисть весов красит каждый меш группы, который следует за её костью (меши, которые кость не двигает, не трогаются). Выбранные вершины по-прежнему ограничивают инструменты на своём меше; на остальных они работают на весь меш.",
+      "Трассировка нескольких мешей сразу (Spine 4.3): когда выбрано несколько слотов с картинками, «Трассировка» и «Квадрат» превращают все их картинки в меши одним шагом, а «Повторная трассировка» делает то же для мешей группы без весов. Группа после этого остаётся выбранной.",
+    ],
+  },
+  {
     version: '0.63',
     date: '2026-11-19',
     en: [

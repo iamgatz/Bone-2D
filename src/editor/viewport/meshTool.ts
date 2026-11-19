@@ -4,7 +4,7 @@ import type { Id, MeshAttachment } from '@/core/model';
 import { trianglesAt } from '@/core/mesh';
 import { softMoves, softWeights } from '@/core/soft';
 import type { GLRenderer } from '@/render/gl';
-import { addMeshVertex, toggleMeshEdge, currentDeform, deleteMeshVertices, getMesh, moveMeshVertices, paintWeights, setDeformKey } from '@/store/meshActions';
+import { addMeshVertex, toggleMeshEdge, currentDeform, deleteMeshVertices, getMesh, moveMeshVertices, paintWeightsGroup, setDeformKey } from '@/store/meshActions';
 import { docStore } from '@/store/doc';
 import { setSelection } from '@/store/actions';
 import { toast, uiStore } from '@/store/ui';
@@ -133,7 +133,7 @@ export class MeshTool {
       if (!bone) return true;
       docStore.beginGesture('Paint weights');
       this.drag = { kind: 'paint' };
-      paintWeights(am.slotId, am.name, { x: wx, y: wy }, bone);
+      paintWeightsGroup({ x: wx, y: wy }, bone);
       return true;
     }
 
@@ -220,7 +220,7 @@ export class MeshTool {
       this.invalidate();
     } else if (d.kind === 'paint') {
       const bone = ui.brush.bone;
-      if (bone) paintWeights(am.slotId, am.name, { x: wx, y: wy }, bone);
+      if (bone) paintWeightsGroup({ x: wx, y: wy }, bone);
     }
     return true;
   }
