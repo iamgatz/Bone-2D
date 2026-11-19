@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { ExternalLink, Maximize2, Pause, Play, Plus, RotateCcw, Volume2, VolumeX } from 'lucide-react';
+import { ExternalLink, Layers, Maximize2, Pause, Play, Plus, RotateCcw, Trash2, Volume2, VolumeX } from 'lucide-react';
 import { GLRenderer } from '@/render/gl';
 import type { EventDef, EventKey, Id } from '@/core/model';
 import { PreviewPlayer, poseMixed } from '@/core/preview';
@@ -17,6 +17,14 @@ import { Field } from '../ui/Field';
 
 const SETUP = '';
 const HEIGHT = 190;
+
+/** One animation played over the main one. */
+interface LayerCfg {
+  animId: Id;
+  alpha: number;
+  additive: boolean;
+  loop: boolean;
+}
 
 interface Fired {
   id: number;
@@ -37,6 +45,8 @@ export function PreviewPanel() {
   const [playing, setPlaying] = useState(true);
   const [loop, setLoop] = useState(true);
   const [speed, setSpeed] = useState(1);
+  const [hold, setHold] = useState(false);
+  const [layers, setLayers] = useState<LayerCfg[]>([]);
   const [fired, setFired] = useState<Fired[]>([]);
   const [sounds, setSounds] = useState(soundCount());
   const [pairFrom, setPairFrom] = useState<Id>('');
@@ -65,7 +75,22 @@ export function PreviewPanel() {
     player.playing = playing;
     player.loop = loop;
     player.speed = speed;
-  }, [player, playing, loop, speed]);
+    player.hold = hold;
+  }, [player, playing, loop, speed, hold]);
+
+  // the layers the player runs follow the ones set here (a layer keeps its time while it keeps its animation)
+  useEffect(() => {
+    player.layers = layers.map((c, i) => {
+      const old = player.layers[i];
+      const anim = animations.find((a) => a.id === c.animId) ?? null;
+      return { anim, time: old && old.anim?.id === c.animId ? old.time : 0, alpha: c.alpha, additive: c.additive, loop: c.loop };
+    });
+  }, [player, layers, animations]);
+  const setLayer = (i: number, patch: Partial<LayerCfg>) => setLayers((old) => old.map((l, k) => (k === i ? { ...l, ...patch } : l)));
+  const restart = () => {
+    choose(animId);
+    for (const l of player.layers) l.time = 0;
+  };
 
   useEffect(() => {
     const el = canvas.current!;
@@ -82,6 +107,7 @@ export function PreviewPanel() {
       },
     };
     let sk: Skeleton | null = null;
+    let scratch: Skeleton | null = null;
     let built: { doc: unknown; skin: Id | null } | null = null;
     let physicsReset = true;
     let raf = 0;
@@ -92,7 +118,9 @@ export function PreviewPanel() {
       const skin = uiStore.get().skinId;
       if (sk && built && built.doc === p.skeleton && built.skin === skin) return sk;
       const data = compileSkeleton(p.skeleton);
-      sk = createSkeleton(data, skin && p.skeleton.skins.some((s) => s.id === skin) ? skin : null);
+      const skinId = skin && p.skeleton.skins.some((s) => s.id === skin) ? skin : null;
+      sk = createSkeleton(data, skinId);
+      scratch = createSkeleton(data, skinId);
       built = { doc: p.skeleton, skin };
       physicsReset = true;
       return sk;
@@ -138,7 +166,7 @@ export function PreviewPanel() {
         fitCamera(s, w, h);
         fit.current = false;
       }
-      player.pose(s);
+      player.pose(s, scratch);
       const hasPhysics = s.data.constraints.some((c) => c.kind === 'physics');
       if (hasPhysics) {
         s.update(player.playing ? dt * player.speed : 0);
@@ -175,7 +203,7 @@ export function PreviewPanel() {
       <div className="panel-head">
         <span className="title">Preview</span>
         <IconButton icon={playing ? Pause : Play} title={playing ? 'Pause' : 'Play'} small onClick={() => setPlaying(!playing)} />
-        <IconButton icon={RotateCcw} title="Play the animation again from the start" small onClick={() => choose(animId)} />
+        <IconButton icon={RotateCcw} title="Play the animation again from the start" small onClick={restart} />
         <IconButton icon={Maximize2} title="Fit the view to the animation" small onClick={() => (fit.current = true)} />
         <IconButton
           icon={ExternalLink}
@@ -199,6 +227,9 @@ export function PreviewPanel() {
         <Field label="Speed">
           <NumberField label="×" value={speed} step={0.1} precision={2} min={0.05} max={4} onChange={(v) => setSpeed(Math.max(0.05, Math.min(4, v)))} />
         </Field>
+        <Field label="Hold previous" title="While the Preview changes from one animation to another, what the new one does not key stays as the old one had it, instead of fading to the setup pose">
+          <Toggle on={hold} onChange={setHold} title="Hold previous" />
+        </Field>
         <Field label="Mix" title="How long the crossfade lasts when the Preview changes from one animation to another (seconds); the pairs below have their own">
           <NumberField label="s" value={mixes?.default ?? 0} step={0.05} precision={2} min={0} max={10} onChange={setDefaultMix} />
         </Field>
@@ -216,6 +247,30 @@ export function PreviewPanel() {
               Add
             </Button>
           </Field>
+        )}
+        {animations.length > 0 && (
+          <div className="preview-layers">
+            <div className="hstack">
+              <span className="title">Layers</span>
+              <Button
+                icon={Layers}
+                small
+                onClick={() => setLayers((old) => [...old, { animId: animations.find((a) => a.id !== animId)?.id ?? animations[0].id, alpha: 1, additive: false, loop: true }])}
+                title="Play another animation over this one: it moves only what it keys. Full strength replaces, a lower one blends, additive adds its change to the pose"
+              >
+                Add layer
+              </Button>
+            </div>
+            {layers.map((l, i) => (
+              <Field key={i} label="Layer">
+                <SelectField value={animations.some((a) => a.id === l.animId) ? l.animId : ''} options={animOptions} onChange={(v) => setLayer(i, { animId: v })} />
+                <NumberField label="α" value={l.alpha} step={0.05} precision={2} min={0} max={1} title="How much of the layer shows (0 to 1)" onChange={(v) => setLayer(i, { alpha: Math.max(0, Math.min(1, v)) })} />
+                <Toggle on={l.additive} onChange={(v) => setLayer(i, { additive: v })} title="Additive: adds the layer's change from the setup pose to the pose below it" />
+                <Toggle on={l.loop} onChange={(v) => setLayer(i, { loop: v })} title="Loop this layer" />
+                <IconButton icon={Trash2} title="Remove this layer" small onClick={() => setLayers((old) => old.filter((_, k) => k !== i))} />
+              </Field>
+            ))}
+          </div>
         )}
         {fired.length > 0 && (
           <div className="hstack wrap" style={{ marginTop: 4 }}>

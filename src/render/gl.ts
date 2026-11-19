@@ -48,11 +48,14 @@ in vec4 vColor;
 in vec3 vDark;
 uniform sampler2D uTex;
 uniform float uTextured;
+uniform float uFlat;
 out vec4 outColor;
 void main() {
   vec4 tex = uTextured > 0.5 ? texture(uTex, vUv) : vec4(1.0);
   // Two-color tinting, as in Spine's straight-alpha shader: the light color multiplies the texture, the dark color fills in
   // where the texture is dark. With a black dark color (no two-color tinting) this is the plain multiply.
+  // flat: only the shape of the picture, filled with the colour (ghosts drawn as silhouettes)
+  if (uFlat > 0.5) { outColor = vec4(vColor.rgb, tex.a * vColor.a); return; }
   outColor = vec4(tex.rgb * vColor.rgb + (1.0 - tex.rgb) * vDark, tex.a * vColor.a);
 }`;
 
@@ -86,6 +89,8 @@ export class GLRenderer {
   private uCenter: WebGLUniformLocation;
   private uScale: WebGLUniformLocation;
   private uTextured: WebGLUniformLocation;
+  private uFlat: WebGLUniformLocation;
+  private flat = false;
   private scratch = new Float32Array(4096);
   private cam: CameraView = { x: 0, y: 0, scale: 1, width: 1, height: 1 };
   private clipping = false;
@@ -111,6 +116,7 @@ export class GLRenderer {
     this.uCenter = gl.getUniformLocation(prog, 'uCenter')!;
     this.uScale = gl.getUniformLocation(prog, 'uScale')!;
     this.uTextured = gl.getUniformLocation(prog, 'uTextured')!;
+    this.uFlat = gl.getUniformLocation(prog, 'uFlat')!;
     gl.useProgram(prog);
     gl.uniform1i(gl.getUniformLocation(prog, 'uTex'), 0);
 
@@ -230,6 +236,7 @@ export class GLRenderer {
     gl.activeTexture(gl.TEXTURE0);
     gl.bindTexture(gl.TEXTURE_2D, this.curTex ?? this.whiteTex);
     gl.uniform1f(this.uTextured, this.curTex ? 1 : 0);
+    gl.uniform1f(this.uFlat, this.flat ? 1 : 0);
     gl.drawElements(gl.TRIANGLES, this.iCount, gl.UNSIGNED_SHORT, 0);
     this.vCount = 0;
     this.iCount = 0;
@@ -329,7 +336,17 @@ export class GLRenderer {
    * Draws every visible slot of the skeleton in draw order. `skip` can hide individual slots.
    * Clipping follows Spine's `SkeletonRendererCore` (see `planClipping`).
    */
-  drawSkeleton(skeleton: Skeleton, opts: { skip?: (slot: Slot) => boolean; alpha?: number; tint?: RGBA } = {}) {
+  drawSkeleton(skeleton: Skeleton, opts: { skip?: (slot: Slot) => boolean; alpha?: number; tint?: RGBA; flat?: boolean; offset?: [number, number] } = {}) {
+    this.flush();
+    this.flat = !!opts.flat;
+    const [dx, dy] = opts.offset ?? [0, 0];
+    const shift = (a: Float32Array, n: number) => {
+      if (dx === 0 && dy === 0) return;
+      for (let k = 0; k < n; k++) {
+        a[k * 2] += dx;
+        a[k * 2 + 1] += dy;
+      }
+    };
     const tint = opts.tint ?? [1, 1, 1, 1];
     const alpha = opts.alpha ?? 1;
     const plan = planClipping(skeleton, opts.skip);
@@ -357,6 +374,7 @@ export class GLRenderer {
           const n = want.att.vertexCount;
           if (n * 2 > this.scratch.length) this.scratch = new Float32Array(n * 2 * 2);
           meshWorldVertices(skeleton, want.slot, want.att, null, this.scratch);
+          shift(this.scratch, n);
           const outline = clipOutline(this.scratch, n, want.att.convex, want.att.inverse);
           this.clipBegin(outline.vertices, outline.count, want.att.inverse);
           if (this.clipping) active = want;
@@ -366,16 +384,19 @@ export class GLRenderer {
       const t = this.texture(seq ? sequenceFramePath(att.path, seq, resolveSequenceIndex(seq, slot.sequenceIndex)) : att.path);
       if (att.kind === 'region') {
         regionWorldVertices(att, slot.bone, this.scratch);
+        shift(this.scratch, 4);
         this.pushGeometry(this.scratch, REGION_UVS, REGION_TRIANGLES, 4, 6, color, t?.tex ?? null, slot.data.blend, slot.dark);
       } else {
         const n = att.vertexCount;
         if (n * 2 > this.scratch.length) this.scratch = new Float32Array(n * 2 * 2);
         meshWorldVertices(skeleton, slot, att, slot.deform.length ? slot.deform : null, this.scratch);
+        shift(this.scratch, n);
         this.pushGeometry(this.scratch, att.uvs, att.triangles, n, att.triangles.length, color, t?.tex ?? null, slot.data.blend, slot.dark);
       }
     }
     this.clipEnd();
     this.flush();
+    this.flat = false;
   }
 
   end() {

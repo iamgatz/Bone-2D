@@ -5,7 +5,8 @@ import { DEFAULT_SLIDE, footSlides } from '@/core/animtools';
 import type { Slide, SlideOptions } from '@/core/animtools';
 import { markersOf } from '@/core/markers';
 import { hideUnkeyedBones, mirrorCurrentCycle, tweenSelected, wiggleSelected } from '@/store/animToolActions';
-import { favorSelectedKeys, scaleSelectedKeyTimes } from '@/store/keyToolActions';
+import { favorSelectedKeys, keyStash, scaleSelectedKeyTimes, storeSelectedKeys, swapStoredKeys } from '@/store/keyToolActions';
+import { useStore } from '@/store/store';
 import { docStore } from '@/store/doc';
 import type { Animation } from '@/core/model';
 import { bakeCurrentAnimation, closeCurrentLoop, crossfadeSlot, currentAnimation, layerCurrentAnimation, setTime, simplifyCurrentAnimation } from '@/store/actions';
@@ -84,6 +85,7 @@ function KeyToolControls() {
   const count = useUi((s) => s.selectedKeys.length);
   const [favor, setFavor] = useState(50);
   const [timeScale, setTimeScale] = useState(100);
+  const stored = useStore(keyStash, (s) => (s.animId === anim ? s.items.length : 0));
   const off = !anim || count === 0;
   return (
     <>
@@ -105,6 +107,25 @@ function KeyToolControls() {
         <Button small ghost disabled={off} title="Toward the setup pose (bone keys)" onClick={() => favorSelectedKeys('neutral', favor / 100)}>
           To setup
         </Button>
+      </div>
+      <div className="hstack mb">
+        <Button small ghost disabled={off} title="Move the selected keys of a timeline together, their differences kept, until the first one meets the key before the selection" onClick={() => favorSelectedKeys('shiftPrevious', favor / 100)}>
+          Block to previous
+        </Button>
+        <Button small ghost disabled={off} title="Move the selected keys of a timeline together, their differences kept, until the last one meets the key after the selection" onClick={() => favorSelectedKeys('shiftNext', favor / 100)}>
+          Block to next
+        </Button>
+      </div>
+      <div className="section-label">Store and swap</div>
+      <p className="hint-text">Store sets the values of the selected keys aside. Swap trades them with what the keys hold now, and again swaps back: compare two takes of a pose.</p>
+      <div className="hstack mb">
+        <Button small ghost disabled={off} title="Set the values of the selected keys aside" onClick={() => storeSelectedKeys()}>
+          Store
+        </Button>
+        <Button small ghost disabled={!anim || stored === 0} title="Trade the stored values with the values the same keys hold now" onClick={() => swapStoredKeys()}>
+          Swap
+        </Button>
+        {stored > 0 && <span className="dim">{`${stored} stored`}</span>}
       </div>
       <div className="section-label">Scale time</div>
       <p className="hint-text">Stretches or squeezes the times of the selected keys around the earliest one: slower or faster, with the values kept.</p>

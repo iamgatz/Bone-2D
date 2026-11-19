@@ -1,8 +1,12 @@
 /** Names in bulk: the filter forms (words, wildcards, regular expressions) and Find and replace. */
 import { describe, expect, it } from 'vitest';
-import { applyRename, nameMatcher, planRename } from '../src/core/rename';
+import { applyImageRename, applyRename, nameMatcher, planRename } from '../src/core/rename';
 import type { FindReplaceOptions } from '../src/core/rename';
+import type { Project } from '../src/core/model';
 import { filterTree } from '../src/core/treeFilter';
+import { docStore } from '../src/store/doc';
+import { findReplaceNames, renameScope } from '../src/store/renameActions';
+import { uiStore } from '../src/store/ui';
 import { validateProject } from '../src/core/validate';
 import { buildFixture } from './fixture';
 
@@ -144,5 +148,93 @@ describe('planRename / applyRename', () => {
     const plan = planRename(doc, opts({ find: 'head', replace: 'skull' }));
     doc.bones.find((b) => b.name === 'head')!.name = 'other';
     expect(applyRename(doc, plan.changes)).toBe(0);
+  });
+});
+
+describe('Find and replace: pictures and where', () => {
+  it('renames pictures and points the attachments that show them at the new names', () => {
+    const { project } = buildFixture();
+    const plan = planRename(project.skeleton, opts({ find: 'flag', replace: 'banner', kinds: ['image'] }), project);
+    expect(plan.changes.map((c) => [c.from, c.to])).toEqual([['flagA', 'bannerA'], ['flagB', 'bannerB']]);
+    expect(applyImageRename(project, plan.changes)).toBe(2);
+    expect(project.images.map((i) => i.name)).toContain('bannerA');
+    const paths = project.skeleton.skins.flatMap((s) => Object.values(s.attachments).flatMap((slot) => Object.values(slot)));
+    expect(paths.some((a) => (a.type === 'region' || a.type === 'mesh') && a.path === 'bannerB')).toBe(true);
+    expect(paths.some((a) => (a.type === 'region' || a.type === 'mesh') && a.path.startsWith('flag'))).toBe(false);
+    expect(validateProject(project)).toEqual([]);
+  });
+
+  it('a picture is not renamed to a name another picture has, or to nothing', () => {
+    const { project } = buildFixture();
+    const clash = planRename(project.skeleton, opts({ find: 'bodyAlt', replace: 'body', kinds: ['image'] }), project);
+    expect(clash.changes).toEqual([]);
+    expect(clash.skipped[0]).toMatchObject({ kind: 'image', from: 'bodyAlt', why: 'taken' });
+    const empty = planRename(project.skeleton, opts({ find: 'front', replace: '', kinds: ['image'] }), project);
+    expect(empty.skipped[0]).toMatchObject({ kind: 'image', from: 'front', why: 'empty' });
+  });
+
+  it('pictures are only touched when the project is given', () => {
+    const { project } = buildFixture();
+    expect(planRename(project.skeleton, opts({ find: 'flag', replace: 'banner', kinds: ['image'] })).changes).toEqual([]);
+  });
+
+  it('a picture that is a frame of a sequence is skipped and listed', () => {
+    const { project } = buildFixture();
+    const att = Object.values(project.skeleton.skins[0].attachments).flatMap((s) => Object.values(s)).find((a) => a.type === 'region');
+    if (att?.type !== 'region') throw new Error('no region');
+    project.images.push({ id: 'f0', name: 'run0', width: 8, height: 8 }, { id: 'f1', name: 'run1', width: 8, height: 8 });
+    att.path = 'run';
+    att.sequence = { count: 2, start: 0, digits: 1, setupIndex: 0, mode: 'loop', delay: 0 } as never;
+    const plan = planRename(project.skeleton, opts({ find: 'run', replace: 'walk', kinds: ['image'] }), project);
+    expect(plan.changes).toEqual([]);
+    expect(plan.skipped.map((s) => s.why)).toEqual(['frame', 'frame']);
+  });
+
+  it('a scope limits the names: only the ids and pictures it lists', () => {
+    const { project } = buildFixture();
+    const doc = project.skeleton;
+    const head = doc.bones.find((b) => b.name === 'head')!;
+    const all = planRename(doc, opts({ find: 'e', replace: 'E' }), project);
+    expect(all.changes.length).toBeGreaterThan(1);
+    const some = planRename(doc, opts({ find: 'e', replace: 'E', scope: { ids: new Set([head.id]) } }), project);
+    expect(some.changes.map((c) => c.id)).toEqual([head.id]);
+    const pics = planRename(doc, opts({ find: 'o', replace: '0', kinds: ['image'], scope: { images: new Set(['body']) } }), project);
+    expect(pics.changes.map((c) => c.from)).toEqual(['body']);
+    // an empty scope touches nothing
+    expect(planRename(doc, opts({ find: 'e', replace: 'E', scope: { ids: new Set() } }), project).changes).toEqual([]);
+  });
+});
+
+describe('the scope the editor builds', () => {
+  it('"selection" is the selected bones, slot and constraint, and what the slot shows; "skin" is the chosen skin and its pictures', () => {
+    const { project } = buildFixture();
+    docStore.replace(project as Project);
+    const doc = project.skeleton;
+    const flag = doc.slots.find((s) => s.name === 'flag')!;
+    const head = doc.bones.find((b) => b.name === 'head')!;
+    const ui = { ...uiStore.get(), selection: { bones: [head.id], slot: flag.id, attachment: null, constraint: null, vertices: [] }, mode: 'setup' as const, skinId: doc.skins[1].id };
+    expect(renameScope('all', project, ui)).toBeUndefined();
+    const sel = renameScope('selection', project, ui)!;
+    expect([...sel.ids!].sort()).toEqual([head.id, flag.id].sort());
+    // the flag shows flagA in the default skin and flagB in the alt skin
+    expect([...sel.images!].sort()).toEqual(['flagA', 'flagB']);
+    const skin = renameScope('skin', project, ui)!;
+    expect([...skin.ids!]).toEqual([doc.skins[1].id]);
+    expect([...skin.images!]).toEqual(['flagB']);
+    // no skin chosen: the default one
+    const plain = renameScope('skin', project, { ...ui, skinId: null })!;
+    expect([...plain.ids!]).toEqual([doc.skins[0].id]);
+    expect(plain.images!.has('body')).toBe(true);
+  });
+
+  it('Find and replace through the store renames names and pictures in one step', () => {
+    const { project } = buildFixture();
+    docStore.replace(project as Project);
+    const n = findReplaceNames({ find: 'flag', replace: 'banner', regex: false, matchCase: false, firstOnly: false, kinds: ['slot', 'image'] });
+    expect(n).toBeGreaterThanOrEqual(3);
+    expect(docStore.undoLabel).toBe('Find and replace');
+    expect(docStore.get().images.some((i) => i.name === 'bannerA')).toBe(true);
+    docStore.undo();
+    expect(docStore.get().images.some((i) => i.name === 'flagA')).toBe(true);
   });
 });

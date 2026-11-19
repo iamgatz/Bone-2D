@@ -5,7 +5,8 @@
  */
 import { KEY_EPS, snapTime } from './edit';
 
-export type FavorMode = 'previous' | 'next' | 'average' | 'neutral';
+/** 'shiftPrevious' / 'shiftNext' move the selected keys of a timeline as one block (their differences kept) until the first / last one meets the key before / after it. */
+export type FavorMode = 'previous' | 'next' | 'average' | 'neutral' | 'shiftPrevious' | 'shiftNext';
 
 interface ValueKey {
   time: number;
@@ -24,6 +25,23 @@ export function favorKeys(keys: ValueKey[], indices: readonly number[], mode: Fa
   if (a === 0) return 0;
   const was = keys.map((k) => k.value!.slice());
   let changed = 0;
+  if (mode === 'shiftPrevious' || mode === 'shiftNext') {
+    const picked = [...new Set(indices)].filter((i) => i >= 0 && i < keys.length);
+    if (!picked.length) return 0;
+    const anchor = mode === 'shiftPrevious' ? Math.min(...picked) : Math.max(...picked);
+    const target = was[mode === 'shiftPrevious' ? anchor - 1 : anchor + 1];
+    if (!target || target.length !== was[anchor].length) return 0;
+    const delta = target.map((v, c) => (v - was[anchor][c]) * a);
+    for (const i of picked) {
+      if (was[i].length !== delta.length) continue;
+      const value = was[i].map((v, c) => v + delta[c]);
+      if (value.some((v, c) => Math.abs(v - was[i][c]) > 1e-12)) {
+        keys[i].value = value;
+        changed++;
+      }
+    }
+    return changed;
+  }
   for (const i of new Set(indices)) {
     if (i < 0 || i >= keys.length) continue;
     const prev = was[i - 1];

@@ -18,6 +18,20 @@ export interface Settings {
   onionBefore: number;
   onionAfter: number;
   onionGap: number;
+  /** Ghosts every few frames, or at the keys around the playhead. */
+  onionMode: 'frames' | 'keys';
+  /** How far each ghost is moved from the pose, per step (scene units). */
+  onionOffsetX: number;
+  onionOffsetY: number;
+  onionStyle: 'image' | 'silhouette' | 'xray';
+  /** Ghosts drawn over the pose. */
+  onionTop: boolean;
+  onionColorBefore: [number, number, number];
+  onionColorAfter: [number, number, number];
+  /** Draw the grid of single units (pixels of the pictures at 100%) when zoomed in far enough to tell them apart. */
+  pixelGrid: boolean;
+  /** Show the frames drawn in the last second and the time of the last one, in a corner of the viewport. */
+  showFps: boolean;
   /** How thick the bones are drawn in the viewport, in percent of the default. */
   boneScale: number;
   /** Show the hints that pop up over buttons and fields. */
@@ -42,6 +56,15 @@ export const DEFAULT_SETTINGS: Settings = {
   onionBefore: 2,
   onionAfter: 2,
   onionGap: 3,
+  onionMode: 'frames',
+  onionOffsetX: 0,
+  onionOffsetY: 0,
+  onionStyle: 'image',
+  onionTop: false,
+  onionColorBefore: [1, 0.62, 0.55],
+  onionColorAfter: [0.55, 0.82, 1],
+  pixelGrid: false,
+  showFps: false,
   boneScale: 100,
   tooltips: true,
   toolKeys: {},
@@ -67,6 +90,15 @@ export function readSettings(raw: string | null): Settings {
     if (whole(data.onionBefore, 0, 6)) out.onionBefore = data.onionBefore;
     if (whole(data.onionAfter, 0, 6)) out.onionAfter = data.onionAfter;
     if (whole(data.onionGap, 1, 30)) out.onionGap = data.onionGap;
+    if (data.onionMode === 'frames' || data.onionMode === 'keys') out.onionMode = data.onionMode;
+    if (typeof data.onionOffsetX === 'number' && Number.isFinite(data.onionOffsetX) && Math.abs(data.onionOffsetX) <= 10000) out.onionOffsetX = data.onionOffsetX;
+    if (typeof data.onionOffsetY === 'number' && Number.isFinite(data.onionOffsetY) && Math.abs(data.onionOffsetY) <= 10000) out.onionOffsetY = data.onionOffsetY;
+    if (data.onionStyle === 'image' || data.onionStyle === 'silhouette' || data.onionStyle === 'xray') out.onionStyle = data.onionStyle;
+    if (typeof data.onionTop === 'boolean') out.onionTop = data.onionTop;
+    if (isRgb(data.onionColorBefore)) out.onionColorBefore = data.onionColorBefore;
+    if (isRgb(data.onionColorAfter)) out.onionColorAfter = data.onionColorAfter;
+    if (typeof data.pixelGrid === 'boolean') out.pixelGrid = data.pixelGrid;
+    if (typeof data.showFps === 'boolean') out.showFps = data.showFps;
     if ((BONE_SCALES as readonly unknown[]).includes(data.boneScale)) out.boneScale = data.boneScale as number;
     if (typeof data.tooltips === 'boolean') out.tooltips = data.tooltips;
     if (data.toolKeys && typeof data.toolKeys === 'object') {

@@ -4,6 +4,7 @@
  */
 import { closeCurrentLoop, keyEditedBones, keySelectedBones, selectAnimation, setMode, setTool, togglePlay } from '@/store/actions';
 import { setAxesSplit } from '@/store/axisActions';
+import { selectionBack, selectionForward } from '@/store/selHistory';
 import { hideUnkeyedBones, mirrorCurrentCycle } from '@/store/animToolActions';
 import { addMarkerAtPlayhead, goToMarker, splitAtMarkersAction } from '@/store/markerActions';
 import { decodeKey } from '@/core/keyrefs';
@@ -57,6 +58,8 @@ export function buildCommands(): Command[] {
     { id: 'file.unpack', group: 'File', title: 'Unpack an atlas into pictures…', run: () => openAtlasUnpack() },
     { id: 'file.demo', group: 'File', title: 'Load demo rig (Kit)', run: () => loadSample() },
     { id: 'file.welcome', group: 'File', title: 'Welcome screen', run: open('welcomeOpen') },
+    { id: 'edit.selback', group: 'Edit', title: 'Previous selection', run: () => void selectionBack() },
+    { id: 'edit.selforward', group: 'Edit', title: 'Next selection', run: () => void selectionForward() },
     { id: 'edit.undo', group: 'Edit', title: 'Undo', keys: KEYS.undo, run: () => docStore.undo() },
     { id: 'edit.redo', group: 'Edit', title: 'Redo', keys: KEYS.redo, run: () => docStore.redo() },
     { id: 'edit.duplicate', group: 'Edit', title: 'Duplicate bones', keys: KEYS.duplicate, run: () => duplicateSelection(false) },
@@ -93,6 +96,8 @@ export function buildCommands(): Command[] {
     { id: 'view.onion', group: 'View', title: 'Onion skin', run: () => uiStore.patch({ view: { ...uiStore.get().view, onion: !uiStore.get().view.onion } }) },
     { id: 'view.rulers', group: 'View', title: 'Rulers and guides', run: () => uiStore.patch({ view: { ...uiStore.get().view, rulers: !uiStore.get().view.rulers } }) },
     { id: 'view.snap', group: 'View', title: 'Snap to grid and guides', run: () => uiStore.patch({ view: { ...uiStore.get().view, snap: !uiStore.get().view.snap } }) },
+    { id: 'view.pixel', group: 'View', title: 'Snap to whole pixels', run: () => uiStore.patch({ view: { ...uiStore.get().view, pixel: !uiStore.get().view.pixel } }) },
+    { id: 'view.outline', group: 'View', title: 'Outline map', run: () => uiStore.patch({ view: { ...uiStore.get().view, outline: !uiStore.get().view.outline } }) },
     { id: 'view.clearguides', group: 'View', title: 'Clear guides', run: () => void clearGuides() },
     { id: 'view.grid', group: 'View', title: 'Grid', run: () => uiStore.patch({ view: { ...uiStore.get().view, grid: !uiStore.get().view.grid } }) },
     { id: 'view.names', group: 'View', title: 'Bone names', run: () => uiStore.patch({ view: { ...uiStore.get().view, names: !uiStore.get().view.names } }) },

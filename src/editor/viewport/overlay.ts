@@ -11,6 +11,7 @@ import type { Camera, UiState } from '@/store/ui';
 import { worldToScreen } from '../scene';
 import type { Scene } from '../scene';
 import { slotWorldVertices } from './hit';
+import { fpsMeter } from './fps';
 import { drawTrails } from './trails';
 import { alpha, token } from '../ui/tokens';
 
@@ -73,6 +74,38 @@ export interface OverlayInput {
   /** Drawn right after the attachment outline, below the bones. */
   under?: (o: OverlayInput) => void;
   extra?: (o: OverlayInput) => void;
+}
+
+/** The grid of single units: a line at every whole number, once a unit is wide enough on the screen (6 pixels) to tell the lines apart. */
+export function drawPixelGrid(o: OverlayInput) {
+  const { ctx, w, h, cam } = o;
+  if (cam.zoom < 6) return;
+  const [wx0, wy1] = [cam.x - w / 2 / cam.zoom, cam.y + h / 2 / cam.zoom];
+  const [wx1, wy0] = [cam.x + w / 2 / cam.zoom, cam.y - h / 2 / cam.zoom];
+  ctx.lineWidth = 1;
+  ctx.strokeStyle = 'rgba(255,255,255,0.05)';
+  ctx.beginPath();
+  for (let x = Math.ceil(wx0); x <= wx1; x++) {
+    const sx = Math.round(worldToScreen(cam, w, h, x, 0)[0]) + 0.5;
+    ctx.moveTo(sx, 0);
+    ctx.lineTo(sx, h);
+  }
+  for (let y = Math.ceil(wy0); y <= wy1; y++) {
+    const sy = Math.round(worldToScreen(cam, w, h, 0, y)[1]) + 0.5;
+    ctx.moveTo(0, sy);
+    ctx.lineTo(w, sy);
+  }
+  ctx.stroke();
+}
+
+/** The frame counter, in the bottom left corner. */
+export function drawFps(o: OverlayInput) {
+  const { ctx, h } = o;
+  const { fps, ms } = fpsMeter.read(performance.now());
+  ctx.font = '11px ui-monospace, monospace';
+  ctx.fillStyle = COLORS.muted;
+  ctx.textBaseline = 'alphabetic';
+  ctx.fillText(`${fps} fps · ${ms.toFixed(1)} ms`, 10, h - 10);
 }
 
 export function drawGrid(o: OverlayInput) {
@@ -178,12 +211,13 @@ export function drawBones(o: OverlayInput) {
     if (targets.has(id) && bone.data.length < 1) continue; // drawn by constraint visuals
     drawBone(o, bone, sel.has(id), o.hoverBone === id);
   }
-  if (ui.view.names) {
+  const named = new Set(docStore.get().skeleton.bones.filter((b) => b.showName).map((b) => b.id));
+  if (ui.view.names || named.size) {
     const { ctx, w, h, cam } = o;
     ctx.font = '11px Inter Variable, Inter, system-ui, sans-serif';
     ctx.textBaseline = 'middle';
     for (const bone of scene.skeleton.bones) {
-      if (o.hiddenBones.has(bone.data.id)) continue;
+      if (o.hiddenBones.has(bone.data.id) || !(ui.view.names || named.has(bone.data.id))) continue;
       const mx = bone.worldX + (bone.a * bone.data.length) / 2;
       const my = bone.worldY + (bone.c * bone.data.length) / 2;
       const [sx, sy] = worldToScreen(cam, w, h, mx, my);
@@ -689,6 +723,7 @@ export function drawOverlay(o: OverlayInput) {
   const { ctx, w, h, ui } = o;
   ctx.clearRect(0, 0, w, h);
   if (ui.view.grid) drawGrid(o);
+  if (settingsStore.get().pixelGrid) drawPixelGrid(o);
   drawOriginCross(o);
   drawAttachmentOutline(o);
   o.under?.(o);
@@ -698,6 +733,7 @@ export function drawOverlay(o: OverlayInput) {
   drawTrails(o);
   o.extra?.(o);
   drawGizmo(o);
+  if (settingsStore.get().showFps) drawFps(o);
   drawPivot(o);
   drawInteraction(o);
   drawGuidesAndRulers(o);

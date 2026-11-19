@@ -126,7 +126,8 @@ export function matMul(p: Mat, c: Mat): Mat {
 
 export function parseNumberExpr(src: string, current: number): number | null {
   // Tiny safe evaluator for numeric fields: supports + - * / ( ) , `v` (current value) and a leading operator (+=, -=, *=, /=).
-  let s = src.trim().replace(/,/g, '.');
+  // the signs of the keyboard and the ones people type from a calculator: × ÷ and the true minus
+  let s = src.trim().replace(/,/g, '.').replace(/×/g, '*').replace(/÷/g, '/').replace(/[−–]/g, '-');
   if (!s) return null;
   const m = /^([+\-*/])=\s*(.+)$/.exec(s);
   if (m) s = `v ${m[1]} (${m[2]})`;

@@ -27,6 +27,8 @@ export interface SnapOptions {
   /** Snap to the grid (a point near a guide still sticks to the guide first). */
   grid: boolean;
   guides?: Guides;
+  /** Without a guide or the grid, land on a whole unit (a pixel of the picture at 100%). */
+  pixel?: boolean;
 }
 
 function snapAxis(v: number, lines: readonly number[], pull: number, step: number | null): { value: number; guide: boolean } {
@@ -39,7 +41,7 @@ function snapAxis(v: number, lines: readonly number[], pull: number, step: numbe
 /** Where a point lands: on the nearest guide within reach, else on the grid (when it is on), else where it is. */
 export function snapPoint(x: number, y: number, o: SnapOptions): { x: number; y: number; guideX: boolean; guideY: boolean } {
   const pull = GUIDE_PULL / Math.max(o.zoom, 1e-6);
-  const step = o.grid ? gridStep(o.zoom) : null;
+  const step = o.grid ? gridStep(o.zoom) : o.pixel ? 1 : null;
   const sx = snapAxis(x, o.guides?.x ?? [], pull, step);
   const sy = snapAxis(y, o.guides?.y ?? [], pull, step);
   return { x: sx.value, y: sy.value, guideX: sx.guide, guideY: sy.guide };

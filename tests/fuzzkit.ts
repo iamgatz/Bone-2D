@@ -57,7 +57,7 @@ import { turnAbout, turnSign } from '../src/core/pivot';
 import * as T from '../src/store/transformActions';
 import * as RN from '../src/store/renameActions';
 import { setKeysAutoCurve } from '../src/store/curveActions';
-import { favorSelectedKeys, scaleSelectedKeyTimes } from '../src/store/keyToolActions';
+import { favorSelectedKeys, scaleSelectedKeyTimes, storeSelectedKeys, swapStoredKeys } from '../src/store/keyToolActions';
 import { encodeKey } from '../src/core/keyrefs';
 import { emptySelection, uiStore } from '../src/store/ui';
 import { getScene } from '../src/editor/scene';
@@ -311,7 +311,21 @@ export const ops: Op[] = [
   { name: 'linkDeform', run: (c) => { const l = c.pick(linkedMeshes()); if (l) A.setLinkDeform(l.skinId, l.slotId, l.name, c.chance(0.5)); } },
   { name: 'unlinkMesh', run: (c) => { const l = c.pick(linkedMeshes()); if (l) A.unlinkMesh(l.skinId, l.slotId, l.name); } },
   { name: 'removeSkinImage', run: (c) => { const s = c.pick(doc().skins.slice(1)); const r = c.pick(regions()); if (s && r) A.removeSkinImage(s.id, r.slotId, r.name); } },
-  { name: 'duplicateSkin', run: (c) => { A.duplicateSkinAction(c.pick(doc().skins)!.id); } },
+  { name: 'duplicateSkin', run: (c) => { A.duplicateSkinAction(c.pick(doc().skins)!.id, { scope: c.chance(0.7), animations: c.chance(0.7), relink: c.chance(0.7) }); } },
+  { name: 'skinPin', run: (c) => { A.toggleSkinPin(c.pick(doc().skins)!.id); } },
+  // store the values of some keys, change them, swap
+  {
+    name: 'storeSwapKeys',
+    run: (c) => {
+      const a = A.currentAnimation();
+      if (!a) return;
+      uiStore.patch({ selectedKeys: allKeyRefs(a).filter(() => c.chance(0.4)).map(encodeKey) });
+      storeSelectedKeys();
+      if (c.chance(0.5)) favorSelectedKeys('neutral', c.num(0.1, 1));
+      swapStoredKeys();
+      uiStore.patch({ selectedKeys: [] });
+    },
+  },
   { name: 'skinRequiredBone', run: (c) => { A.setSkinRequiredAction('bone', c.pick(doc().bones)!.id, c.chance(0.7)); } },
   { name: 'skinRequiredConstraint', run: (c) => { const k = c.pick(doc().constraints); if (k) A.setSkinRequiredAction('constraint', k.id, c.chance(0.7)); } },
   { name: 'skinScopeBone', run: (c) => { const s = c.pick(doc().skins); const b = c.pick(doc().bones); if (s && b) A.setSkinScopeAction(s.id, 'bone', b.id, c.chance(0.7)); } },
@@ -454,8 +468,8 @@ export const ops: Op[] = [
   {
     name: 'findReplaceNames',
     run: (c) => {
-      const kinds = (['bone', 'slot', 'skin', 'event', 'constraint', 'animation'] as const).filter(() => c.chance(0.5));
-      RN.findReplaceNames({ find: c.pick(['a', 'e', 'o', '[0-9]', '^.', '_', 'r'])!, replace: c.pick(['', 'x', '_a', 'Q', '$&$&'])!, regex: c.chance(0.5), matchCase: c.chance(0.5), firstOnly: c.chance(0.5), kinds });
+      const kinds = (['bone', 'slot', 'skin', 'event', 'constraint', 'animation', 'image'] as const).filter(() => c.chance(0.5));
+      RN.findReplaceNames({ find: c.pick(['a', 'e', 'o', '[0-9]', '^.', '_', 'r'])!, replace: c.pick(['', 'x', '_a', 'Q', '$&$&'])!, regex: c.chance(0.5), matchCase: c.chance(0.5), firstOnly: c.chance(0.5), kinds, scope: RN.renameScope(c.pick(['all', 'all', 'selection', 'skin'] as const)!) });
     },
   },
   // automatic bezier handles on some keys (smooth through the neighbours)
@@ -484,7 +498,7 @@ export const ops: Op[] = [
       const a = A.currentAnimation();
       if (!a) return;
       uiStore.patch({ selectedKeys: allKeyRefs(a).filter(() => c.chance(0.4)).map(encodeKey) });
-      if (c.chance(0.5)) favorSelectedKeys(c.pick(['previous', 'next', 'average', 'neutral'] as const)!, c.num(0.1, 1));
+      if (c.chance(0.5)) favorSelectedKeys(c.pick(['previous', 'next', 'average', 'neutral', 'shiftPrevious', 'shiftNext'] as const)!, c.num(0.1, 1));
       else scaleSelectedKeyTimes(c.pick([0.5, 0.75, 1.5, 2])!);
       uiStore.patch({ selectedKeys: [] });
     },

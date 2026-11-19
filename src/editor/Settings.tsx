@@ -98,6 +98,8 @@ function CommandKey({ id, row }: { id: KeyId; row: HotkeyRow }) {
   );
 }
 
+const OFFSETS = [-200, -100, -50, -25, -10, 0, 10, 25, 50, 100, 200];
+
 export function SettingsDialog() {
   const lang = useLang();
   const [tab, setTab] = useState<Tab>('general');
@@ -109,7 +111,16 @@ export function SettingsDialog() {
   const onionBefore = useSettings((s) => s.onionBefore);
   const onionAfter = useSettings((s) => s.onionAfter);
   const onionGap = useSettings((s) => s.onionGap);
+  const onionMode = useSettings((s) => s.onionMode);
+  const onionOffsetX = useSettings((s) => s.onionOffsetX);
+  const onionOffsetY = useSettings((s) => s.onionOffsetY);
+  const onionStyle = useSettings((s) => s.onionStyle);
+  const onionTop = useSettings((s) => s.onionTop);
+  const onionColorBefore = useSettings((s) => s.onionColorBefore);
+  const onionColorAfter = useSettings((s) => s.onionColorAfter);
   const boneScale = useSettings((s) => s.boneScale);
+  const pixelGrid = useSettings((s) => s.pixelGrid);
+  const showFps = useSettings((s) => s.showFps);
   const tooltips = useSettings((s) => s.tooltips);
   useSettings((s) => s.toolKeys);
   useSettings((s) => s.keyMap);
@@ -175,6 +186,12 @@ export function SettingsDialog() {
             <Row label="Smooth images" hint="Off shows the pixels as they are (pixel art)">
               <Toggle on={smoothing} onChange={(v) => setSettings({ smoothing: v })} title="Smooth images" />
             </Row>
+            <Row label="Pixel grid" hint="A line at every whole unit when zoomed in far enough to tell them apart (6 pixels or more per unit)">
+              <Toggle on={pixelGrid} onChange={(v) => setSettings({ pixelGrid: v })} title="Pixel grid" />
+            </Row>
+            <Row label="Show FPS" hint="Frames drawn in the last second and the time of the last one, in the corner of the viewport (the viewport draws only when something changes, so it reads 0 at rest)">
+              <Toggle on={showFps} onChange={(v) => setSettings({ showFps: v })} title="Show FPS" />
+            </Row>
             <Row label="Zoom to mouse" hint="The wheel zooms around the pointer, not the middle of the viewport">
               <Toggle on={zoomToMouse} onChange={(v) => setSettings({ zoomToMouse: v })} title="Zoom to mouse" />
             </Row>
@@ -186,6 +203,42 @@ export function SettingsDialog() {
             </Row>
             <Row label="Onion skin: frames between ghosts">
               <SelectField value={String(onionGap)} options={[1, 2, 3, 4, 5, 6, 8, 10, 15, 20, 30].map((n) => ({ value: String(n), label: String(n) }))} onChange={(v) => setSettings({ onionGap: Number(v) })} />
+            </Row>
+            <Row label="Onion skin: ghosts at" hint="Every few frames, or at the keys around the playhead (of the selected bones, when some are selected)">
+              <Segmented
+                label="Onion skin: ghosts at"
+                value={onionMode}
+                onChange={(v) => setSettings({ onionMode: v })}
+                options={[
+                  { value: 'frames', label: 'Frames' },
+                  { value: 'keys', label: 'Keys' },
+                ]}
+              />
+            </Row>
+            <Row label="Onion skin: look" hint="Faded pictures, a flat colour, or a flat colour drawn over the pose so it shows through">
+              <Segmented
+                label="Onion skin: look"
+                value={onionStyle}
+                onChange={(v) => setSettings({ onionStyle: v })}
+                options={[
+                  { value: 'image', label: 'Pictures' },
+                  { value: 'silhouette', label: 'Silhouette' },
+                  { value: 'xray', label: 'X-ray' },
+                ]}
+              />
+            </Row>
+            <Row label="Onion skin: over the pose" hint="Draw the ghosts over the pose instead of under it (always so for X-ray)">
+              <Toggle on={onionTop || onionStyle === 'xray'} onChange={(v) => setSettings({ onionTop: v })} title="Onion skin: over the pose" />
+            </Row>
+            <Row label="Onion skin: shift X" hint="Moves each ghost sideways, more for the ones farther from the playhead: the motion reads as a trail">
+              <SelectField value={String(onionOffsetX)} options={OFFSETS.map((n) => ({ value: String(n), label: String(n) }))} onChange={(v) => setSettings({ onionOffsetX: Number(v) })} />
+            </Row>
+            <Row label="Onion skin: shift Y">
+              <SelectField value={String(onionOffsetY)} options={OFFSETS.map((n) => ({ value: String(n), label: String(n) }))} onChange={(v) => setSettings({ onionOffsetY: Number(v) })} />
+            </Row>
+            <Row label="Onion skin: colours" hint="Before the playhead, after it">
+              <ColorSwatch value={onionColorBefore} onChange={(rgb) => setSettings({ onionColorBefore: rgb })} title="Onion skin: colour before" />
+              <ColorSwatch value={onionColorAfter} onChange={(rgb) => setSettings({ onionColorAfter: rgb })} title="Onion skin: colour after" />
             </Row>
           </>
         )}

@@ -12,6 +12,26 @@ export interface Release {
 
 export const CHANGELOG: Release[] = [
   {
+    version: '0.54',
+    date: '2026-11-19',
+    en: [
+      "Ghosting (Settings → Viewport): ghosts at the keys around the playhead (of the selected bones, when some are selected) as well as every few frames; pictures, flat silhouettes or an x-ray drawn over the pose; a shift per ghost along X and Y that turns them into a trail; your own colours for before and after.",
+      "Preview: layers. Play another animation over the main one with its own strength, additive or looping; a layer moves only what it keys. Hold previous keeps what the new animation does not key where the old one had it while the Preview crossfades.",
+      "Animation tools: Block to previous / next (the selected keys of a timeline move together, their differences kept) and Store / Swap (set the values of some keys aside, trade them with the keys, trade back). Ctrl+Shift-drag a selected key in the dopesheet scales the time of the whole selection.",
+      "Skins: Pin keeps a skin shown while you choose another one, and Duplicate with options takes a name and chooses what comes along (bones and constraints, animation keys, linked meshes). PgUp / PgDn go back and forward through the selections you made.",
+      "Find and replace also renames pictures (the attachments that show them follow) and can be limited to the selection or the chosen skin.",
+      "View: Snap to whole pixels, an Outline map (the whole skeleton in a corner with a frame round what the viewport shows; click or drag to move there), Pixel grid and Show FPS in Settings, and a Name on screen switch for a single bone. Numeric fields also read × ÷ and the true minus.",
+    ],
+    ru: [
+      "Ghosting (Настройки → Viewport): призраки на ключах вокруг маркера (выбранных костей, если они выбраны) и через несколько кадров; картинки, плоский силуэт или рентген поверх позы; сдвиг каждого призрака по X и Y, из которого получается шлейф; свои цвета для «до» и «после».",
+      "Preview: слои. Поверх основной анимации играет ещё одна, со своей силой, additive или повтором; слой двигает только то, что в нём заключено ключами. «Удерживать предыдущую» оставляет то, чего нет в ключах новой анимации, как было в старой, пока идёт переход в Preview.",
+      "Инструменты анимации: «Блок к предыдущему / следующему» (выбранные ключи дорожки двигаются вместе, разница между ними сохраняется) и «Запомнить» / «Поменять» (отложить значения ключей, обменять их с ключами, обменять обратно). Ctrl+Shift и перетащить выбранный ключ в дорожках: масштаб времени всего выделения.",
+      "Скины: булавка оставляет скин на экране, пока вы выбираете другой, а «Дублировать с параметрами» принимает имя и выбор того, что берётся с собой (кости и констрейнты, ключи анимаций, связанные меши). PgUp / PgDn: назад и вперёд по сделанным выделениям.",
+      "«Найти и заменить» переименовывает и картинки (вложения, которые их показывают, идут следом) и работает только по выделенному или только по выбранному скину.",
+      "Вид: привязка к целым пикселям, «Карта-обзор» (весь скелет в углу с рамкой видимой части, клик или перетаскивание двигает вид), «Пиксельная сетка» и «Показывать FPS» в настройках, «Имя на экране» для одной кости. Числовые поля понимают также × ÷ и настоящий минус.",
+    ],
+  },
+  {
     version: '0.53',
     date: '2026-11-19',
     en: [

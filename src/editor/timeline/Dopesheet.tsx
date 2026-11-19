@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import { decodeKey, encodeKey } from '@/core/keyrefs';
 import type { KeyRef } from '@/core/keyrefs';
 import { moveKeysBy, setTime } from '@/store/actions';
+import { scaleSelectedKeyTimes } from '@/store/keyToolActions';
 import { docStore } from '@/store/doc';
 import { markerNear, markersOf } from '@/core/markers';
 import { peakAt } from '@/core/waveform';
@@ -42,6 +43,7 @@ interface Props {
 type Drag =
   | { kind: 'scrub' }
   | { kind: 'pan'; x: number; scroll: number }
+  | { kind: 'scale'; pivot: number; anchor: number }
   | { kind: 'keys'; anchor: KeyRef; grab: number; refs: KeyRef[]; ripple: boolean; loop: boolean }
   | { kind: 'marquee'; x0: number; y0: number; x1: number; y1: number; base: string[] };
 
@@ -436,6 +438,15 @@ export function Dopesheet({ rows, duration, fps, onMenu }: Props) {
         const enc = hit.key.refs.map(encodeKey);
         let selected: string[];
         const already = enc.every((s) => ui.selectedKeys.includes(s));
+        // Ctrl+Shift on a selected key: drag it to stretch or squeeze the time of the whole selection around its earliest key
+        if ((e.ctrlKey || e.metaKey) && e.shiftKey && !e.altKey && already) {
+          const pivot = Math.min(...ui.selectedKeys.map((s) => decodeKey(s).time));
+          if (hit.key.time - pivot > 1e-6) {
+            docStore.beginGesture('Scale key times');
+            drag.current = { kind: 'scale', pivot, anchor: hit.key.time };
+          }
+          return;
+        }
         // Ctrl+Alt: Offset keys (the keys go round the loop); the modifiers do not toggle the selection then
         const loop = e.altKey && (e.ctrlKey || e.metaKey);
         if (loop) selected = already ? ui.selectedKeys : enc;
@@ -471,6 +482,11 @@ export function Dopesheet({ rows, duration, fps, onMenu }: Props) {
           d.refs = moved;
           uiStore.patch({ selectedKeys: moved.map(encodeKey) });
         }
+      } else if (d.kind === 'scale') {
+        const fps = propsRef.current.fps;
+        const target = Math.round(xToTime(x) * fps) / fps;
+        const factor = (target - d.pivot) / (d.anchor - d.pivot);
+        if (target > d.pivot + 1e-6 && Math.abs(factor - 1) > 1e-6 && scaleSelectedKeyTimes(factor) > 0) d.anchor = target;
       } else if (d.kind === 'marquee') {
         d.x1 = x;
         d.y1 = y;
@@ -494,7 +510,7 @@ export function Dopesheet({ rows, duration, fps, onMenu }: Props) {
       }
     };
     const onUp = () => {
-      if (drag.current?.kind === 'keys') docStore.endGesture();
+      if (drag.current?.kind === 'keys' || drag.current?.kind === 'scale') docStore.endGesture();
       drag.current = null;
       dirty.current = true;
     };

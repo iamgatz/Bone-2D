@@ -2,10 +2,12 @@ import { useMemo, useState } from 'react';
 import { NAME_KINDS } from '@/core/rename';
 import type { NameKind } from '@/core/rename';
 import { useProject } from '@/store/doc';
-import { findReplaceNames, previewRename } from '@/store/renameActions';
-import { Button } from '../ui/controls';
+import { findReplaceNames, previewRename, renameScope } from '@/store/renameActions';
+import type { RenameWhere } from '@/store/renameActions';
+import { useUi } from '@/store/ui';
+import { Button, SelectField } from '../ui/controls';
 
-const KIND_LABEL: Record<NameKind, string> = { bone: 'Bones', slot: 'Slots', skin: 'Skins', event: 'Events', constraint: 'Constraints', animation: 'Animations' };
+const KIND_LABEL: Record<NameKind, string> = { bone: 'Bones', slot: 'Slots', skin: 'Skins', event: 'Events', constraint: 'Constraints', animation: 'Animations', image: 'Pictures' };
 
 /** Find and replace for names, under the Hierarchy filter: the count of what would change shows while typing, Replace does it as one step. */
 export function RenameBar() {
@@ -16,9 +18,13 @@ export function RenameBar() {
   const [matchCase, setMatchCase] = useState(false);
   const [firstOnly, setFirstOnly] = useState(false);
   const [kinds, setKinds] = useState<NameKind[]>(['bone', 'slot']);
-  const opts = { find, replace, regex, matchCase, firstOnly, kinds };
+  const [where, setWhere] = useState<RenameWhere>('all');
+  // the selection and the chosen skin are dependencies on purpose: the count follows them
+  const selection = useUi((s) => s.selection);
+  const skinId = useUi((s) => s.skinId);
+  const opts = { find, replace, regex, matchCase, firstOnly, kinds, scope: renameScope(where) };
   // `doc` is a dependency on purpose: the count follows the document
-  const plan = useMemo(() => previewRename(opts), [doc, find, replace, regex, matchCase, firstOnly, kinds]); // eslint-disable-line react-hooks/exhaustive-deps
+  const plan = useMemo(() => previewRename(opts), [doc, find, replace, regex, matchCase, firstOnly, kinds, where, selection, skinId]); // eslint-disable-line react-hooks/exhaustive-deps
   const flip = (k: NameKind) => setKinds((l) => (l.includes(k) ? l.filter((x) => x !== k) : [...l, k]));
   const stop = (e: React.KeyboardEvent) => e.stopPropagation();
   return (
@@ -42,6 +48,18 @@ export function RenameBar() {
             <input type="checkbox" checked={kinds.includes(k)} onChange={() => flip(k)} /> {KIND_LABEL[k]}
           </label>
         ))}
+      </div>
+      <div className="rename-opts">
+        <SelectField
+          label="Where"
+          value={where}
+          onChange={setWhere}
+          options={[
+            { value: 'all', label: 'Everywhere' },
+            { value: 'selection', label: 'Selection only' },
+            { value: 'skin', label: 'Chosen skin only' },
+          ]}
+        />
       </div>
       <div className="rename-go">
         <span className="hint-text">{plan.invalid ? 'Not a valid expression' : find ? `${plan.changes.length} to rename${plan.skipped.length ? `, ${plan.skipped.length} skipped` : ''}` : ' '}</span>
