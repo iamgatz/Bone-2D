@@ -15,7 +15,14 @@ import { getScene, getSetupSkeleton } from '@/editor/scene';
 import { assets } from './assets';
 import { docStore } from './doc';
 import { setSelection } from './actions';
-import { toast, uiStore } from './ui';
+import { toast as say, uiStore } from './ui';
+import type { UiState } from './ui';
+
+/** While a group operation runs, the per-mesh messages stay quiet: the group says one thing at the end. */
+let muted = 0;
+const toast = (text: string, kind: Parameters<typeof say>[1] = 'info', ms?: number) => {
+  if (!muted) say(text, kind, ms);
+};
 
 export function setupMats(): { mats: BoneMats; slotMat: (slotId: Id) => Mat } {
   const setup = getSetupSkeleton();
@@ -272,6 +279,117 @@ export function clearMeshEdges(slotId: Id, name: string) {
   const { mats, slotMat } = setupMats();
   const world = meshWorldPositions(mesh, slotMat(slotId), mats);
   writeMesh(slotId, name, { ...mesh, edges: [], triangles: triangulate(world, mesh.hull, []) }, 'Clear edges');
+}
+
+// ------------------------------------------------------------------ several meshes at once
+
+export interface MeshRef {
+  slotId: Id;
+  name: string;
+}
+
+/**
+ * The meshes the weights tools work on: the selected attachment first, then the mesh each other selected slot shows now (Spine 4.3: the
+ * weights view edits several meshes at once). Only meshes of the default skin that are not linked (a linked mesh takes its weights from its source).
+ */
+export function weightGroup(): MeshRef[] {
+  const ui: UiState = uiStore.get();
+  const doc = docStore.get().skeleton;
+  const out: MeshRef[] = [];
+  const take = (slotId: Id, name: string | null) => {
+    if (!name || out.some((m) => m.slotId === slotId)) return;
+    const a = doc.skins[0]?.attachments[slotId]?.[name];
+    if (a && a.type === 'mesh' && !a.link) out.push({ slotId, name });
+  };
+  if (ui.selection.slot) take(ui.selection.slot, ui.selection.attachment);
+  for (const id of ui.selection.extraSlots ?? []) take(id, doc.slots.find((s) => s.id === id)?.attachment ?? null);
+  return out;
+}
+
+/** The bones that every mesh of the group follows (what a brush may paint on all of them). */
+export function commonBones(group: MeshRef[]): Id[] {
+  let common: Id[] | null = null;
+  for (const m of group) {
+    const mesh = getMesh(m.slotId, m.name);
+    const bones = mesh?.weights ? [...new Set(mesh.weights.flat().map((i) => i[0]))] : [];
+    common = common === null ? bones : common.filter((b) => bones.includes(b));
+  }
+  return common ?? [];
+}
+
+/** Runs `fn` on every mesh of the group inside one history step; the per-mesh messages are replaced by one. Returns how many meshes it ran on. */
+function inGroup(label: string, fn: (m: MeshRef) => void, done?: (n: number) => string): number {
+  const group = weightGroup();
+  if (!group.length) return 0;
+  docStore.beginGesture(label);
+  muted++;
+  try {
+    for (const m of group) fn(m);
+  } finally {
+    muted--;
+    docStore.endGesture();
+  }
+  if (group.length > 1) say(done ? done(group.length) : `${label}: ${group.length} meshes`, 'ok');
+  return group.length;
+}
+
+export const bindMeshesToBones = (boneIds: Id[]) => inGroup('Bind meshes', (m) => bindMeshToBones(m.slotId, m.name, boneIds));
+export const unbindMeshesFromBones = () => inGroup('Unbind meshes', (m) => unbindMeshFromBones(m.slotId, m.name));
+export const autoWeightMeshes = () => inGroup('Auto weights', (m) => autoWeightMesh(m.slotId, m.name));
+export const smoothMeshesWeights = (passes = 1) => inGroup('Smooth weights', (m) => smoothMeshWeights(m.slotId, m.name, passes));
+export const pruneMeshesWeights = (threshold = 0.05, max = 4) => inGroup('Prune weights', (m) => pruneMeshWeights(m.slotId, m.name, threshold, max));
+export const swapMeshesWeights = (a: Id, b: Id) => inGroup('Swap weights', (m) => void swapMeshWeights(m.slotId, m.name, a, b));
+export const removeBoneFromMeshes = (bone: Id) => inGroup('Remove bone from meshes', (m) => void removeBoneFromMesh(m.slotId, m.name, bone));
+
+/** The images (regions) the selected slots show now: what Trace mesh turns into meshes together. */
+export function traceGroup(): MeshRef[] {
+  const ui = uiStore.get();
+  const doc = docStore.get().skeleton;
+  const out: MeshRef[] = [];
+  const take = (slotId: Id, name: string | null) => {
+    if (!name || out.some((m) => m.slotId === slotId)) return;
+    if (doc.skins[0]?.attachments[slotId]?.[name]?.type === 'region') out.push({ slotId, name });
+  };
+  if (ui.selection.slot) take(ui.selection.slot, ui.selection.attachment);
+  for (const id of ui.selection.extraSlots ?? []) take(id, doc.slots.find((s) => s.id === id)?.attachment ?? null);
+  return out;
+}
+
+/** Runs `fn` on each of `refs` in one history step, keeping the selection as it was (the single-mesh actions select the mesh they made). */
+function inRefs(label: string, refs: MeshRef[], fn: (m: MeshRef) => void): number {
+  if (!refs.length) return 0;
+  const keep = uiStore.get().selection;
+  docStore.beginGesture(label);
+  muted++;
+  try {
+    for (const m of refs) fn(m);
+  } finally {
+    muted--;
+    docStore.endGesture();
+  }
+  uiStore.patch({ selection: { ...keep, vertices: [] } });
+  if (refs.length > 1) say(`${label}: ${refs.length} images`, 'ok');
+  return refs.length;
+}
+
+/** Trace mesh (or Quad) for every image the selected slots show: Spine 4.3 traces several meshes at once. One history step. */
+export function convertImagesToMeshes(kind: 'trace' | 'quad' = 'trace', opts: TraceOptions = {}): number {
+  return inRefs('Trace meshes', traceGroup(), (m) => convertToMesh(m.slotId, m.name, kind, opts));
+}
+
+/** Re-traces every unweighted mesh of the group from its image. One history step. */
+export function regenerateMeshes(opts: TraceOptions): number {
+  const refs = weightGroup().filter((m) => !getMesh(m.slotId, m.name)?.weights);
+  return inRefs('Re-trace meshes', refs, (m) => regenerateMesh(m.slotId, m.name, opts));
+}
+
+/** A stroke of the brush on every mesh of the group that follows the bone (the meshes the bone does not move are left alone). */
+export function paintWeightsGroup(stroke: BrushStroke, bone: Id) {
+  const group = weightGroup();
+  for (const m of group) {
+    if (group.length > 1 && !getMesh(m.slotId, m.name)?.weights?.some((list) => list.some((e) => e[0] === bone))) continue;
+    paintWeights(m.slotId, m.name, stroke, bone);
+  }
 }
 
 // ------------------------------------------------------------------ binding & weights

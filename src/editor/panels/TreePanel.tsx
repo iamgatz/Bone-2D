@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import type { ReactElement } from 'react';
 import { Bone as BoneIcon, BoxSelect, ChevronDown, ChevronRight, Crosshair, Diamond, Eye, EyeOff, Folder, Image as ImageIcon, Layers, Link2, Lock, Plus, Replace, Scissors, Shirt, Search, Spline, Trash2, Unlock, Waves, X, Zap } from 'lucide-react';
 import type { Bone, Id, Slot } from '@/core/model';
-import { createEvent, createSkin, deleteBones, deleteEvent, deleteSkin, deleteSlots, keyEvent, moveSlot, renameBone, renameSkin, renameSlot, reparentBone, selectBone, selectSlot, setActiveSkin, setBoneProps, setSelection, setSlotBone, setSlotProps, updateEvent } from '@/store/actions';
+import { createEvent, createSkin, deleteBones, deleteEvent, deleteSkin, deleteSlots, keyEvent, moveSlot, renameBone, renameSkin, renameSlot, reparentBone, selectBone, selectSlot, setActiveSkin, toggleExtraSlot, setBoneProps, setSelection, setSlotBone, setSlotProps, updateEvent } from '@/store/actions';
 import { folderOfSlot } from '@/core/folders';
 import { filterTree } from '@/core/treeFilter';
 import { useProject } from '@/store/doc';
@@ -98,7 +98,7 @@ export function TreePanel() {
   const toggle = (id: string) => setCollapsed((c) => ({ ...c, [id]: !c[id] }));
 
   const renderSlot = (slot: Slot, depth: number) => {
-    const selected = selection.slot === slot.id;
+    const selected = selection.slot === slot.id || (selection.extraSlots ?? []).includes(slot.id);
     const atts = doc.skins[0]?.attachments[slot.id] ?? {};
     const attNames = Object.keys(atts);
     const open = !collapsed['s:' + slot.id] && (selected || (match.active && match.slots.has(slot.id)));
@@ -112,7 +112,7 @@ export function TreePanel() {
             e.dataTransfer.setData('application/x-bone2d-slot', slot.id);
             e.dataTransfer.effectAllowed = 'move';
           }}
-          onClick={() => selectSlot(slot.id, slot.attachment)}
+          onClick={(e) => (e.ctrlKey || e.metaKey || e.shiftKey) && selection.slot ? toggleExtraSlot(slot.id) : selectSlot(slot.id, slot.attachment)}
           onDoubleClick={() => setEditing('s:' + slot.id)}
         >
           <span className={`chev${attNames.length ? '' : ' hidden'}`} onClick={(e) => (e.stopPropagation(), toggle('s:' + slot.id))}>
@@ -271,7 +271,7 @@ export function TreePanel() {
               return (
                 <div
                   key={s.id}
-                  className={`row${selection.slot === s.id ? ' selected' : ''}${dropOn === 'o:' + s.id ? ' drop' : ''}`}
+                  className={`row${selection.slot === s.id || (selection.extraSlots ?? []).includes(s.id) ? ' selected' : ''}${dropOn === 'o:' + s.id ? ' drop' : ''}`}
                   style={{ paddingLeft: indent ? 30 : 14 }}
                   draggable
                   onDragStart={(e) => {
@@ -290,7 +290,7 @@ export function TreePanel() {
                     const id = e.dataTransfer.getData('application/x-bone2d-order');
                     if (id && id !== s.id) moveSlot(id, i);
                   }}
-                  onClick={() => selectSlot(s.id, s.attachment)}
+                  onClick={(e) => ((e.ctrlKey || e.metaKey || e.shiftKey) && selection.slot ? toggleExtraSlot(s.id) : selectSlot(s.id, s.attachment))}
                 >
                   <span className="ico">
                     <Layers size={13} />

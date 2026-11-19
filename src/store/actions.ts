@@ -112,7 +112,8 @@ export function sanitizeSelection() {
   const slotOk = sel.slot === null || doc.slots.some((s) => s.id === sel.slot);
   const attOk = slotOk && (sel.attachment === null || (sel.slot !== null && !!doc.skins[0]?.attachments[sel.slot]?.[sel.attachment]));
   const constraintOk = sel.constraint === null || doc.constraints.some((c) => c.id === sel.constraint);
-  if (bones.length === sel.bones.length && slotOk && attOk && constraintOk) return;
+  const extra = slotOk && sel.slot !== null ? (sel.extraSlots ?? []).filter((id) => id !== sel.slot && doc.slots.some((s) => s.id === id)) : [];
+  if (bones.length === sel.bones.length && slotOk && attOk && constraintOk && extra.length === (sel.extraSlots ?? []).length) return;
   uiStore.patch({
     selection: {
       bones,
@@ -120,6 +121,7 @@ export function sanitizeSelection() {
       attachment: attOk ? sel.attachment : null,
       constraint: constraintOk ? sel.constraint : null,
       vertices: attOk ? sel.vertices : [],
+      extraSlots: extra,
     },
   });
 }
@@ -130,6 +132,15 @@ export function selectBone(id: Id, additive = false) {
     const bones = cur.bones.includes(id) ? cur.bones.filter((b) => b !== id) : [...cur.bones, id];
     setSelection({ bones });
   } else setSelection({ bones: [id] });
+}
+
+/** Ctrl-click on a slot: adds it to the slots the weights tools work on together with the selected one, or takes it out again. */
+export function toggleExtraSlot(slotId: Id) {
+  const sel = uiStore.get().selection;
+  if (!sel.slot || sel.slot === slotId) return;
+  const had = sel.extraSlots ?? [];
+  const extra = had.includes(slotId) ? had.filter((id) => id !== slotId) : [...had, slotId];
+  uiStore.patch({ selection: { ...sel, extraSlots: extra } });
 }
 
 export function selectSlot(slotId: Id, attachment?: string | null) {

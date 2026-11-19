@@ -25,6 +25,8 @@ export interface Selection {
   constraint: Id | null;
   /** Selected mesh vertices (indices) while in mesh/weights tools. */
   vertices: number[];
+  /** Other slots selected together with `slot` (Ctrl-click in the tree): the weights tools work on the meshes of all of them at once. */
+  extraSlots?: Id[];
 }
 
 export interface PoseOverride {
@@ -182,7 +184,7 @@ export interface UiState {
   pivotPick: boolean;
 }
 
-export const emptySelection: Selection = { bones: [], slot: null, attachment: null, constraint: null, vertices: [] };
+export const emptySelection: Selection = { bones: [], slot: null, attachment: null, constraint: null, vertices: [], extraSlots: [] };
 
 const saved = loadLayout();
 

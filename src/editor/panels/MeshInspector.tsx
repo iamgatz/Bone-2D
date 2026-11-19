@@ -3,7 +3,7 @@ import { ArrowLeftRight, Brush, ClipboardPaste, Copy, Crosshair, Eraser, Lock, U
 import type { Id, MeshAttachment, Project } from '@/core/model';
 import { linkSource } from '@/core/links';
 import { linkMeshTo, setAttachmentProps, setLinkDeform, setTool, unlinkMesh } from '@/store/actions';
-import { autoWeightMesh, moveMeshTriangle, bindMeshToBones, clearMeshEdges, toggleMeshEdge, convertToMesh, copyVertexWeights, pasteVertexWeights, mirrorMeshWeights, pruneMeshWeights, regenerateMesh, removeBoneFromMesh, retriangulateMesh, smoothMeshWeights, swapMeshWeights, unbindMeshFromBones, updateMeshBindings, weldMeshWeights, weldTargets } from '@/store/meshActions';
+import { autoWeightMeshes, moveMeshTriangle, bindMeshesToBones, clearMeshEdges, toggleMeshEdge, convertToMesh, copyVertexWeights, pasteVertexWeights, mirrorMeshWeights, pruneMeshesWeights, regenerateMesh, removeBoneFromMeshes, retriangulateMesh, smoothMeshesWeights, swapMeshesWeights, unbindMeshesFromBones, updateMeshBindings, weldMeshWeights, weldTargets, weightGroup, traceGroup, convertImagesToMeshes, regenerateMeshes } from '@/store/meshActions';
 import { useProject } from '@/store/doc';
 import { useFloats } from '@/store/floats';
 import { uiStore, useUi } from '@/store/ui';
@@ -16,9 +16,21 @@ import { Section } from '../ui/Section';
 export function ConvertToMeshGroup({ slotId, name }: { slotId: Id; name: string }) {
   const [spacing, setSpacing] = useState(34);
   const [padding, setPadding] = useState(2);
+  // images of other slots selected with Ctrl-click are traced together with this one (Spine 4.3: trace several meshes at once)
+  const extraSlots = useUi((s) => s.selection.extraSlots);
+  useProject();
+  const images = extraSlots?.length ? traceGroup().length : 1;
   return (
     <Section id="mesh.convert" title="Mesh" icon={Hexagon}>
       <p className="hint-text mb">Turn this image into a deformable mesh. Tracing follows the opaque pixels and fills the shape with triangles.</p>
+      {images > 1 && (
+        <div className="hstack wrap mb">
+          <span className="chip accent" title="Ctrl-click slots in the tree to add or remove them. Trace mesh and Quad turn all these images into meshes">{`${images} images together`}</span>
+          <Button small ghost onClick={() => uiStore.patch({ selection: { ...uiStore.get().selection, extraSlots: [] } })} title="Work on this image alone again">
+            Only this image
+          </Button>
+        </div>
+      )}
       <Field label="Density">
         <NumberField label="px" value={spacing} step={1} precision={0} min={8} max={400} onChange={setSpacing} title="Interior vertex spacing in pixels (smaller = more vertices)" />
       </Field>
@@ -26,10 +38,10 @@ export function ConvertToMeshGroup({ slotId, name }: { slotId: Id; name: string 
         <NumberField label="px" value={padding} step={1} precision={0} min={-20} max={40} onChange={setPadding} title="How far the outline sits outside the opaque pixels" />
       </Field>
       <div className="hstack">
-        <Button primary icon={Sparkles} onClick={() => convertToMesh(slotId, name, 'trace', { spacing, padding })}>
+        <Button primary icon={Sparkles} onClick={() => (images > 1 ? convertImagesToMeshes('trace', { spacing, padding }) : convertToMesh(slotId, name, 'trace', { spacing, padding }))}>
           Trace mesh
         </Button>
-        <Button onClick={() => convertToMesh(slotId, name, 'quad')} title="Four corner vertices only">
+        <Button onClick={() => (images > 1 ? convertImagesToMeshes('quad') : convertToMesh(slotId, name, 'quad'))} title="Four corner vertices only">
           Quad
         </Button>
       </div>
@@ -98,6 +110,8 @@ export function MeshGroup({ slotId, att, part }: { slotId: Id; att: MeshAttachme
   const meshView = useUi((s) => s.meshView);
   const mode = useUi((s) => s.mode);
   const selectedBones = useUi((s) => s.selection.bones);
+  // the meshes of the other slots selected with Ctrl-click: the weight buttons below work on all of them (Spine 4.3: weights of several meshes at once)
+  const extraSlots = useUi((s) => s.selection.extraSlots);
   const pickedList = useUi((s) => (s.selection.slot === slotId && s.selection.attachment === att.name ? s.selection.vertices : EMPTY));
   const pickedVertices = pickedList.length;
   const [spacing, setSpacing] = useState(34);
@@ -113,6 +127,8 @@ export function MeshGroup({ slotId, att, part }: { slotId: Id; att: MeshAttachme
   const doc = project.skeleton;
   const slot = doc.slots.find((s) => s.id === slotId);
   const weighted = att.weights != null;
+  const group = extraSlots?.length ? weightGroup() : [];
+  const together = group.length > 1 ? group.length : 0;
   const influencing = weighted ? [...new Set(att.weights!.flat().map((i) => i[0]))] : [];
   const boneName = (id: Id) => doc.bones.find((b) => b.id === id)?.name ?? '?';
   const setup = mode === 'setup';
@@ -204,7 +220,7 @@ export function MeshGroup({ slotId, att, part }: { slotId: Id; att: MeshAttachme
               <NumberField label="px" value={padding} step={1} precision={0} min={-20} max={40} onChange={setPadding} />
             </Field>
             <div className="hstack">
-              <Button icon={RefreshCw} onClick={() => regenerateMesh(slotId, att.name, { spacing, padding })} title="Trace the image again (unweighted meshes)">
+              <Button icon={RefreshCw} onClick={() => (together > 1 ? regenerateMeshes({ spacing, padding }) : regenerateMesh(slotId, att.name, { spacing, padding }))} title="Trace the image again (unweighted meshes)">
                 Re-trace
               </Button>
               <Button onClick={() => retriangulateMesh(slotId, att.name)} title="Rebuild the triangles inside the outline">
@@ -228,26 +244,34 @@ export function MeshGroup({ slotId, att, part }: { slotId: Id; att: MeshAttachme
 
       {showWeights && setup && !linked && (
         <Section id="mesh.weights" title="Weights" icon={Link2}>
+          {together > 0 && (
+            <div className="hstack wrap mb">
+              <span className="chip accent" title="Ctrl-click slots in the tree to add or remove them. Bind, Auto, Smooth, Prune, Swap, Unbind, removing a bone and the brush work on all of these meshes (the brush on the ones that follow its bone)">{`${together} meshes together`}</span>
+              <Button small ghost onClick={() => uiStore.patch({ selection: { ...uiStore.get().selection, extraSlots: [] } })} title="Work on this mesh alone again">
+                Only this mesh
+              </Button>
+            </div>
+          )}
           {!weighted ? (
             <>
               <p className="hint-text mb">Bind the mesh to bones so it bends with them. Select the bones in the viewport first.</p>
-              <Button primary icon={Link2} onClick={() => bindMeshToBones(slotId, att.name, selectedBones)} disabled={!selectedBones.length && !slot} title="Auto-weights to the selected bones">
+              <Button primary icon={Link2} onClick={() => bindMeshesToBones(selectedBones)} disabled={!selectedBones.length && !slot} title="Auto-weights to the selected bones">
                 {`Bind to ${selectedBones.length || 1} selected bone${selectedBones.length === 1 || !selectedBones.length ? '' : 's'}`}
               </Button>
             </>
           ) : (
             <>
               <div className="hstack wrap mb">
-                <Button icon={Link2} onClick={() => bindMeshToBones(slotId, att.name, selectedBones)} title="Add the selected bones as influences (re-computes weights)">
+                <Button icon={Link2} onClick={() => bindMeshesToBones(selectedBones)} title="Add the selected bones as influences (re-computes weights)">
                   Add bones
                 </Button>
-                <Button icon={Sparkles} onClick={() => autoWeightMesh(slotId, att.name)}>
+                <Button icon={Sparkles} onClick={() => autoWeightMeshes()}>
                   Auto
                 </Button>
-                <Button icon={Waves} onClick={() => smoothMeshWeights(slotId, att.name, 2)}>
+                <Button icon={Waves} onClick={() => smoothMeshesWeights(2)}>
                   Smooth
                 </Button>
-                <Button icon={Scissors} onClick={() => pruneMeshWeights(slotId, att.name, pruneBelow / 100, pruneBones)} title="Drop the influences lighter than the threshold and keep at most the given number of bones per vertex">
+                <Button icon={Scissors} onClick={() => pruneMeshesWeights(pruneBelow / 100, pruneBones)} title="Drop the influences lighter than the threshold and keep at most the given number of bones per vertex">
                   Prune
                 </Button>
                 <Button icon={Crosshair} onClick={() => updateMeshBindings(slotId, att.name)} title="Make the bind pose the pose the bones have now (after moving bones in the setup pose), so weight edits stop shifting the vertices">
@@ -259,7 +283,7 @@ export function MeshGroup({ slotId, att, part }: { slotId: Id; att: MeshAttachme
                 <Button icon={FlipHorizontal2} onClick={() => mirrorMeshWeights(slotId, att.name, false)} title="Copy the weights of the right half to the left half (bones swapped for their mirror twins)">
                   Mirror R→L
                 </Button>
-                <Button icon={Unlink2} danger onClick={() => unbindMeshFromBones(slotId, att.name)}>
+                <Button icon={Unlink2} danger onClick={() => unbindMeshesFromBones()}>
                   Unbind
                 </Button>
               </div>
@@ -272,7 +296,7 @@ export function MeshGroup({ slotId, att, part }: { slotId: Id; att: MeshAttachme
                 <Field label="Swap">
                   <SelectField value={swapFrom} options={influencing.map((id) => ({ value: id, label: boneName(id) }))} onChange={setSwapA} />
                   <SelectField value={swapTo} options={influencing.map((id) => ({ value: id, label: boneName(id) }))} onChange={setSwapB} />
-                  <Button icon={ArrowLeftRight} onClick={() => swapMeshWeights(slotId, att.name, swapFrom, swapTo)} title="The two bones exchange their weights on the selected vertices (or the whole mesh)">
+                  <Button icon={ArrowLeftRight} onClick={() => swapMeshesWeights(swapFrom, swapTo)} title="The two bones exchange their weights on the selected vertices (or the whole mesh)">
                     Swap
                   </Button>
                 </Field>
@@ -303,7 +327,7 @@ export function MeshGroup({ slotId, att, part }: { slotId: Id; att: MeshAttachme
                         <span style={{ width: 10, height: 10, borderRadius: 5, flex: 'none', background: boneCss(bound.indexOf(id)) }} />
                         <span style={{ flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{boneName(id)}</span>
                         <IconButton small active={on} icon={on ? Lock : Unlock} title="A locked bone keeps its weights while you paint" onClick={() => uiStore.patch({ brush: { ...brush, locked: on ? brush.locked.filter((x) => x !== id) : [...brush.locked, id] } })} />
-                        <IconButton small icon={X} title="The mesh stops following this bone; its weights go to the other bones of each vertex (or to the parent bone)" onClick={() => void removeBoneFromMesh(slotId, att.name, id)} />
+                        <IconButton small icon={X} title="The mesh stops following this bone; its weights go to the other bones of each vertex (or to the parent bone)" onClick={() => void removeBoneFromMeshes(id)} />
                       </div>
                     );
                   })}
