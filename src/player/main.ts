@@ -10,6 +10,10 @@ import { compileSkeleton, createSkeleton } from '@/core/skeleton';
 import type { Skeleton } from '@/core/skeleton';
 import { GLRenderer } from '@/render/gl';
 import type { PlayerPayload } from '@/core/export/playerPage';
+import { playerLang, playerText } from '@/core/export/playerText';
+import type { PlayerKey } from '@/core/export/playerText';
+import { canvasToWorld, nearestBone, viewScale, worldToCanvas } from '@/core/export/playerView';
+import type { BoneSegment } from '@/core/export/playerView';
 import { makeComment, serializeReview } from '@/core/review';
 import type { ReviewComment } from '@/core/review';
 
@@ -36,6 +40,10 @@ async function main() {
   const payload: PlayerPayload = JSON.parse($('b2d-data').textContent ?? '{}');
   const doc = payload.skeleton;
   const canvas = $<HTMLCanvasElement>('stage');
+  const over = $<HTMLCanvasElement>('over');
+  // the words follow the language of the browser that opens the page
+  const lang = playerLang(navigator.language);
+  const T = (key: PlayerKey, vars: Record<string, string | number> = {}) => playerText(lang, key, vars);
   const images = await loadImages(payload);
   const renderer = new GLRenderer(canvas);
   renderer.source = { get: (n) => (images.has(n) ? { bitmap: images.get(n)!, version: 1 } : null) };
@@ -52,6 +60,8 @@ async function main() {
   let last = -1;
   const view = { x: 0, y: 0, zoom: 1 };
   let fit = { x: 0, y: 0, w: 100, h: 100 };
+  /** The bone a click in the picture pointed at: a comment can say which bone it is about. */
+  let picked: string | null = null;
 
   const play = $<HTMLButtonElement>('play');
   const seek = $<HTMLInputElement>('seek');
@@ -103,10 +113,38 @@ async function main() {
       canvas.width = w;
       canvas.height = h;
     }
-    const scale = Math.min(w / (fit.w * 1.16), h / (fit.h * 1.16)) * view.zoom;
+    const scale = viewScale(w, h, fit, view.zoom);
     renderer.begin({ x: fit.x + view.x, y: fit.y + view.y, scale, width: w, height: h }, dark ? [0.075, 0.082, 0.1, 1] : [0.95, 0.95, 0.96, 1]);
     renderer.drawSkeleton(skeleton);
     renderer.end();
+    drawPicked(w, h);
+  };
+
+  /** The bone a click picked is drawn over the picture (a second canvas, so the renderer stays as it is). */
+  const drawPicked = (w: number, h: number) => {
+    if (over.width !== w || over.height !== h) {
+      over.width = w;
+      over.height = h;
+    }
+    const ctx = over.getContext('2d');
+    if (!ctx) return;
+    ctx.clearRect(0, 0, w, h);
+    const b = picked ? skeleton.bones.find((x) => x.data.name === picked) : undefined;
+    if (!b) return;
+    const [x1, y1] = worldToCanvas(b.worldX, b.worldY, w, h, fit, view);
+    const [x2, y2] = worldToCanvas(b.tipX, b.tipY, w, h, fit, view);
+    const dpr = window.devicePixelRatio || 1;
+    ctx.lineCap = 'round';
+    ctx.strokeStyle = '#ffb454';
+    ctx.lineWidth = 4 * dpr;
+    ctx.beginPath();
+    ctx.moveTo(x1, y1);
+    ctx.lineTo(x2, y2);
+    ctx.stroke();
+    ctx.fillStyle = '#ffb454';
+    ctx.beginPath();
+    ctx.arc(x1, y1, 5 * dpr, 0, Math.PI * 2);
+    ctx.fill();
   };
 
   const showTime = () => {
@@ -114,7 +152,7 @@ async function main() {
     label.textContent = `${time.toFixed(2)} / ${d.toFixed(2)} s`;
     seek.max = String(Math.max(1, Math.round(d * 1000)));
     seek.value = String(Math.round(time * 1000));
-    play.textContent = playing ? 'Pause' : 'Play';
+    play.textContent = playing ? T('pause') : T('play');
   };
 
   const choose = (a: Animation | null) => {
@@ -136,7 +174,7 @@ async function main() {
   for (const a of doc.animations) animSel.add(new Option(a.name, a.id));
   animSel.hidden = doc.animations.length < 2;
   animSel.onchange = () => choose(doc.animations.find((a) => a.id === animSel.value) ?? null);
-  skinSel.add(new Option('default', ''));
+  skinSel.add(new Option(T('defaultSkin'), ''));
   for (const s of doc.skins.slice(1)) skinSel.add(new Option(s.name, s.id));
   skinSel.hidden = doc.skins.length < 2;
   skinSel.onchange = () => setSkin(skinSel.value || null);
@@ -159,19 +197,34 @@ async function main() {
     view.zoom = Math.min(20, Math.max(0.2, view.zoom * Math.exp(-e.deltaY * 0.0015)));
   }, { passive: false });
   let drag: { x: number; y: number } | null = null;
+  let pressed: { x: number; y: number } | null = null;
   canvas.onpointerdown = (e) => {
     drag = { x: e.clientX, y: e.clientY };
+    pressed = { x: e.clientX, y: e.clientY };
     canvas.setPointerCapture(e.pointerId);
   };
   canvas.onpointermove = (e) => {
     if (!drag) return;
     const dpr = window.devicePixelRatio || 1;
-    const scale = Math.min((canvas.clientWidth * dpr) / (fit.w * 1.16), (canvas.clientHeight * dpr) / (fit.h * 1.16)) * view.zoom;
+    const scale = viewScale(canvas.clientWidth * dpr, canvas.clientHeight * dpr, fit, view.zoom);
     view.x -= ((e.clientX - drag.x) * dpr) / scale;
     view.y += ((e.clientY - drag.y) * dpr) / scale;
     drag = { x: e.clientX, y: e.clientY };
   };
-  canvas.onpointerup = () => (drag = null);
+  canvas.onpointerup = (e) => {
+    drag = null;
+    // a click that did not move (a drag is a pan): the bone under it is picked, a click on nothing lets go of the bone
+    if (pressed && Math.hypot(e.clientX - pressed.x, e.clientY - pressed.y) < 4) {
+      const dpr = window.devicePixelRatio || 1;
+      const r = canvas.getBoundingClientRect();
+      const w = Math.max(1, Math.round(canvas.clientWidth * dpr));
+      const h = Math.max(1, Math.round(canvas.clientHeight * dpr));
+      const [wx, wy] = canvasToWorld((e.clientX - r.left) * dpr, (e.clientY - r.top) * dpr, w, h, fit, view);
+      const segments: BoneSegment[] = skeleton.bones.map((b) => ({ name: b.data.name, x1: b.worldX, y1: b.worldY, x2: b.tipX, y2: b.tipY }));
+      setPicked(nearestBone(segments, wx, wy, (10 * dpr) / viewScale(w, h, fit, view.zoom)));
+    }
+    pressed = null;
+  };
   canvas.ondblclick = () => {
     view.x = view.y = 0;
     view.zoom = 1;
@@ -184,7 +237,26 @@ async function main() {
   const who = $<HTMLInputElement>('who');
   const what = $<HTMLTextAreaElement>('what');
   const mine = $('mine');
+  const boneRow = $('bonerow');
   const comments: ReviewComment[] = [];
+  const setPicked = (name: string | null) => {
+    picked = name;
+    boneRow.hidden = !name;
+    $('bone').textContent = name ? T('bone', { name }) : '';
+  };
+  // the page speaks the language of the browser: the shell is written in English and the words are put in here
+  const words: [string, PlayerKey, 'text' | 'title' | 'placeholder' | 'aria-label'][] = [
+    ['bg', 'background', 'text'], ['bg', 'backgroundTip', 'title'], ['note', 'comment', 'text'], ['note', 'commentTip', 'title'], ['send', 'sendTip', 'title'],
+    ['dcancel', 'close', 'text'], ['dsave', 'addComment', 'text'], ['who', 'yourName', 'placeholder'], ['who', 'yourName', 'aria-label'], ['what', 'whatShould', 'placeholder'],
+    ['what', 'dialogLabel', 'aria-label'], ['anim', 'animation', 'title'], ['skin', 'skin', 'title'], ['dlgbox', 'dialogLabel', 'aria-label'], ['bonehint', 'boneHint', 'text'], ['bonex', 'clearBone', 'title'],
+  ];
+  document.documentElement.lang = lang;
+  for (const [id, key, where] of words) {
+    const el = $(id);
+    if (where === 'text') el.textContent = T(key);
+    else el.setAttribute(where, T(key));
+  }
+  $('bonex').onclick = () => setPicked(null);
   const NAME_KEY = 'bone2d-reviewer';
   const remembered = () => {
     try {
@@ -203,7 +275,7 @@ async function main() {
     mine.textContent = '';
     for (const c of comments) {
       const li = document.createElement('li');
-      li.textContent = `${c.animation} ${c.time.toFixed(2)} s: ${c.text}`;
+      li.textContent = `${c.animation} ${c.time.toFixed(2)} s${c.bone ? ` [${c.bone}]` : ''}: ${c.text}`;
       li.onclick = () => {
         const a = doc.animations.find((x) => x.name === c.animation);
         if (a && a !== anim) {
@@ -218,7 +290,7 @@ async function main() {
       mine.appendChild(li);
     }
     send.hidden = comments.length === 0;
-    send.textContent = `Send comments (${comments.length})`;
+    send.textContent = T('send', { n: comments.length });
   };
   const closeDialog = () => {
     dlg.hidden = true;
@@ -240,7 +312,8 @@ async function main() {
     } catch {
       /* the name is not remembered: nothing else is lost */
     }
-    comments.push(makeComment(randomId(), anim.name, time, text, who.value));
+    comments.push(makeComment(randomId(), anim.name, time, text, who.value, picked ?? undefined));
+    setPicked(null);
     what.value = '';
     listMine();
     what.focus();
@@ -298,6 +371,6 @@ main().catch((e) => {
   document.body.dataset.error = String(e?.message ?? e);
   const msg = document.createElement('p');
   msg.className = 'error';
-  msg.textContent = `Could not start the player: ${e?.message ?? e}`;
+  msg.textContent = playerText(playerLang(navigator.language), 'couldNotStart', { message: String(e?.message ?? e) });
   document.body.appendChild(msg);
 });

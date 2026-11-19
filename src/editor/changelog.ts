@@ -12,6 +12,20 @@ export interface Release {
 
 export const CHANGELOG: Release[] = [
   {
+    version: '0.67',
+    date: '2026-11-19',
+    en: [
+      "Player page: a reviewer can now click a bone in the picture to point the comment at it (the bone is lit up, shown in the comment box and written into the file; a click on nothing lets go, a drag still pans). The comment box is a small card in the corner now, so the picture stays clickable while the note is written.",
+      "Player page language: the page picks Russian or English by the language of the browser that opens it (Russian for ru, English for everything else), so a reviewer who never saw the editor gets the buttons in their own language.",
+      "Comments window (Windows → Comments): every review comment of the project in one list, open ones first. A click goes to the animation, the moment and the bone; a button marks a comment resolved or opens it again; Mark every open comment resolved does all at once; the list can hide the resolved ones and imports a reviewer's file.",
+    ],
+    ru: [
+      "Страница-плеер: рецензент теперь может щёлкнуть кость на картинке, чтобы указать на неё в комментарии (кость подсвечивается, показывается в окне комментария и пишется в файл; щелчок по пустому месту отпускает кость, перетаскивание по-прежнему двигает картинку). Окно комментария теперь маленькая карточка в углу, поэтому картинка остаётся доступной для щелчка, пока пишется заметка.",
+      "Язык страницы-плеера: страница выбирает русский или английский по языку браузера, который её открывает (русский для ru, английский для остальных), так что рецензент, который не видел редактор, получает кнопки на своём языке.",
+      "Окно «Комментарии» (Окна → Комментарии): все замечания рецензентов проекта одним списком, открытые сверху. Щелчок ведёт к анимации, моменту и кости; кнопка отмечает комментарий решённым или открывает снова; «Отметить все открытые комментарии решёнными» делает это разом; список умеет прятать решённые и импортирует файл рецензента.",
+    ],
+  },
+  {
     version: '0.66',
     date: '2026-11-19',
     en: [

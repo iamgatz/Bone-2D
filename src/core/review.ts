@@ -148,3 +148,17 @@ export function reviewCounts(doc: Pick<SkeletonDoc, 'animations'>): { open: numb
   for (const a of doc.animations) for (const m of a.markers ?? []) if (m.review) (m.resolved ? resolved++ : open++);
   return { open, resolved };
 }
+
+/** One review comment of the project, with the animation it is on: a row of the Comments window. */
+export interface ReviewItem {
+  animationId: string;
+  animation: string;
+  marker: Marker;
+}
+
+/** Every review comment of the skeleton: by animation in the order of the document, then by time. Comments that are dealt with come last when `openFirst`. */
+export function listReview(doc: Pick<SkeletonDoc, 'animations'>, openFirst = false): ReviewItem[] {
+  const out: ReviewItem[] = [];
+  for (const a of doc.animations) for (const m of [...(a.markers ?? [])].sort((x, y) => x.time - y.time)) if (m.review) out.push({ animationId: a.id, animation: a.name, marker: m });
+  return openFirst ? [...out.filter((i) => !i.marker.resolved), ...out.filter((i) => i.marker.resolved)] : out;
+}

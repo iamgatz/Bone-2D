@@ -50,6 +50,7 @@ import { PlaybackPanel } from './panels/PlaybackPanel';
 import { MetricsPanel } from './panels/MetricsPanel';
 import { PreviewPanel } from './panels/PreviewPanel';
 import { HistoryPanel } from './panels/HistoryPanel';
+import { CommentsPanel } from './panels/CommentsPanel';
 import { LAYOUTS, VIEW_LIST, sameViews } from '@/store/layout';
 import { applyLayout, startLayoutPersist, toggleAllViews, toggleView } from '@/store/viewActions';
 import { microMove } from '@/store/nudgeActions';
@@ -504,6 +505,7 @@ export function App() {
               {views.poses && <PosesPanel />}
               {views.metrics && <MetricsPanel />}
               {views.history && <HistoryPanel />}
+              {views.comments && <CommentsPanel />}
               {views.preview && <PreviewPanel />}
               {views.images && <AssetsPanel />}
             </aside>
