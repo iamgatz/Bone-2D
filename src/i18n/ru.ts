@@ -1898,4 +1898,10 @@ export const RU: Record<string, string> = {
   'How many parent bones the trail of the selection over the viewport lists (the nearest ones)': 'Сколько родительских костей перечисляет цепочка выделения над окном (ближайшие)',
   'Selection': 'Выделение',
   '{#} bones': 'костей: {}',
+  'The graph shows the timelines of the keys selected in the Dopesheet (click: show the selected bones instead)': 'График показывает дорожки ключей, выбранных в Dopesheet (щелчок: показывать выбранные кости)',
+  'The graph shows the timelines of the selected bones (click: follow the keys selected in the Dopesheet)': 'График показывает дорожки выбранных костей (щелчок: следовать за ключами, выбранными в Dopesheet)',
+  'Graph shows': 'График показывает',
+  'Dopesheet: the timelines of the keys selected in the Dopesheet (the selected bones when no key is selected). Selected bones: always the timelines of the selected bones': 'Выбранные ключи: дорожки ключей, выбранных в Dopesheet (выбранные кости, когда ключей нет). Выбранные кости: всегда дорожки выбранных костей',
+  'Selected keys': 'Выбранные ключи',
+  'Selected bones': 'Выбранные кости',
 };

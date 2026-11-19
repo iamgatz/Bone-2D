@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useRef, useState } from 'react';
-import { ChevronDown, ChevronRight, Copy, Diamond, Eraser, Filter, Film, KeyRound, Maximize, Pause, Pencil, Play, Plus, Repeat, SkipBack, SkipForward, Spline, Trash2, Volume2, VolumeX, ZoomIn } from 'lucide-react';
+import { ChevronDown, ChevronRight, Copy, Diamond, Eraser, Filter, Film, KeyRound, Link2, Maximize, Pause, Pencil, Play, Plus, Repeat, SkipBack, SkipForward, Spline, Trash2, Volume2, VolumeX, ZoomIn } from 'lucide-react';
 import { GraphEditor } from './GraphEditor';
 import { CURVE_PRESETS } from '@/core/curve';
 import { keyGrid } from '@/core/edit';
@@ -14,7 +14,7 @@ import { openKeyDialog } from '@/store/keyDialog';
 import { clearMute, toggleMute } from '@/store/muteActions';
 import { cleanUpKeys, copyKeys, createAnimation, currentAnimation, deleteAnimation, deleteKeys, duplicateAnimation, pasteKeys, renameAnimation, selectAnimation, selectBone, selectSlot, setAnimationDuration, setKeysCurve, setMode, setPlay, setSelection, setTime, togglePlay } from '@/store/actions';
 import { useProject } from '@/store/doc';
-import { useSettings } from '@/store/settings';
+import { setSettings, useSettings } from '@/store/settings';
 import { uiStore, useUi } from '@/store/ui';
 import type { CurveKind } from '@/store/ui';
 import { KEYS } from '../hotkeys';
@@ -155,6 +155,7 @@ export function Timeline() {
   const expanded = useUi((s) => s.expanded);
   const height = useUi((s) => s.panel.bottom);
   const view = useUi((s) => s.timelineView);
+  const graphSync = useSettings((s) => s.graphSync);
   const selectedKeys = useUi((s) => s.selectedKeys);
   const muted = useUi((s) => s.muted);
   const anim = doc.animations.find((a) => a.id === animationId) ?? null;
@@ -258,6 +259,14 @@ export function Timeline() {
         />
         <IconButton icon={Diamond} title="Dopesheet" active={view === 'dopesheet'} onClick={() => uiStore.patch({ timelineView: 'dopesheet' })} />
         <IconButton icon={Spline} title="Curve graph" active={view === 'graph'} onClick={() => uiStore.patch({ timelineView: 'graph' })} />
+        {view === 'graph' && (
+          <IconButton
+            icon={Link2}
+            title={graphSync === 'dopesheet' ? 'The graph shows the timelines of the keys selected in the Dopesheet (click: show the selected bones instead)' : 'The graph shows the timelines of the selected bones (click: follow the keys selected in the Dopesheet)'}
+            active={graphSync === 'dopesheet'}
+            onClick={() => setSettings({ graphSync: graphSync === 'dopesheet' ? 'selection' : 'dopesheet' })}
+          />
+        )}
       </div>
 
       <div className="tl-body" ref={bodyRef}>

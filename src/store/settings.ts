@@ -45,6 +45,8 @@ export interface Settings {
   boneIconRotation: number;
   /** How many parent bones the breadcrumbs of the selection list (the nearest ones). */
   breadcrumbParents: number;
+  /** What the Graph shows: the timelines of the keys selected in the Dopesheet (Dopesheet-centric), or of the selected bones whatever keys are selected. */
+  graphSync: 'dopesheet' | 'selection';
   /** Show the hints that pop up over buttons and fields. */
   tooltips: boolean;
   /** Letters of the tools that differ from the defaults (tools.ts). */
@@ -83,6 +85,7 @@ export const DEFAULT_SETTINGS: Settings = {
   boneScale: 100,
   boneIconRotation: 0,
   breadcrumbParents: 3,
+  graphSync: 'dopesheet',
   tooltips: true,
   toolKeys: {},
   keyMap: {},
@@ -121,6 +124,7 @@ export function readSettings(raw: string | null): Settings {
     if (typeof data.showFps === 'boolean') out.showFps = data.showFps;
     if (typeof data.boneScale === 'number' && Number.isFinite(data.boneScale) && data.boneScale >= BONE_SCALE_RANGE.min && data.boneScale <= BONE_SCALE_RANGE.max) out.boneScale = data.boneScale;
     if (Number.isInteger(data.breadcrumbParents) && (data.breadcrumbParents as number) >= 0 && (data.breadcrumbParents as number) <= 10) out.breadcrumbParents = data.breadcrumbParents as number;
+    if (data.graphSync === 'dopesheet' || data.graphSync === 'selection') out.graphSync = data.graphSync;
     if (typeof data.boneIconRotation === 'number' && Number.isFinite(data.boneIconRotation) && Math.abs(data.boneIconRotation) <= 180) out.boneIconRotation = data.boneIconRotation;
     if (typeof data.tooltips === 'boolean') out.tooltips = data.tooltips;
     if (data.toolKeys && typeof data.toolKeys === 'object') {

@@ -48,6 +48,21 @@ describe('the steps', () => {
   });
 });
 
+describe('keys that are closer than the editor tells apart', () => {
+  it('a fade that ends a hair before the next change leaves a document with nothing to repair', () => {
+    const { project, doc, slot, talk } = rig();
+    // the first fade (0.5 .. 0.7) ends 0.00005 s before the next change: the end key and the next start key count as one time
+    talk.slots[slot.id].attachment = [{ time: 0.5, name: 'bodyAlt' }, { time: 0.70005, name: 'body' }];
+    expect(applyCrossfade(doc, talk.id, slot.id, 0.2)).not.toBeNull();
+    expect(validateProject(project)).toEqual([]);
+  });
+
+  it('a fade shorter than two key tolerances is not made', () => {
+    const { doc, slot, talk } = rig();
+    expect(applyCrossfade(doc, talk.id, slot.id, 0.0001)).toBeNull();
+  });
+});
+
 describe('the refusals', () => {
   it('refuses a slot without picture keys, with a dark color, or with color keys', () => {
     const { doc, slot, talk } = rig();

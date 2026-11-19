@@ -7,7 +7,7 @@
  * The partner is an ordinary slot ("<slot> fade") with copies of the region and mesh attachments of the slot, so it exports like any other.
  */
 import { uid } from './ids';
-import { freshName } from './edit';
+import { KEY_EPS, freshName } from './edit';
 import type { Animation, AttachmentKey, Id, Key, Project, Slot } from './model';
 
 type SkeletonDoc = Project['skeleton'];
@@ -51,12 +51,12 @@ export function fadeRefusal(doc: SkeletonDoc, slot: Slot, anim: Animation): Fade
   return null;
 }
 
-/** Keeps one key per time: the later ones win, so the start of a fade replaces the end of the fade before it. */
+/** Keeps one key per time (keys closer than the editor tells apart count as one): the later ones win, so the start of a fade replaces the end of the fade before it. */
 function byTime<T extends { time: number }>(keys: T[]): T[] {
   const sorted = [...keys].sort((a, b) => a.time - b.time);
   const out: T[] = [];
   for (const k of sorted) {
-    if (out.length && Math.abs(out[out.length - 1].time - k.time) < 1e-9) out[out.length - 1] = k;
+    if (out.length && Math.abs(out[out.length - 1].time - k.time) <= KEY_EPS) out[out.length - 1] = k;
     else out.push(k);
   }
   return out;
@@ -80,7 +80,7 @@ export function applyCrossfade(doc: SkeletonDoc, animId: Id, slotId: Id, seconds
   // only pictures fade: a change that involves a path, a clip or a box stays a hard cut
   const pics = new Set<string>();
   for (const skin of doc.skins) for (const [name, att] of Object.entries(skin.attachments[slot.id] ?? {})) if (att.type === 'region' || att.type === 'mesh') pics.add(name);
-  const steps = fadeSteps(slot, anim, seconds).filter((s) => s.seconds > 1e-4 && (s.from === null || pics.has(s.from)) && (s.to === null || pics.has(s.to)));
+  const steps = fadeSteps(slot, anim, seconds).filter((s) => s.seconds > 2 * KEY_EPS && (s.from === null || pics.has(s.from)) && (s.to === null || pics.has(s.to)));
   if (!steps.length) return null;
 
   const wanted = `${slot.name} fade`;

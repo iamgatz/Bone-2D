@@ -12,6 +12,18 @@ export interface Release {
 
 export const CHANGELOG: Release[] = [
   {
+    version: '0.63',
+    date: '2026-11-19',
+    en: [
+      "Copy keys from several bones and paste them onto other bones (Spine 4.3): select the keys of two or more bones, copy, select as many other bones and paste: the bones are matched one for one in the order of the document (the first copied bone to the first selected one, and so on), like pasting bone transforms. With a different number of bones selected, or the same bones, the keys stay where they were.",
+      "Dopesheet-centric sync of the Graph (Spine 4.3): a key selected in the Dopesheet shows its own timeline in the Graph (the selected bones when no key is selected). Settings → Graph shows (or the link button next to the graph button) switches to \"Selected bones\": the Graph then always shows the timelines of the selected bones, whatever keys are selected.",
+    ],
+    ru: [
+      "Копирование ключей с нескольких костей на другие кости (Spine 4.3): выделите ключи двух и более костей, скопируйте, выделите столько же других костей и вставьте: кости сопоставляются одна к одной в порядке документа (первая скопированная кость на первую выделенную и так далее), как при вставке трансформаций костей. Если выделено другое число костей или те же самые кости, ключи остаются на своих местах.",
+      "Синхронизация графика от Dopesheet (Spine 4.3): ключ, выбранный в Dopesheet, показывает свою дорожку в графике (выбранные кости, когда ключей нет). «Настройки → График показывает» (или кнопка-звено рядом с кнопкой графика) переключает на «Выбранные кости»: тогда график всегда показывает дорожки выбранных костей, какие бы ключи ни были выбраны.",
+    ],
+  },
+  {
     version: '0.62',
     date: '2026-11-19',
     en: [

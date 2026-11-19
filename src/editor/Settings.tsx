@@ -124,6 +124,7 @@ export function SettingsDialog() {
   const boneScale = useSettings((s) => s.boneScale);
   const boneIconRotation = useSettings((s) => s.boneIconRotation);
   const breadcrumbParents = useSettings((s) => s.breadcrumbParents);
+  const graphSync = useSettings((s) => s.graphSync);
   const pixelGrid = useSettings((s) => s.pixelGrid);
   const showFps = useSettings((s) => s.showFps);
   const tooltips = useSettings((s) => s.tooltips);
@@ -203,6 +204,16 @@ export function SettingsDialog() {
             <Row label="Bone size" hint="How thick the bones and joints are drawn">
               <input type="range" aria-label="Bone size" min={BONE_SCALE_RANGE.min} max={BONE_SCALE_RANGE.max} step={BONE_SCALE_RANGE.step} value={boneScale} onChange={(e) => setSettings({ boneScale: Number(e.target.value) })} />
               <span className="chip">{`${boneScale}%`}</span>
+            </Row>
+            <Row label="Graph shows" hint="Dopesheet: the timelines of the keys selected in the Dopesheet (the selected bones when no key is selected). Selected bones: always the timelines of the selected bones">
+              <SelectField
+                value={graphSync}
+                options={[
+                  { value: 'dopesheet', label: 'Selected keys' },
+                  { value: 'selection', label: 'Selected bones' },
+                ]}
+                onChange={(v) => setSettings({ graphSync: v === 'selection' ? 'selection' : 'dopesheet' })}
+              />
             </Row>
             <Row label="Breadcrumb parents" hint="How many parent bones the trail of the selection over the viewport lists (the nearest ones)">
               <input type="range" aria-label="Breadcrumb parents" min={0} max={10} step={1} value={breadcrumbParents} onChange={(e) => setSettings({ breadcrumbParents: Number(e.target.value) })} />
