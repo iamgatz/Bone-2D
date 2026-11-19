@@ -1926,4 +1926,11 @@ export const RU: Record<string, string> = {
   'Re-trace meshes': 'Повторная трассировка мешей',
   'Trace meshes: {#} images': 'Трассировка мешей: картинок {}',
   'Re-trace meshes: {#} images': 'Повторная трассировка мешей: картинок {}',
+  'Paste keys, hold': 'Вставить ключи, удержание',
+  'Paste at playhead, hold': 'Вставить на маркер времени, удержание',
+  'Paste keys at the playhead, hold (linear between keys of the same value)': 'Вставить ключи на маркер времени, удержание (линейно между ключами с одним значением)',
+  'Flip the viewport': 'Отразить вид',
+  'Atlas per skin': 'Атлас на каждый скин',
+  "One atlas for the default skin and one for each other skin (only the pictures the default skin does not use), so a game loads a skin's pictures when it needs them. Nothing changes for a skeleton with one skin": 'Один атлас для стандартного скина и по одному для остальных (только картинки, которых нет у стандартного скина), чтобы игра загружала картинки скина, когда они нужны. У скелета с одним скином ничего не меняется',
+  'An atlas per skin: load the atlas of the default skin and the atlas of the skin you show; the pictures of a skin that the default skin does not use are only in its own atlas.': 'Атлас на скин: загружайте атлас стандартного скина и атлас скина, который показываете; картинки скина, которых нет у стандартного, лежат только в его атласе.',
 };

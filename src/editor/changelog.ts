@@ -12,6 +12,20 @@ export interface Release {
 
 export const CHANGELOG: Release[] = [
   {
+    version: '0.65',
+    date: '2026-11-19',
+    en: [
+      "Paste Keys - Hold (Spine 4.3): Ctrl+Shift+V (also in the timeline menu and the command palette) pastes the copied keys and makes every segment between two keys of the same value linear, so a copied curve cannot swing away from a value it starts and ends on. Plain Ctrl+V keeps the curves as they were copied.",
+      "Flip Viewport (Spine 4.3): Ctrl+Shift+F (View menu, command palette) mirrors the view left to right and back. The picture, the bones, the handles, picking, panning and zooming all follow; only the way the scene is looked at changes, nothing in the file.",
+      "Atlas per skin (Spine 4.3): the export dialog has an Atlas per skin switch. The default skin keeps the plain atlas name, and each other skin gets its own atlas (name-skin.atlas and its pages) with the pictures the default skin does not use, so a game loads a skin's pictures when it needs them. The preview page plays all of them, and What the engine needs says which atlases to load.",
+    ],
+    ru: [
+      "Paste Keys - Hold (Spine 4.3): Ctrl+Shift+V (также в меню таймлайна и палитре команд) вставляет скопированные ключи и делает линейным каждый отрезок между ключами с одним значением, чтобы скопированная кривая не уходила от значения, с которого начинается и на котором заканчивается. Обычный Ctrl+V оставляет кривые как они были скопированы.",
+      "Flip Viewport (Spine 4.3): Ctrl+Shift+F (меню «Вид», палитра команд) зеркалит вид слева направо и обратно. Картинка, кости, рукоятки, выбор, панорамирование и зум следуют за этим; меняется только то, как смотрят на сцену, в файле ничего.",
+      "Атлас на каждый скин (Spine 4.3): в окне экспорта есть переключатель «Атлас на каждый скин». Стандартный скин сохраняет обычное имя атласа, а у каждого другого скина свой атлас (имя-скин.atlas и его страницы) с картинками, которых нет у стандартного скина, чтобы игра загружала картинки скина, когда они нужны. Страница просмотра играет все атласы, а «Что нужно движку» подсказывает, какие атласы загружать.",
+    ],
+  },
+  {
     version: '0.64',
     date: '2026-11-19',
     en: [

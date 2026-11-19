@@ -238,6 +238,27 @@ export function upsertKey<K extends { time: number }>(keys: K[], key: K, eps = K
 }
 
 /** Whether two keys hold the same value (time and the curve do not count): numbers within a hair of each other, anything else equal. */
+/**
+ * Paste Keys - Hold (Spine 4.3.22: "use linear between same valued keys"): a segment between two keys that hold the same value is made
+ * linear, so a copied curve cannot swing away from a value the segment starts and ends on. Only segments that touch one of `times` (the
+ * keys that were just pasted) change. Returns how many segments were changed.
+ */
+export function linearBetweenEqual(keys: { time: number; value?: number[]; curve?: unknown }[], times: readonly number[]): number {
+  let changed = 0;
+  for (let i = 0; i < keys.length - 1; i++) {
+    const a = keys[i];
+    const b = keys[i + 1];
+    if (a.curve === undefined || !Array.isArray(a.value) || !Array.isArray(b.value) || a.value.length !== b.value.length) continue; // no curve: already linear
+    if (!times.some((t) => Math.abs(t - a.time) <= KEY_EPS || Math.abs(t - b.time) <= KEY_EPS)) continue;
+    const bv = b.value;
+    if (a.value.every((v, j) => Math.abs(v - bv[j]) <= 1e-6 * Math.max(1, Math.abs(v)))) {
+      delete a.curve;
+      changed++;
+    }
+  }
+  return changed;
+}
+
 export function sameKeyValue(a: object, b: object): boolean {
   const same = (x: unknown, y: unknown): boolean => {
     if (typeof x === 'number' && typeof y === 'number') return Math.abs(x - y) <= 1e-6 * Math.max(1, Math.abs(x), Math.abs(y));

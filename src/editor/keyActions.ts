@@ -1,4 +1,4 @@
-import { keyEditedBones, keySelectedBones, setMode, setSelection, togglePlay } from '@/store/actions';
+import { flipViewport, keyEditedBones, keySelectedBones, setMode, setSelection, togglePlay } from '@/store/actions';
 import { docStore } from '@/store/doc';
 import { startSetParent } from '@/store/parentActions';
 import { duplicateSelection } from '@/store/poseActions';
@@ -69,6 +69,10 @@ export const KEY_ACTIONS: Partial<Record<KeyId, (e: KeyboardEvent) => void>> = {
   frame: () => viewportApi.frame(),
   frameSelection: () => viewportApi.frameSelection(),
   zoom100: () => viewportApi.zoom100(),
+  flipView: (e) => {
+    e.preventDefault();
+    flipViewport();
+  },
   key: () => keyEditedBones(),
   keyShown: () => keySelectedBones(),
   mode: (e) => {

@@ -2,7 +2,7 @@ import { settingsStore, setSettings } from '@/store/settings';
 import { TOOLS, hotkeyOf, setToolKey } from './tools';
 
 export type KeyId =
-  | 'undo' | 'redo' | 'save' | 'saveAs' | 'open' | 'export' | 'copy' | 'paste' | 'selectAll' | 'frame' | 'mode' | 'play' | 'key' | 'delete' | 'help' | 'hideViews' | 'settings' | 'duplicate' | 'palette' | 'mirror' | 'showAll' | 'isolate' | 'frameSelection' | 'zoom100' | 'parent' | 'keyShown';
+  | 'undo' | 'redo' | 'save' | 'saveAs' | 'open' | 'export' | 'copy' | 'paste' | 'pasteHold' | 'flipView' | 'selectAll' | 'frame' | 'mode' | 'play' | 'key' | 'delete' | 'help' | 'hideViews' | 'settings' | 'duplicate' | 'palette' | 'mirror' | 'showAll' | 'isolate' | 'frameSelection' | 'zoom100' | 'parent' | 'keyShown';
 
 export interface Binding {
   id: KeyId;
@@ -29,10 +29,12 @@ export const BINDINGS: Binding[] = [
   { id: 'export', label: 'Export', combo: 'Ctrl+E' },
   { id: 'copy', label: 'Copy keys', combo: 'Ctrl+C', fixed: true },
   { id: 'paste', label: 'Paste keys', combo: 'Ctrl+V', fixed: true },
+  { id: 'pasteHold', label: 'Paste keys, hold', combo: 'Ctrl+Shift+V', fixed: true },
   { id: 'selectAll', label: 'Select all bones', combo: 'Ctrl+A' },
   { id: 'frame', label: 'Frame skeleton', combo: 'F' },
   { id: 'frameSelection', label: 'Frame the selection', combo: 'Shift+F' },
   { id: 'zoom100', label: 'Zoom to 100%', combo: 'Shift+Z' },
+  { id: 'flipView', label: 'Flip the viewport', combo: 'Ctrl+Shift+F' },
   { id: 'mode', label: 'Setup ⇄ Animate', combo: 'Tab' },
   { id: 'play', label: 'Play / pause', combo: 'Space' },
   { id: 'key', label: 'Key edited channels', combo: 'K' },
@@ -166,6 +168,7 @@ export const hotkeyGroups = (): HotkeyGroup[] => [
       row('mirror'),
       row('copy'),
       row('paste'),
+      row('pasteHold'),
       { label: 'Shift keys: this and every later key', keys: ['Alt+drag a key'] },
       { label: 'Offset keys: round the loop', keys: ['Ctrl+Alt+drag a key'] },
       { label: 'Scale the time of the selected keys', keys: ['Ctrl+Shift+drag a selected key'] },
@@ -181,6 +184,7 @@ export const hotkeyGroups = (): HotkeyGroup[] => [
       row('frame'),
       row('frameSelection'),
       row('zoom100'),
+      row('flipView'),
       row('hideViews'),
       row('showAll'),
       row('isolate'),

@@ -135,6 +135,7 @@ function TimelineMenu({ menu, onClose }: { menu: TimelineMenuRequest; onClose: (
       {(refs.length === 1 || axes.length > 0) && <div className="menu-sep" />}
       {item('Copy', () => copyKeys(refs), KEYS.copy)}
       {item('Paste at playhead', () => pasteKeys(uiStore.get().time), KEYS.paste)}
+      {item('Paste at playhead, hold', () => pasteKeys(uiStore.get().time, true), KEYS.pasteHold)}
       {item('Delete', () => deleteKeys(refs), KEYS.delete)}
     </div>
   );

@@ -21,7 +21,7 @@ import { settingsStore } from '@/store/settings';
 import { createIkFromDrag } from '@/store/ikActions';
 import { applyParent, cancelSetParent } from '@/store/parentActions';
 import { POLYGON_TOOLS, toast, uiStore } from '@/store/ui';
-import { getScene, getSetupSkeleton, screenToWorld } from '../scene';
+import { flipSign, getScene, getSetupSkeleton, screenToWorld } from '../scene';
 import { RULER } from './overlay';
 import type { Interaction } from './overlay';
 import { hitAttachment, hitBone } from './hit';
@@ -461,7 +461,7 @@ export class ViewportController {
         break;
       }
       case 'pan':
-        uiStore.patch({ camera: { ...cam, x: d.camX - (sx - d.sx) / cam.zoom, y: d.camY + (sy - d.sy) / cam.zoom } });
+        uiStore.patch({ camera: { ...cam, x: d.camX - (flipSign(cam) * (sx - d.sx)) / cam.zoom, y: d.camY + (sy - d.sy) / cam.zoom } });
         break;
       case 'guide': {
         const v = this.snappedLine(d.axis === 'x' ? wx : wy, d.axis);
@@ -623,14 +623,14 @@ export class ViewportController {
     const [w, h] = this.size();
     const [sx, sy] = this.local(e);
     if (e.shiftKey && !e.ctrlKey) {
-      uiStore.patch({ camera: { ...cam, x: cam.x + (e.deltaY + e.deltaX) / cam.zoom } });
+      uiStore.patch({ camera: { ...cam, x: cam.x + (flipSign(cam) * (e.deltaY + e.deltaX)) / cam.zoom } });
       return;
     }
     const [px, py] = settingsStore.get().zoomToMouse ? [sx, sy] : [w / 2, h / 2];
     const [wx, wy] = screenToWorld(cam, w, h, px, py);
     const f = Math.exp(-e.deltaY * (e.ctrlKey ? 0.01 : 0.0016));
     const zoom = clamp(cam.zoom * f, 0.02, 80);
-    uiStore.patch({ camera: { zoom, x: wx - (px - w / 2) / zoom, y: wy - (h / 2 - py) / zoom } });
+    uiStore.patch({ camera: { ...cam, zoom, x: wx - (flipSign(cam) * (px - w / 2)) / zoom, y: wy - (h / 2 - py) / zoom } });
   };
 
   onContextMenu = (e: Event) => e.preventDefault();

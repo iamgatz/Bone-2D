@@ -128,10 +128,13 @@ export function getSetupSkeleton(doc: SkeletonDoc = docStore.get().skeleton): Sk
 
 // ------------------------------------------------------------------ camera
 
+/** -1 for a flipped viewport (mirrored left to right), else 1. */
+export const flipSign = <T extends object>(cam: T & { flip?: boolean }): 1 | -1 => (cam.flip ? -1 : 1);
+
 export function worldToScreen(cam: Camera, w: number, h: number, wx: number, wy: number): [number, number] {
-  return [(wx - cam.x) * cam.zoom + w / 2, h / 2 - (wy - cam.y) * cam.zoom];
+  return [(wx - cam.x) * cam.zoom * flipSign(cam) + w / 2, h / 2 - (wy - cam.y) * cam.zoom];
 }
 
 export function screenToWorld(cam: Camera, w: number, h: number, sx: number, sy: number): [number, number] {
-  return [(sx - w / 2) / cam.zoom + cam.x, (h / 2 - sy) / cam.zoom + cam.y];
+  return [((sx - w / 2) / cam.zoom) * flipSign(cam) + cam.x, (h / 2 - sy) / cam.zoom + cam.y];
 }

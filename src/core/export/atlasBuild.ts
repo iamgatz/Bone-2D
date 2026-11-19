@@ -57,3 +57,33 @@ export function makeRegion(name: string, mesh: boolean, width: number, height: n
   }
   return { pixels, input: { name, width: b.w, height: b.h, offsetX: b.x, offsetY: height - (b.y + b.h), originalWidth: width, originalHeight: height } };
 }
+
+/** One atlas of an export with an atlas per skin: the file name without its extension, and the pictures packed into it. */
+export interface SkinAtlas {
+  skinId: string;
+  stem: string;
+  names: string[];
+}
+
+/**
+ * The atlases of an export with an atlas per skin (Spine 4.3: "texture packing can create a separate atlas for each skin"). The default skin
+ * keeps the plain name; each other skin gets `<base>-<skin>` with only the pictures the default skin does not use, so a game loads the
+ * atlas of the default skin and the atlas of the skin it shows. A picture two other skins share is in both of their atlases.
+ * The file names are ours: nothing in the Spine documentation fixes them.
+ */
+export function skinAtlasGroups(doc: Pick<SkeletonDoc, 'skins'>, base: string): SkinAtlas[] {
+  const first = doc.skins.slice(0, 1);
+  const defaultNames = new Set(usedImages({ skins: first }).map((i) => i.name));
+  const out: SkinAtlas[] = [];
+  if (defaultNames.size) out.push({ skinId: first[0].id, stem: base, names: [...defaultNames] });
+  const stems = new Set([base]);
+  for (const skin of doc.skins.slice(1)) {
+    const names = usedImages({ skins: [skin] }).map((i) => i.name).filter((n) => !defaultNames.has(n));
+    if (!names.length) continue;
+    let stem = `${base}-${skin.name.replace(/[^\w-]+/g, '_') || 'skin'}`;
+    while (stems.has(stem)) stem += '_';
+    stems.add(stem);
+    out.push({ skinId: skin.id, stem, names });
+  }
+  return out;
+}

@@ -28,6 +28,7 @@ export function ReferenceVideo() {
         v.style.top = `${r.top}px`;
         v.style.width = `${r.width}px`;
         v.style.height = `${r.height}px`;
+        v.style.transform = ui.camera.flip ? 'scaleX(-1)' : '';
       }
       v.style.opacity = rv.show ? String(rv.view.opacity) : '0';
       if (!(v.duration > 0)) return;

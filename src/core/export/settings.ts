@@ -29,6 +29,8 @@ export interface ExportSettings {
   cleanUp: boolean;
   /** Write an `alpha` or `rgb` timeline for a slot whose colour keys only change that part (as Spine does), instead of `rgba`. */
   splitColor: boolean;
+  /** One atlas for the default skin and one for each other skin (only the pictures the default skin does not use), so a game loads a skin's pictures when it needs them. */
+  atlasPerSkin: boolean;
 }
 
 export const EXPORT_SCALES = [0.25, 0.5, 0.75, 1, 2] as const;
@@ -54,6 +56,7 @@ export const DEFAULT_EXPORT_SETTINGS: ExportSettings = {
   multipleOf4: false,
   cleanUp: false,
   splitColor: false,
+  atlasPerSkin: false,
 };
 
 const oneOf = <T,>(v: unknown, list: readonly T[], fallback: T): T => (list.includes(v as T) ? (v as T) : fallback);
@@ -82,6 +85,7 @@ export function readExportSettings(raw: unknown): ExportSettings {
     multipleOf4: flag(o.multipleOf4, d.multipleOf4),
     cleanUp: flag(o.cleanUp, d.cleanUp),
     splitColor: flag(o.splitColor, d.splitColor),
+    atlasPerSkin: flag(o.atlasPerSkin, d.atlasPerSkin),
   };
 }
 
