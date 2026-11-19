@@ -17,6 +17,16 @@ export interface ExportSettings {
   filter: AtlasFilter;
   /** Write the mix table (crossfades between animations) as a file next to the skeleton, for the game's animation state. */
   mixes: boolean;
+  /** Premultiplied alpha pages (the atlas says pma:true). */
+  pma: boolean;
+  /** Pages as wide as they are tall. */
+  square: boolean;
+  /** Identical pictures share one place in the atlas. */
+  alias: boolean;
+  /** Page sizes divisible by four (when the pages are not powers of two). */
+  multipleOf4: boolean;
+  /** Take the keys that change nothing out of the exported animations (the project keeps them). */
+  cleanUp: boolean;
 }
 
 export const EXPORT_SCALES = [0.25, 0.5, 0.75, 1, 2] as const;
@@ -36,6 +46,11 @@ export const DEFAULT_EXPORT_SETTINGS: ExportSettings = {
   rotate: false,
   filter: 'Linear',
   mixes: true,
+  pma: false,
+  square: false,
+  alias: false,
+  multipleOf4: false,
+  cleanUp: false,
 };
 
 const oneOf = <T,>(v: unknown, list: readonly T[], fallback: T): T => (list.includes(v as T) ? (v as T) : fallback);
@@ -58,6 +73,11 @@ export function readExportSettings(raw: unknown): ExportSettings {
     rotate: flag(o.rotate, d.rotate),
     filter: oneOf(o.filter, ['Linear', 'Nearest'] as const, d.filter),
     mixes: flag(o.mixes, d.mixes),
+    pma: flag(o.pma, d.pma),
+    square: flag(o.square, d.square),
+    alias: flag(o.alias, d.alias),
+    multipleOf4: flag(o.multipleOf4, d.multipleOf4),
+    cleanUp: flag(o.cleanUp, d.cleanUp),
   };
 }
 

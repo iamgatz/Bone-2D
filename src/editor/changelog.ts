@@ -12,6 +12,26 @@ export interface Release {
 
 export const CHANGELOG: Release[] = [
   {
+    version: '0.53',
+    date: '2026-11-19',
+    en: [
+      "A table of Spine's features against ours (docs/SPINE_PARITY.md), made from Spine's own user guide, and the gaps it showed that were worth closing.",
+      "Find and replace in names (the arrows button next to the Hierarchy filter): bones, slots, skins, events, constraints and animations, with regular expressions, match case and a count of what would change; one step of the history. The filter itself takes * ? wildcards and /regex/.",
+      "Graph: an Automatic curve (smooth through the neighbours, never past a key's value) and a Flat one in the interpolation menu. Animation tools: Favor (move the selected keys toward the key before, after, the mean of both, or the setup pose) and Scale time (stretch the selected keys in time).",
+      "Transform constraint: Match to current pose sets the offsets so the constraint changes nothing in the Setup pose. Setup mode: Keep children and Keep images (Spine's Compensation) in the bone's Transform section. Playback: By frames shows the pose at the start of each frame.",
+      "Export: premultiplied alpha pages, square pages, sizes in multiples of four, identical pictures sharing one place (alias), clean up animations on export. Animation tab: APNG and JPEG frames. The atlas options work in the command line too.",
+      "Import: Import Spine data as a new skeleton (into the open project), Unpack an atlas into pictures (trimmed borders and turned regions restored), and the command line gets import, unpack and clean. Metrics: timelines, clipping polygons and the area of the textures.",
+    ],
+    ru: [
+      "Таблица функций Spine и наших (docs/SPINE_PARITY.md), составленная по руководству самого Spine, и пробелы из неё, которые стоило закрыть.",
+      "Найти и заменить в именах (кнопка со стрелками рядом с фильтром иерархии): кости, слоты, скины, события, констрейнты и анимации, с регулярными выражениями, регистром и счётчиком того, что изменится; один шаг истории. Сам фильтр понимает шаблоны * ? и /regex/.",
+      "График: автоматическая кривая (плавно через соседей, не выходя за значение ключа) и плоская в меню интерполяции. Инструменты анимации: Смещение к соседям (выбранные ключи к ключу до, после, середине двух или позе Setup) и Масштаб времени (растянуть выбранные ключи по времени).",
+      "Transform-констрейнт: «Подогнать под текущую позу» подбирает смещения, чтобы констрейнт ничего не менял в позе Setup. Режим Setup: «Дети на месте» и «Картинки на месте» (компенсация, как в Spine) в разделе Transform кости. Воспроизведение: «По кадрам» показывает позу на начало каждого кадра.",
+      "Экспорт: страницы с предумноженной альфой, квадратные страницы, размеры кратные четырём, одинаковые картинки одним местом (alias), очистка анимаций при экспорте. Вкладка анимации: APNG и кадры JPEG. Параметры атласа работают и в командной строке.",
+      "Импорт: «Импорт данных Spine новым скелетом» (в открытый проект), «Распаковать атлас в картинки» (обрезанные поля и повёрнутые регионы возвращаются) и в командной строке import, unpack и clean. Метрики: таймлайны, клиппинг-полигоны и площадь текстур.",
+    ],
+  },
+  {
     version: '0.52',
     date: '2026-11-19',
     en: [

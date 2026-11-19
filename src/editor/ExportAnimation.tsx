@@ -7,14 +7,17 @@ import { downloadBlob } from '@/store/project';
 import { toast } from '@/store/ui';
 import { Button, ColorSwatch, SelectField, Toggle } from './ui/controls';
 import { Segmented } from './ui/Segmented';
-import { framesToWebm, frameToPng, prepareRender } from './renderAnimation';
+import { framesToWebm, frameToJpeg, frameToPng, prepareRender } from './renderAnimation';
+import { encodeApng, frameDelay } from '@/core/export/apng';
 import type { Prepared } from './renderAnimation';
 
-type Format = 'gif' | 'png' | 'webm';
+type Format = 'gif' | 'apng' | 'png' | 'jpeg' | 'webm';
 
 const FORMAT_NOTE: Record<Format, string> = {
   gif: 'One animated picture that plays anywhere. 256 colors, transparency is on or off.',
+  apng: 'One animated PNG: full color and soft transparency, plays in browsers like a picture.',
   png: 'A ZIP with one PNG per frame, full color and soft transparency: for sprite sheets and video editors.',
+  jpeg: 'A ZIP with one JPEG per frame. Small files, no transparency: for previews and video editors.',
   webm: 'A video, recorded in real time by the browser (it takes as long as the animation). It has no transparency.',
 };
 
@@ -39,7 +42,7 @@ export function ExportAnimation() {
   const [prepared, setPrepared] = useState<Prepared | null>(null);
 
   const anim = doc.animations.find((a) => a.id === animId) ?? null;
-  const solid = format === 'webm' || !transparent;
+  const solid = format === 'webm' || format === 'jpeg' || !transparent;
   const background = useMemo(() => (solid ? bg : null), [solid, bg]);
 
   // the picture the settings give: a first frame to look at, and the size of the files
@@ -92,6 +95,20 @@ export function ExportAnimation() {
           const gif = encodeGif(frames, { width: prepared.width, height: prepared.height, delayCs: 100 / prepared.fps, transparent: !solid });
           downloadBlob(new Blob([gif as BlobPart], { type: 'image/gif' }), `${base}.gif`);
         }
+      } else if (format === 'apng') {
+        const frames: Uint8Array[] = [];
+        for (let i = 0; i < prepared.count && !cancel.current; i++) {
+          frames.push(await frameToPng(prepared.frame(i)));
+          setProgress((i + 1) / prepared.count);
+        }
+        if (!cancel.current) downloadBlob(new Blob([encodeApng(frames, { ...frameDelay(prepared.fps), plays: 0 }) as BlobPart], { type: 'image/apng' }), `${base}.png`);
+      } else if (format === 'jpeg') {
+        const files: { name: string; data: Uint8Array }[] = [];
+        for (let i = 0; i < prepared.count && !cancel.current; i++) {
+          files.push({ name: `${base}_${String(i + 1).padStart(4, '0')}.jpg`, data: await frameToJpeg(prepared.frame(i)) });
+          setProgress((i + 1) / prepared.count);
+        }
+        if (!cancel.current) downloadBlob(new Blob([createZip(files) as BlobPart], { type: 'application/zip' }), `${base}-frames.zip`);
       } else {
         const files: { name: string; data: Uint8Array }[] = [];
         for (let i = 0; i < prepared.count && !cancel.current; i++) {
@@ -122,7 +139,9 @@ export function ExportAnimation() {
           onChange={setFormat}
           options={[
             { value: 'gif', label: 'GIF', tone: 'plain' },
+            { value: 'apng', label: 'APNG', tone: 'plain' },
             { value: 'png', label: 'PNG frames', tone: 'plain' },
+            { value: 'jpeg', label: 'JPEG frames', tone: 'plain' },
             { value: 'webm', label: 'WebM video', tone: 'plain' },
           ]}
         />
@@ -134,8 +153,8 @@ export function ExportAnimation() {
         <SelectField value={pad} options={['0', '4', '8', '16', '32'].map((v) => ({ value: v, label: `${v} px` }))} onChange={setPad} />
         <label>Background</label>
         <div className="hstack">
-          {format !== 'webm' && <Toggle on={transparent} onChange={setTransparent} title="Transparent background" />}
-          {format !== 'webm' && <span className="dim">Transparent</span>}
+          {format !== 'webm' && format !== 'jpeg' && <Toggle on={transparent} onChange={setTransparent} title="Transparent background" />}
+          {format !== 'webm' && format !== 'jpeg' && <span className="dim">Transparent</span>}
           {solid && <ColorSwatch value={bg} onChange={setBg} title="Background color" />}
         </div>
       </div>

@@ -24,7 +24,7 @@ import { CHAIN_PARAMS, CHAIN_SHAPES, chainBones, chainValues, shapeAt } from '@/
 import type { ChainShape } from '@/core/chains';
 import { applyChainCurve } from '@/store/chainActions';
 import { addLimit, removeLimit, setLimit } from '@/store/limitActions';
-import { useUi } from '@/store/ui';
+import { uiStore, useUi } from '@/store/ui';
 import { getScene } from '../scene';
 import { Button, ColorSwatch, IconButton, NumberField, SelectField, TextField, Toggle } from '../ui/controls';
 import { Field, KeyButton } from '../ui/Field';
@@ -51,6 +51,7 @@ function BoneInspector({ id }: { id: Id }) {
   const selectedIds = useUi((s) => s.selection.bones);
   const mode = useUi((s) => s.mode);
   const time = useUi((s) => s.time);
+  const compensate = useUi((s) => s.compensate);
   useUi((s) => s.overrides);
   const doc = project.skeleton;
   const bone = doc.bones.find((b) => b.id === id);
@@ -116,6 +117,16 @@ function BoneInspector({ id }: { id: Id }) {
         {pair('translate', 'Position', 1, 2, pose.x, pose.y, (v) => set({ x: v }), (v) => set({ y: v }))}
         {pair('scale', 'Scale', 0.01, 3, pose.scaleX, pose.scaleY, (v) => set({ scaleX: v }), (v) => set({ scaleY: v }))}
         {pair('shear', 'Shear', 1, 2, pose.shearX, pose.shearY, (v) => set({ shearX: v }), (v) => set({ shearY: v }))}
+        {!animate && (
+          <>
+            <Field label="Keep children" title="Compensation: the child bones stay where they are in the scene while this bone is edited">
+              <Toggle on={compensate.bones} onChange={(v) => uiStore.patch({ compensate: { ...compensate, bones: v } })} title="Keep children in place" />
+            </Field>
+            <Field label="Keep images" title="Compensation: the pictures, points and outlines on this bone stay where they are in the scene while it is edited">
+              <Toggle on={compensate.images} onChange={(v) => uiStore.patch({ compensate: { ...compensate, images: v } })} title="Keep images in place" />
+            </Field>
+          </>
+        )}
         {animate && (
           <Field label="Split X / Y" title="Key position, scale or shear one axis at a time: X and Y get their own timelines (Spine's split timelines)">
             <div className="hstack">

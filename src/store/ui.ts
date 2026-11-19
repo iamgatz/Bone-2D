@@ -1,3 +1,5 @@
+import type { Compensation } from '@/core/compensate';
+import { NO_COMPENSATION } from '@/core/compensate';
 import type { Id } from '@/core/model';
 import type { BrushShape, StrengthCurve } from '@/core/brush';
 import type { SoftShape } from '@/core/soft';
@@ -116,6 +118,10 @@ export interface UiState {
   /** Seconds [start, end] that play and loop instead of the whole animation (Spine's loop range), or null. */
   range: [number, number] | null;
   speed: number;
+  /** Show the pose at the start of the frame the time falls in, as a game running at the animation's frame rate does (Spine's Stepped). */
+  stepped: boolean;
+  /** Setup mode: what stays in place in the scene when a bone is edited (Spine's Compensation). */
+  compensate: Compensation;
   autoKey: boolean;
   defaultCurve: CurveKind;
   camera: Camera;
@@ -175,6 +181,8 @@ export const uiStore = createStore<UiState>({
   pingPong: false,
   range: null,
   speed: 1,
+  stepped: false,
+  compensate: NO_COMPENSATION,
   autoKey: true,
   defaultCurve: 'bezier',
   camera: { x: 0, y: 120, zoom: 1.2 },

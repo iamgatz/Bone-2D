@@ -22,7 +22,7 @@ import { applySavedLayout, namedLayoutsStore, saveLayoutDialog } from '@/store/l
 import { saveSelectionSet, selectSet } from '@/store/selectionSetActions';
 import { FLOAT_LIST, toggleFloat } from '@/store/floats';
 import { KEYS } from './hotkeys';
-import { openSpineImport } from './importSpine';
+import { openAtlasUnpack, openSpineImport } from './importSpine';
 import { TOOLS, hotkeyOf } from './tools';
 import { viewportApi } from './viewport/Viewport';
 
@@ -53,6 +53,8 @@ export function buildCommands(): Command[] {
     { id: 'file.saveas', group: 'File', title: 'Save as…', keys: KEYS.saveAs, run: () => void saveProjectFile(true) },
     { id: 'file.export', group: 'File', title: 'Export', keys: KEYS.export, run: open('exportOpen') },
     { id: 'file.import', group: 'File', title: 'Import Spine data (JSON 4.0–4.3, binary 4.3)…', run: () => openSpineImport() },
+    { id: 'file.importAdd', group: 'File', title: 'Import Spine data as a new skeleton…', run: () => openSpineImport(true) },
+    { id: 'file.unpack', group: 'File', title: 'Unpack an atlas into pictures…', run: () => openAtlasUnpack() },
     { id: 'file.demo', group: 'File', title: 'Load demo rig (Kit)', run: () => loadSample() },
     { id: 'file.welcome', group: 'File', title: 'Welcome screen', run: open('welcomeOpen') },
     { id: 'edit.undo', group: 'Edit', title: 'Undo', keys: KEYS.undo, run: () => docStore.undo() },

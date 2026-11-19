@@ -1,6 +1,7 @@
 /** Transform constraints (Spine 4.3): create from presets and edit. */
 import type { Draft } from 'immer';
 import { freshName, makeCurve, upsertKey } from '@/core/edit';
+import { matchTransformConstraint } from '@/core/matchTransform';
 import { TRANSFORM_PROPS, newTransformConstraint } from '@/core/model';
 import type { Id, TransformConstraint, TransformFrom, TransformProp } from '@/core/model';
 import { getScene } from '@/editor/scene';
@@ -105,4 +106,22 @@ export function setTransformMix(id: Id, patch: Partial<Record<TransformProp, num
     }
     if (ui.time > a.duration) a.duration = ui.time;
   });
+}
+
+/** Match: set the offsets of the constraint so that it changes nothing in the Setup pose (see core/matchTransform.ts). One step of the history. */
+export function matchTransform(id: Id): boolean {
+  if (uiStore.get().mode !== 'setup') {
+    toast('Match works in Setup mode', 'info');
+    return false;
+  }
+  let result = null as ReturnType<typeof matchTransformConstraint>;
+  docStore.update('Match transform constraint', (d) => {
+    result = matchTransformConstraint(d.skeleton, id);
+  });
+  if (!result) {
+    toast('Nothing to match: the constraint needs bones and a mapping', 'info');
+    return false;
+  }
+  toast(result.firstOnly ? 'Matched to the first bone of the constraint' : 'Matched to the current pose', 'ok');
+  return true;
 }

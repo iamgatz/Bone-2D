@@ -1,5 +1,6 @@
 /** What the hierarchy shows while a name is typed into its filter, and what "show all" / "isolate" hide. Pure functions over the document. */
 import type { Id, SkeletonDoc } from './model';
+import { nameMatcher } from './rename';
 
 export interface TreeMatch {
   /** False for an empty filter: everything is shown. */
@@ -12,20 +13,14 @@ export interface TreeMatch {
   events: Set<Id>;
 }
 
-const norm = (s: string) => s.toLowerCase();
-
 /**
  * The part of the tree that matches a filter. Every word typed has to be in the name (any case). A slot also matches by the names of its
  * images in any skin; a matching node shows with the bones above it, so it is never left hanging in the air.
  */
 export function filterTree(doc: SkeletonDoc, query: string): TreeMatch {
-  const words = norm(query).split(/\s+/).filter(Boolean);
-  const out: TreeMatch = { active: words.length > 0, bones: new Set(), slots: new Set(), constraints: new Set(), skins: new Set(), events: new Set() };
-  if (!out.active) return out;
-  const has = (name: string) => {
-    const n = norm(name);
-    return words.every((w) => n.includes(w));
-  };
+  const has = nameMatcher(query);
+  const out: TreeMatch = { active: has !== null, bones: new Set(), slots: new Set(), constraints: new Set(), skins: new Set(), events: new Set() };
+  if (!has) return out;
   const byId = new Map(doc.bones.map((b) => [b.id, b]));
   const showWithAncestors = (id: Id | null) => {
     for (let at = id ? byId.get(id) : undefined; at && !out.bones.has(at.id); at = at.parent ? byId.get(at.parent) : undefined) out.bones.add(at.id);

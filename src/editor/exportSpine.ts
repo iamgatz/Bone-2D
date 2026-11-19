@@ -2,8 +2,9 @@
 import { jsonToBinary } from '@/core/export/spineBinary';
 import { scaleSpineJson } from '@/core/export/scale';
 import { exportSpineJson } from '@/core/export/spineJson';
-import { composePage, packAtlas, writeAtlas } from '@/core/export/atlas';
-import { makeRegion, scaledSize, usedImages } from '@/core/export/atlasBuild';
+import { withCleanAnimations } from '@/core/cleanup';
+import { composePage, packAtlas, premultiplyAlpha, writeAtlas } from '@/core/export/atlas';
+import { findAliases, makeRegion, scaledSize, usedImages } from '@/core/export/atlasBuild';
 import type { AtlasFilter, AtlasPage, PackInput } from '@/core/export/atlas';
 import { mixesToText } from '@/core/export/mixes';
 import { createZip } from '@/core/export/zip';
@@ -33,6 +34,16 @@ export interface ExportOptions {
   includeMixes?: boolean;
   /** Write the single-file preview page that plays the export. */
   includePreview?: boolean;
+  /** Premultiplied alpha pages. */
+  pma?: boolean;
+  /** Pages as wide as they are tall. */
+  square?: boolean;
+  /** Identical pictures share one place in the atlas. */
+  alias?: boolean;
+  /** Page sizes divisible by four (without power of two). */
+  multipleOf4?: boolean;
+  /** Take the keys that change nothing out of the exported animations. */
+  cleanUp?: boolean;
   /** Which skeleton of the project (index in its list; default: the edited one). */
   skeletonIndex?: number;
   /** Animations left out of the export (an animation a slider uses always stays). */
@@ -66,12 +77,13 @@ function scaledPixels(name: string, w: number, h: number): ImageData {
   return ctx.getImageData(0, 0, w, h);
 }
 
-async function pageToPng(page: AtlasPage, pixels: Map<string, Uint8ClampedArray>, padding: number): Promise<Uint8Array> {
+async function pageToPng(page: AtlasPage, pixels: Map<string, Uint8ClampedArray>, padding: number, pma = false): Promise<Uint8Array> {
   const canvas = document.createElement('canvas');
   canvas.width = page.width;
   canvas.height = page.height;
   const ctx = canvas.getContext('2d')!;
   const data = composePage(page, (n) => (pixels.has(n) ? { data: pixels.get(n)! } : undefined), padding);
+  if (pma) premultiplyAlpha(data);
   ctx.putImageData(new ImageData(data as Uint8ClampedArray<ArrayBuffer>, page.width, page.height), 0, 0);
   const blob: Blob = await new Promise((resolve, reject) => canvas.toBlob((b) => (b ? resolve(b) : reject(new Error('PNG encode failed'))), 'image/png'));
   return new Uint8Array(await blob.arrayBuffer());
@@ -85,7 +97,7 @@ function bytesToBase64(bytes: Uint8Array): string {
 }
 
 /** A single-file preview page using the official Spine 4.3 web player (script from a CDN, data embedded as data URIs). */
-function previewHtml(base: string, skeleton: { file: string; data: Uint8Array; binary: boolean }, atlas: string, pngs: { name: string; data: Uint8Array }[], animation: string | null, title: string): string {
+function previewHtml(base: string, skeleton: { file: string; data: Uint8Array; binary: boolean }, atlas: string, pngs: { name: string; data: Uint8Array }[], animation: string | null, title: string, pma = false): string {
   const utf8 = (s: string) => bytesToBase64(new TextEncoder().encode(s));
   const uris: Record<string, string> = {
     [skeleton.file]: `data:${skeleton.binary ? 'application/octet-stream' : 'application/json'};base64,${bytesToBase64(skeleton.data)}`,
@@ -107,6 +119,7 @@ new spine.SpinePlayer("player", {
   atlas: ${JSON.stringify(`${base}.atlas`)},
   rawDataURIs: ${JSON.stringify(uris)},
   ${animation ? `animation: ${JSON.stringify(animation)},` : ''}
+  premultipliedAlpha: ${pma},
   showControls: true,
   backgroundColor: "#13161c"
 });
@@ -137,7 +150,7 @@ export async function buildSpineExport(opts: ExportOptions): Promise<ExportResul
   const enc = new TextEncoder();
   const files: ZipEntry[] = [];
   const binary = opts.format === 'binary';
-  const json = scaleSpineJson(exportSpineJson(doc, { nonessential: opts.nonessential, imagesPath: './images/' }), scale);
+  const json = scaleSpineJson(exportSpineJson(opts.cleanUp ? withCleanAnimations(doc) : doc, { nonessential: opts.nonessential, imagesPath: './images/' }), scale);
   const skeletonFile = binary ? `${base}.skel` : `${base}.json`;
   const skeletonData = binary ? jsonToBinary(json) : enc.encode(JSON.stringify(json, null, opts.pretty ? 2 : 0));
   files.push({ name: skeletonFile, data: skeletonData });
@@ -145,19 +158,23 @@ export async function buildSpineExport(opts: ExportOptions): Promise<ExportResul
   let pages: AtlasPage[] = [];
   let preview: string | undefined;
   if (inputs.length) {
-    pages = packAtlas(inputs, { maxSize: opts.maxSize, padding: opts.padding, pot: opts.pot ?? true, rotate: opts.rotate ?? false });
+    if (opts.alias) {
+      const aliases = findAliases(inputs.map((i) => ({ name: i.name, width: i.width, height: i.height, data: pixels.get(i.name)!, extra: `${i.offsetX ?? 0},${i.offsetY ?? 0},${i.originalWidth ?? i.width},${i.originalHeight ?? i.height}` })));
+      for (const i of inputs) if (aliases.has(i.name)) i.aliasOf = aliases.get(i.name);
+    }
+    pages = packAtlas(inputs, { maxSize: opts.maxSize, padding: opts.padding, pot: opts.pot ?? true, rotate: opts.rotate ?? false, square: opts.square ?? false, multipleOf4: opts.multipleOf4 ?? false });
     const pageFile = (i: number) => (pages.length === 1 ? `${base}.png` : `${base}-${i + 1}.png`);
-    const atlasText = writeAtlas(pages, pageFile, { pma: false, filter: opts.filter ?? 'Linear' });
+    const atlasText = writeAtlas(pages, pageFile, { pma: !!opts.pma, filter: opts.filter ?? 'Linear' });
     files.push({ name: `${base}.atlas`, data: enc.encode(atlasText) });
     const pngs: { name: string; data: Uint8Array }[] = [];
     for (const p of pages) {
-      const data = await pageToPng(p, pixels, opts.padding);
+      const data = await pageToPng(p, pixels, opts.padding, !!opts.pma);
       pngs.push({ name: pageFile(p.index), data });
       files.push({ name: pageFile(p.index), data });
     }
     if (opts.includePreview ?? true) {
       const firstAnim = doc.animations[0]?.name ?? null;
-      preview = previewHtml(base, { file: skeletonFile, data: skeletonData, binary }, atlasText, pngs, firstAnim, doc.name || base);
+      preview = previewHtml(base, { file: skeletonFile, data: skeletonData, binary }, atlasText, pngs, firstAnim, doc.name || base, !!opts.pma);
       files.push({ name: `${base}-preview.html`, data: enc.encode(preview) });
     }
   }
@@ -166,7 +183,7 @@ export async function buildSpineExport(opts: ExportOptions): Promise<ExportResul
   if (mixText) files.push({ name: `${base}.mixes.json`, data: enc.encode(mixText) });
   files.push({
     name: 'README.txt',
-    data: enc.encode(`Exported from Bone 2D.\n\n${skeletonFile.padEnd(base.length + 5)}  Spine 4.3 skeleton data (${binary ? 'binary' : 'JSON'})\n${base}.atlas         texture atlas (straight alpha, pma:false)\n${base}-preview.html  open in a browser: plays the animations with the official Spine 4.3 web player (needs internet for the player script)\n${mixText ? `${base}.mixes.json  crossfade times between animations (defaultMix and setMix of AnimationStateData)\n` : ''}\nLoad with the official Spine 4.3 runtimes (spine-ts, Unity, Godot, ...).\n`),
+    data: enc.encode(`Exported from Bone 2D.\n\n${skeletonFile.padEnd(base.length + 5)}  Spine 4.3 skeleton data (${binary ? 'binary' : 'JSON'})\n${base}.atlas         texture atlas (${opts.pma ? 'premultiplied alpha, pma:true' : 'straight alpha, pma:false'})\n${base}-preview.html  open in a browser: plays the animations with the official Spine 4.3 web player (needs internet for the player script)\n${mixText ? `${base}.mixes.json  crossfade times between animations (defaultMix and setMix of AnimationStateData)\n` : ''}\nLoad with the official Spine 4.3 runtimes (spine-ts, Unity, Godot, ...).\n`),
   });
   const zip = createZip(files);
   return { zip, files: files.map((f) => ({ name: f.name, size: f.data.length })), entries: files, pages: pages.length, missing, json, preview };

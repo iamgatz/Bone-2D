@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import type { ReactElement } from 'react';
-import { Bone as BoneIcon, BoxSelect, ChevronDown, ChevronRight, Crosshair, Diamond, Eye, EyeOff, Folder, Image as ImageIcon, Layers, Link2, Lock, Plus, Scissors, Shirt, Search, Spline, Trash2, Unlock, Waves, X, Zap } from 'lucide-react';
+import { Bone as BoneIcon, BoxSelect, ChevronDown, ChevronRight, Crosshair, Diamond, Eye, EyeOff, Folder, Image as ImageIcon, Layers, Link2, Lock, Plus, Replace, Scissors, Shirt, Search, Spline, Trash2, Unlock, Waves, X, Zap } from 'lucide-react';
 import type { Bone, Id, Slot } from '@/core/model';
 import { createEvent, createSkin, deleteBones, deleteEvent, deleteSkin, deleteSlots, keyEvent, moveSlot, renameBone, renameSkin, renameSlot, reparentBone, selectBone, selectSlot, setActiveSkin, setBoneProps, setSelection, setSlotBone, setSlotProps, updateEvent } from '@/store/actions';
 import { folderOfSlot } from '@/core/folders';
@@ -15,6 +15,7 @@ import { showAll } from '@/store/visibilityActions';
 import { getScene } from '../scene';
 import { IconButton, NumberField, TextField } from '../ui/controls';
 import { Field } from '../ui/Field';
+import { RenameBar } from './RenameBar';
 import { SelectionSets } from './SelectionSets';
 import { SkeletonBar } from './SkeletonBar';
 
@@ -50,6 +51,7 @@ export function TreePanel() {
   const [editing, setEditing] = useState<string | null>(null);
   const [dropOn, setDropOn] = useState<string | null>(null);
   const [query, setQuery] = useState('');
+  const [replacing, setReplacing] = useState(false);
   const [openEvent, setOpenEvent] = useState<string | null>(null);
   const match = useMemo(() => filterTree(doc, query), [doc, query]);
 
@@ -227,7 +229,7 @@ export function TreePanel() {
         <Search size={13} />
         <input
           value={query}
-          placeholder="Filter by name"
+          placeholder="Filter by name (words, * ?, /regex/)"
           onChange={(e) => setQuery(e.target.value)}
           onKeyDown={(e) => {
             if (e.key === 'Escape') setQuery('');
@@ -235,7 +237,9 @@ export function TreePanel() {
           }}
         />
         {query && <IconButton icon={X} title="Clear the filter" small onClick={() => setQuery('')} />}
+        <IconButton icon={Replace} title="Find and replace in names" small active={replacing} onClick={() => setReplacing((v) => !v)} />
       </div>
+      {replacing && <RenameBar />}
       <SelectionSets />
       <div
         className="panel-body"

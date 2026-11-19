@@ -188,6 +188,26 @@ describe('cli atlas', () => {
     expect(atlas.findRegion('parts/hand')!.width).toBe(9);
   });
 
+  it('--alias gives identical pictures one place, --pma multiplies the colour by the alpha and says so, --square makes a square page', () => {
+    const a = pic(1, 20, 12, 0);
+    const half = new Uint8ClampedArray(20 * 12 * 4);
+    for (let i = 0; i < half.length; i += 4) half.set([200, 100, 50, 128], i);
+    const flat = `data:image/png;base64,${encodePng(20, 12, half).toString('base64')}`;
+    const path = rigged({ one: a.url, copy: a.url, flat });
+    const out = join(dir, 'opts');
+    expect(run(['export', path, out, '--atlas', '--alias', '--pma', '--square', '--padding', '0'], io())).toBe(0);
+    const atlas = new S.TextureAtlas(readFileSync(join(out, 'hero.atlas'), 'utf8'));
+    expect(atlas.pages[0].pma).toBe(true);
+    expect(atlas.pages[0].width).toBe(atlas.pages[0].height);
+    const one = atlas.findRegion('one')!;
+    const copy = atlas.findRegion('copy')!;
+    expect([copy.x, copy.y]).toEqual([one.x, one.y]);
+    const page = decodePng(readFileSync(join(out, 'hero.png')))!;
+    const f = atlas.findRegion('flat')!;
+    const at = (f.y * page.width + f.x) * 4;
+    expect(Array.from(page.data.subarray(at, at + 4))).toEqual([100, 50, 25, 128]);
+  });
+
   it('--scale shrinks the pictures with the skeleton, and options change the page', () => {
     const a = pic(1, 40, 40, 0);
     const path = rigged({ head: a.url });
@@ -271,5 +291,103 @@ describe('cli with several skeletons', () => {
     const c = io();
     expect(run(['check', broken], c)).toBe(1);
     expect(c.o.join('')).toContain('skeleton "second"');
+  });
+});
+
+describe('cli unpack, import and clean', () => {
+  function picture(seed: number, w: number, h: number) {
+    const data = new Uint8ClampedArray(w * h * 4);
+    for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) data.set(x > 1 && y > 1 ? [(x * 9 + seed) % 256, (y * 5 + seed) % 256, seed * 20, 255] : [0, 0, 0, 0], (y * w + x) * 4);
+    return { data, w, h, url: `data:image/png;base64,${encodePng(w, h, data).toString('base64')}` };
+  }
+  function project(images: Record<string, string>) {
+    const p = emptyProject('hero');
+    p.skeleton.bones = [];
+    const root = newBone({ name: 'root', length: 50 });
+    p.skeleton.bones.push(root);
+    p.skeleton.skins[0].attachments = {};
+    for (const [i, name] of Object.keys(images).entries()) {
+      const slot = newSlot({ name: `s${i}`, bone: root.id });
+      p.skeleton.slots.push(slot);
+      p.skeleton.skins[0].attachments[slot.id] = { [name]: { type: 'region', name, path: name, x: 0, y: 0, rotation: 0, scaleX: 1, scaleY: 1, width: 10, height: 10, color: [1, 1, 1, 1] } };
+    }
+    const a = newAnimation('idle', 1);
+    // a key in the middle that changes nothing
+    a.bones[root.id] = { rotate: [{ time: 0, value: [5] }, { time: 0.5, value: [5] }, { time: 1, value: [5] }] };
+    p.skeleton.animations.push(a);
+    const path = join(dir, 'hero.bone2d');
+    writeFileSync(path, JSON.stringify({ bone2d: 1, project: p, images }));
+    return path;
+  }
+
+  it('an exported atlas unpacks to the pictures it was made from, and imports back as a project', () => {
+    const a = picture(1, 24, 14);
+    const b = picture(2, 11, 33);
+    const path = project({ head: a.url, 'parts/hand': b.url });
+    const out = join(dir, 'exported');
+    expect(run(['export', path, out, '--atlas', '--trim', '--rotate', '--padding', '0'], io())).toBe(0);
+    const un = join(dir, 'unpacked');
+    const r = io();
+    expect(run(['unpack', join(out, 'hero.atlas'), un], r)).toBe(0);
+    expect(r.o.join('')).toContain('2 pictures');
+    for (const [name, src] of [['head', a], ['parts/hand', b]] as const) {
+      const png = decodePng(readFileSync(join(un, `${name}.png`)))!;
+      expect([png.width, png.height]).toEqual([src.w, src.h]);
+      expect(Array.from(png.data)).toEqual(Array.from(src.data));
+    }
+    const imported = join(dir, 'back.bone2d');
+    const q = io();
+    expect(run(['import', join(out, 'hero.json'), imported], q)).toBe(0);
+    const back = readProjectFile(readFileSync(imported, 'utf8'));
+    expect(back.project.skeleton.bones.map((x) => x.name)).toEqual(['root']);
+    expect(Object.keys(back.images ?? {}).sort()).toEqual(['head', 'parts/hand']);
+    expect(Array.from(decodePng(decodePicture(back.images!['head'])!.data)!.data)).toEqual(Array.from(a.data));
+    // the imported project exports again
+    expect(run(['export', imported, join(dir, 'again')], io())).toBe(0);
+  });
+
+  it('a missing page is reported and the exit code says so; an unknown atlas file fails with a message', () => {
+    const atlas = join(dir, 'x.atlas');
+    writeFileSync(atlas, 'gone.png\nsize:8,8\nfilter:Linear,Linear\npma:false\nr\nbounds:0,0,4,4\n');
+    const r = io();
+    expect(run(['unpack', atlas, join(dir, 'o')], r)).toBe(1);
+    expect(r.e.join('')).toContain('gone.png');
+    expect(run(['unpack'], io())).toBe(2);
+    expect(run(['unpack', join(dir, 'nope.atlas')], io())).toBe(1);
+    expect(run(['import', 'only-one'], io())).toBe(2);
+  });
+
+  it('clean writes a copy without the keys that change nothing and leaves the original alone', () => {
+    const path = project({ head: picture(1, 8, 8).url });
+    const out = join(dir, 'clean.bone2d');
+    const r = io();
+    expect(run(['clean', path, out], r)).toBe(0);
+    expect(r.o.join('')).toContain('1 key removed');
+    const cleaned = readProjectFile(readFileSync(out, 'utf8'));
+    const root = cleaned.project.skeleton.bones[0].id;
+    expect(cleaned.project.skeleton.animations[0].bones[root].rotate).toHaveLength(2);
+    expect(readProjectFile(readFileSync(path, 'utf8')).project.skeleton.animations[0].bones[root].rotate).toHaveLength(3);
+    expect(Object.keys(cleaned.images ?? {})).toEqual(['head']);
+    expect(run(['clean', path], io())).toBe(2);
+  });
+});
+
+describe('cli export --clean', () => {
+  it('leaves the dead keys out of the exported animation and the project file alone', () => {
+    const p = emptyProject('hero');
+    p.skeleton.bones = [];
+    const root = newBone({ name: 'root', length: 50 });
+    p.skeleton.bones.push(root);
+    const a = newAnimation('idle', 1);
+    a.bones[root.id] = { rotate: [{ time: 0, value: [5] }, { time: 0.5, value: [5] }, { time: 1, value: [5] }] };
+    p.skeleton.animations.push(a);
+    const path = join(dir, 'c.bone2d');
+    writeFileSync(path, JSON.stringify({ bone2d: 1, project: p, images: {} }));
+    expect(run(['export', path, join(dir, 'plain'), '--no-images'], io())).toBe(0);
+    expect(run(['export', path, join(dir, 'clean'), '--no-images', '--clean'], io())).toBe(0);
+    const keys = (d: string) => JSON.parse(readFileSync(join(dir, d, 'hero.json'), 'utf8')).animations.idle.bones.root.rotate.length;
+    expect(keys('plain')).toBe(3);
+    expect(keys('clean')).toBe(2);
+    expect(readProjectFile(readFileSync(path, 'utf8')).project.skeleton.animations[0].bones[root.id].rotate).toHaveLength(3);
   });
 });

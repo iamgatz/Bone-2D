@@ -18,6 +18,10 @@ export interface Stats {
   triangles: number;
   weightedVertices: number;
   keys: number;
+  /** Timelines: every list of keys of every animation counts once. */
+  timelines: number;
+  /** Pixels the pictures cover at their own size: regions by their size and scale, meshes by the area of their texture triangles. A rough measure of the fill rate. */
+  area: number;
   /** Longest animation, in seconds. */
   longest: number;
 }
@@ -43,6 +47,31 @@ export function countKeys(anim: Animation): number {
   return n;
 }
 
+/** Counts the timelines of an animation: every array of keys. */
+export function countTimelines(anim: Animation): number {
+  let n = 0;
+  const walk = (v: unknown) => {
+    if (Array.isArray(v)) {
+      if (v.length && typeof v[0] === 'object' && v[0] !== null && typeof (v[0] as { time?: unknown }).time === 'number') n++;
+      else v.forEach(walk);
+    } else if (v && typeof v === 'object') for (const x of Object.values(v)) walk(x);
+  };
+  walk({ ...anim, id: undefined, name: undefined });
+  return n;
+}
+
+/** The pixels one attachment covers at its own size (0 for what is not a picture). */
+export function attachmentArea(a: Attachment): number {
+  if (a.type === 'region') return Math.abs(a.width * a.height * a.scaleX * a.scaleY);
+  if (a.type !== 'mesh') return 0;
+  let uv = 0;
+  for (let i = 0; i + 2 < a.triangles.length; i += 3) {
+    const [p, q, r] = [a.triangles[i] * 2, a.triangles[i + 1] * 2, a.triangles[i + 2] * 2];
+    uv += Math.abs((a.uvs[q] - a.uvs[p]) * (a.uvs[r + 1] - a.uvs[p + 1]) - (a.uvs[r] - a.uvs[p]) * (a.uvs[q + 1] - a.uvs[p + 1])) / 2;
+  }
+  return uv * a.width * a.height;
+}
+
 function* attachmentsOf(project: Project): Generator<Attachment> {
   for (const skin of project.skeleton.skins) for (const bySlot of Object.values(skin.attachments)) yield* Object.values(bySlot);
 }
@@ -55,8 +84,10 @@ export function projectStats(project: Project): Stats {
   let vertices = 0;
   let triangles = 0;
   let weightedVertices = 0;
+  let area = 0;
   for (const a of attachmentsOf(project)) {
     attachments[a.type] = (attachments[a.type] ?? 0) + 1;
+    area += attachmentArea(a);
     if (a.type === 'mesh') {
       vertices += a.weights ? a.weights.length : a.vertices.length / 2;
       triangles += a.triangles.length / 3;
@@ -64,12 +95,14 @@ export function projectStats(project: Project): Stats {
     }
   }
   let keys = 0;
+  let timelines = 0;
   let longest = 0;
   for (const a of doc.animations) {
     keys += countKeys(a);
+    timelines += countTimelines(a);
     longest = Math.max(longest, a.duration);
   }
-  return { bones: doc.bones.length, slots: doc.slots.length, skins: doc.skins.length, animations: doc.animations.length, events: doc.events.length, images: project.images.length, constraints, attachments, vertices, triangles, weightedVertices, keys, longest };
+  return { bones: doc.bones.length, slots: doc.slots.length, skins: doc.skins.length, animations: doc.animations.length, events: doc.events.length, images: project.images.length, constraints, attachments, vertices, triangles, weightedVertices, keys, timelines, area: Math.round(area), longest };
 }
 
 /** The most influences one vertex may have in the export (the Spine runtimes read any number, but 4 is what the editor and GPUs expect). */

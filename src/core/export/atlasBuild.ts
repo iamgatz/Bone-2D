@@ -20,6 +20,27 @@ export function usedImages(doc: Pick<SkeletonDoc, 'skins'>): { name: string; mes
   return [...used].map(([name, mesh]) => ({ name, mesh }));
 }
 
+/**
+ * Pictures that are the same: for each picture whose pixels (and size) equal those of an earlier one, the name of that earlier one. Used with
+ * the packer's `aliasOf`, so identical pictures (a left hand that is the right one copied) take one place in the atlas.
+ */
+export function findAliases(list: { name: string; width: number; height: number; data: ArrayLike<number>; extra?: string }[]): Map<string, string> {
+  const out = new Map<string, string>();
+  const seen = new Map<string, typeof list>();
+  for (const item of list) {
+    let h = 2166136261;
+    for (let i = 0; i < item.data.length; i++) h = Math.imul(h ^ item.data[i], 16777619);
+    const key = `${item.width}x${item.height}:${item.extra ?? ''}:${h >>> 0}`;
+    const same = (seen.get(key) ?? []).find((o) => {
+      for (let i = 0; i < item.data.length; i++) if (o.data[i] !== item.data[i]) return false;
+      return true;
+    });
+    if (same) out.set(item.name, same.name);
+    else seen.set(key, [...(seen.get(key) ?? []), item]);
+  }
+  return out;
+}
+
 /** The size a picture has at an export scale (never below one pixel). */
 export const scaledSize = (width: number, height: number, scale: number): [number, number] => [Math.max(1, Math.round(width * scale)), Math.max(1, Math.round(height * scale))];
 

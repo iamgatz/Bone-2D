@@ -4,6 +4,9 @@
  *   npm run cli -- export project.bone2d [outDir] [--format json|binary] [--scale 0.5] [--pretty] [--no-nonessential] [--no-images]
  *   npm run cli -- info project.bone2d
  *   npm run cli -- check project.bone2d
+ *   npm run cli -- unpack hero.atlas [outDir]            the pictures of an atlas, as PNG files
+ *   npm run cli -- import hero.json out.bone2d           Spine skeleton data (+ its atlas) as a project
+ *   npm run cli -- clean project.bone2d out.bone2d       a copy without the keys that change nothing
  *
  * `export` writes the skeleton (`<name>.json` or `<name>.skel`, the same bytes as the editor's export) and the pictures of the project as
  * files under `images/`; with `--atlas` it packs them instead into `<name>.atlas` and PNG pages, with the same packer, trimming and
@@ -13,12 +16,18 @@
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { basename, dirname, extname, join, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { composePage, packAtlas, writeAtlas } from '@/core/export/atlas';
+import { composePage, packAtlas, premultiplyAlpha, writeAtlas } from '@/core/export/atlas';
 import type { AtlasFilter, PackInput } from '@/core/export/atlas';
-import { makeRegion, scaledSize, usedImages } from '@/core/export/atlasBuild';
+import { findAliases, makeRegion, scaledSize, usedImages } from '@/core/export/atlasBuild';
 import { scaleSpineJson } from '@/core/export/scale';
 import { jsonToBinary } from '@/core/export/spineBinary';
 import { SPINE_VERSION, exportSpineJson } from '@/core/export/spineJson';
+import { cleanUpAnimation, withCleanAnimations } from '@/core/cleanup';
+import { parseAtlas } from '@/core/import/atlas';
+import { binaryToJson } from '@/core/import/spineBinary';
+import { importSpineJson } from '@/core/import/spineJson';
+import { cutRegion, unpackAtlas, unpremultiplyAlpha } from '@/core/import/unpack';
+import type { Picture } from '@/core/import/unpack';
 import { migrateProject } from '@/core/model';
 import type { Project } from '@/core/model';
 import { countKeys } from '@/core/stats';
@@ -40,6 +49,7 @@ const HELP = `Bone 2D command line
       --pretty                indented JSON
       --no-nonessential       leave out names, colours and other editor-only data
       --no-images             do not write the pictures
+      --clean                 leave out the keys that change nothing (the project is not changed)
       --no-mixes              do not write <name>.mixes.json (the crossfade times between animations, when the project has any)
       --skeleton <name|n>     only this skeleton of the project (default: all of them, one file each)
       --atlas                 pack the pictures into <name>.atlas and PNG pages instead of writing them one by one
@@ -48,11 +58,18 @@ const HELP = `Bone 2D command line
       --no-pot                allow page sizes that are not powers of two
       --trim                  cut the empty border off pictures (not those a mesh uses)
       --rotate                turn a picture a quarter turn on the page when it fits better
+      --square                pages as wide as they are tall
+      --multiple-of-4         page sizes divisible by four (with --no-pot)
+      --alias                 identical pictures take one place in the atlas
+      --pma                   premultiplied alpha pages (the atlas says pma:true)
       --filter linear|nearest how the engine should smooth the atlas (default linear)
+  unpack <atlas> [outDir]     cut the pictures out of an atlas and its pages (PNG pages only), trimmed borders restored
+      --keep-pma              leave a premultiplied page as it is instead of turning it back to straight alpha
+  import <skeleton> <out>     Spine .json / .skel (4.0 - 4.3) and its .atlas (same name, or --atlas <file>) as a Bone 2D project
+  clean <project> <out>       write a copy with the keys that change nothing taken out
   info <project>              what the project holds
   check <project>             find and list what is damaged in it (exit code 1 when something is)
-  help                        this text
-`;
+  help                        this text\n`;
 
 interface ProjectFile {
   bone2d?: 1;
@@ -92,7 +109,7 @@ interface Parsed {
 function parse(argv: string[]): Parsed {
   const flags = new Map<string, string | true>();
   const files: string[] = [];
-  const valued = new Set(['format', 'scale', 'max-size', 'padding', 'filter', 'skeleton']);
+  const valued = new Set(['format', 'scale', 'max-size', 'padding', 'filter', 'skeleton', 'atlas-file']);
   for (let i = 1; i < argv.length; i++) {
     const a = argv[i];
     if (a.startsWith('--')) {
@@ -145,7 +162,7 @@ function exportCommand(p: Parsed, io: Io): number {
     let base = (doc.name || basename(input, extname(input))).replace(/[^\w-]+/g, '_') || 'skeleton';
     while (used.has(base)) base += '_';
     used.add(base);
-    const json = scaleSpineJson(exportSpineJson(doc, { nonessential: !p.flags.has('no-nonessential'), imagesPath: './images/' }), scale);
+    const json = scaleSpineJson(exportSpineJson(p.flags.has('clean') ? withCleanAnimations(doc) : doc, { nonessential: !p.flags.has('no-nonessential'), imagesPath: './images/' }), scale);
     const skeletonFile = `${base}.${format === 'binary' ? 'skel' : 'json'}`;
     const bytes = format === 'binary' ? jsonToBinary(json) : Buffer.from(JSON.stringify(json, null, p.flags.has('pretty') ? 2 : 0));
     writeFileSync(join(outDir, skeletonFile), bytes);
@@ -215,11 +232,20 @@ function atlasStep(p: Parsed, file: ProjectFile, doc: Project['skeleton'], base:
     io.err('export: no pictures to pack\n');
     return 1;
   }
-  const pages = packAtlas(inputs, { maxSize, padding, pot: !p.flags.has('no-pot'), rotate: p.flags.has('rotate') });
+  if (p.flags.has('alias')) {
+    const aliases = findAliases(inputs.map((i) => ({ name: i.name, width: i.width, height: i.height, data: pixels.get(i.name)!, extra: `${i.offsetX ?? 0},${i.offsetY ?? 0},${i.originalWidth ?? i.width},${i.originalHeight ?? i.height}` })));
+    for (const i of inputs) if (aliases.has(i.name)) i.aliasOf = aliases.get(i.name);
+  }
+  const pma = p.flags.has('pma');
+  const pages = packAtlas(inputs, { maxSize, padding, pot: !p.flags.has('no-pot'), rotate: p.flags.has('rotate'), square: p.flags.has('square'), multipleOf4: p.flags.has('multiple-of-4') });
   const pageFile = (i: number) => (pages.length === 1 ? `${base}.png` : `${base}-${i + 1}.png`);
-  const text = writeAtlas(pages, pageFile, { pma: false, filter: (filter === 'nearest' ? 'Nearest' : 'Linear') as AtlasFilter });
+  const text = writeAtlas(pages, pageFile, { pma, filter: (filter === 'nearest' ? 'Nearest' : 'Linear') as AtlasFilter });
   writeFileSync(join(outDir, `${base}.atlas`), text);
-  for (const page of pages) writeFileSync(join(outDir, pageFile(page.index)), encodePng(page.width, page.height, composePage(page, (n) => (pixels.has(n) ? { data: pixels.get(n)! } : undefined), padding)));
+  for (const page of pages) {
+    const data = composePage(page, (n) => (pixels.has(n) ? { data: pixels.get(n)! } : undefined), padding);
+    if (pma) premultiplyAlpha(data);
+    writeFileSync(join(outDir, pageFile(page.index)), encodePng(page.width, page.height, data));
+  }
   io.out(`${base}.atlas  ${inputs.length} regions on ${pages.length} page${pages.length === 1 ? '' : 's'}\n`);
   return left.length ? 1 : 0;
 }
@@ -262,6 +288,102 @@ function checkCommand(p: Parsed, io: Io): number {
   return 1;
 }
 
+/** The straight RGBA pixels of a PNG file, or null when it is missing or not a PNG this tool reads. */
+function readPage(path: string): Picture | null {
+  try {
+    const png = decodePng(readFileSync(path));
+    return png ? { width: png.width, height: png.height, data: new Uint8ClampedArray(png.data) } : null;
+  } catch {
+    return null;
+  }
+}
+
+function unpackCommand(p: Parsed, io: Io): number {
+  const [atlasPath, outDir = '.'] = p.files;
+  if (!atlasPath) {
+    io.err('unpack: which .atlas file?\n');
+    return 2;
+  }
+  const dir = dirname(resolve(atlasPath));
+  const { pictures, warnings } = unpackAtlas(readFileSync(atlasPath, 'utf8'), (file) => readPage(safePath(dir, file) ?? ''), { unpremultiply: !p.flags.has('keep-pma') });
+  for (const w of warnings) io.err(`${w}\n`);
+  let written = 0;
+  for (const { name, picture } of pictures) {
+    const target = safePath(outDir, `${name}.png`);
+    if (!target) {
+      io.err(`skipped the picture "${name}"\n`);
+      continue;
+    }
+    mkdirSync(dirname(target), { recursive: true });
+    writeFileSync(target, encodePng(picture.width, picture.height, picture.data));
+    written++;
+  }
+  io.out(`${outDir}  ${written} pictures\n`);
+  return warnings.length || written < pictures.length ? 1 : 0;
+}
+
+function importCommand(p: Parsed, io: Io): number {
+  const [input, output] = p.files;
+  if (!input || !output) {
+    io.err('import: import <skeleton .json|.skel> <out.bone2d> [--atlas-file <file>]\n');
+    return 2;
+  }
+  const bytes = readFileSync(input);
+  const skeleton: unknown = /\.skel$/i.test(input) ? binaryToJson(new Uint8Array(bytes)) : JSON.parse(bytes.toString('utf8'));
+  const result = importSpineJson(skeleton, basename(input, extname(input)));
+  const warnings = [...result.warnings];
+  const atlasPath = p.flags.has('atlas-file') ? String(p.flags.get('atlas-file')) : join(dirname(input), `${basename(input, extname(input))}.atlas`);
+  const images: Record<string, string> = {};
+  try {
+    const text = readFileSync(atlasPath, 'utf8');
+    const dir = dirname(resolve(atlasPath));
+    for (const page of parseAtlas(text)) {
+      const pixels = readPage(safePath(dir, page.file) ?? '');
+      if (!pixels) {
+        warnings.push(`atlas page "${page.file}" was not found or is not a PNG`);
+        continue;
+      }
+      if (page.pma) unpremultiplyAlpha(pixels.data);
+      for (const r of page.regions) {
+        const pic = cutRegion(pixels, r);
+        images[r.name] = `data:image/png;base64,${encodePng(pic.width, pic.height, pic.data).toString('base64')}`;
+        const ref = result.project.images.find((i) => i.name === r.name);
+        if (ref) {
+          ref.width = pic.width;
+          ref.height = pic.height;
+        }
+      }
+    }
+  } catch {
+    warnings.push(`no atlas at "${atlasPath}": the attachments have no pictures yet`);
+  }
+  for (const img of result.project.images) if (!images[img.name]) warnings.push(`image "${img.name}" is not in the atlas`);
+  const repaired = repairProject(result.project);
+  const project = migrateProject(result.project);
+  mkdirSync(dirname(resolve(output)), { recursive: true });
+  writeFileSync(output, JSON.stringify({ bone2d: 1, project, images }));
+  for (const w of [...warnings, ...repaired.map((r) => `repaired: ${r}`)]) io.err(`${w}\n`);
+  io.out(`${output}  ${project.skeleton.bones.length} bones, ${project.skeleton.animations.length} animations, ${Object.keys(images).length} pictures\n`);
+  return 0;
+}
+
+function cleanCommand(p: Parsed, io: Io): number {
+  const [input, output] = p.files;
+  if (!input || !output) {
+    io.err('clean: clean <project> <out>\n');
+    return 2;
+  }
+  const file = load(input);
+  repairProject(file.project);
+  const project = migrateProject(file.project);
+  let removed = 0;
+  for (const doc of skeletonList(project)) for (const a of doc.animations) removed += cleanUpAnimation(a);
+  mkdirSync(dirname(resolve(output)), { recursive: true });
+  writeFileSync(output, JSON.stringify({ ...file, project }));
+  io.out(`${output}  ${removed} key${removed === 1 ? '' : 's'} removed\n`);
+  return 0;
+}
+
 /** Runs one command line (without the node and script names); returns the exit code. */
 export function run(argv: string[], io: Io): number {
   const p = parse(argv);
@@ -269,6 +391,9 @@ export function run(argv: string[], io: Io): number {
     if (p.command === 'export') return exportCommand(p, io);
     if (p.command === 'info') return infoCommand(p, io);
     if (p.command === 'check') return checkCommand(p, io);
+    if (p.command === 'unpack') return unpackCommand(p, io);
+    if (p.command === 'import') return importCommand(p, io);
+    if (p.command === 'clean') return cleanCommand(p, io);
     if (p.command === 'help' || p.command === '--help' || p.command === '-h') {
       io.out(HELP);
       return 0;

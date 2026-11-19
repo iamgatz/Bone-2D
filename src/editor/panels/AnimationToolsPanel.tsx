@@ -5,6 +5,7 @@ import { DEFAULT_SLIDE, footSlides } from '@/core/animtools';
 import type { Slide, SlideOptions } from '@/core/animtools';
 import { markersOf } from '@/core/markers';
 import { hideUnkeyedBones, mirrorCurrentCycle, tweenSelected, wiggleSelected } from '@/store/animToolActions';
+import { favorSelectedKeys, scaleSelectedKeyTimes } from '@/store/keyToolActions';
 import { docStore } from '@/store/doc';
 import type { Animation } from '@/core/model';
 import { bakeCurrentAnimation, closeCurrentLoop, crossfadeSlot, currentAnimation, layerCurrentAnimation, setTime, simplifyCurrentAnimation } from '@/store/actions';
@@ -77,6 +78,46 @@ function RefVideoControls() {
 }
 
 /** Fades the pictures of the selected slot into each other where this animation changes them. */
+/** Favor and Scale time: two small tools for the keys that are selected in the timeline. */
+function KeyToolControls() {
+  const anim = useUi((s) => s.animationId);
+  const count = useUi((s) => s.selectedKeys.length);
+  const [favor, setFavor] = useState(50);
+  const [timeScale, setTimeScale] = useState(100);
+  const off = !anim || count === 0;
+  return (
+    <>
+      <div className="section-label">Favor</div>
+      <p className="hint-text">Moves the values of the selected keys toward their neighbours: a pose that is too far ahead is pulled back, a jittery run is smoothed. Select keys in the timeline first.</p>
+      <Field label="Amount" title="0% leaves the keys as they are, 100% puts them exactly on the target">
+        <NumberField label="%" value={favor} step={5} precision={0} min={1} max={100} onChange={(v) => setFavor(Math.max(1, Math.min(100, v)))} />
+      </Field>
+      <div className="hstack mb">
+        <Button small ghost disabled={off} title="Toward the key before" onClick={() => favorSelectedKeys('previous', favor / 100)}>
+          Previous
+        </Button>
+        <Button small ghost disabled={off} title="Toward the key after" onClick={() => favorSelectedKeys('next', favor / 100)}>
+          Next
+        </Button>
+        <Button small ghost disabled={off} title="Toward the middle of the two neighbours: smooths the motion" onClick={() => favorSelectedKeys('average', favor / 100)}>
+          Even out
+        </Button>
+        <Button small ghost disabled={off} title="Toward the setup pose (bone keys)" onClick={() => favorSelectedKeys('neutral', favor / 100)}>
+          To setup
+        </Button>
+      </div>
+      <div className="section-label">Scale time</div>
+      <p className="hint-text">Stretches or squeezes the times of the selected keys around the earliest one: slower or faster, with the values kept.</p>
+      <Field label="Speed" title="100% is as it is; 200% makes the part twice as slow (its keys twice as far apart), 50% twice as fast">
+        <NumberField label="%" value={timeScale} step={5} precision={0} min={5} max={1000} onChange={(v) => setTimeScale(Math.max(5, Math.min(1000, v)))} />
+      </Field>
+      <Button small primary disabled={off} onClick={() => scaleSelectedKeyTimes(timeScale / 100)}>
+        Scale the selected keys
+      </Button>
+    </>
+  );
+}
+
 function FadeControls() {
   const { animationId, slot } = useUi((s) => ({ animationId: s.animationId, slot: s.selection.slot }));
   const [seconds, setSeconds] = useState(0.15);
@@ -262,6 +303,8 @@ export function AnimationToolsPanel() {
             </Button>
           ))}
         </div>
+
+        <KeyToolControls />
 
         <div className="section-label">Wiggle</div>
         <p className="hint-text">Shakes the selected keys' timelines with random noise: a key every few frames, each moved a little from the curve. Select keys in the timeline first (click a row's name to take all its keys).</p>

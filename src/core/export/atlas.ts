@@ -10,6 +10,8 @@ export interface PackInput {
   offsetY?: number;
   originalWidth?: number;
   originalHeight?: number;
+  /** Name of a picture with exactly the same pixels: this one is not packed, its region takes the place of that one (Spine's alias). */
+  aliasOf?: string;
 }
 
 export interface PackedRegion {
@@ -43,6 +45,10 @@ export interface PackOptions {
   pot?: boolean;
   /** Allow a quarter turn of a region when it fits better. */
   rotate?: boolean;
+  /** Pages that are as wide as they are tall. */
+  square?: boolean;
+  /** Page sizes that are multiples of four (without power of two: some compressed texture formats want it). */
+  multipleOf4?: boolean;
 }
 
 interface Rect {
@@ -142,7 +148,11 @@ export function packAtlas(inputs: PackInput[], options: PackOptions = {}): Atlas
   const pad = options.padding ?? 2;
   const pot = options.pot ?? true;
   const rotate = options.rotate ?? false;
+  const square = options.square ?? false;
+  const mult4 = options.multipleOf4 ?? false;
+  const aliases = inputs.filter((i) => i.aliasOf);
   const items = inputs
+    .filter((i) => !i.aliasOf)
     .slice()
     .sort((a, b) => Math.max(b.width, b.height) - Math.max(a.width, a.height) || b.width * b.height - a.width * a.height);
   for (const it of items) {
@@ -163,7 +173,7 @@ export function packAtlas(inputs: PackInput[], options: PackOptions = {}): Atlas
     let w = 0;
     let h = 0;
     while (true) {
-      const sizes: [number, number][] = pot
+      const sizes: [number, number][] = pot && !square
         ? [
             [side, side >> 1 >= Math.max(1, nextPow2(tallest)) ? side >> 1 : side],
             [side, side],
@@ -197,14 +207,40 @@ export function packAtlas(inputs: PackInput[], options: PackOptions = {}): Atlas
       // shrink to used bounds
       w = usedW;
       h = usedH;
+      if (mult4) {
+        w = Math.min(maxSize, Math.ceil(w / 4) * 4);
+        h = Math.min(maxSize, Math.ceil(h / 4) * 4);
+      }
     } else {
       w = Math.min(w, nextPow2(usedW));
       h = Math.min(h, nextPow2(usedH));
     }
+    if (square) w = h = Math.max(w, h);
     pages.push({ index: pages.length, width: w, height: h, regions: r.placed });
     remaining = r.rest;
   }
+  // a picture with the same pixels as another one has a region at the same place
+  for (const alias of aliases) {
+    for (const page of pages) {
+      const target = page.regions.find((x) => x.name === alias.aliasOf);
+      if (target) {
+        page.regions.push({ ...target, name: alias.name });
+        break;
+      }
+    }
+  }
   return pages;
+}
+
+/** Straight alpha to premultiplied, in place (the pixels of a page for an atlas that says pma:true). */
+export function premultiplyAlpha(rgba: Uint8ClampedArray): void {
+  for (let i = 0; i < rgba.length; i += 4) {
+    const a = rgba[i + 3];
+    if (a === 255) continue;
+    rgba[i] = Math.round((rgba[i] * a) / 255);
+    rgba[i + 1] = Math.round((rgba[i + 1] * a) / 255);
+    rgba[i + 2] = Math.round((rgba[i + 2] * a) / 255);
+  }
 }
 
 export type AtlasFilter = 'Linear' | 'Nearest';

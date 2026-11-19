@@ -21,7 +21,7 @@ export function ExportDialog() {
   const picked = many && /^\d+$/.test(which) ? Math.min(Number(which), skeletons.length - 1) : undefined;
   const doc = picked !== undefined ? skeletons[picked] : project.skeleton;
   const [settings, setSettings] = useState<ExportSettings>(loadExportSettings);
-  const { format, scale, maxSize, padding, pretty, nonessential, pot, includePreview, trim, rotate, filter, mixes } = settings;
+  const { format, scale, maxSize, padding, pretty, nonessential, pot, includePreview, trim, rotate, filter, mixes, pma, square, alias, multipleOf4, cleanUp } = settings;
   const change = (patch: Partial<ExportSettings>) => setSettings((s) => ({ ...s, ...patch }));
   const [excluded, setExcluded] = useState<string[]>([]);
   const [tab, setTab] = useState<'data' | 'animation'>('data');
@@ -37,14 +37,14 @@ export function ExportDialog() {
     if (tab !== 'data') return;
     setBusy(true);
     setError(null);
-    (all ? buildAllSkeletonsExport : buildSpineExport)({ format, scale, maxSize, padding, pretty, nonessential, pot, includePreview, trim, rotate, filter, includeMixes: mixes, excludeAnimations: excluded, skeletonIndex: picked })
+    (all ? buildAllSkeletonsExport : buildSpineExport)({ format, scale, maxSize, padding, pretty, nonessential, pot, includePreview, trim, rotate, filter, pma, square, alias, multipleOf4, cleanUp, includeMixes: mixes, excludeAnimations: excluded, skeletonIndex: picked })
       .then((r) => alive && setResult(r))
       .catch((e: Error) => alive && (setError(e.message), setResult(null)))
       .finally(() => alive && setBusy(false));
     return () => {
       alive = false;
     };
-  }, [format, scale, maxSize, padding, pretty, nonessential, pot, includePreview, trim, rotate, filter, mixes, excluded, tab, all, picked]);
+  }, [format, scale, maxSize, padding, pretty, nonessential, pot, includePreview, trim, rotate, filter, pma, square, alias, multipleOf4, cleanUp, mixes, excluded, tab, all, picked]);
 
   /** One HTML file with the skeleton, the pictures and a player in it: opens offline, for sending to a client. */
   const savePlayer = async () => {
@@ -159,6 +159,20 @@ export function ExportDialog() {
         )}
         <label>Power-of-two pages</label>
         <Toggle on={pot} onChange={(v) => change({ pot: v })} title="Atlas page sizes are powers of two" />
+        {!pot && (
+          <>
+            <label>Multiples of four</label>
+            <Toggle on={multipleOf4} onChange={(v) => change({ multipleOf4: v })} title="Page sizes divisible by four, for compressed texture formats" />
+          </>
+        )}
+        <label>Square pages</label>
+        <Toggle on={square} onChange={(v) => change({ square: v })} title="Every atlas page is as wide as it is tall" />
+        <label>Premultiplied alpha</label>
+        <Toggle on={pma} onChange={(v) => change({ pma: v })} title="Write the pages with the colour multiplied by the alpha (the atlas says pma:true); the engine must blend that way" />
+        <label>Alias identical pictures</label>
+        <Toggle on={alias} onChange={(v) => change({ alias: v })} title="Pictures with exactly the same pixels take one place in the atlas" />
+        <label>Clean up animations</label>
+        <Toggle on={cleanUp} onChange={(v) => change({ cleanUp: v })} title="Leave out the keys that change nothing (a key in the middle of a run of equal values). The project keeps them" />
         <label>Mix table</label>
         <Toggle on={mixes} onChange={(v) => change({ mixes: v })} title="Write the crossfade times between animations as a JSON file for the game (only when the mix table has any)" />
         <label>Preview page</label>
