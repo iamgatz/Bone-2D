@@ -41,6 +41,10 @@ export interface Settings {
   showFps: boolean;
   /** How thick the bones are drawn in the viewport, in percent of the default. */
   boneScale: number;
+  /** Turn of the icon a bone without length is drawn with, in degrees (a view setting: it changes nothing in the file). */
+  boneIconRotation: number;
+  /** How many parent bones the breadcrumbs of the selection list (the nearest ones). */
+  breadcrumbParents: number;
   /** Show the hints that pop up over buttons and fields. */
   tooltips: boolean;
   /** Letters of the tools that differ from the defaults (tools.ts). */
@@ -50,7 +54,8 @@ export interface Settings {
 }
 
 /** A combination as the editor writes it: Ctrl, Alt and Shift in that order, then one key. */
-export const BONE_SCALES = [50, 75, 100, 150, 200] as const;
+/** The range of the bone size slider, in percent. */
+export const BONE_SCALE_RANGE = { min: 25, max: 300, step: 5 } as const;
 
 export const COMBO = /^(Ctrl\+)?(Alt\+)?(Shift\+)?(F\d{1,2}|Tab|Space|[^\s+])$/;
 
@@ -76,6 +81,8 @@ export const DEFAULT_SETTINGS: Settings = {
   pixelGrid: false,
   showFps: false,
   boneScale: 100,
+  boneIconRotation: 0,
+  breadcrumbParents: 3,
   tooltips: true,
   toolKeys: {},
   keyMap: {},
@@ -112,7 +119,9 @@ export function readSettings(raw: string | null): Settings {
     if (typeof data.lastChosenCurve === 'boolean') out.lastChosenCurve = data.lastChosenCurve;
     if (typeof data.pixelGrid === 'boolean') out.pixelGrid = data.pixelGrid;
     if (typeof data.showFps === 'boolean') out.showFps = data.showFps;
-    if ((BONE_SCALES as readonly unknown[]).includes(data.boneScale)) out.boneScale = data.boneScale as number;
+    if (typeof data.boneScale === 'number' && Number.isFinite(data.boneScale) && data.boneScale >= BONE_SCALE_RANGE.min && data.boneScale <= BONE_SCALE_RANGE.max) out.boneScale = data.boneScale;
+    if (Number.isInteger(data.breadcrumbParents) && (data.breadcrumbParents as number) >= 0 && (data.breadcrumbParents as number) <= 10) out.breadcrumbParents = data.breadcrumbParents as number;
+    if (typeof data.boneIconRotation === 'number' && Number.isFinite(data.boneIconRotation) && Math.abs(data.boneIconRotation) <= 180) out.boneIconRotation = data.boneIconRotation;
     if (typeof data.tooltips === 'boolean') out.tooltips = data.tooltips;
     if (data.toolKeys && typeof data.toolKeys === 'object') {
       const used = new Set<string>();

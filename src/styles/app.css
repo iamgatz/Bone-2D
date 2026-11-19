@@ -1029,6 +1029,51 @@ textarea {
   border-radius: var(--radius-lg);
   z-index: var(--z-hud);
 }
+.vp-crumbs {
+  position: absolute;
+  left: 64px;
+  top: 12px;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  max-width: calc(100% - 330px);
+  overflow: hidden;
+  white-space: nowrap;
+  padding: 3px 8px;
+  background: var(--glass);
+  backdrop-filter: blur(8px);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-pill);
+  color: var(--text-dim);
+  z-index: var(--z-hud);
+}
+.crumb-wrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  min-width: 0;
+}
+.crumb {
+  background: transparent;
+  border: 0;
+  padding: 1px 4px;
+  border-radius: var(--radius-sm);
+  color: inherit;
+  max-width: 140px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+button.crumb {
+  cursor: pointer;
+}
+button.crumb:hover {
+  background: var(--panel-3);
+  color: var(--text);
+}
+.crumb.current {
+  color: var(--text);
+  font-weight: var(--fw-semibold);
+}
 .vp-hint {
   position: absolute;
   left: 50%;

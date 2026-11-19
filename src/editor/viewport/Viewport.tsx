@@ -12,6 +12,7 @@ import { checkpointGhost, ghostsFor, motionArrows, referenceGhost } from '../gho
 import { ViewportController } from './controller';
 import { drawMotionArrows, drawOverlay } from './overlay';
 import { fpsMeter } from './fps';
+import { Breadcrumbs } from './Breadcrumbs';
 import { OutlineMap } from './OutlineMap';
 import { ReferenceVideo } from './ReferenceVideo';
 import { useUi } from '@/store/ui';
@@ -261,6 +262,7 @@ export function Viewport() {
       <canvas ref={glRef} className="vp-canvas" />
       <ReferenceVideo />
       <canvas ref={overlayRef} className="vp-canvas vp-overlay" />
+      <Breadcrumbs />
       {outline && <OutlineMap host={hostRef} />}
     </div>
   );

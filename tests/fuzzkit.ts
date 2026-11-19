@@ -551,6 +551,7 @@ export const ops: Op[] = [
       reconcileDeform(d.skeleton, m.slotId, m.name, before, mesh);
     });
   } },
+  { name: 'resetPath', run: (c) => { const paths: { slotId: string; name: string }[] = []; for (const slotId of Object.keys(doc().skins[0].attachments)) for (const a of Object.values(doc().skins[0].attachments[slotId])) if (a.type === 'path') paths.push({ slotId, name: a.name }); const p = c.pick(paths); if (p) PA.resetPathShape(p.slotId, p.name); } },
   { name: 'fixProblems', run: (c) => { const w = c.pick(projectWarnings(project()).filter(canFix)); if (c.chance(0.5) || !w) PRB.fixAllSafeWarnings(); else PRB.fixWarning(w); } },
   // ---- history
   { name: 'undo', run: () => docStore.undo() },

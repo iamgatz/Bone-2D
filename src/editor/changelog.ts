@@ -12,6 +12,20 @@ export interface Release {
 
 export const CHANGELOG: Release[] = [
   {
+    version: '0.62',
+    date: '2026-11-19',
+    en: [
+      "Reset on a path (Spine 4.3): the Path section of the inspector has a Reset path button that puts the path back to a straight line of two nodes around its bone (weights and deform keys of the old path go, one undo step).",
+      "Breadcrumbs of the selection (Spine 4.3): a trail over the viewport shows skeleton › parent bones › bone › slot › attachment; a click on a bone or a slot selects it. Settings → Breadcrumb parents sets how many parent bones it lists (0 to 10).",
+      "Bone size is a slider now (25 to 300 percent), and a bone without length is drawn as a small arrow along its x axis; Settings → Bone icon rotation turns that arrow (only how it looks in the editor).",
+    ],
+    ru: [
+      "Сброс у path (Spine 4.3): в разделе «Путь» инспектора есть кнопка «Сбросить путь»: путь возвращается к прямой из двух узлов около своей кости (веса и ключи деформации старого пути пропадают, один шаг отмены).",
+      "Хлебные крошки выделения (Spine 4.3): цепочка над окном показывает скелет › родительские кости › кость › слот › вложение; щелчок по кости или слоту выделяет его. «Настройки → Родителей в хлебных крошках» задаёт, сколько родительских костей она перечисляет (от 0 до 10).",
+      "Размер кости теперь ползунок (от 25 до 300 процентов), а кость без длины рисуется маленькой стрелкой вдоль своей оси x; «Настройки → Поворот значка кости» поворачивает эту стрелку (меняет только вид в редакторе).",
+    ],
+  },
+  {
     version: '0.61',
     date: '2026-11-19',
     en: [

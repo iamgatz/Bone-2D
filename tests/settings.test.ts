@@ -18,9 +18,19 @@ describe('settings', () => {
     expect(s).toMatchObject({ autosave: false, zoomToMouse: false, smoothing: false, viewportBg: [0.5, 0.5, 0.5] });
   });
 
-  it('take the bone size from a list of sizes and the hints from a flag', () => {
+  it('take the bone size from the range of the slider and the hints from a flag', () => {
     expect(readSettings(JSON.stringify({ boneScale: 150, tooltips: false }))).toMatchObject({ boneScale: 150, tooltips: false });
-    expect(readSettings(JSON.stringify({ boneScale: 120, tooltips: 'no' }))).toMatchObject({ boneScale: 100, tooltips: true });
+    expect(readSettings(JSON.stringify({ boneScale: 120, tooltips: 'no' }))).toMatchObject({ boneScale: 120, tooltips: true });
+    expect(readSettings(JSON.stringify({ boneScale: 5 }))).toMatchObject({ boneScale: 100 });
+    expect(readSettings(JSON.stringify({ boneScale: 900 }))).toMatchObject({ boneScale: 100 });
+    expect(readSettings(JSON.stringify({ boneScale: 'big' }))).toMatchObject({ boneScale: 100 });
+  });
+
+  it('take the turn of the bone icon only when it is a number within a half turn', () => {
+    expect(readSettings(JSON.stringify({ boneIconRotation: 45 }))).toMatchObject({ boneIconRotation: 45 });
+    expect(readSettings(JSON.stringify({ boneIconRotation: -180 }))).toMatchObject({ boneIconRotation: -180 });
+    expect(readSettings(JSON.stringify({ boneIconRotation: 400 }))).toMatchObject({ boneIconRotation: 0 });
+    expect(readSettings(JSON.stringify({ boneIconRotation: 'x' }))).toMatchObject({ boneIconRotation: 0 });
   });
 
   it('drop tool letters that are not one capital letter or that two tools share', () => {

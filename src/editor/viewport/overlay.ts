@@ -194,11 +194,20 @@ export function drawBone(o: OverlayInput, bone: Bone, selected: boolean, hovered
   const k = settingsStore.get().boneScale / 100;
   ctx.lineJoin = 'round';
   if (len < 3) {
+    // a bone without length has no shape of its own: it is drawn as a small arrow along its x axis, turned by the icon rotation setting
+    const angle = Math.atan2(bone.c, bone.a) + (settingsStore.get().boneIconRotation * Math.PI) / 180;
+    const r = (selected ? 8 : 6.5) * k;
+    const dx = Math.cos(angle);
+    const dy = -Math.sin(angle);
     ctx.fillStyle = colors.fill;
     ctx.strokeStyle = colors.stroke;
     ctx.lineWidth = selected ? 2 : 1.25;
     ctx.beginPath();
-    ctx.arc(ox, oy, (selected ? 7 : 5.5) * k, 0, Math.PI * 2);
+    ctx.moveTo(ox + dx * r * 1.5, oy + dy * r * 1.5);
+    ctx.lineTo(ox - dx * r * 0.7 - dy * r, oy - dy * r * 0.7 + dx * r);
+    ctx.lineTo(ox - dx * r * 0.3, oy - dy * r * 0.3);
+    ctx.lineTo(ox - dx * r * 0.7 + dy * r, oy - dy * r * 0.7 - dx * r);
+    ctx.closePath();
     ctx.fill();
     ctx.stroke();
   } else {
