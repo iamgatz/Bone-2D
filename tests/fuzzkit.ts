@@ -55,6 +55,10 @@ import * as SQ from '../src/store/sequenceActions';
 import { sheetSequence } from '../src/core/spritesheet';
 import { turnAbout, turnSign } from '../src/core/pivot';
 import * as T from '../src/store/transformActions';
+import * as RN from '../src/store/renameActions';
+import { setKeysAutoCurve } from '../src/store/curveActions';
+import { favorSelectedKeys, scaleSelectedKeyTimes } from '../src/store/keyToolActions';
+import { encodeKey } from '../src/core/keyrefs';
 import { emptySelection, uiStore } from '../src/store/ui';
 import { getScene } from '../src/editor/scene';
 import { addAttachmentRig, buildFixture } from './fixture';
@@ -444,6 +448,45 @@ export const ops: Op[] = [
       const keyed = doc().slots.filter((s) => A.currentAnimation()?.slots[s.id]?.attachment?.length);
       const s = c.pick(keyed.length && c.chance(0.8) ? keyed : doc().slots);
       if (s) A.crossfadeSlot(s.id, c.num(0.02, 0.6));
+    },
+  },
+  // names in bulk: a find and replace over a random set of kinds (the document must stay valid: no empty or duplicate names)
+  {
+    name: 'findReplaceNames',
+    run: (c) => {
+      const kinds = (['bone', 'slot', 'skin', 'event', 'constraint', 'animation'] as const).filter(() => c.chance(0.5));
+      RN.findReplaceNames({ find: c.pick(['a', 'e', 'o', '[0-9]', '^.', '_', 'r'])!, replace: c.pick(['', 'x', '_a', 'Q', '$&$&'])!, regex: c.chance(0.5), matchCase: c.chance(0.5), firstOnly: c.chance(0.5), kinds });
+    },
+  },
+  // automatic bezier handles on some keys (smooth through the neighbours)
+  { name: 'autoCurveKeys', run: (c) => { const a = A.currentAnimation(); if (!a) return; setKeysAutoCurve(allKeyRefs(a).filter(() => c.chance(0.3))); } },
+  // the offsets of a transform constraint matched to the Setup pose
+  { name: 'matchTransform', run: (c) => { const k = c.pick(doc().constraints.filter((x) => x.type === 'transform')); if (k) T.matchTransform(k.id); } },
+  // Setup mode compensation: the children and the pictures of an edited bone keep their place (the document must stay finite and valid)
+  {
+    name: 'compensatedEdit',
+    run: (c) => {
+      const bone = c.pick(doc().bones);
+      if (!bone) return;
+      const was = uiStore.get().compensate;
+      uiStore.patch({ compensate: { bones: c.chance(0.6), images: c.chance(0.6) } });
+      try {
+        if (uiStore.get().mode === 'setup') A.setBonePose([{ id: bone.id, props: c.chance(0.5) ? { rotation: bone.rotation + c.num(-60, 60) } : { x: bone.x + c.num(-30, 30), y: bone.y + c.num(-30, 30) } }], 'Edit bone');
+      } finally {
+        uiStore.patch({ compensate: was });
+      }
+    },
+  },
+  // Favor and Scale time on a random selection of keys
+  {
+    name: 'keyTools',
+    run: (c) => {
+      const a = A.currentAnimation();
+      if (!a) return;
+      uiStore.patch({ selectedKeys: allKeyRefs(a).filter(() => c.chance(0.4)).map(encodeKey) });
+      if (c.chance(0.5)) favorSelectedKeys(c.pick(['previous', 'next', 'average', 'neutral'] as const)!, c.num(0.1, 1));
+      else scaleSelectedKeyTimes(c.pick([0.5, 0.75, 1.5, 2])!);
+      uiStore.patch({ selectedKeys: [] });
     },
   },
   { name: 'sequenceOff', run: (c) => { const withSeq = [...regions(), ...meshes()]; const r = c.pick(withSeq); if (r && c.chance(0.5)) SQ.setSequence(r.slotId, r.name, null); } },

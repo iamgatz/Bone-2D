@@ -3,6 +3,7 @@ import { current } from 'immer';
 import type { Draft } from 'immer';
 import { animationEndTime } from '@/core/animate';
 import { DEFAULT_TOLERANCE, bakeAnimation, bakeSkips, scaleTolerance, simplifyAnimation } from '@/core/bake';
+import { compensateEdit } from '@/core/compensate';
 import { applyCrossfade, fadeRefusal } from '@/core/crossfade';
 import type { Crossfade } from '@/core/crossfade';
 import { layerBones, stackLayer } from '@/core/layers';
@@ -387,11 +388,15 @@ export function setBonePose(updates: { id: Id; props: PoseProps }[], label = 'Ed
   if (!updates.length) return;
   updates = routeLimited(updates);
   if (ui.mode === 'setup') {
+    const before = skeletonDoc();
+    const comp = ui.compensate;
     docStore.update(label, (d) => {
       for (const u of updates) {
         const b = d.skeleton.bones.find((x) => x.id === u.id);
         if (b) Object.assign(b, u.props);
       }
+      // Compensation: the children and the pictures that were asked to stay in place get new local values
+      if (comp.bones || comp.images) compensateEdit(before, d.skeleton, updates.map((u) => u.id), comp);
     });
     return;
   }

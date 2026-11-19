@@ -6,7 +6,7 @@ import { currentAnimation, deleteKeys } from '@/store/actions';
 import { useProject } from '@/store/doc';
 import { useUi } from '@/store/ui';
 import { deleteConstraint } from '@/store/ikActions';
-import { currentTransformMix, setTransformMix, updateTransform } from '@/store/transformActions';
+import { currentTransformMix, matchTransform, setTransformMix, updateTransform } from '@/store/transformActions';
 import { Button, IconButton, NumberField, SelectField, Toggle } from '../ui/controls';
 import { Field, KeyButton } from '../ui/Field';
 import { Section } from '../ui/Section';
@@ -96,6 +96,11 @@ export function TransformInspector({ id }: { id: Id }) {
           )),
         )}
         {!c.properties.length && <p className="hint-text">No mappings: the constraint does nothing.</p>}
+        {c.properties.length > 0 && (
+          <Button small ghost disabled={animate} title="Set the offsets so the constraint changes nothing in the Setup pose: the bones stay where they are and follow the source from there" onClick={() => matchTransform(id)}>
+            Match to current pose
+          </Button>
+        )}
       </Section>
 
       <Section

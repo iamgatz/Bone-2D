@@ -4,7 +4,7 @@ import { decodeKey } from '@/core/keyrefs';
 import { clearSelection, copyKeys, deleteBones, deleteKeys, keySelectedBones, pasteKeys, sanitizeSelection, setMode, setSelection, setTime, setTool, togglePlay } from '@/store/actions';
 import { docStore, useProject } from '@/store/doc';
 import { newProject, openProjectFile, restoreAutosave, saveProjectFile, startAutosave } from '@/store/project';
-import { openSpineImport } from './importSpine';
+import { openAtlasUnpack, openSpineImport } from './importSpine';
 import { deleteConstraint } from '@/store/ikActions';
 import { loadSample } from '@/store/sample';
 import { toast, uiStore, useUi } from '@/store/ui';
@@ -98,6 +98,8 @@ function TopBar() {
             <div className="menu-sep" />
             <MenuItem icon={Download} close={close} hotkey={KEYS.export} onClick={() => uiStore.patch({ exportOpen: true })}>Export for Spine 4.3…</MenuItem>
             <MenuItem icon={FolderOpen} close={close} onClick={() => openSpineImport()}>Import Spine data (JSON 4.0–4.3, binary 4.3)…</MenuItem>
+            <MenuItem icon={FolderOpen} close={close} onClick={() => openSpineImport(true)}>Import Spine data as a new skeleton…</MenuItem>
+            <MenuItem icon={FolderOpen} close={close} onClick={() => openAtlasUnpack()}>Unpack an atlas into pictures…</MenuItem>
             <div className="menu-sep" />
             <MenuItem icon={Sparkles} close={close} onClick={() => loadSample()}>Load demo rig (Kit)</MenuItem>
             <MenuItem icon={Home} close={close} onClick={() => uiStore.patch({ welcomeOpen: true })}>Welcome screen</MenuItem>

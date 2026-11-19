@@ -23,6 +23,15 @@ export function dropFlatKeys(keys: Key[]): number {
   return removed;
 }
 
+/** The document with every animation cleaned up, for an export: the document itself is not touched (the animations are copies). */
+export function withCleanAnimations<T extends { animations: Animation[] }>(doc: T): T {
+  return { ...doc, animations: doc.animations.map((a) => {
+    const copy = JSON.parse(JSON.stringify(a)) as Animation;
+    cleanUpAnimation(copy);
+    return copy;
+  }) };
+}
+
 /** Cleans an animation in place; returns the number of keys removed. */
 export function cleanUpAnimation(anim: Animation): number {
   let removed = 0;

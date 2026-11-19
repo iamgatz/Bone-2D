@@ -1189,7 +1189,7 @@ export class IkConstraint {
 const MIX_INDEX: Record<TransformProp, number> = { rotate: 0, x: 1, y: 2, scaleX: 3, scaleY: 4, shearY: 5 };
 const PI2 = SPINE_PI * 2;
 
-function transformFrom(prop: TransformProp, sk: Skeleton, s: Bone, local: boolean, off: number[]): number {
+export function transformFrom(prop: TransformProp, sk: Skeleton, s: Bone, local: boolean, off: number[]): number {
   const sx = sk.scaleX;
   const sy = sk.scaleY;
   switch (prop) {

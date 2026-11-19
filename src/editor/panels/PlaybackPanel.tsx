@@ -14,7 +14,7 @@ const SPEEDS = [0.25, 0.5, 1, 2];
 export function PlaybackPanel() {
   const project = useProject();
   const fps = project.skeleton.fps;
-  const { speed, loop, pingPong, range, time, playing, animationId } = useUi((s) => ({ speed: s.speed, loop: s.loop, pingPong: s.pingPong, range: s.range, time: s.time, playing: s.playing, animationId: s.animationId }));
+  const { speed, stepped, loop, pingPong, range, time, playing, animationId } = useUi((s) => ({ speed: s.speed, stepped: s.stepped, loop: s.loop, pingPong: s.pingPong, range: s.range, time: s.time, playing: s.playing, animationId: s.animationId }));
   const anim = project.skeleton.animations.find((a) => a.id === animationId) ?? currentAnimation();
   const duration = anim?.duration ?? 0;
   const [lo, hi] = playSpan(duration, range);
@@ -50,6 +50,9 @@ export function PlaybackPanel() {
           ))}
         </div>
 
+        <Field label="By frames" title="Show the pose at the start of each frame, like a game that runs at the animation's frame rate; off draws the motion between frames">
+          <Toggle on={stepped} onChange={(v) => uiStore.patch({ stepped: v })} title="By frames" />
+        </Field>
         <Field label="Loop" title="Start again when the end is reached">
           <Toggle on={loop} onChange={(v) => setPlay({ loop: v })} title="Loop" />
         </Field>

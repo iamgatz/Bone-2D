@@ -71,3 +71,9 @@ export function cleanPlay(raw: unknown, duration: number): PlaySettings {
 export function samePlay(a: PlaySettings, b: PlaySettings): boolean {
   return a.loop === b.loop && a.pingPong === b.pingPong && (a.range === b.range || (!!a.range && !!b.range && a.range[0] === b.range[0] && a.range[1] === b.range[1]));
 }
+
+/** The time the pose is shown at when playback is "stepped": the start of the frame the time falls in, as a game that runs at the animation's frame rate would. */
+export function steppedTime(time: number, fps: number): number {
+  if (!(fps > 0)) return time;
+  return Math.floor(time * fps + 1e-6) / fps;
+}

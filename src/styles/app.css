@@ -1912,6 +1912,44 @@ a.btn {
   color: var(--text);
   font-size: var(--fs-sm);
 }
+.rename-bar {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 0 8px 6px;
+  padding: 6px;
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+}
+.rename-bar > input {
+  height: var(--h-control);
+  padding: 0 8px;
+  background: var(--panel-3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  font-size: var(--fs-sm);
+}
+.rename-opts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+  color: var(--muted);
+  font-size: var(--fs-sm);
+}
+.rename-opts label {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.rename-go {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
 .sel-sets {
   flex: none;
   display: flex;

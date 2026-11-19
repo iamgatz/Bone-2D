@@ -32,6 +32,9 @@ export function MetricsPanel() {
     ['Constraints', constraintTotal],
     ['Animations', stats.animations],
     ['Keys', stats.keys],
+    ['Timelines', stats.timelines],
+    ['Clipping polygons', stats.attachments.clipping ?? 0],
+    ['Texture area', stats.area >= 1e6 ? `${(stats.area / 1e6).toFixed(2)} Mpx` : `${Math.round(stats.area / 1000)} kpx`],
     ['Events', stats.events],
     ['Longest animation', `${stats.longest.toFixed(2)} s`],
   ];

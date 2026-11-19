@@ -1,6 +1,7 @@
 /** Shared, memoized "what the document looks like right now": the posed skeleton for the current mode/animation/time. */
 import { applyAnimation, applyPhysicsResets } from '@/core/animate';
 import { withoutMuted } from '@/core/mute';
+import { steppedTime } from '@/core/playback';
 import type { Animation, Id, SkeletonDoc } from '@/core/model';
 import { compileSkeleton, createSkeleton } from '@/core/skeleton';
 import type { PhysicsMode, Skeleton, SkeletonData } from '@/core/skeleton';
@@ -39,7 +40,7 @@ export function getScene(): Scene {
   const ui = uiStore.get();
   const doc = project.skeleton;
   const anim = ui.mode === 'animate' ? (doc.animations.find((a) => a.id === ui.animationId) ?? null) : null;
-  const time = anim ? ui.time : 0;
+  const time = anim ? (ui.stepped ? steppedTime(ui.time, doc.fps) : ui.time) : 0;
   const overrides = ui.mode === 'animate' ? ui.overrides : EMPTY;
   const c = cache;
   if (c && c.doc === doc && c.skinId === ui.skinId && c.skinMix === ui.skinMix && c.anim === anim && c.time === time && c.overrides === overrides && c.muted === ui.muted) return c.scene;

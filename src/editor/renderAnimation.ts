@@ -140,6 +140,17 @@ export function frameToPng(image: ImageData): Promise<Uint8Array> {
   );
 }
 
+/** A JPEG of one frame (it has no transparency: the frame has to be drawn on a solid background). */
+export function frameToJpeg(image: ImageData, quality = 0.92): Promise<Uint8Array> {
+  const c = document.createElement('canvas');
+  c.width = image.width;
+  c.height = image.height;
+  c.getContext('2d')!.putImageData(image, 0, 0);
+  return new Promise((resolve, reject) =>
+    c.toBlob(async (b) => (b ? resolve(new Uint8Array(await b.arrayBuffer())) : reject(new Error('JPEG encode failed'))), 'image/jpeg', quality),
+  );
+}
+
 /** A WebM video of the frames, recorded in real time from a canvas (the browser's encoder). */
 export async function framesToWebm(prepared: Prepared, onProgress: (done: number) => void, cancelled: () => boolean): Promise<Blob> {
   const c = document.createElement('canvas');

@@ -148,6 +148,8 @@ export const CURVE_PRESETS: Record<string, [number, number, number, number]> = {
   easeIn: [0.42, 0, 1, 1],
   easeOut: [0, 0, 0.58, 1],
   easeInOut: [0.42, 0, 0.58, 1],
+  /** Flat handles at both ends: the value holds at each key and moves between them. */
+  flat: [1 / 3, 0, 2 / 3, 1],
   overshoot: [0.34, 1.56, 0.64, 1],
   anticipate: [0.36, 0, 0.66, -0.56],
 };

@@ -2,6 +2,7 @@ import { useCallback, useMemo, useRef, useState } from 'react';
 import { ChevronDown, ChevronRight, Copy, Diamond, Eraser, Film, KeyRound, Maximize, Pause, Pencil, Play, Plus, Repeat, SkipBack, SkipForward, Spline, Trash2, Volume2, VolumeX, ZoomIn } from 'lucide-react';
 import { GraphEditor } from './GraphEditor';
 import { CURVE_PRESETS } from '@/core/curve';
+import { setKeysAutoCurve } from '@/store/curveActions';
 import { decodeKey, encodeKey } from '@/core/keyrefs';
 import type { KeyRef } from '@/core/keyrefs';
 import { axisGroupOf } from '@/core/model';
@@ -88,7 +89,7 @@ function TimelineMenu({ menu, onClose }: { menu: TimelineMenuRequest; onClose: (
           onClose();
         } else menuKeys(e);
       }}
-      style={{ position: 'fixed', left: Math.min(menu.x, window.innerWidth - 230), top: Math.min(menu.y, window.innerHeight - 330), zIndex: 120 }}
+      style={{ position: 'fixed', left: Math.min(menu.x, window.innerWidth - 230), top: Math.min(menu.y, window.innerHeight - 370), zIndex: 120 }}
     >
       <div className="section-label" style={{ paddingTop: 4 }}>
         {`Interpolation · ${refs.length} key${refs.length === 1 ? '' : 's'}`}
@@ -96,6 +97,8 @@ function TimelineMenu({ menu, onClose }: { menu: TimelineMenuRequest; onClose: (
       {item('Linear', () => setKeysCurve(refs, 'linear'))}
       {item('Stepped', () => setKeysCurve(refs, 'stepped'))}
       {item('Bezier (smooth)', () => setKeysCurve(refs, 'bezier'))}
+      {item('Automatic (smooth, no overshoot)', () => setKeysAutoCurve(refs))}
+      {item('Flat (hold, then move)', () => setKeysCurve(refs, CURVE_PRESETS.flat))}
       {item('Ease in', () => setKeysCurve(refs, CURVE_PRESETS.easeIn))}
       {item('Ease out', () => setKeysCurve(refs, CURVE_PRESETS.easeOut))}
       {item('Ease in-out', () => setKeysCurve(refs, CURVE_PRESETS.easeInOut))}
