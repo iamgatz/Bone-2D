@@ -6,6 +6,7 @@ import { moveKeysBy, setTime } from '@/store/actions';
 import { scaleSelectedKeyTimes } from '@/store/keyToolActions';
 import { docStore } from '@/store/doc';
 import { markerNear, markersOf } from '@/core/markers';
+import { loopGhostTimes } from '@/core/loops';
 import { peakAt } from '@/core/waveform';
 import { sequenceFramePath, sequenceSpans } from '@/core/sequence';
 import { assets } from '@/store/assets';
@@ -318,6 +319,22 @@ export function Dopesheet({ rows, duration, fps, onMenu }: Props) {
           ctx.strokeStyle = selected ? token('--accent-glow') : token('--key-outline');
           ctx.lineWidth = 1.2;
           ctx.stroke();
+          // a looping animation comes round again: faint copies of the key before 0 and after the end show where the seam falls
+          if (ui.loop) {
+            ctx.globalAlpha = 0.28;
+            ctx.fillStyle = token(TONES[r.tone ?? 'bone']);
+            for (const gt of loopGhostTimes(k.time, duration, scroll - 12 / zoom, scroll + (cw + 12) / zoom)) {
+              const gx = timeToX(gt, scroll, zoom);
+              ctx.beginPath();
+              ctx.moveTo(gx, cy - size * 0.8);
+              ctx.lineTo(gx + size * 0.8, cy);
+              ctx.lineTo(gx, cy + size * 0.8);
+              ctx.lineTo(gx - size * 0.8, cy);
+              ctx.closePath();
+              ctx.fill();
+            }
+            ctx.globalAlpha = 1;
+          }
         }
       }
       if (ui.range) {

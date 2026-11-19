@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import type { ReactElement } from 'react';
 import { Bone as BoneIcon, BoxSelect, ChevronDown, ChevronRight, Crosshair, Diamond, Eye, EyeOff, Folder, Image as ImageIcon, Layers, Link2, Lock, Plus, Replace, Scissors, Shirt, Search, Spline, Trash2, Unlock, Waves, X, Zap } from 'lucide-react';
 import type { Bone, Id, Slot } from '@/core/model';
-import { createEvent, createSkin, deleteBones, deleteEvent, deleteSkin, deleteSlots, keyEvent, moveSlot, renameBone, renameSkin, renameSlot, reparentBone, selectBone, selectSlot, setActiveSkin, toggleExtraSlot, setBoneProps, setSelection, setSlotBone, setSlotProps, updateEvent } from '@/store/actions';
+import { createEvent, createSkin, deleteBones, deleteEvent, deleteSkin, deleteSlots, keyEvent, moveSlot, renameBone, renameSkin, renameSlot, reparentBone, selectBone, selectMatches, selectSlot, setActiveSkin, toggleExtraSlot, setBoneProps, setSelection, setSlotBone, setSlotProps, updateEvent } from '@/store/actions';
 import { folderOfSlot } from '@/core/folders';
 import { filterTree } from '@/core/treeFilter';
 import { useProject } from '@/store/doc';
@@ -236,6 +236,11 @@ export function TreePanel() {
             e.stopPropagation();
           }}
         />
+        {match.active && match.matchedBones.length + match.matchedSlots.length > 0 && (
+          <button className="btn sm" title="Select every bone and slot that matches (several slots are selected together, so the weight tools work on all their meshes)" onClick={() => selectMatches(match)}>
+            {`Select ${match.matchedBones.length + match.matchedSlots.length}`}
+          </button>
+        )}
         {query && <IconButton icon={X} title="Clear the filter" small onClick={() => setQuery('')} />}
         <IconButton icon={Replace} title="Find and replace in names" small active={replacing} onClick={() => setReplacing((v) => !v)} />
       </div>

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { RotateCcw } from 'lucide-react';
 import { setLang, useLang } from '@/i18n';
 import { BONE_SCALE_RANGE, DEFAULT_SETTINGS, resetSettings, setSettings, useSettings } from '@/store/settings';
+import { forgetSavedCurve } from '@/store/actions';
 import { toast, uiStore } from '@/store/ui';
 import { Button, ColorSwatch, Dialog, SelectField, Toggle } from './ui/controls';
 import { Segmented } from './ui/Segmented';
@@ -125,6 +126,7 @@ export function SettingsDialog() {
   const boneIconRotation = useSettings((s) => s.boneIconRotation);
   const breadcrumbParents = useSettings((s) => s.breadcrumbParents);
   const graphSync = useSettings((s) => s.graphSync);
+  const savedCurves = useSettings((s) => s.savedCurves);
   const pixelGrid = useSettings((s) => s.pixelGrid);
   const showFps = useSettings((s) => s.showFps);
   const tooltips = useSettings((s) => s.tooltips);
@@ -214,6 +216,22 @@ export function SettingsDialog() {
                 ]}
                 onChange={(v) => setSettings({ graphSync: v === 'selection' ? 'selection' : 'dopesheet' })}
               />
+            </Row>
+            <Row label="Saved curves" hint="Easing curves kept from the timeline (right-click a key → Save this curve…). They are in the same menu to put on other keys">
+              {savedCurves.length === 0 ? (
+                <span className="hint-text">None yet</span>
+              ) : (
+                <div className="hstack wrap">
+                  {savedCurves.map((c, i) => (
+                    <span key={c.name} className="chip" title={c.curve.map((v) => v.toFixed(2)).join(', ')}>
+                      {c.name}
+                      <button className="btn ghost sm" aria-label="Forget this curve" title="Forget this curve" onClick={() => forgetSavedCurve(i)}>
+                        ×
+                      </button>
+                    </span>
+                  ))}
+                </div>
+              )}
             </Row>
             <Row label="Breadcrumb parents" hint="How many parent bones the trail of the selection over the viewport lists (the nearest ones)">
               <input type="range" aria-label="Breadcrumb parents" min={0} max={10} step={1} value={breadcrumbParents} onChange={(e) => setSettings({ breadcrumbParents: Number(e.target.value) })} />

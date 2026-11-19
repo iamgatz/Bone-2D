@@ -16,6 +16,10 @@ import { linkedTo, makeLink } from '@/core/links';
 import { KEY_EPS, linearBetweenEqual, findAnimation, freshName, sameKeyValue, makeCurve, normalizeBoneOrder, pruneSequences, purgeAttachment, removeBones, removeSlots, rgba2ToRgba, rgbaToRgba2, setSlotDarkColor, snapTime, upsertKey, decompose } from '@/core/edit';
 import type { BoneMats } from '@/core/mesh';
 import { moveKeys, removeKeys, resolveKeys, retargetClip } from '@/core/keyrefs';
+import { curveOfKey, withSavedCurve } from '@/core/savedCurves';
+import { selectionOfMatch } from '@/core/treeFilter';
+import type { TreeMatch } from '@/core/treeFilter';
+import { deleteTime, insertTime } from '@/core/timeshift';
 import { duplicateSkin, mergeSkin, repointSkinPictures, setSkinRequired, setSkinScope, toggleOverride } from '@/core/skins';
 import type { DuplicateSkinOptions, MergeSkinOptions } from '@/core/skins';
 import type { ScopeKind } from '@/core/skins';
@@ -38,7 +42,7 @@ import { assets } from './assets';
 import type { ImageAsset } from './assets';
 import { entriesOf, pathedFromInput, readEntries } from './dropped';
 import { docStore } from './doc';
-import { settingsStore } from './settings';
+import { setSettings, settingsStore } from './settings';
 import { ATTACHMENT_TOOLS, emptySelection, toast, uiStore } from './ui';
 import type { PoseOverride, Selection, Tool } from './ui';
 
@@ -138,6 +142,17 @@ export function selectBone(id: Id, additive = false) {
     const bones = cur.bones.includes(id) ? cur.bones.filter((b) => b !== id) : [...cur.bones, id];
     setSelection({ bones });
   } else setSelection({ bones: [id] });
+}
+
+/** Select (next to the hierarchy filter): selects the bones and slots that match the filter, all at once. Returns how many things it selected. */
+export function selectMatches(match: TreeMatch): number {
+  const sel = selectionOfMatch(match);
+  const n = sel.bones.length + (sel.slot ? 1 + sel.extraSlots.length : 0);
+  if (!n) return 0;
+  const doc = skeletonDoc();
+  const slot = sel.slot ? doc.slots.find((s) => s.id === sel.slot) : undefined;
+  setSelection({ bones: sel.bones, slot: slot ? slot.id : null, attachment: slot?.attachment ?? null, extraSlots: sel.extraSlots });
+  return n;
 }
 
 /** Ctrl-click on a slot: adds it to the slots the weights tools work on together with the selected one, or takes it out again. */
@@ -1153,6 +1168,42 @@ export function deleteAnimation(id: Id) {
   }
 }
 
+/** Insert time: `frames` of empty time at the playhead; every key, marker and the play range from the playhead on move later, the animation grows. One undo step. */
+export function insertTimeAtPlayhead(frames: number): boolean {
+  const anim = currentAnimation();
+  const ui = uiStore.get();
+  const n = Math.round(frames);
+  if (!anim || !(n >= 1)) return false;
+  const seconds = n / skeletonDoc().fps;
+  docStore.update('Insert time', (d) => {
+    const a = d.skeleton.animations.find((x) => x.id === anim.id);
+    if (a) insertTime(a, ui.time, seconds);
+  });
+  uiStore.patch({ selectedKeys: [] });
+  toast(`Inserted ${n} frame${n === 1 ? '' : 's'} at ${ui.time.toFixed(2)} s`, 'ok');
+  return true;
+}
+
+/** Delete time: `frames` from the playhead on are cut out; the keys inside go, the later ones move earlier, the animation gets shorter. One undo step. */
+export function deleteTimeAtPlayhead(frames: number): boolean {
+  const anim = currentAnimation();
+  const ui = uiStore.get();
+  const n = Math.round(frames);
+  if (!anim || !(n >= 1)) return false;
+  if (ui.time >= anim.duration - 1e-6) {
+    toast('Nothing to delete after the playhead', 'info');
+    return false;
+  }
+  const fps = skeletonDoc().fps;
+  docStore.update('Delete time', (d) => {
+    const a = d.skeleton.animations.find((x) => x.id === anim.id);
+    if (a) deleteTime(a, ui.time, n / fps, 1 / fps);
+  });
+  uiStore.patch({ selectedKeys: [], time: Math.min(ui.time, currentAnimation()?.duration ?? ui.time) });
+  toast(`Deleted ${n} frame${n === 1 ? '' : 's'} from ${ui.time.toFixed(2)} s`, 'ok');
+  return true;
+}
+
 export function setAnimationDuration(id: Id, duration: number) {
   const anim = skeletonDoc().animations.find((a) => a.id === id);
   if (!anim) return;
@@ -1204,6 +1255,34 @@ export function moveKeysBy(refs: KeyRef[], dt: number, ripple = false, loop = fa
 }
 
 /** Sets the interpolation of the referenced keys (applies to the segment that starts at each key). */
+/** Keeps the curve of the key `ref` under a name (Timeline menu → Save this curve). Returns false when the key has no bezier curve to keep. */
+export function saveKeyCurve(ref: KeyRef): boolean {
+  const anim = currentAnimation();
+  if (!anim) return false;
+  const keys = resolveKeys(anim, ref) as { time: number; curve?: unknown }[] | undefined;
+  const key = keys?.find((x) => Math.abs(x.time - ref.time) < 1e-4);
+  const curve = curveOfKey(key?.curve);
+  if (!curve) {
+    toast('Only a bezier curve can be saved: this key has a linear or stepped interpolation', 'info');
+    return false;
+  }
+  const before = settingsStore.get().savedCurves;
+  const next = withSavedCurve(before, curve);
+  if (next.length === before.length && next.every((c, i) => c.name === before[i].name)) {
+    toast('This curve is already saved', 'info');
+    return false;
+  }
+  setSettings({ savedCurves: next });
+  toast(`Saved as "${next[next.length - 1].name}"`, 'ok');
+  return true;
+}
+
+/** Forgets the saved curve at `index`. */
+export function forgetSavedCurve(index: number) {
+  const list = settingsStore.get().savedCurves;
+  if (index >= 0 && index < list.length) setSettings({ savedCurves: list.filter((_, i) => i !== index) });
+}
+
 export function setKeysCurve(refs: KeyRef[], kind: 'linear' | 'stepped' | 'bezier' | number[]) {
   const anim = currentAnimation();
   if (!anim || !refs.length) return;

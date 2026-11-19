@@ -61,3 +61,25 @@ export function closeLoop(anim: Animation, options: CloseLoopOptions = {}): numb
   walk(anim.physics);
   return changed;
 }
+
+/** The most copies of one key the Dopesheet draws on each side (zoomed far out a short animation would otherwise repeat thousands of times). */
+export const MAX_LOOP_GHOSTS = 6;
+
+/**
+ * The times a key of a looping animation comes back at: `time` plus or minus whole lengths of the animation, inside the visible stretch
+ * [from, to] and outside the animation itself (0 to `duration`). The Dopesheet draws them faint before 0 and after the end, so the seam of a
+ * loop can be checked on the timeline (Rive users ask for the time before 0:00 to be visible when they build loops by hand).
+ */
+export function loopGhostTimes(time: number, duration: number, from: number, to: number): number[] {
+  if (!(duration > 0) || !Number.isFinite(time) || !Number.isFinite(from) || !Number.isFinite(to) || to < from) return [];
+  const out: number[] = [];
+  const first = Math.ceil((from - time) / duration - 1e-9);
+  for (let n = first, count = 0; time + n * duration <= to + 1e-9 && count < 4 * MAX_LOOP_GHOSTS; n++, count++) {
+    if (n === 0) continue;
+    const t = Math.round((time + n * duration) * 1e6) / 1e6;
+    if (t >= -1e-9 && t <= duration + 1e-9) continue; // inside the animation: not a copy, the animation itself
+    out.push(t);
+    if (out.length >= 2 * MAX_LOOP_GHOSTS) break;
+  }
+  return out;
+}
