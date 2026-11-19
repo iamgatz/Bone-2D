@@ -33,7 +33,6 @@ function keyLists(anim: Animation): { time: number }[][] {
   return lists;
 }
 
-const round = (t: number) => Math.round(t * 1e6) / 1e6;
 
 export interface TimeShift {
   /** How many keys moved, were removed, or markers moved. */
@@ -53,23 +52,23 @@ export function insertTime(anim: Animation, at: number, seconds: number): TimeSh
   for (const keys of keyLists(anim)) {
     for (const k of keys) {
       if (k.time >= at - EPS) {
-        k.time = round(k.time + seconds);
+        k.time = (k.time + seconds);
         moved++;
       }
     }
   }
   for (const m of anim.markers ?? []) {
     if (m.time >= at - EPS) {
-      m.time = round(m.time + seconds);
+      m.time = (m.time + seconds);
       moved++;
     }
   }
   const range = anim.play?.range;
   if (range) {
     // a play range that spans the cut gets longer; one that starts after it moves
-    anim.play!.range = [range[0] >= at - EPS ? round(range[0] + seconds) : range[0], range[1] >= at - EPS ? round(range[1] + seconds) : range[1]];
+    anim.play!.range = [range[0] >= at - EPS ? (range[0] + seconds) : range[0], range[1] >= at - EPS ? (range[1] + seconds) : range[1]];
   }
-  anim.duration = round(anim.duration + seconds);
+  anim.duration = (anim.duration + seconds);
   return { moved, removed: 0, duration: anim.duration };
 }
 
@@ -91,26 +90,32 @@ export function deleteTime(anim: Animation, at: number, seconds: number, minDura
         keys.splice(i, 1);
         removed++;
       } else if (t >= end - EPS) {
-        keys[i].time = round(Math.max(at, t - span));
+        keys[i].time = (Math.max(at, t - span));
         moved++;
       }
     }
   }
   for (const m of anim.markers ?? []) {
     if (m.time >= end - EPS) {
-      m.time = round(m.time - span);
+      m.time = (m.time - span);
       moved++;
     } else if (m.time > at) {
-      m.time = at;
+      m.time = (at);
       moved++;
     }
   }
   const range = anim.play?.range;
   if (range) {
-    const pull = (t: number) => (t >= end - EPS ? round(t - span) : t > at ? at : t);
+    const pull = (t: number) => (t >= end - EPS ? (t - span) : t > at ? (at) : t);
     const next: [number, number] = [pull(range[0]), pull(range[1])];
     anim.play!.range = next[1] - next[0] > EPS ? next : null;
   }
-  anim.duration = round(Math.max(minDuration, anim.duration - span));
+  anim.duration = (Math.max(minDuration, anim.duration - span));
+  // nothing lies beyond the end (float noise in the sums could leave a time a hair past it)
+  for (const m of anim.markers ?? []) m.time = Math.min(m.time, anim.duration);
+  if (anim.play?.range) {
+    const [a, b] = [Math.min(anim.play.range[0], anim.duration), Math.min(anim.play.range[1], anim.duration)];
+    anim.play.range = b - a > EPS ? [a, b] : null;
+  }
   return { moved, removed, duration: anim.duration };
 }

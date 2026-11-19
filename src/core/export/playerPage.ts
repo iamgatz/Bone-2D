@@ -29,15 +29,19 @@ body.light #bar{background:rgba(255,255,255,.7)}
 #seek{flex:1;min-width:60px}
 #time{font-variant-numeric:tabular-nums;white-space:nowrap}
 .error{position:fixed;top:12px;left:12px;color:#ff8a8a}
-#dlg{position:fixed;inset:0 0 44px 0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.45)}
+#over{position:fixed;inset:0 0 44px 0;width:100%;height:calc(100% - 44px);display:block;pointer-events:none}
+#dlg{position:fixed;right:12px;bottom:56px;display:block}
 #dlg[hidden],#send[hidden]{display:none}
-#dlgbox{width:min(420px,92vw);box-sizing:border-box;padding:14px;border-radius:10px;background:#1b1f27;border:1px solid rgba(127,127,127,.35);display:flex;flex-direction:column;gap:8px}
+#dlgbox{width:min(360px,92vw);box-sizing:border-box;padding:14px;border-radius:10px;background:#1b1f27;border:1px solid rgba(127,127,127,.35);display:flex;flex-direction:column;gap:8px}
 body.light #dlgbox{background:#fff}
 #dlgbox input,#dlgbox textarea{font:inherit;color:inherit;background:rgba(127,127,127,.14);border:1px solid rgba(127,127,127,.35);border-radius:6px;padding:6px 8px;box-sizing:border-box;width:100%}
 #dlgbox textarea{resize:vertical}
 #dlgbox .row{display:flex;gap:8px;justify-content:flex-end}
 #dlgbox button{font:inherit;color:inherit;background:rgba(127,127,127,.18);border:1px solid rgba(127,127,127,.35);border-radius:6px;padding:4px 12px}
 #dlghead{font-variant-numeric:tabular-nums;opacity:.8}
+#bonehint{margin:0;font-size:12px;opacity:.7}
+#bonerow{display:flex;gap:6px;align-items:center}
+#bonerow[hidden]{display:none}
 #mine{margin:0;padding-left:18px;max-height:22vh;overflow:auto;font-size:13px}
 #mine li{cursor:pointer;padding:1px 0}
 `;
@@ -49,9 +53,9 @@ export function playerPageHtml(payload: PlayerPayload, script: string): string {
 <title>${escapeText(payload.title)}</title>
 <style>${STYLE}</style>
 </head><body>
-<canvas id="stage"></canvas>
+<canvas id="stage"></canvas><canvas id="over"></canvas>
 <div id="bar"><button id="play" type="button">Pause</button><input id="seek" type="range" min="0" max="1000" value="0"><span id="time"></span><select id="anim" title="Animation"></select><select id="skin" title="Skin"></select><button id="bg" type="button" title="Light or dark background">Background</button><button id="note" type="button" title="Put a comment on this moment of the animation">Comment</button><button id="send" type="button" hidden title="Download your comments as a file to send to the animator">Send comments</button></div>
-<div id="dlg" hidden><div id="dlgbox" role="dialog" aria-label="Comment"><div id="dlghead"></div><input id="who" type="text" maxlength="60" placeholder="Your name" aria-label="Your name"><textarea id="what" rows="4" maxlength="2000" placeholder="What should change here?" aria-label="Comment"></textarea><ol id="mine"></ol><div class="row"><button id="dcancel" type="button">Close</button><button id="dsave" type="button">Add comment</button></div></div></div>
+<div id="dlg" hidden><div id="dlgbox" role="dialog" aria-label="Comment"><div id="dlghead"></div><p id="bonehint">Click a bone in the picture to point the comment at it</p><div id="bonerow" hidden><span id="bone"></span><button id="bonex" type="button" title="Do not point at a bone">×</button></div><input id="who" type="text" maxlength="60" placeholder="Your name" aria-label="Your name"><textarea id="what" rows="4" maxlength="2000" placeholder="What should change here?" aria-label="Comment"></textarea><ol id="mine"></ol><div class="row"><button id="dcancel" type="button">Close</button><button id="dsave" type="button">Add comment</button></div></div></div>
 <script id="b2d-data" type="application/json">${safeJson(payload)}</script>
 <script>
 // Made with Bone 2D (https://github.com/iamgatz/Bone-2D). Everything this page needs is inside it.

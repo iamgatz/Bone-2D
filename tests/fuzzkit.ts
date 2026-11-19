@@ -39,6 +39,8 @@ import * as POSE from '../src/store/poseActions';
 import * as POLY from '../src/store/polygonActions';
 import * as RV from '../src/store/reviewActions';
 import * as PRB from '../src/store/problemActions';
+import * as CMT from '../src/store/commentActions';
+import { listReview } from '../src/core/review';
 import { filterTree } from '../src/core/treeFilter';
 import { canFix } from '../src/core/problems';
 import { projectWarnings } from '../src/core/stats';
@@ -576,6 +578,7 @@ export const ops: Op[] = [
   { name: 'deleteTime', run: (c) => { const a = A.currentAnimation(); if (!a) return; A.setTime(c.r() * a.duration); A.deleteTimeAtPlayhead(1 + Math.floor(c.r() * 12)); } },
   { name: 'saveCurve', run: (c) => { const a = A.currentAnimation(); if (!a) return; const refs = allKeyRefs(a).filter((r) => r.kind === 'bone'); const k = c.pick(refs); if (!k) return; if (c.chance(0.5)) A.setKeysCurve([k], [c.num(0, 1), c.num(-1, 2), c.num(0, 1), c.num(-1, 2)]); if (c.chance(0.8)) A.saveKeyCurve(k); else A.forgetSavedCurve(Math.floor(c.r() * 3)); const saved = settingsStore.get().savedCurves[0]; if (saved && c.chance(0.5)) A.setKeysCurve(refs.slice(0, 3), saved.curve); } },
   { name: 'selectMatches', run: (c) => { A.selectMatches(filterTree(doc(), c.pick(['a', 'arm', 'sw', 'tail', 'b*', '/^[hp]/', 'zz'])!)); } },
+  { name: 'comments', run: (c) => { const it = c.pick(listReview(doc())); if (!it) return; const k = c.r(); if (k < 0.4) CMT.setCommentResolved(it.animationId, it.marker.id, c.chance(0.6)); else if (k < 0.8) CMT.goToComment(it.animationId, it.marker.id); else CMT.resolveAllComments(); } },
   { name: 'fixProblems', run: (c) => { const w = c.pick(projectWarnings(project()).filter(canFix)); if (c.chance(0.5) || !w) PRB.fixAllSafeWarnings(); else PRB.fixWarning(w); } },
   // ---- history
   { name: 'undo', run: () => docStore.undo() },

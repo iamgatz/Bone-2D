@@ -120,8 +120,9 @@ describe('deleteTime', () => {
     ];
     anim.play = { loop: true, pingPong: false, range: [0.35, 0.9] };
     deleteTime(anim, 0.3, 0.2, 1 / 30);
-    expect(anim.markers.map((m) => m.time)).toEqual([0.1, 0.3, 0.6]);
-    expect(anim.play.range).toEqual([0.3, 0.7]);
+    anim.markers.forEach((m, i) => expect(m.time).toBeCloseTo([0.1, 0.3, 0.6][i], 9));
+    expect(anim.play.range![0]).toBeCloseTo(0.3, 9);
+    expect(anim.play.range![1]).toBeCloseTo(0.7, 9);
     const gone = buildFixture().project.skeleton.animations[0];
     gone.play = { loop: true, pingPong: false, range: [0.3, 0.4] };
     deleteTime(gone, 0.2, 0.4, 1 / 30);
@@ -149,6 +150,33 @@ describe('deleteTime', () => {
     expect(after.length).toBe(before.length);
     after.forEach((t, i) => expect(near(t, before[i])).toBe(true));
     expect(anim.duration).toBeCloseTo(d, 6);
+  });
+});
+
+describe('the frame grid', () => {
+  it('keys on whole frames stay on whole frames after an insert and a delete (nothing is rounded to a millionth of a second: the fuzzer found that this puts a key off its frame)', () => {
+    const { project } = buildFixture();
+    const anim = project.skeleton.animations[0];
+    const fps = project.skeleton.fps;
+    const onFrames = (t: number) => Math.abs(t * fps - Math.round(t * fps)) < 1e-9;
+    const before = allTimes(anim);
+    expect(before.every(onFrames)).toBe(true);
+    insertTime(anim, 10 / fps, 7 / fps);
+    expect(allTimes(anim).every(onFrames)).toBe(true);
+    deleteTime(anim, 3 / fps, 5 / fps, 1 / fps);
+    expect(allTimes(anim).every(onFrames)).toBe(true);
+  });
+});
+
+describe('rounding', () => {
+  it('a marker that collapses onto a cut that is not a round number never lies beyond the rounded end (the fuzzer found this)', () => {
+    const { project } = buildFixture();
+    const anim = project.skeleton.animations[0];
+    anim.duration = 1.2;
+    anim.markers = [{ id: 'm', time: 1.1333333333333333, name: '', color: 0, text: '' }];
+    deleteTime(anim, 1.0333333333333334, 1 / 30 + 0.1, 1 / 30);
+    expect(anim.markers[0].time).toBeLessThanOrEqual(anim.duration);
+    expect(validateProject(project)).toEqual([]);
   });
 });
 
