@@ -20,7 +20,7 @@ import { uid } from '../src/core/ids';
 import type { KeyRef } from '../src/core/keyrefs';
 import { meshWorldPositions } from '../src/core/mesh';
 import { SEQUENCE_MODES, BLEND_MODES, GLOBAL_PHYSICS, INHERIT_MODES, PATH_POSITION_MODES, PATH_ROTATE_MODES, PATH_SPACING_MODES, PHYSICS_PARAMS, TRANSFORM_PROPS, pathNodeCount, polygonVertexCount } from '../src/core/model';
-import type { Animation, Project } from '../src/core/model';
+import type { Animation, Influence, MeshAttachment, Project } from '../src/core/model';
 import { compileSkeleton, createSkeleton, meshWorldVertices, pointWorld } from '../src/core/skeleton';
 import { validateProject } from '../src/core/validate';
 import * as A from '../src/store/actions';
@@ -38,6 +38,10 @@ import * as PRE from '../src/store/presetActions';
 import * as POSE from '../src/store/poseActions';
 import * as POLY from '../src/store/polygonActions';
 import * as RV from '../src/store/reviewActions';
+import * as PRB from '../src/store/problemActions';
+import { canFix } from '../src/core/problems';
+import { projectWarnings } from '../src/core/stats';
+import { reconcileDeform } from '../src/core/edit';
 import { compareWithProjectText } from '../src/store/checkpoints';
 import { makeComment, serializeReview } from '../src/core/review';
 import * as NU from '../src/store/nudgeActions';
@@ -530,6 +534,24 @@ export const ops: Op[] = [
   { name: 'compareFile', run: () => { compareWithProjectText(JSON.stringify({ bone2d: 1, project: project(), images: {} }), 'fuzz.bone2d'); } },
   { name: 'keyAlphaOnly', run: (c) => { const s = c.pick(doc().slots); if (!s || !A.currentAnimation()) return; A.setMode('animate'); A.setSlotColor(s.id, [s.color[0], s.color[1], s.color[2], c.r()]); } },
   { name: 'keyColorOnly', run: (c) => { const s = c.pick(doc().slots); if (!s || !A.currentAnimation()) return; A.setMode('animate'); A.setSlotColor(s.id, [c.r(), c.r(), c.r(), s.color[3]]); } },
+  { name: 'overweight', run: (c) => {
+    const found: { slotId: string; name: string }[] = [];
+    for (const slotId of Object.keys(doc().skins[0].attachments)) for (const a of Object.values(doc().skins[0].attachments[slotId])) if (a.type === 'mesh' && a.weights && !a.link) found.push({ slotId, name: a.name });
+    const m = c.pick(found);
+    if (!m || doc().bones.length < 2) return;
+    // a vertex that follows more bones than the editor likes: still a valid document, with deform keys that have to follow
+    docStore.update('Add influences', (d) => {
+      const mesh = d.skeleton.skins[0].attachments[m.slotId][m.name] as MeshAttachment;
+      if (!mesh.weights?.length) return;
+      const before = { ...mesh };
+      const vi = Math.floor(c.r() * mesh.weights.length);
+      const bones = d.skeleton.bones.slice(0, 6);
+      const w = mesh.weights[vi];
+      mesh.weights = mesh.weights.map((list, i) => (i === vi ? [...w, ...bones.filter((b) => !w.some((x) => x[0] === b.id)).map((b) => [b.id, 1, 1, 0.1] as Influence)].map((e, _k, all) => [e[0], e[1], e[2], e[3] / all.reduce((s, x) => s + x[3], 0)] as Influence) : list));
+      reconcileDeform(d.skeleton, m.slotId, m.name, before, mesh);
+    });
+  } },
+  { name: 'fixProblems', run: (c) => { const w = c.pick(projectWarnings(project()).filter(canFix)); if (c.chance(0.5) || !w) PRB.fixAllSafeWarnings(); else PRB.fixWarning(w); } },
   // ---- history
   { name: 'undo', run: () => docStore.undo() },
   { name: 'redo', run: () => docStore.redo() },

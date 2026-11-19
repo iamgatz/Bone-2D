@@ -24,7 +24,7 @@ import { RAD2DEG, atan2Deg, matInvert, matMul } from '@/core/math';
 import type { Mat } from '@/core/math';
 import { AXIS_GROUPS, newAnimation, newBone, newSkin, newSlot } from '@/core/model';
 import { cleanPlay, playOf, playSpan, samePlay } from '@/core/playback';
-import { cleanMixes, withoutAnimation } from '@/core/preview';
+import { removeAnimation } from '@/core/problems';
 import { commonShift, isPsd, layerCenter, readPsdFile } from '@/core/import/psd';
 import type { PsdLayer, PsdPixels } from '@/core/import/psd';
 import { fitRegion, planPsdSync } from '@/core/import/psdSync';
@@ -1126,15 +1126,8 @@ export function duplicateAnimation(id: Id) {
 
 export function deleteAnimation(id: Id) {
   docStore.update('Delete animation', (d) => {
-    d.skeleton.animations = d.skeleton.animations.filter((a) => a.id !== id);
-    // sliders that applied it simply do nothing until another animation is chosen
-    for (const c of d.skeleton.constraints) if (c.type === 'slider' && c.animation === id) c.animation = null;
-    // the mix table forgets it
-    if (d.mixes) {
-      const clean = cleanMixes(withoutAnimation(d.mixes, id), new Set(d.skeleton.animations.map((a) => a.id)));
-      if (clean) d.mixes = clean;
-      else delete d.mixes;
-    }
+    // sliders that applied it simply do nothing until another animation is chosen; the mix table forgets it
+    removeAnimation(d, id);
   });
   const ui = uiStore.get();
   if (ui.animationId === id) {

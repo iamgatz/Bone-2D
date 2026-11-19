@@ -238,7 +238,7 @@ describe('the link and the shape of a linked mesh', () => {
     r.animation.deform[skin.id] = { [r.slotId]: { [r.name]: keys, still: structuredClone(keys) } };
     const w = projectWarnings(r.project).filter((x) => x.kind === 'ignoredDeform');
     // `still` does not share the deform (its keys are exported), the one with the source name does
-    expect(w).toEqual([{ kind: 'ignoredDeform', subject: `wobble: ${r.name}` }]);
+    expect(w.map((x) => ({ kind: x.kind, subject: x.subject }))).toEqual([{ kind: 'ignoredDeform', subject: `wobble: ${r.name}` }]);
   });
 });
 

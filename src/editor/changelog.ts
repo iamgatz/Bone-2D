@@ -12,6 +12,20 @@ export interface Release {
 
 export const CHANGELOG: Release[] = [
   {
+    version: '0.61',
+    date: '2026-11-19',
+    en: [
+      "Metrics → Before export is now a list of problems with a fix: each warning that can be put right has a Fix button (remove an unused image, keep the 4 strongest bones of a vertex that has more, delete deform keys on a linked mesh that the export ignores, delete an empty animation or an empty slot), and a click on the name takes you to the slot or animation.",
+      "Fix all that are safe does the first three kinds at once in one undo step; the ones that delete something a person may have made on purpose (an empty animation or slot) are only done one at a time. Deform keys follow the changed weights, and a linked mesh is fixed through its source.",
+      "An image that another skeleton of the project shows is no longer reported as unused.",
+    ],
+    ru: [
+      "Metrics → «Перед экспортом» теперь список проблем с исправлением: у каждого предупреждения, которое можно исправить, есть кнопка «Исправить» (убрать неиспользуемую картинку, оставить у вершины 4 самые сильные кости, если их больше, удалить ключи деформации связанного меша, которые экспорт игнорирует, удалить пустую анимацию или пустой слот), а щелчок по имени ведёт к слоту или анимации.",
+      "«Исправить безопасное» делает первые три вида сразу, одним шагом отмены; то, что удаляет вещи, которые человек мог оставить нарочно (пустая анимация или слот), делается только по одному. Ключи деформации следуют за изменёнными весами, а связанный меш исправляется через источник.",
+      "Картинка, которую показывает другой скелет проекта, больше не считается неиспользуемой.",
+    ],
+  },
+  {
     version: '0.60',
     date: '2026-11-19',
     en: [

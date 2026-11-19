@@ -36,7 +36,7 @@ describe('project stats', () => {
     withExtra.skeleton.animations.push(newAnimation('empty', 1));
     const w = projectWarnings(withExtra);
     expect(w).toContainEqual({ kind: 'unusedImage', subject: 'never-used' });
-    expect(w).toContainEqual({ kind: 'emptyAnimation', subject: 'empty' });
+    expect(w).toContainEqual({ kind: 'emptyAnimation', subject: 'empty', ref: { animation: withExtra.skeleton.animations.find((x) => x.name === 'empty')!.id } });
     expect(JSON.stringify(project)).toBe(before);
   });
 });
