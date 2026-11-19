@@ -11,6 +11,9 @@ export interface TreeMatch {
   constraints: Set<Id>;
   skins: Set<Id>;
   events: Set<Id>;
+  /** The bones and slots whose own name (or, for a slot, image name) matches, in the order of the document: what Select takes (`bones` also holds their ancestors). */
+  matchedBones: Id[];
+  matchedSlots: Id[];
 }
 
 /**
@@ -19,17 +22,22 @@ export interface TreeMatch {
  */
 export function filterTree(doc: SkeletonDoc, query: string): TreeMatch {
   const has = nameMatcher(query);
-  const out: TreeMatch = { active: has !== null, bones: new Set(), slots: new Set(), constraints: new Set(), skins: new Set(), events: new Set() };
+  const out: TreeMatch = { active: has !== null, bones: new Set(), slots: new Set(), constraints: new Set(), skins: new Set(), events: new Set(), matchedBones: [], matchedSlots: [] };
   if (!has) return out;
   const byId = new Map(doc.bones.map((b) => [b.id, b]));
   const showWithAncestors = (id: Id | null) => {
     for (let at = id ? byId.get(id) : undefined; at && !out.bones.has(at.id); at = at.parent ? byId.get(at.parent) : undefined) out.bones.add(at.id);
   };
-  for (const b of doc.bones) if (has(b.name)) showWithAncestors(b.id);
+  for (const b of doc.bones) {
+    if (!has(b.name)) continue;
+    out.matchedBones.push(b.id);
+    showWithAncestors(b.id);
+  }
   for (const s of doc.slots) {
     const byImage = doc.skins.some((k) => Object.keys(k.attachments[s.id] ?? {}).some(has));
     if (has(s.name) || byImage) {
       out.slots.add(s.id);
+      out.matchedSlots.push(s.id);
       showWithAncestors(s.bone);
     }
   }
@@ -37,6 +45,16 @@ export function filterTree(doc: SkeletonDoc, query: string): TreeMatch {
   for (const k of doc.skins) if (has(k.name)) out.skins.add(k.id);
   for (const e of doc.events) if (has(e.name)) out.events.add(e.id);
   return out;
+}
+
+/**
+ * What "Select" takes from a filter (Spine's tree search has the same button): the bones that match, and the slots that match as the selected
+ * slot and the slots selected with it. Nothing for an inactive filter.
+ */
+export function selectionOfMatch(match: TreeMatch): { bones: Id[]; slot: Id | null; extraSlots: Id[] } {
+  if (!match.active) return { bones: [], slot: null, extraSlots: [] };
+  const [slot = null, ...extraSlots] = match.matchedSlots;
+  return { bones: [...match.matchedBones], slot, extraSlots };
 }
 
 /** The bones and slots that are hidden in the viewport. */

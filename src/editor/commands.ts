@@ -2,7 +2,7 @@
  * Every action of the editor by name, for the command palette (Ctrl+K): type a few letters of what you want. Spine has no such thing.
  * The titles are English strings like the rest of the interface and get translated where they are shown.
  */
-import { closeCurrentLoop, flipViewport, keyConstrainedBones, keyEditedBones, keySelectedBones, pasteKeys, selectAnimation, setMode, setTool, togglePlay } from '@/store/actions';
+import { closeCurrentLoop, deleteTimeAtPlayhead, flipViewport, insertTimeAtPlayhead, keyConstrainedBones, keyEditedBones, keySelectedBones, pasteKeys, selectAnimation, setMode, setTool, togglePlay } from '@/store/actions';
 import { setAxesSplit } from '@/store/axisActions';
 import { selectionBack, selectionForward } from '@/store/selHistory';
 import { hideUnkeyedBones, mirrorCurrentCycle } from '@/store/animToolActions';
@@ -84,6 +84,8 @@ export function buildCommands(): Command[] {
     { id: 'mode.toggle', group: 'Animation', title: 'Setup ⇄ Animate', keys: KEYS.mode, run: () => setMode(uiStore.get().mode === 'setup' ? 'animate' : 'setup') },
     { id: 'anim.keyedited', group: 'Animation', title: 'Key edited channels', keys: KEYS.key, run: () => keyEditedBones() },
     { id: 'anim.keyshown', group: 'Animation', title: 'Key all channels of the selected bones', keys: KEYS.keyShown, run: () => keySelectedBones() },
+    { id: 'anim.inserttime', group: 'Animation', title: 'Insert time at the playhead (the frames set next to Length)', run: () => void insertTimeAtPlayhead(uiStore.get().timeGap ?? 6) },
+    { id: 'anim.deletetime', group: 'Animation', title: 'Delete time after the playhead (the frames set next to Length)', run: () => void deleteTimeAtPlayhead(uiStore.get().timeGap ?? 6) },
     { id: 'anim.pastehold', group: 'Animation', title: 'Paste keys at the playhead, hold (linear between keys of the same value)', keys: KEYS.pasteHold, run: () => void pasteKeys(uiStore.get().time, true) },
     { id: 'anim.keyconstrained', group: 'Animation', title: 'Key the pose after the constraints', run: () => keyConstrainedBones() },
     { id: 'anim.marker.add', group: 'Animation', title: 'Add a marker at the playhead', run: () => void addMarkerAtPlayhead() },

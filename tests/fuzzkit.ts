@@ -25,7 +25,7 @@ import { compileSkeleton, createSkeleton, meshWorldVertices, pointWorld } from '
 import { validateProject } from '../src/core/validate';
 import * as A from '../src/store/actions';
 import { docStore } from '../src/store/doc';
-import { setSettings } from '../src/store/settings';
+import { setSettings, settingsStore } from '../src/store/settings';
 import * as FO from '../src/store/folderActions';
 import * as SK from '../src/store/skeletonActions';
 import * as AX from '../src/store/axisActions';
@@ -39,6 +39,7 @@ import * as POSE from '../src/store/poseActions';
 import * as POLY from '../src/store/polygonActions';
 import * as RV from '../src/store/reviewActions';
 import * as PRB from '../src/store/problemActions';
+import { filterTree } from '../src/core/treeFilter';
 import { canFix } from '../src/core/problems';
 import { projectWarnings } from '../src/core/stats';
 import { reconcileDeform } from '../src/core/edit';
@@ -571,6 +572,10 @@ export const ops: Op[] = [
   } },
   { name: 'pasteHold', run: (c) => { const a = A.currentAnimation(); if (!a) return; const refs = allKeyRefs(a).filter((r) => r.kind !== 'drawOrder' && r.kind !== 'drawOrderFolder'); const k = c.pick(refs); if (!k) return; A.copyKeys([k]); A.pasteKeys(c.r() * a.duration, true); } },
   { name: 'flipView', run: () => { A.flipViewport(); } },
+  { name: 'insertTime', run: (c) => { const a = A.currentAnimation(); if (!a) return; A.setTime(c.r() * a.duration); A.insertTimeAtPlayhead(1 + Math.floor(c.r() * 12)); } },
+  { name: 'deleteTime', run: (c) => { const a = A.currentAnimation(); if (!a) return; A.setTime(c.r() * a.duration); A.deleteTimeAtPlayhead(1 + Math.floor(c.r() * 12)); } },
+  { name: 'saveCurve', run: (c) => { const a = A.currentAnimation(); if (!a) return; const refs = allKeyRefs(a).filter((r) => r.kind === 'bone'); const k = c.pick(refs); if (!k) return; if (c.chance(0.5)) A.setKeysCurve([k], [c.num(0, 1), c.num(-1, 2), c.num(0, 1), c.num(-1, 2)]); if (c.chance(0.8)) A.saveKeyCurve(k); else A.forgetSavedCurve(Math.floor(c.r() * 3)); const saved = settingsStore.get().savedCurves[0]; if (saved && c.chance(0.5)) A.setKeysCurve(refs.slice(0, 3), saved.curve); } },
+  { name: 'selectMatches', run: (c) => { A.selectMatches(filterTree(doc(), c.pick(['a', 'arm', 'sw', 'tail', 'b*', '/^[hp]/', 'zz'])!)); } },
   { name: 'fixProblems', run: (c) => { const w = c.pick(projectWarnings(project()).filter(canFix)); if (c.chance(0.5) || !w) PRB.fixAllSafeWarnings(); else PRB.fixWarning(w); } },
   // ---- history
   { name: 'undo', run: () => docStore.undo() },
@@ -1128,7 +1133,7 @@ export function freshSession() {
   addAttachmentRig(f.project); // clipping / bounding boxes (also weighted) / a point, so edits meet them from the first step
   addPathRig(f.project); // paths (open, closed, weighted) and path constraints in every mode
   addPhysicsRig(f.project); // physics constraints of every flavour, animated
-  setSettings({ keyGrid: 1, lastChosenCurve: false }); // keys between frames are a preference of the person: every run starts on whole frames
+  setSettings({ keyGrid: 1, lastChosenCurve: false, savedCurves: [] }); // keys between frames are a preference of the person: every run starts on whole frames
   docStore.replace(f.project);
   uiStore.patch({ mode: 'setup', tool: 'select', animationId: f.project.skeleton.animations[0].id, skinId: null, time: 0, selection: emptySelection, overrides: {}, autoKey: true, playing: false, defaultCurve: 'bezier' });
   return f;

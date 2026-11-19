@@ -12,6 +12,22 @@ export interface Release {
 
 export const CHANGELOG: Release[] = [
   {
+    version: '0.66',
+    date: '2026-11-19',
+    en: [
+      "Insert time / Delete time: next to the animation length the timeline has a number of frames and two buttons. Insert time pushes every key, marker and the play range from the playhead on later by that many frames (a pause in the middle of a walk) and makes the animation longer; Delete time cuts the frames after the playhead out (the keys inside go, the later keys move earlier, the animation gets shorter). One undo step each; also in the command palette.",
+      "Saved curves: right-click a key with a bezier curve → Save this curve… keeps it under a name; the same menu then puts it on other keys. Settings → Saved curves lists them and forgets them (up to twelve, kept in the browser).",
+      "Select next to the hierarchy filter: a button selects every bone and slot that matches what was typed (several slots are selected together, so the weight tools work on all their meshes).",
+      "The Dopesheet of a looping animation draws faint copies of the keys before 0 and after the end, so the seam of a loop can be checked on the timeline.",
+    ],
+    ru: [
+      "Вставить время / Удалить время: рядом с длиной анимации на таймлайне есть число кадров и две кнопки. «Вставить время» сдвигает все ключи, маркеры и диапазон проигрывания от маркера времени позже на столько кадров (пауза посреди шага) и удлиняет анимацию; «Удалить время» вырезает кадры после маркера (ключи внутри пропадают, поздние ключи сдвигаются раньше, анимация короче). Каждое одним шагом отмены; также в палитре команд.",
+      "Сохранённые кривые: правый щелчок по ключу с кривой Безье → «Сохранить эту кривую…» оставляет её под именем; в том же меню её можно поставить на другие ключи. «Настройки → Сохранённые кривые» перечисляет их и позволяет забыть (до двенадцати, хранятся в браузере).",
+      "«Выделить» рядом с фильтром иерархии: кнопка выделяет все кости и слоты, подходящие под набранное (несколько слотов выделяются вместе, поэтому инструменты весов работают на всех их мешах).",
+      "Dopesheet зацикленной анимации рисует бледные копии ключей до 0 и после конца, чтобы шов цикла был виден на таймлайне.",
+    ],
+  },
+  {
     version: '0.65',
     date: '2026-11-19',
     en: [

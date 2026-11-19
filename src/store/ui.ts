@@ -149,6 +149,8 @@ export interface UiState {
   view: ViewOptions;
   overrides: Record<Id, PoseOverride>;
   timelineView: 'dopesheet' | 'graph';
+  /** How many frames Insert time / Delete time cut in (default 6). */
+  timeGap?: number;
   /** Which tracks the dopesheet lists (see `filterRows`). */
   trackFilter: TrackFilter;
   /** Timeline horizontal zoom (pixels per second) and scroll (seconds at left edge). */

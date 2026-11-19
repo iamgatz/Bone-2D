@@ -12,7 +12,7 @@ import type { AxisGroup } from '@/core/model';
 import { setAxesSplit } from '@/store/axisActions';
 import { openKeyDialog } from '@/store/keyDialog';
 import { clearMute, toggleMute } from '@/store/muteActions';
-import { cleanUpKeys, copyKeys, createAnimation, currentAnimation, deleteAnimation, deleteKeys, duplicateAnimation, pasteKeys, renameAnimation, selectAnimation, selectBone, selectSlot, setAnimationDuration, setKeysCurve, setMode, setPlay, setSelection, setTime, togglePlay } from '@/store/actions';
+import { cleanUpKeys, copyKeys, createAnimation, currentAnimation, deleteAnimation, deleteKeys, deleteTimeAtPlayhead, saveKeyCurve, insertTimeAtPlayhead, duplicateAnimation, pasteKeys, renameAnimation, selectAnimation, selectBone, selectSlot, setAnimationDuration, setKeysCurve, setMode, setPlay, setSelection, setTime, togglePlay } from '@/store/actions';
 import { useProject } from '@/store/doc';
 import { setSettings, useSettings } from '@/store/settings';
 import { uiStore, useUi } from '@/store/ui';
@@ -80,6 +80,7 @@ function TimelineMenu({ menu, onClose }: { menu: TimelineMenuRequest; onClose: (
   const ref = useOutsideClose(true, onClose);
   useFocusFirstItem(ref);
   const refs = menu.refs;
+  const saved = useSettings((s) => s.savedCurves);
   // the translate / scale / shear timelines among the keys: each can be split into X and Y, or merged back
   const axes: { group: AxisGroup; bones: string[]; split: boolean }[] = [];
   for (const r of refs) {
@@ -129,6 +130,9 @@ function TimelineMenu({ menu, onClose }: { menu: TimelineMenuRequest; onClose: (
       {item('Ease out', () => setKeysCurve(refs, CURVE_PRESETS.easeOut))}
       {item('Ease in-out', () => setKeysCurve(refs, CURVE_PRESETS.easeInOut))}
       {item('Overshoot', () => setKeysCurve(refs, CURVE_PRESETS.overshoot))}
+      {saved.length > 0 && <div className="section-label">Saved curves</div>}
+      {saved.map((c) => item(c.name, () => setKeysCurve(refs, c.curve)))}
+      {refs.length === 1 && item('Save this curve…', () => saveKeyCurve(refs[0]))}
       <div className="menu-sep" />
       {refs.length === 1 && item('Edit key…', () => openKeyDialog(refs[0]))}
       {axes.map(({ group, bones, split }) => item(split ? `Merge ${group} X / Y` : `Split ${group} into X / Y`, () => setAxesSplit(bones, group, !split)))}
@@ -245,6 +249,7 @@ export function Timeline() {
             <LengthField value={anim.duration} onChange={(v) => setAnimationDuration(anim.id, v)} />
           </div>
         )}
+        {anim && <TimeGapControls />}
         <IconButton icon={Maximize} title="Fit timeline to the animation" onClick={fit} />
         <IconButton icon={ZoomIn} title="Zoom to the selected keys (the loop range when none is selected and one is set, else the whole animation)" disabled={!anim} onClick={zoomKeys} />
         <span className="sep tl-opt2" />
@@ -347,6 +352,32 @@ export function Timeline() {
       </div>
       {menu && <TimelineMenu menu={menu} onClose={() => setMenu(null)} />}
       {filterAt && <TrackFilterMenu at={filterAt} filter={trackFilter} onClose={() => setFilterAt(null)} />}
+    </div>
+  );
+}
+
+/** Insert time / Delete time at the playhead: a number of frames and two buttons. */
+function TimeGapControls() {
+  const gap = useUi((s) => s.timeGap ?? 6);
+  return (
+    <div className="tl-opt" style={{ display: 'flex', alignItems: 'center', gap: 4 }} title="Cut time at the playhead: Insert pushes every key from the playhead later (a pause), Delete removes the frames after the playhead and closes the gap">
+      <input
+        className="tl-gap"
+        type="number"
+        min={1}
+        max={999}
+        step={1}
+        value={gap}
+        aria-label="Frames to insert or delete"
+        style={{ width: 46 }}
+        onChange={(e) => uiStore.patch({ timeGap: Math.max(1, Math.min(999, Math.round(Number(e.target.value)) || 1)) })}
+      />
+      <button className="btn sm" title="Insert the frames at the playhead: every key from there on moves later" onClick={() => insertTimeAtPlayhead(gap)}>
+        Insert time
+      </button>
+      <button className="btn sm" title="Delete the frames after the playhead: the keys inside go, the later keys move earlier" onClick={() => deleteTimeAtPlayhead(gap)}>
+        Delete time
+      </button>
     </div>
   );
 }
