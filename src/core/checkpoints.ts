@@ -34,6 +34,8 @@ export interface Change {
   kind: ChangeKind;
   /** Name in the newer skeleton (in the older one for a removed thing). */
   name: string;
+  /** The id of the thing (none for the skeleton's own settings): what "Take from the checkpoint" picks it by. */
+  id?: Id;
   /** What differs in a changed bone, slot or skin: short words ("position", "rotation"), the way the person thinks of them. */
   fields?: string[];
   /** In a changed animation: how many keys were added, removed or changed. */
@@ -155,13 +157,13 @@ function listChanges<T extends { id: Id; name: string }>(area: ChangeArea, befor
   const now = byId(after);
   for (const b of after) {
     const a = old.get(b.id);
-    if (!a) out.push({ area, kind: 'added', name: b.name });
+    if (!a) out.push({ area, kind: 'added', name: b.name, id: b.id });
     else if (a !== b) {
       const diff = describe(a, b);
-      if (diff) out.push({ area, kind: 'changed', name: b.name, ...diff });
+      if (diff) out.push({ area, kind: 'changed', name: b.name, id: b.id, ...diff });
     }
   }
-  for (const a of before) if (!now.has(a.id)) out.push({ area, kind: 'removed', name: a.name });
+  for (const a of before) if (!now.has(a.id)) out.push({ area, kind: 'removed', name: a.name, id: a.id });
 }
 
 /**

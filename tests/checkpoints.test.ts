@@ -41,7 +41,7 @@ describe('diffSkeletons', () => {
       d.skeleton.bones[1].length = 50;
     });
     const changes = diffSkeletons(before, docStore.get().skeleton);
-    expect(changes).toEqual([{ area: 'bone', kind: 'changed', name: 'arm', fields: ['position', 'rotation', 'length'] }]);
+    expect(changes).toEqual([{ area: 'bone', kind: 'changed', name: 'arm', id: expect.any(String), fields: ['position', 'rotation', 'length'] }]);
   });
 
   it('lists added and removed bones and slots, and renames', () => {
@@ -52,9 +52,9 @@ describe('diffSkeletons', () => {
       d.skeleton.slots.pop();
     });
     const changes = diffSkeletons(before, docStore.get().skeleton);
-    expect(changes).toContainEqual({ area: 'bone', kind: 'added', name: 'leg' });
-    expect(changes).toContainEqual({ area: 'bone', kind: 'changed', name: 'forearm', fields: ['name'] });
-    expect(changes).toContainEqual({ area: 'slot', kind: 'removed', name: 'hand' });
+    expect(changes).toContainEqual({ area: 'bone', kind: 'added', name: 'leg', id: expect.any(String) });
+    expect(changes).toContainEqual({ area: 'bone', kind: 'changed', name: 'forearm', id: expect.any(String), fields: ['name'] });
+    expect(changes).toContainEqual({ area: 'slot', kind: 'removed', name: 'hand', id: expect.any(String) });
     expect(summarizeChanges(changes)).toEqual({ added: 1, removed: 1, changed: 1 });
   });
 
@@ -81,11 +81,11 @@ describe('diffSkeletons', () => {
       d.skeleton.skins.push(newSkin('red'));
     });
     const changes = diffSkeletons(before, docStore.get().skeleton);
-    expect(changes).toContainEqual({ area: 'animation', kind: 'changed', name: 'run', fields: ['name'] });
-    expect(changes).toContainEqual({ area: 'animation', kind: 'added', name: 'idle' });
-    expect(changes).toContainEqual({ area: 'skin', kind: 'added', name: 'red' });
+    expect(changes).toContainEqual({ area: 'animation', kind: 'changed', name: 'run', id: expect.any(String), fields: ['name'] });
+    expect(changes).toContainEqual({ area: 'animation', kind: 'added', name: 'idle', id: expect.any(String) });
+    expect(changes).toContainEqual({ area: 'skin', kind: 'added', name: 'red', id: expect.any(String) });
     const back = diffSkeletons(docStore.get().skeleton, before);
-    expect(back).toContainEqual({ area: 'animation', kind: 'removed', name: 'idle' });
+    expect(back).toContainEqual({ area: 'animation', kind: 'removed', name: 'idle', id: expect.any(String) });
   });
 
   it('a duration change counts as one changed key-less value', () => {

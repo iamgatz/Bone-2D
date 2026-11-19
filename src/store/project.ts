@@ -51,16 +51,22 @@ export async function serializeProject(): Promise<string> {
   return JSON.stringify(file);
 }
 
-/** The project a project file holds, read without opening it (nothing in the editor changes). Null when the text is not a Bone 2D project file. */
-export function readProjectFile(text: string): Project | null {
+/** The project a project file holds with its pictures (name -> data URL), read without opening it (nothing in the editor changes). Null when the text is not a Bone 2D project file. */
+export function readProjectWithPictures(text: string): { project: Project; pictures: Record<string, string> } | null {
   try {
     const file = JSON.parse(text) as ProjectFile;
     if (!file || typeof file !== 'object' || (file.bone2d !== 1 && file.marrow !== 1) || !file.project?.skeleton || typeof file.project.skeleton !== 'object') return null;
     repairProject(file.project);
-    return migrateProject(file.project);
+    const pictures = file.images && typeof file.images === 'object' ? file.images : {};
+    return { project: migrateProject(file.project), pictures };
   } catch {
     return null;
   }
+}
+
+/** The project a project file holds, read without opening it (nothing in the editor changes). Null when the text is not a Bone 2D project file. */
+export function readProjectFile(text: string): Project | null {
+  return readProjectWithPictures(text)?.project ?? null;
 }
 
 export interface LoadReport {
