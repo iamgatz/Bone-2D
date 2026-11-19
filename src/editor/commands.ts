@@ -14,6 +14,7 @@ import { LAYOUTS, VIEW_LIST } from '@/store/layout';
 import { startSetParent } from '@/store/parentActions';
 import { copyPose, duplicateSelection, flipScale, moveBoneOrderAction, pastePose, resetPose, swapSides } from '@/store/poseActions';
 import { newProject, openProjectFile, packageProject, saveProjectFile } from '@/store/project';
+import { pickReviewFile } from '@/store/reviewActions';
 import { loadSample } from '@/store/sample';
 import { toast, uiStore } from '@/store/ui';
 import { clearGuides } from '@/store/guideActions';
@@ -51,6 +52,7 @@ export function buildCommands(): Command[] {
     { id: 'file.new', group: 'File', title: 'New project', run: () => newProject() },
     { id: 'file.open', group: 'File', title: 'Open…', keys: KEYS.open, run: () => void openProjectFile() },
     { id: 'file.save', group: 'File', title: 'Save', keys: KEYS.save, run: () => void saveProjectFile() },
+    { id: 'file.reviewimport', group: 'File', title: 'Import review comments', run: () => pickReviewFile() },
     { id: 'file.package', group: 'File', title: 'Package project (ZIP)', run: () => void packageProject() },
     { id: 'file.saveas', group: 'File', title: 'Save as…', keys: KEYS.saveAs, run: () => void saveProjectFile(true) },
     { id: 'file.export', group: 'File', title: 'Export', keys: KEYS.export, run: open('exportOpen') },

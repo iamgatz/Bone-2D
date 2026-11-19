@@ -25,7 +25,14 @@ export function cleanMarkers(raw: unknown, duration: number): Marker[] {
     if (seen.has(id)) id = uid();
     seen.add(id);
     const color = Number.isInteger(r.color) ? Math.min(Math.max(0, r.color as number), MARKER_COLORS - 1) : 0;
-    out.push({ id, time: Math.min(Math.max(0, r.time as number), Math.max(0, duration)), name: typeof r.name === 'string' ? r.name : '', color, text: typeof r.text === 'string' ? r.text : '' });
+    const marker: Marker = { id, time: Math.min(Math.max(0, r.time as number), Math.max(0, duration)), name: typeof r.name === 'string' ? r.name : '', color, text: typeof r.text === 'string' ? r.text : '' };
+    if (r.review === true) {
+      marker.review = true;
+      if (typeof r.author === 'string') marker.author = r.author;
+      if (typeof r.bone === 'string') marker.bone = r.bone;
+      marker.resolved = r.resolved === true;
+    }
+    out.push(marker);
   }
   return out.sort((a, b) => a.time - b.time);
 }

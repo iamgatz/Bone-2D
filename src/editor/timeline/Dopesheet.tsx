@@ -171,6 +171,7 @@ export function Dopesheet({ rows, duration, fps, onMenu }: Props) {
       for (const m of markersOf(docStore.get().skeleton.animations.find((a) => a.id === ui.animationId))) {
         const mx = timeToX(m.time, scroll, zoom);
         if (mx < -4 || mx > w + 200) continue;
+        rctx.globalAlpha = m.resolved ? 0.35 : 1;
         rctx.fillStyle = token(MARKER_TOKENS[m.color]);
         rctx.fillRect(Math.round(mx) - 0.5, 0, 1.5, 28);
         rctx.beginPath();
@@ -183,6 +184,7 @@ export function Dopesheet({ rows, duration, fps, onMenu }: Props) {
           rctx.font = '10px ui-sans-serif, system-ui, sans-serif';
           rctx.fillText(m.name, mx + 10, 4);
         }
+        rctx.globalAlpha = 1;
       }
       const px = timeToX(ui.time, scroll, zoom);
       rctx.fillStyle = token('--animate');
@@ -214,7 +216,7 @@ export function Dopesheet({ rows, duration, fps, onMenu }: Props) {
         }
       }
       for (const m of markersOf(docStore.get().skeleton.animations.find((a) => a.id === ui.animationId))) {
-        ctx.fillStyle = alpha(MARKER_TOKENS[m.color], 0.3);
+        ctx.fillStyle = alpha(MARKER_TOKENS[m.color], m.resolved ? 0.1 : 0.3);
         ctx.fillRect(Math.round(timeToX(m.time, scroll, zoom)) - 0.5, 0, 1, ch);
       }
       // vertical grid (every second, and every frame when zoomed in)
