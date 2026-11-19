@@ -1,12 +1,13 @@
 import { useMemo, useState } from 'react';
-import { Copy, FolderInput, Layers, Lock, LockOpen, Palette, Pencil, Plus, Trash2, Link2, Bone as BoneIcon } from 'lucide-react';
+import { Copy, CopyPlus, FolderInput, Layers, Lock, LockOpen, Palette, Pencil, Pin, Plus, Trash2, Link2, Bone as BoneIcon } from 'lucide-react';
 import type { Bone, Constraint, Id, Project, SkeletonDoc, Skin } from '@/core/model';
 import { overrideCount, overrideState } from '@/core/skins';
+import type { DuplicateSkinOptions } from '@/core/skins';
 import { planSkinImages, suggestSkinPrefixes } from '@/core/skinImages';
-import { createSkin, createSkinFromImages, deleteSkin, duplicateSkinAction, renameSkin, setActiveSkin, toggleSkinMix, setSkinRequiredAction, setSkinScopeAction, toggleSkinOverride } from '@/store/actions';
+import { createSkin, createSkinFromImages, deleteSkin, duplicateSkinAction, renameSkin, setActiveSkin, toggleSkinMix, toggleSkinPin, setSkinRequiredAction, setSkinScopeAction, toggleSkinOverride } from '@/store/actions';
 import { useProject } from '@/store/doc';
 import { useUi } from '@/store/ui';
-import { IconButton } from '../ui/controls';
+import { Button, IconButton, Toggle } from '../ui/controls';
 
 /** Bones in tree order with their depth (parents come first in the document, so one pass is enough). */
 function boneRows(doc: SkeletonDoc): { bone: Bone; depth: number }[] {
@@ -46,6 +47,42 @@ function ScopeRow(props: { kind: 'bone' | 'constraint'; id: Id; name: string; ic
 }
 
 /** Makes a skin from the pictures that carry a prefix: the prefixes the pictures suggest, or one typed. */
+/** Duplicate a skin with a say in what comes along: its name, the bones and constraints it brings, the animation keys, the links of linked meshes. */
+function DuplicateOptions({ skin, onDone }: { skin: Skin; onDone: () => void }) {
+  const [opts, setOpts] = useState<Required<DuplicateSkinOptions>>({ name: '', scope: true, animations: true, relink: true });
+  const row = (label: string, key: 'scope' | 'animations' | 'relink', tip: string) => (
+    <div className="hstack" title={tip}>
+      <span className="grow">{label}</span>
+      <Toggle on={opts[key]} onChange={(v) => setOpts({ ...opts, [key]: v })} title={label} />
+    </div>
+  );
+  const make = () => {
+    duplicateSkinAction(skin.id, { ...opts, name: opts.name.trim() || undefined });
+    onDone();
+  };
+  return (
+    <div className="skin-from">
+      <input
+        value={opts.name}
+        placeholder={`${skin.name} copy`}
+        aria-label="Name of the copy"
+        style={{ width: '100%' }}
+        onChange={(e) => setOpts({ ...opts, name: e.target.value })}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') make();
+          e.stopPropagation();
+        }}
+      />
+      {row('Bones and constraints', 'scope', 'The bones and constraints that exist only in this skin come along')}
+      {row('Animation keys', 'animations', 'The deform and sequence keys of every animation are copied for the new skin')}
+      {row('Linked meshes follow the copy', 'relink', 'A linked mesh that follows a mesh of this skin follows the one in the copy; off, it keeps following this skin')}
+      <Button small primary onClick={make}>
+        Duplicate
+      </Button>
+    </div>
+  );
+}
+
 function SkinFromImages({ doc, images, onDone }: { doc: SkeletonDoc; images: Project['images']; onDone: () => void }) {
   const [prefix, setPrefix] = useState('');
   const suggestions = useMemo(() => suggestSkinPrefixes(doc, images), [doc, images]);
@@ -92,6 +129,8 @@ export function SkinsPanel() {
   const skinMix = useUi((s) => s.skinMix);
   const [renaming, setRenaming] = useState<string | null>(null);
   const [fromImages, setFromImages] = useState(false);
+  const [dupOptions, setDupOptions] = useState(false);
+  const skinPins = useUi((s) => s.skinPins);
   const defaultSkin = doc.skins[0];
   const current = doc.skins.find((s) => s.id === skinId) ?? defaultSkin;
   const isDefault = current === defaultSkin;
@@ -112,10 +151,12 @@ export function SkinsPanel() {
       <div className="panel-head">
         <span className="title">Skins</span>
         <IconButton icon={Copy} title="Duplicate skin" small disabled={isDefault} onClick={() => duplicateSkinAction(current.id)} />
+        <IconButton icon={CopyPlus} title="Duplicate skin with options: a name, what comes along" small disabled={isDefault} active={dupOptions} onClick={() => setDupOptions(!dupOptions)} />
         <IconButton icon={FolderInput} title="Skin from pictures: the pictures that carry a prefix become the pictures of a new skin" small active={fromImages} onClick={() => setFromImages(!fromImages)} />
         <IconButton icon={Plus} title="New skin" small onClick={() => createSkin()} />
       </div>
       <div className="panel-body">
+        {dupOptions && !isDefault && <DuplicateOptions key={current.id} skin={current} onDone={() => setDupOptions(false)} />}
         {fromImages && <SkinFromImages doc={doc} images={project.images} onDone={() => setFromImages(false)} />}
         {doc.skins.map((s, i) => (
           <div key={s.id} className={`row${s === current ? ' selected' : ''}`} onClick={() => setActiveSkin(i === 0 ? null : s.id)} onDoubleClick={() => i > 0 && setRenaming(s.id)}>
@@ -144,6 +185,15 @@ export function SkinsPanel() {
               <span className="label">{s.name}</span>
             )}
             <span className="dim row-meta">{i === 0 ? 'default' : `${overrideCount(s)} own`}</span>
+            {i > 0 && (
+              <IconButton
+                icon={Pin}
+                title="Pin: keep this skin shown together with whichever skin is chosen next (a preview, the export does not change)"
+                small
+                active={skinPins.includes(s.id)}
+                onClick={(e) => (e.stopPropagation(), toggleSkinPin(s.id))}
+              />
+            )}
             {i > 0 && s !== current && (
               <IconButton
                 icon={Layers}

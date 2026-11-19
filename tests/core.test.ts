@@ -150,3 +150,13 @@ describe('model factories', () => {
     expect(new Set(slots.map((s) => s.id)).size).toBe(50);
   });
 });
+
+describe('numeric fields take the signs of a calculator', () => {
+  it('reads × ÷ and the true minus as * / -', () => {
+    expect(parseNumberExpr('6 × 7', 0)).toBe(42);
+    expect(parseNumberExpr('84 ÷ 2', 0)).toBe(42);
+    expect(parseNumberExpr('50 − 8', 0)).toBe(42);
+    expect(parseNumberExpr('×= 2', 21)).toBe(42);
+    expect(parseNumberExpr('−5', 0)).toBe(-5);
+  });
+});

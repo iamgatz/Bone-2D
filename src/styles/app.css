@@ -930,6 +930,17 @@ textarea {
   background: var(--viewport);
   overflow: hidden;
 }
+.outline-map {
+  position: absolute;
+  right: 10px;
+  bottom: 10px;
+  z-index: 3;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--panel);
+  opacity: 0.92;
+  cursor: crosshair;
+}
 .viewport {
   position: absolute;
   inset: 0;
@@ -1626,6 +1637,13 @@ a.btn {
 .export-anim {
   margin-top: 12px;
 }
+.preview-layers {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 6px;
+}
+
 .export-preview {
   display: flex;
   flex-direction: column;

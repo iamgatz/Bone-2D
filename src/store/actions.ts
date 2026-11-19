@@ -17,6 +17,7 @@ import { KEY_EPS, findAnimation, freshName, sameKeyValue, makeCurve, normalizeBo
 import type { BoneMats } from '@/core/mesh';
 import { moveKeys, removeKeys, resolveKeys, retargetClip } from '@/core/keyrefs';
 import { duplicateSkin, setSkinRequired, setSkinScope, toggleOverride } from '@/core/skins';
+import type { DuplicateSkinOptions } from '@/core/skins';
 import type { ScopeKind } from '@/core/skins';
 import type { KeyRef } from '@/core/keyrefs';
 import { RAD2DEG, atan2Deg, matInvert, matMul } from '@/core/math';
@@ -1245,8 +1246,27 @@ export function keyEvent(eventId: Id) {
 // ------------------------------------------------------------------ skins
 
 export function setActiveSkin(id: Id | null) {
-  const mix = uiStore.get().skinMix;
-  uiStore.patch({ skinId: id, skinMix: id && mix.includes(id) ? mix.filter((m) => m !== id) : mix });
+  const ui = uiStore.get();
+  let mix = id && ui.skinMix.includes(id) ? ui.skinMix.filter((m) => m !== id) : ui.skinMix;
+  // a pinned skin stays shown when another one is chosen
+  const old = ui.skinId;
+  if (old && old !== id && ui.skinPins.includes(old) && !mix.includes(old) && skeletonDoc().skins.some((s) => s.id === old)) mix = [...mix, old];
+  uiStore.patch({ skinId: id, skinMix: mix });
+}
+
+/**
+ * Pins a skin (or lets it go): a pinned skin stays shown together with whichever skin is chosen, instead of being replaced by it.
+ * Pinning a skin that is not the active one shows it at once. Editor only: the export does not change.
+ */
+export function toggleSkinPin(id: Id) {
+  const ui = uiStore.get();
+  const doc = skeletonDoc();
+  if (doc.skins[0]?.id === id || !doc.skins.some((s) => s.id === id)) return;
+  const pinned = ui.skinPins.includes(id);
+  uiStore.patch({
+    skinPins: pinned ? ui.skinPins.filter((p) => p !== id) : [...ui.skinPins, id],
+    skinMix: !pinned && ui.skinId !== id && !ui.skinMix.includes(id) ? [...ui.skinMix, id] : ui.skinMix,
+  });
 }
 
 /** Shows a skin together with the active one (and the others in the mix), or takes it out again. Editor only: the export does not change. */
@@ -1293,6 +1313,7 @@ export function deleteSkin(id: Id) {
   });
   if (uiStore.get().skinId === id) setActiveSkin(null);
   if (uiStore.get().skinMix.includes(id)) uiStore.patch({ skinMix: uiStore.get().skinMix.filter((m) => m !== id) });
+  if (uiStore.get().skinPins.includes(id)) uiStore.patch({ skinPins: uiStore.get().skinPins.filter((m) => m !== id) });
 }
 
 /** In a non-default skin: shows `imageName` instead of the default attachment `placeholder` of a slot. */
@@ -1443,10 +1464,10 @@ export function removeUnusedImages(): number {
   return names.length;
 }
 
-export function duplicateSkinAction(id: Id) {
+export function duplicateSkinAction(id: Id, opts?: DuplicateSkinOptions) {
   let made: Id | null = null;
   docStore.update('Duplicate skin', (d) => {
-    made = duplicateSkin(d.skeleton, id)?.id ?? null;
+    made = duplicateSkin(d.skeleton, id, opts)?.id ?? null;
   });
   if (made) setActiveSkin(made);
   else toast('The default skin cannot be duplicated');

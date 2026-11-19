@@ -17,17 +17,39 @@ export const isDefaultSkin = (doc: SkeletonDoc, skinId: Id): boolean => doc.skin
  * Copies a skin: every attachment, the scope and the deform timelines of every animation. The copy goes right after the original
  * (never in front of the default skin). Returns the new skin, or null when there is no such skin or it is the default one.
  */
-export function duplicateSkin(doc: SkeletonDoc, skinId: Id): Skin | null {
+export interface DuplicateSkinOptions {
+  /** The name of the copy (made unique); default "<name> copy". */
+  name?: string;
+  /** Copy the bones and constraints the skin brings (default true). */
+  scope?: boolean;
+  /** Copy the deform and sequence keys of every animation (default true). */
+  animations?: boolean;
+  /** A linked mesh that follows a mesh of the skin follows the one of the copy (default true); off, it keeps following the original skin. */
+  relink?: boolean;
+}
+
+export function duplicateSkin(doc: SkeletonDoc, skinId: Id, opts: DuplicateSkinOptions = {}): Skin | null {
   const index = doc.skins.findIndex((s) => s.id === skinId);
   if (index <= 0) return null;
   const src = doc.skins[index];
-  const copy: Skin = { id: uid(), name: freshName(`${src.name} copy`, doc.skins), attachments: clone(src.attachments), bones: [...src.bones], constraints: [...src.constraints] };
+  const wanted = opts.name?.trim();
+  const keepScope = opts.scope ?? true;
+  const copy: Skin = {
+    id: uid(),
+    name: freshName(wanted || `${src.name} copy`, doc.skins),
+    attachments: clone(src.attachments),
+    bones: keepScope ? [...src.bones] : [],
+    constraints: keepScope ? [...src.constraints] : [],
+  };
   doc.skins.splice(index + 1, 0, copy);
   // a linked mesh that follows a mesh of the skin that is copied follows the one of the copy
-  for (const slotId in copy.attachments) for (const name in copy.attachments[slotId]) {
-    const att = copy.attachments[slotId][name];
-    if (att.type === 'mesh' && att.link?.skin === src.id) att.link.skin = copy.id;
+  if (opts.relink ?? true) {
+    for (const slotId in copy.attachments) for (const name in copy.attachments[slotId]) {
+      const att = copy.attachments[slotId][name];
+      if (att.type === 'mesh' && att.link?.skin === src.id) att.link.skin = copy.id;
+    }
   }
+  if (!(opts.animations ?? true)) return copy;
   for (const anim of doc.animations) {
     const deform = anim.deform[src.id];
     if (deform) anim.deform[copy.id] = clone(deform);

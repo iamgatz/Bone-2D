@@ -4,7 +4,7 @@ import { favorKeys, neutralOf, scaledTimes } from '../src/core/keytools';
 import { newAnimation } from '../src/core/model';
 import type { Project } from '../src/core/model';
 import { encodeKey } from '../src/core/keyrefs';
-import { favorSelectedKeys, scaleSelectedKeyTimes } from '../src/store/keyToolActions';
+import { favorSelectedKeys, keyStash, scaleSelectedKeyTimes, storeSelectedKeys, swapStoredKeys } from '../src/store/keyToolActions';
 import { docStore } from '../src/store/doc';
 import { uiStore } from '../src/store/ui';
 import { buildFixture } from './fixture';
@@ -57,6 +57,25 @@ describe('favorKeys', () => {
     expect(neutralOf('bone', 'translatex', 1)).toEqual([0]);
     expect(neutralOf('bone', 'scaley', 1)).toEqual([1]);
     expect(neutralOf('slot', 'rgba', 4)).toBeUndefined();
+  });
+});
+
+describe('favorKeys as a block', () => {
+  it('moves the selected keys together until the first meets the key before it, the differences kept', () => {
+    const k = keys([0, 0], [1, 10], [2, 14], [3, 30]);
+    expect(favorKeys(k, [1, 2], 'shiftPrevious', 1)).toBe(2);
+    expect(k.map((x) => x.value![0])).toEqual([0, 0, 4, 30]);
+  });
+  it('or until the last meets the key after it, by an amount', () => {
+    const k = keys([0, 0], [1, 10], [2, 14], [3, 30]);
+    favorKeys(k, [1, 2], 'shiftNext', 0.5);
+    expect(k.map((x) => x.value![0])).toEqual([0, 18, 22, 30]);
+  });
+  it('does nothing without a neighbour on that side', () => {
+    const k = keys([0, 5], [1, 10]);
+    expect(favorKeys(k, [0], 'shiftPrevious', 1)).toBe(0);
+    expect(favorKeys(k, [1], 'shiftNext', 1)).toBe(0);
+    expect(k.map((x) => x.value![0])).toEqual([5, 10]);
   });
 });
 
@@ -115,5 +134,55 @@ describe('the actions', () => {
     expect(docStore.get()).toBe(before);
     uiStore.patch({ selectedKeys: [] });
     expect(scaleSelectedKeyTimes(2)).toBe(0);
+  });
+  it('Store and Swap: set the values aside, trade them with the keys, trade back', () => {
+    const { bone, anim } = open();
+    const rot = () => docStore.get().skeleton.animations.find((a) => a.id === anim.id)!.bones[bone.id].rotate!.map((k) => k.value![0]);
+    uiStore.patch({ selectedKeys: sel(bone.id, 'rotate', 0.5, 1) });
+    expect(storeSelectedKeys()).toBe(2);
+    expect(keyStash.get().items.map((i) => i.value)).toEqual([[10], [20]]);
+    // change the keys, then swap
+    expect(favorSelectedKeys('neutral', 1)).toBe(2);
+    expect(rot()).toEqual([0, 0, 0, 30]);
+    expect(swapStoredKeys()).toBe(2);
+    expect(docStore.undoLabel).toBe('Swap with stored keys');
+    expect(rot()).toEqual([0, 10, 20, 30]);
+    // the stash now holds the zeros: swapping again goes back
+    expect(swapStoredKeys()).toBe(2);
+    expect(rot()).toEqual([0, 0, 0, 30]);
+    docStore.undo();
+    expect(rot()).toEqual([0, 10, 20, 30]);
+  });
+
+  it('Swap needs stored keys of this animation, and skips keys that are gone', () => {
+    const { bone, anim } = open();
+    keyStash.set({ animId: null, items: [] });
+    expect(swapStoredKeys()).toBe(0);
+    uiStore.patch({ selectedKeys: sel(bone.id, 'rotate', 1.5) });
+    expect(storeSelectedKeys()).toBe(1);
+    // the key is deleted before the swap
+    docStore.update('x', (d) => {
+      const a = d.skeleton.animations.find((x) => x.id === anim.id)!;
+      a.bones[bone.id].rotate = a.bones[bone.id].rotate!.filter((k) => k.time !== 1.5);
+    });
+    const before = docStore.get();
+    expect(swapStoredKeys()).toBe(0);
+    expect(docStore.get().skeleton.animations).toEqual(before.skeleton.animations);
+    uiStore.patch({ selectedKeys: [] });
+    expect(storeSelectedKeys()).toBe(0);
+  });
+  it('moving a block works on bone keys only: a colour or a mix would leave its range', () => {
+    const { bone, anim } = open();
+    const slot = docStore.get().skeleton.slots[0];
+    docStore.update('x', (d) => {
+      const a = d.skeleton.animations.find((x) => x.id === anim.id)!;
+      a.slots[slot.id] = { rgba: [{ time: 0, value: [0, 0, 0, 1] }, { time: 1, value: [0.9, 0.9, 0.9, 1] }, { time: 1.5, value: [0.2, 0.2, 0.2, 1] }] };
+    });
+    uiStore.patch({ selectedKeys: [encodeKey({ kind: 'slot', target: slot.id, prop: 'rgba', time: 1 })] });
+    const before = docStore.get();
+    expect(favorSelectedKeys('shiftNext', 1)).toBe(0);
+    expect(docStore.get().skeleton.animations).toEqual(before.skeleton.animations);
+    uiStore.patch({ selectedKeys: sel(bone.id, 'rotate', 0.5) });
+    expect(favorSelectedKeys('shiftNext', 1)).toBe(1);
   });
 });

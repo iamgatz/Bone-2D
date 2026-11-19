@@ -168,9 +168,11 @@ export const hotkeyGroups = (): HotkeyGroup[] => [
       row('paste'),
       { label: 'Shift keys: this and every later key', keys: ['Alt+drag a key'] },
       { label: 'Offset keys: round the loop', keys: ['Ctrl+Alt+drag a key'] },
+      { label: 'Scale the time of the selected keys', keys: ['Ctrl+Shift+drag a selected key'] },
       row('delete', 'Backspace'),
       { label: 'Finish a polygon or path', keys: ['Enter'] },
       { label: 'Cancel / clear the selection', keys: ['Esc'] },
+      { label: 'Previous / next selection', keys: ['PgUp', 'PgDn'] },
     ],
   },
   {

@@ -84,16 +84,16 @@ export class ViewportController {
   /** A point snapped to the guides and the grid when Snap is on (View menu), else as it is. */
   private snapped(wx: number, wy: number): [number, number] {
     const ui = uiStore.get();
-    if (!ui.view.snap) return [wx, wy];
-    const s = snapPoint(wx, wy, { zoom: ui.camera.zoom, grid: true, guides: docStore.get().guides });
+    if (!ui.view.snap && !ui.view.pixel) return [wx, wy];
+    const s = snapPoint(wx, wy, { zoom: ui.camera.zoom, grid: ui.view.snap, pixel: ui.view.pixel, guides: ui.view.snap ? docStore.get().guides : undefined });
     return [s.x, s.y];
   }
 
   /** A guide being placed: on the grid when Snap is on. */
   private snappedLine(v: number, axis: 'x' | 'y'): number {
     const ui = uiStore.get();
-    if (!ui.view.snap) return v;
-    const s = snapPoint(axis === 'x' ? v : 0, axis === 'y' ? v : 0, { zoom: ui.camera.zoom, grid: true });
+    if (!ui.view.snap && !ui.view.pixel) return v;
+    const s = snapPoint(axis === 'x' ? v : 0, axis === 'y' ? v : 0, { zoom: ui.camera.zoom, grid: ui.view.snap, pixel: ui.view.pixel });
     return axis === 'x' ? s.x : s.y;
   }
 
@@ -490,7 +490,7 @@ export class ViewportController {
         let dy = wy - d.p0[1];
         if (d.axis === 'x') dy = 0;
         if (d.axis === 'y') dx = 0;
-        if (uiStore.get().view.snap) {
+        if (uiStore.get().view.snap || uiStore.get().view.pixel) {
           // the first bone lands on the grid or a guide; the others move by the same step
           const [tx, ty] = this.snapped(d.w0[0] + dx, d.w0[1] + dy);
           if (d.axis !== 'y') dx = tx - d.w0[0];

@@ -153,6 +153,9 @@ function BoneInspector({ id }: { id: Id }) {
             <span className="hint-text">editor only</span>
           </div>
         </Field>
+        <Field label="Name on screen" title="Draw the name of this bone in the viewport even when Bone names is off (editor only)">
+          <Toggle on={!!bone.showName} onChange={(v) => setBoneProps(id, { showName: v || undefined }, 'Bone name on screen')} title="Name on screen" />
+        </Field>
       </Section>
       <LimitSection id={id} animate={animate} />
       <PivotSection id={id} />

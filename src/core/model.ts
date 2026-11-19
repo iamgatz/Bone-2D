@@ -32,6 +32,8 @@ export interface Bone {
   /** Editor-only flags. */
   hidden: boolean;
   locked: boolean;
+  /** Editor-only: the name of this bone is drawn in the viewport even when Bone names is off. */
+  showName?: boolean;
 }
 
 export interface Slot {

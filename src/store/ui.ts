@@ -56,6 +56,10 @@ export interface ViewOptions {
   rulers: boolean;
   /** New bones and moved bones snap to the grid and to the guides. */
   snap: boolean;
+  /** Snap moved and new bones to whole pixels (finer than the grid; the grid wins while Snap is on). */
+  pixel: boolean;
+  /** The outline map: the whole skeleton in a corner, with the part the viewport shows. */
+  outline: boolean;
 }
 
 export interface Camera {
@@ -128,6 +132,8 @@ export interface UiState {
   skinId: Id | null;
   /** Skins shown together with the active one (editor only, never exported). */
   skinMix: Id[];
+  /** Skins kept shown when another skin is chosen (see toggleSkinPin). */
+  skinPins: Id[];
   view: ViewOptions;
   overrides: Record<Id, PoseOverride>;
   timelineView: 'dopesheet' | 'graph';
@@ -188,7 +194,8 @@ export const uiStore = createStore<UiState>({
   camera: { x: 0, y: 120, zoom: 1.2 },
   skinId: null,
   skinMix: [],
-  view: { grid: true, images: true, bones: true, meshes: true, names: false, constraints: true, constraintInfo: false, outlines: true, bonesOnTop: true, onion: false, trails: false, rulers: false, snap: false },
+  skinPins: [],
+  view: { grid: true, images: true, bones: true, meshes: true, names: false, constraints: true, constraintInfo: false, outlines: true, bonesOnTop: true, onion: false, trails: false, rulers: false, snap: false, pixel: false, outline: false },
   overrides: {},
   timelineView: 'dopesheet',
   tlZoom: 220,

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
-import { ArrowLeftRight, Bone, BoxSelect, Download, Eye, EyeOff, FilePlus2, FolderOpen, Grid3x3, Bell, Search, Home, Layers, ClipboardCopy, ClipboardPaste, Copy, FlipHorizontal2, GitBranch, RotateCcw, SlidersHorizontal, Image as ImageIcon, CircleHelp, MessageSquareText, Link2, Maximize, Play, Redo2, Route, Ruler, Magnet, Trash2, Save, Sparkles, Type, Undo2 } from 'lucide-react';
+import { ArrowLeftRight, Bone, BoxSelect, Download, Eye, EyeOff, FilePlus2, FolderOpen, Grid3x3, Bell, Search, Home, Layers, ClipboardCopy, ClipboardPaste, Copy, FlipHorizontal2, GitBranch, RotateCcw, SlidersHorizontal, Image as ImageIcon, CircleHelp, MessageSquareText, Link2, Map as MapIcon, Maximize, Play, Redo2, Route, Ruler, Magnet, Trash2, Save, Sparkles, Type, Undo2 } from 'lucide-react';
 import { decodeKey } from '@/core/keyrefs';
+import { selectionBack, selectionForward, startSelectionHistory } from '@/store/selHistory';
 import { clearSelection, copyKeys, deleteBones, deleteKeys, keySelectedBones, pasteKeys, sanitizeSelection, setMode, setSelection, setTime, setTool, togglePlay } from '@/store/actions';
 import { docStore, useProject } from '@/store/doc';
 import { newProject, openProjectFile, restoreAutosave, saveProjectFile, startAutosave } from '@/store/project';
@@ -199,6 +200,8 @@ function TopBar() {
             <MenuItem close={close} icon={Layers} checked={view.onion} onClick={() => uiStore.patch({ view: { ...view, onion: !view.onion } })}>Onion skin</MenuItem>
             <MenuItem close={close} icon={Ruler} checked={view.rulers} onClick={() => uiStore.patch({ view: { ...view, rulers: !view.rulers } })}>Rulers and guides</MenuItem>
             <MenuItem close={close} icon={Magnet} checked={view.snap} onClick={() => uiStore.patch({ view: { ...view, snap: !view.snap } })}>Snap to grid and guides</MenuItem>
+            <MenuItem close={close} icon={Magnet} checked={view.pixel} onClick={() => uiStore.patch({ view: { ...view, pixel: !view.pixel } })}>Snap to whole pixels</MenuItem>
+            <MenuItem close={close} icon={MapIcon} checked={view.outline} onClick={() => uiStore.patch({ view: { ...view, outline: !view.outline } })}>Outline map</MenuItem>
             <MenuItem close={close} icon={Trash2} onClick={() => void clearGuides()}>Clear guides</MenuItem>
             <MenuItem close={close} icon={Route} checked={view.trails} onClick={() => uiStore.patch({ view: { ...view, trails: !view.trails } })}>Motion trails</MenuItem>
             <div className="menu-sep" />
@@ -358,6 +361,7 @@ export function App() {
     const stopAutosave = startAutosave();
     const stopLayout = startLayoutPersist();
     const stopSanitize = docStore.subscribe(sanitizeSelection); // undo / redo can remove what is selected
+    const stopSelHistory = startSelectionHistory();
     restoreAutosave().then((ok) => {
       if (!ok) {
         setTimeout(() => viewportApi.frame(), 60);
@@ -424,6 +428,14 @@ export function App() {
           }
           break;
         case 'home': if (ui.mode === 'animate') setTime(0); break;
+        case 'pageup':
+          e.preventDefault();
+          selectionBack();
+          break;
+        case 'pagedown':
+          e.preventDefault();
+          selectionForward();
+          break;
         case 'delete':
         case 'backspace':
           if (focusArea() === 'timeline' && ui.selectedKeys.length) {
@@ -454,6 +466,7 @@ export function App() {
       stopAutosave();
       stopLayout();
       void stopSanitize();
+      stopSelHistory();
       window.removeEventListener('keydown', onKey);
       window.removeEventListener('beforeunload', warn);
     };

@@ -11,7 +11,10 @@ import { checkpointStore } from '@/store/checkpoints';
 import { checkpointGhost, ghostsFor, referenceGhost } from '../ghosts';
 import { ViewportController } from './controller';
 import { drawOverlay } from './overlay';
+import { fpsMeter } from './fps';
+import { OutlineMap } from './OutlineMap';
 import { ReferenceVideo } from './ReferenceVideo';
+import { useUi } from '@/store/ui';
 
 export const viewportApi: { controller: ViewportController | null; frame: () => void; frameSelection: () => void; zoom100: () => void; size: () => [number, number] } = {
   controller: null,
@@ -25,6 +28,7 @@ export function Viewport() {
   const hostRef = useRef<HTMLDivElement>(null);
   const glRef = useRef<HTMLCanvasElement>(null);
   const overlayRef = useRef<HTMLCanvasElement>(null);
+  const outline = useUi((s) => s.view.outline);
 
   useEffect(() => {
     const host = hostRef.current!;
@@ -131,6 +135,7 @@ export function Viewport() {
     viewportApi.zoom100 = () => uiStore.patch({ camera: { ...uiStore.get().camera, zoom: 1 } });
 
     const draw = () => {
+      const t0 = performance.now();
       const ui = uiStore.get();
       const dpr = window.devicePixelRatio || 1;
       const w = host.clientWidth;
@@ -142,9 +147,21 @@ export function Viewport() {
       const prefs = settingsStore.get();
       renderer!.setSmoothing(prefs.smoothing);
       renderer!.begin({ x: ui.camera.x, y: ui.camera.y, scale: ui.camera.zoom * dpr, width: glCanvas.width, height: glCanvas.height }, [...prefs.viewportBg, 1]);
-      if (ui.view.onion && ui.mode === 'animate' && scene.animation) {
-        for (const g of ghostsFor(scene, scene.animation, ui.time, doc.fps, { before: prefs.onionBefore, after: prefs.onionAfter, gap: prefs.onionGap }, ui.loop, ui.skinId)) renderer!.drawSkeleton(g.skeleton, { skip: (s) => hiddenSlots.has(s.data.id), alpha: g.alpha, tint: g.tint });
-      }
+      const onionOn = ui.view.onion && ui.mode === 'animate' && scene.animation;
+      const onion = onionOn
+        ? ghostsFor(
+            scene,
+            scene.animation!,
+            ui.time,
+            doc.fps,
+            { before: prefs.onionBefore, after: prefs.onionAfter, gap: prefs.onionGap, mode: prefs.onionMode, offsetX: prefs.onionOffsetX, offsetY: prefs.onionOffsetY, style: prefs.onionStyle, top: prefs.onionTop, colorBefore: prefs.onionColorBefore, colorAfter: prefs.onionColorAfter },
+            ui.loop,
+            ui.skinId,
+            ui.selection.bones.length ? { bones: ui.selection.bones, slots: ui.selection.slot ? [ui.selection.slot] : [] } : null,
+          )
+        : [];
+      const drawGhost = (g: (typeof onion)[number]) => renderer!.drawSkeleton(g.skeleton, { skip: (s) => hiddenSlots.has(s.data.id), alpha: g.alpha, tint: g.tint, flat: g.flat, offset: g.offset });
+      for (const g of onion) if (!g.top) drawGhost(g);
       if (ui.reference) {
         // the reference (another animation or the setup pose) under the pose being edited
         const other = ui.reference === 'setup' ? null : doc.animations.find((a) => a.id === ui.reference);
@@ -166,6 +183,7 @@ export function Viewport() {
         }
       }
       if (ui.view.images) renderer!.drawSkeleton(scene.skeleton, { skip: (s) => hiddenSlots.has(s.data.id) });
+      for (const g of onion) if (g.top) drawGhost(g);
       controller.meshTool.drawHeat(renderer!, scene);
       renderer!.end();
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
@@ -173,6 +191,8 @@ export function Viewport() {
           controller.pathTool.drawUnder(o);
           controller.polygonTool.drawUnder(o);
         }, extra: controller.meshTool.drawOverlay });
+      const t1 = performance.now();
+      fpsMeter.tick(t1, t1 - t0);
     };
 
     const loop = () => {
@@ -240,6 +260,7 @@ export function Viewport() {
       <canvas ref={glRef} className="vp-canvas" />
       <ReferenceVideo />
       <canvas ref={overlayRef} className="vp-canvas vp-overlay" />
+      {outline && <OutlineMap host={hostRef} />}
     </div>
   );
 }
