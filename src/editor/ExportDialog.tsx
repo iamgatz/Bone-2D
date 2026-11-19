@@ -6,6 +6,7 @@ import { docStore, useProject } from '@/store/doc';
 import { downloadBlob } from '@/store/project';
 import { toast, uiStore } from '@/store/ui';
 import { skeletonCount, skeletonList } from '@/core/skeletons';
+import { engineNeeds } from '@/core/export/engineNeeds';
 import { buildAllSkeletonsExport, buildSpineExport } from './exportSpine';
 import type { ExportResult } from './exportSpine';
 import { Button, Dialog, SelectField, Toggle } from './ui/controls';
@@ -58,6 +59,7 @@ export function ExportDialog() {
     }
   };
 
+  const needs = engineNeeds(doc, { format, scale, pma, rotate, filter });
   const close = () => uiStore.patch({ exportOpen: false });
   const base = (all ? project.name || 'project' : doc.name || 'skeleton').replace(/[^\w-]+/g, '_');
 
@@ -192,6 +194,23 @@ export function ExportDialog() {
         </Button>
         <input ref={fileRef} type="file" accept="application/json,.json" hidden onChange={(e) => (void loadSettings(e.target.files?.[0]), (e.target.value = ''))} />
       </div>
+      <details className="engine-needs">
+        <summary title="What the game has to do for this export to look the same as in the editor">
+          <span className="section-label flush">What the engine needs</span> <span className="chip">{needs.filter((n) => n.level === 'needs').length}</span>
+        </summary>
+        {needs.some((n) => n.level === 'needs') && <p className="hint-text flush">Features the engine has to support</p>}
+        <ul>
+          {needs.filter((n) => n.level === 'needs').map((n) => (
+            <li key={n.id}>{n.text}</li>
+          ))}
+        </ul>
+        <p className="hint-text flush">To match on the engine side</p>
+        <ul>
+          {needs.filter((n) => n.level === 'note').map((n) => (
+            <li key={n.id}>{n.text}</li>
+          ))}
+        </ul>
+      </details>
       {doc.animations.length > 0 && (
         <div className="anim-pick">
           <span className="section-label flush">Animations to export</span>

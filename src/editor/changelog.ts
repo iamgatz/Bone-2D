@@ -12,6 +12,18 @@ export interface Release {
 
 export const CHANGELOG: Release[] = [
   {
+    version: '0.60',
+    date: '2026-11-19',
+    en: [
+      "Export → What the engine needs: before the file is sent off, the dialog lists what this skeleton and these settings ask of the game: the features the engine has to support (two colour tint, blend modes, clipping, physics, sliders, sequences, draw order folders, a linked mesh in another slot) and what to match on the engine side (the 4.3 runtime version, binary loader, premultiplied alpha, Nearest filter, rotated pictures, scale, event audio).",
+      "Why: the most common reason an animation looks different in the game than in the editor, in the Spine forum threads, is a mismatch of runtime version, alpha mode or an unsupported feature. The list is read from the data only (nothing guesses what a particular engine does).",
+    ],
+    ru: [
+      "Экспорт → «Что нужно движку»: перед отправкой файла окно перечисляет, чего этот скелет и эти настройки требуют от игры: возможности, которые движок обязан поддерживать (двухцветная заливка, режимы смешивания, clipping, физика, слайдеры, последовательности, папки порядка отрисовки, связанный меш в другом слоте), и что согласовать на стороне движка (версия рантайма 4.3, бинарный загрузчик, премультиплицированная альфа, фильтр Nearest, повёрнутые картинки, масштаб, звук событий).",
+      "Зачем: самая частая причина, почему анимация в игре выглядит иначе, чем в редакторе, в ветках форума Spine — несовпадение версии рантайма, режима альфы или неподдерживаемая возможность. Список читается только из данных (ничего не угадывается про конкретный движок).",
+    ],
+  },
+  {
     version: '0.59',
     date: '2026-11-19',
     en: [
