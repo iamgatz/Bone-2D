@@ -1,8 +1,11 @@
 import { useMemo } from 'react';
 import { AlertTriangle, CheckCircle2 } from 'lucide-react';
+import { estimatePages, poseMetrics } from '@/core/drawstats';
 import { MAX_INFLUENCES, projectStats, projectWarnings } from '@/core/stats';
 import type { Warning } from '@/core/stats';
 import { useProject } from '@/store/doc';
+import { useUi } from '@/store/ui';
+import { getScene } from '../scene';
 
 const WARNING_TEXT: Record<Warning['kind'], string> = {
   unusedImage: 'Image is not used by any attachment',
@@ -19,6 +22,16 @@ export function MetricsPanel() {
   const project = useProject();
   const stats = useMemo(() => projectStats(project), [project]);
   const warnings = useMemo(() => projectWarnings(project), [project]);
+  // the pose on screen: the numbers follow the playhead (the scene is the one the viewport draws)
+  const time = useUi((s) => s.time);
+  const mode = useUi((s) => s.mode);
+  const animationId = useUi((s) => s.animationId);
+  const pageOf = useMemo(() => estimatePages(project), [project.images, project.skeleton.skins]); // eslint-disable-line react-hooks/exhaustive-deps
+  const pose = useMemo(() => {
+    const scene = getScene();
+    const hidden = new Set(project.skeleton.slots.filter((s) => s.hidden).map((s) => s.id));
+    return poseMetrics(scene.skeleton, { pageOf, skip: (s) => hidden.has(s.data.id) });
+  }, [project, time, mode, animationId, pageOf]);
   const constraintTotal = Object.values(stats.constraints).reduce((a, b) => a + b, 0);
   const rows: [string, string | number][] = [
     ['Bones', stats.bones],
@@ -48,6 +61,22 @@ export function MetricsPanel() {
         <div className="metric-grid">
           {rows.map(([label, value]) => (
             <div key={label} className="metric">
+              <span className="metric-value">{value}</span>
+              <span className="metric-label">{label}</span>
+            </div>
+          ))}
+        </div>
+        <div className="section-label">This pose</div>
+        <div className="metric-grid">
+          {(
+            [
+              ['Draw calls', pose.drawCalls, 'Batches in the draw order: a new one starts when the texture page (of an export with the default atlas options), the blend mode or the clipping changes'],
+              ['Pictures drawn', pose.drawn, 'Slots that show a picture now'],
+              ['Triangles drawn', pose.triangles, 'Triangles of the pictures shown now'],
+              ['Clipped triangles', pose.clippedTriangles, 'Triangles that cross the outline of a clipping polygon: the ones a runtime has to cut'],
+            ] as const
+          ).map(([label, value, tip]) => (
+            <div key={label} className="metric" title={tip}>
               <span className="metric-value">{value}</span>
               <span className="metric-label">{label}</span>
             </div>

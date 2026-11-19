@@ -4,9 +4,9 @@ import { brushFalloff, strengthAmount } from '@/core/brush';
 import { RAD2DEG } from '@/core/math';
 import type { Mat } from '@/core/math';
 import { deformHome } from '@/core/links';
-import { adjacency, autoWeights, bindMesh, generateMeshFromImage, keepOutside, locateInMesh, meshFromRegion, meshWorldPositions, mirrorWeights, normalizeInfluences, pruneWeights, remapEdges, edgeProblem, removeBoneWeights, removeMeshVertices, setBoneWeight, smoothWeights, swapBoneWeights, triangulate, unbindMesh, updateBindings, weldWeights } from '@/core/mesh';
+import { adjacency, moveTriangle, autoWeights, bindMesh, generateMeshFromImage, keepOutside, locateInMesh, meshFromRegion, meshWorldPositions, mirrorWeights, normalizeInfluences, pruneWeights, remapEdges, edgeProblem, removeBoneWeights, removeMeshVertices, setBoneWeight, smoothWeights, swapBoneWeights, triangulate, unbindMesh, updateBindings, weldWeights } from '@/core/mesh';
 import { mirrorName } from '@/core/duplicate';
-import type { BoneMats, TraceOptions, VertexMap } from '@/core/mesh';
+import type { BoneMats, TraceOptions, TriangleMove, VertexMap } from '@/core/mesh';
 import { matInvert } from '@/core/math';
 import type { Id, Influence, MeshAttachment, RegionAttachment } from '@/core/model';
 import { setupPicture } from '@/core/sequence';
@@ -250,6 +250,19 @@ export function toggleMeshEdge(slotId: Id, name: string, a: number, b: number): 
   }
   writeMesh(slotId, name, { ...mesh, edges, triangles: triangulate(world, mesh.hull, edges) }, at >= 0 ? 'Delete edge' : 'Add edge');
   return at < 0;
+}
+
+/**
+ * Triangle order: moves one triangle in the drawing order (see `moveTriangle`). The order is the one of the exported `triangles`; it is
+ * lost when the mesh is triangulated again (Retriangulate, an edge, a vertex added or removed). Returns the new place of the triangle.
+ */
+export function moveMeshTriangle(slotId: Id, name: string, index: number, to: TriangleMove): number {
+  const mesh = getShapeMesh(slotId, name);
+  if (!mesh) return index;
+  const moved = moveTriangle(mesh.triangles, index, to);
+  if (moved.index === index) return index;
+  writeMesh(slotId, name, { ...mesh, triangles: moved.triangles }, 'Triangle order');
+  return moved.index;
 }
 
 /** Removes every manual edge and triangulates the mesh from scratch. */

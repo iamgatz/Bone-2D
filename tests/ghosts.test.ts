@@ -2,7 +2,7 @@
 import { describe, expect, it } from 'vitest';
 import { newAnimation } from '../src/core/model';
 import type { Project } from '../src/core/model';
-import { ghostsFor, keyGhostTimes, keyTimes } from '../src/editor/ghosts';
+import { ghostsFor, keyGhostTimes, keyTimes, motionArrows } from '../src/editor/ghosts';
 import { getScene } from '../src/editor/scene';
 import { docStore } from '../src/store/doc';
 import { DEFAULT_SETTINGS, readSettings } from '../src/store/settings';
@@ -89,5 +89,53 @@ describe('preferences for ghosting', () => {
     });
     const bad = readSettings(JSON.stringify({ onionMode: 'all', onionStyle: 'glow', onionOffsetX: 'a', onionOffsetY: 1e9, onionTop: 1, onionColorAfter: [2, 0, 0] }));
     expect(bad).toEqual(DEFAULT_SETTINGS);
+  });
+});
+
+describe('motion arrows', () => {
+  it('join the places of a bone tip through the before-ghosts, the pose and the after-ghosts, pointing the way time goes', () => {
+    const { anim, b1 } = rig();
+    const scene = getScene();
+    const g = ghostsFor(scene, anim, 0.6, 30, { before: 2, after: 2, gap: 3 }, true, null);
+    expect(g.map((x) => [x.side, x.index])).toEqual([['before', 1], ['before', 2], ['after', 1], ['after', 2]]);
+    const arrows = motionArrows(scene.skeleton, g, [b1.id], 0);
+    expect(arrows).toHaveLength(4);
+    // the chain runs from the farthest before-ghost to the pose and on to the farthest after-ghost
+    const bone = (s: typeof scene.skeleton) => s.boneById(b1.id)!;
+    expect(arrows[0].x0).toBeCloseTo(bone(g[1].skeleton).tipX, 6);
+    expect(arrows[0].x1).toBeCloseTo(bone(g[0].skeleton).tipX, 6);
+    expect(arrows[1].x1).toBeCloseTo(bone(scene.skeleton).tipX, 6);
+    expect(arrows[2].x1).toBeCloseTo(bone(g[2].skeleton).tipX, 6);
+    expect(arrows[3].x1).toBeCloseTo(bone(g[3].skeleton).tipX, 6);
+    expect(arrows.map((a) => a.side)).toEqual(['before', 'before', 'after', 'after']);
+    // each arrow starts where the one before ended
+    for (let i = 1; i < arrows.length; i++) expect([arrows[i].x0, arrows[i].y0]).toEqual([arrows[i - 1].x1, arrows[i - 1].y1]);
+  });
+
+  it('leave out the steps where the bone does not move, and bones that are not asked for', () => {
+    const { anim, b1 } = rig();
+    const scene = getScene();
+    const g = ghostsFor(scene, anim, 0.6, 30, { before: 1, after: 1, gap: 3 }, true, null);
+    expect(motionArrows(scene.skeleton, g, [b1.id], 1e9)).toEqual([]);
+    expect(motionArrows(scene.skeleton, g, [], 0)).toEqual([]);
+    expect(motionArrows(scene.skeleton, g, ['no-such-bone'], 0)).toEqual([]);
+  });
+
+  it('follow the shift of the ghosts', () => {
+    const { anim, b1 } = rig();
+    const scene = getScene();
+    const plain = ghostsFor(scene, anim, 0.6, 30, { before: 1, after: 0, gap: 3 }, true, null);
+    const shifted = ghostsFor(scene, anim, 0.6, 30, { before: 1, after: 0, gap: 3, offsetX: 25, offsetY: 0 }, true, null);
+    const a = motionArrows(scene.skeleton, plain, [b1.id], 0)[0];
+    const b = motionArrows(scene.skeleton, shifted, [b1.id], 0)[0];
+    expect(b.x0 - a.x0).toBeCloseTo(-25, 6);
+  });
+});
+
+describe('the arrows and the key step are preferences too', () => {
+  it('are saved and checked', () => {
+    expect(DEFAULT_SETTINGS.onionArrows).toBe(false);
+    expect(readSettings(JSON.stringify({ onionArrows: true, keyGrid: 4 }))).toMatchObject({ onionArrows: true, keyGrid: 4 });
+    expect(readSettings(JSON.stringify({ onionArrows: 'yes', keyGrid: 3 }))).toEqual(DEFAULT_SETTINGS);
   });
 });

@@ -18,6 +18,11 @@ export interface SpineExportOptions {
   nonessential?: boolean;
   imagesPath?: string;
   version?: string;
+  /**
+   * Split colour keys: a slot whose colour keys only change the alpha (the colour stays the setup colour) gets an `alpha` timeline, and one that
+   * only changes the colour (the alpha stays the setup alpha) gets an `rgb` timeline, as Spine writes them. Off, every colour key is an `rgba` one.
+   */
+  splitColor?: boolean;
 }
 
 type Json = Record<string, unknown>;
@@ -60,15 +65,21 @@ function setIf(o: Json, key: string, v: unknown, def: unknown) {
   if (v !== def) o[key] = v;
 }
 
-function curveOf(k: Key, next: Key | undefined, channels: number): unknown {
+function curveOf(k: Key, next: Key | undefined, channels: number | readonly number[]): unknown {
   if (!next || k.curve === undefined) return undefined;
   if (k.curve === 'stepped') return 'stepped';
   const out: number[] = [];
-  for (let c = 0; c < channels; c++) {
+  for (const c of typeof channels === 'number' ? Array.from({ length: channels }, (_, i) => i) : channels) {
     const a = curveToAbsolute(k.curve, c, k.time, k.value[c], next.time, next.value[c]);
     out.push(r5(a[0]), r5(a[1]), r5(a[2]), r5(a[3]));
   }
   return out;
+}
+
+/** Do two colours (channels in 0..1) write the same bytes? */
+function sameBytes(a: ArrayLike<number>, b: ArrayLike<number>): boolean {
+  for (let i = 0; i < a.length; i++) if (hex2(a[i]) !== hex2(b[i])) return false;
+  return true;
 }
 
 function withTime(o: Json, time: number) {
@@ -139,6 +150,8 @@ export function exportSpineJson(doc: SkeletonDoc, options: SpineExportOptions = 
   const constraints: Json[] = [];
   /** Sliders that make it into the file (a slider without an animation does nothing and the official loader rejects it). */
   const exportedSliders = new Set<Id>();
+  const sliderAnimations = new Set<Id>();
+  for (const c of doc.constraints) if (c.type === 'slider' && c.animation) sliderAnimations.add(c.animation);
   for (const c of doc.constraints) {
     if (c.type === 'slider') {
       const animation = c.animation ? doc.animations.find((a) => a.id === c.animation) : undefined;
@@ -300,7 +313,7 @@ export function exportSpineJson(doc: SkeletonDoc, options: SpineExportOptions = 
   // ----------------------------------------------------------- animations
   const animations: Json = {};
   const rootBone = data.bones.length ? data.bones[0].name : 'root';
-  for (const a of doc.animations) animations[a.name] = exportAnimation(doc, a, { boneName, slotName, skinById, rootBone, exportedSliders });
+  for (const a of doc.animations) animations[a.name] = exportAnimation(doc, a, { boneName, slotName, skinById, rootBone, exportedSliders, splitColor: options.splitColor, sliderAnimations });
 
   const out: Json = { skeleton, bones };
   if (slots.length) out.slots = slots;
@@ -428,6 +441,10 @@ interface Names {
   skinById: Map<Id, SkeletonDoc['skins'][number]>;
   rootBone: string;
   exportedSliders: Set<Id>;
+  /** See `SpineExportOptions.splitColor`. */
+  splitColor?: boolean;
+  /** Animations a slider plays (ids): their colour keys stay rgba, because a slider applies them over a pose the same slot may already have, and an alpha or rgb timeline would leave the other part of that pose in place. */
+  sliderAnimations?: Set<Id>;
 }
 
 function exportAnimation(doc: SkeletonDoc, a: Animation, n: Names): Json {
@@ -482,7 +499,35 @@ function exportAnimation(doc: SkeletonDoc, a: Animation, n: Names): Json {
         return e;
       });
     }
-    if (tl.rgba && tl.rgba.length) {
+    const setup = doc.slots.find((s) => s.id === slotId)?.color;
+    const keep = (k: Timeline[number], from: number, to: number) => !!setup && sameBytes(k.value.slice(from, to), setup.slice(from, to));
+    const split = n.splitColor && !n.sliderAnimations?.has(a.id);
+    const alphaOnly = split && tl.rgba?.length && !tl.rgba2?.length && tl.rgba.every((k) => keep(k, 0, 3));
+    const colorOnly = split && !alphaOnly && tl.rgba?.length && !tl.rgba2?.length && tl.rgba.every((k) => keep(k, 3, 4));
+    if (alphaOnly && tl.rgba) {
+      // only the alpha changes: an `alpha` timeline (the curve is the one of the alpha channel)
+      const keys = tl.rgba;
+      o.alpha = keys.map((k, i) => {
+        const e: Json = {};
+        withTime(e, k.time);
+        // 8-bit, like every colour of the file (the binary format stores it as a byte, and the two must read the same)
+        const v = r5(Math.round(Math.max(0, Math.min(1, k.value[3])) * 255) / 255);
+        if (v !== 0) e.value = v;
+        const cv = curveOf(k, keys[i + 1], [3]);
+        if (cv !== undefined) e.curve = cv;
+        return e;
+      });
+    } else if (colorOnly && tl.rgba) {
+      const keys = tl.rgba;
+      o.rgb = keys.map((k, i) => {
+        const e: Json = {};
+        withTime(e, k.time);
+        e.color = hexColor(k.value, false);
+        const cv = curveOf(k, keys[i + 1], 3);
+        if (cv !== undefined) e.curve = cv;
+        return e;
+      });
+    } else if (tl.rgba && tl.rgba.length) {
       const keys = tl.rgba;
       o.rgba = keys.map((k, i) => {
         const e: Json = {};

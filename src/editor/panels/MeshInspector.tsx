@@ -3,7 +3,7 @@ import { ArrowLeftRight, Brush, ClipboardPaste, Copy, Crosshair, Eraser, Lock, U
 import type { Id, MeshAttachment, Project } from '@/core/model';
 import { linkSource } from '@/core/links';
 import { linkMeshTo, setAttachmentProps, setLinkDeform, setTool, unlinkMesh } from '@/store/actions';
-import { autoWeightMesh, bindMeshToBones, clearMeshEdges, toggleMeshEdge, convertToMesh, copyVertexWeights, pasteVertexWeights, mirrorMeshWeights, pruneMeshWeights, regenerateMesh, removeBoneFromMesh, retriangulateMesh, smoothMeshWeights, swapMeshWeights, unbindMeshFromBones, updateMeshBindings, weldMeshWeights, weldTargets } from '@/store/meshActions';
+import { autoWeightMesh, moveMeshTriangle, bindMeshToBones, clearMeshEdges, toggleMeshEdge, convertToMesh, copyVertexWeights, pasteVertexWeights, mirrorMeshWeights, pruneMeshWeights, regenerateMesh, removeBoneFromMesh, retriangulateMesh, smoothMeshWeights, swapMeshWeights, unbindMeshFromBones, updateMeshBindings, weldMeshWeights, weldTargets } from '@/store/meshActions';
 import { useProject } from '@/store/doc';
 import { useFloats } from '@/store/floats';
 import { uiStore, useUi } from '@/store/ui';
@@ -108,6 +108,8 @@ export function MeshGroup({ slotId, att, part }: { slotId: Id; att: MeshAttachme
   const [swapB, setSwapB] = useState<Id>('');
   const [weldPick, setWeldPick] = useState('');
   const [weldMode, setWeldMode] = useState<'all' | 'overlapping'>('overlapping');
+  const triangleCount = att.triangles.length / 3;
+  const pickedTriangle = meshView.triangle !== null && meshView.triangle < triangleCount ? meshView.triangle : null;
   const doc = project.skeleton;
   const slot = doc.slots.find((s) => s.id === slotId);
   const weighted = att.weights != null;
@@ -146,6 +148,7 @@ export function MeshGroup({ slotId, att, part }: { slotId: Id; att: MeshAttachme
                 ['dim', 'Dim', 'Dim everything outside this mesh'],
                 ['isolate', 'Isolate', 'Hide everything outside this mesh'],
                 ['freeze', 'Freeze', 'The vertices cannot be dragged, only selected'],
+                ['hullOnly', 'Outline only', 'Show and pick only the outline vertices (the hull); the inner vertices and edges are out of the way'],
               ] as const
             ).map(([key, label, title]) => (
               <Button key={key} primary={meshView[key]} title={title} onClick={() => uiStore.patch({ meshView: { ...meshView, [key]: !meshView[key] } })}>
@@ -155,6 +158,32 @@ export function MeshGroup({ slotId, att, part }: { slotId: Id; att: MeshAttachme
           </div>
         )}
         {tool === 'mesh' && <SoftControls />}
+        {tool === 'mesh' && setup && !linked && (
+          <>
+            <Field label="Triangle order">
+              <Toggle on={meshView.pickTriangle} onChange={(v) => uiStore.patch({ meshView: { ...meshView, pickTriangle: v, triangle: v ? meshView.triangle : null } })} title="A click in the viewport picks a triangle (click again to pick the one under it) instead of a vertex" />
+              <span className="chip" title="Triangles are drawn in this order: where they overlap, the later one is on top">
+                {pickedTriangle === null ? `${triangleCount} triangles` : `${pickedTriangle + 1} of ${triangleCount}`}
+              </span>
+            </Field>
+            {pickedTriangle !== null && (
+              <div className="hstack mb">
+                {(
+                  [
+                    ['first', 'First', 'Draw this triangle first, under all the others'],
+                    ['earlier', 'Earlier', 'One place earlier'],
+                    ['later', 'Later', 'One place later'],
+                    ['last', 'Last', 'Draw this triangle last, over all the others'],
+                  ] as const
+                ).map(([to, label, title]) => (
+                  <Button key={to} small title={title} onClick={() => uiStore.patch({ meshView: { ...uiStore.get().meshView, triangle: moveMeshTriangle(slotId, att.name, pickedTriangle, to) } })}>
+                    {label}
+                  </Button>
+                ))}
+              </div>
+            )}
+          </>
+        )}
         {linked && att.link && <LinkedMeshFields skinId={project.skeleton.skins[0].id} slotId={slotId} name={att.name} mesh={att} />}
         {setup && !linked && (
           <>

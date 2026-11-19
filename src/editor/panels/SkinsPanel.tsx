@@ -50,6 +50,8 @@ function ScopeRow(props: { kind: 'bone' | 'constraint'; id: Id; name: string; ic
 /** Duplicate a skin with a say in what comes along: its name, the bones and constraints it brings, the animation keys, the links of linked meshes. */
 function DuplicateOptions({ skin, onDone }: { skin: Skin; onDone: () => void }) {
   const [opts, setOpts] = useState<Required<DuplicateSkinOptions>>({ name: '', scope: true, animations: true, relink: true });
+  const [find, setFind] = useState('');
+  const [swap, setSwap] = useState('');
   const row = (label: string, key: 'scope' | 'animations' | 'relink', tip: string) => (
     <div className="hstack" title={tip}>
       <span className="grow">{label}</span>
@@ -57,7 +59,7 @@ function DuplicateOptions({ skin, onDone }: { skin: Skin; onDone: () => void }) 
     </div>
   );
   const make = () => {
-    duplicateSkinAction(skin.id, { ...opts, name: opts.name.trim() || undefined });
+    duplicateSkinAction(skin.id, { ...opts, name: opts.name.trim() || undefined }, find ? { find, replace: swap } : undefined);
     onDone();
   };
   return (
@@ -76,6 +78,10 @@ function DuplicateOptions({ skin, onDone }: { skin: Skin; onDone: () => void }) 
       {row('Bones and constraints', 'scope', 'The bones and constraints that exist only in this skin come along')}
       {row('Animation keys', 'animations', 'The deform and sequence keys of every animation are copied for the new skin')}
       {row('Linked meshes follow the copy', 'relink', 'A linked mesh that follows a mesh of this skin follows the one in the copy; off, it keeps following this skin')}
+      <div className="hstack" title="Point the copy at other pictures: this text in the picture names becomes the text on the right, where a picture with the new name exists">
+        <input value={find} placeholder="Picture name has" aria-label="Text to find in picture names" style={{ flex: 1, minWidth: 0 }} onChange={(e) => setFind(e.target.value)} onKeyDown={(e) => e.stopPropagation()} />
+        <input value={swap} placeholder="becomes" aria-label="Text that replaces it" style={{ flex: 1, minWidth: 0 }} onChange={(e) => setSwap(e.target.value)} onKeyDown={(e) => e.stopPropagation()} />
+      </div>
       <Button small primary onClick={make}>
         Duplicate
       </Button>

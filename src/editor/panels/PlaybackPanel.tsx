@@ -1,6 +1,7 @@
 import { ChevronLeft, ChevronRight, Pause, Play, Volume2 } from 'lucide-react';
 import { pickSounds } from '@/store/sounds';
 import { playSpan } from '@/core/playback';
+import { keyGrid } from '@/core/edit';
 import { currentAnimation, setPlay, setTime, togglePlay } from '@/store/actions';
 import { useProject } from '@/store/doc';
 import { uiStore, useUi } from '@/store/ui';
@@ -36,7 +37,7 @@ export function PlaybackPanel() {
           <IconButton icon={ChevronLeft} title="Previous frame" onClick={() => setTime(time - 1 / fps)} disabled={!anim} />
           <IconButton icon={playing ? Pause : Play} title={playing ? 'Pause' : 'Play'} hotkey={KEYS.play} active={playing} animate onClick={() => togglePlay()} disabled={!anim} />
           <IconButton icon={ChevronRight} title="Next frame" onClick={() => setTime(time + 1 / fps)} disabled={!anim} />
-          <span className="dim grow row-meta">{anim ? `${time.toFixed(2)} s · frame ${Math.round(time * fps)}` : 'no animation'}</span>
+          <span className="dim grow row-meta">{anim ? `${time.toFixed(2)} s · frame ${keyGrid.steps > 1 ? Math.round(time * fps * 100) / 100 : Math.round(time * fps)}` : 'no animation'}</span>
         </div>
 
         <Field label="Speed" title="Playback speed: 1 is real time">

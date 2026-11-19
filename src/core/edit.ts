@@ -261,8 +261,15 @@ export function sortKeys<K extends { time: number }>(keys: K[]) {
   keys.sort((a, b) => a.time - b.time);
 }
 
-export function snapTime(t: number, fps: number): number {
-  return Math.max(0, Math.round(t * fps) / fps);
+/** How many steps a frame is cut into when times snap: 1 whole frames, 2 / 4 / 10 let keys sit between frames. Follows the Settings. */
+export const keyGrid = { steps: 1 };
+
+/** The step times snap to, in seconds. */
+export const keyStep = (fps: number, steps: number = keyGrid.steps): number => 1 / (Math.max(1, fps) * Math.max(1, Math.round(steps)));
+
+export function snapTime(t: number, fps: number, steps: number = keyGrid.steps): number {
+  const f = Math.max(1, fps) * Math.max(1, Math.round(steps));
+  return Math.max(0, Math.round(t * f) / f);
 }
 
 /** Decomposes a 2x2 matrix into rotation / scale / shearY (shearX = 0), same convention as Spine's applied transform. */

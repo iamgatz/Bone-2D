@@ -2,7 +2,7 @@
  * Renders an animation to pictures: the frames of a GIF, a PNG sequence or a video. The skeleton is posed and drawn exactly as the viewport does it
  * (same solver, same physics stepping, same renderer), into a canvas of its own; the picture is cropped to the bounds of the whole animation.
  */
-import { applyAnimation, applyPhysicsResets } from '@/core/animate';
+import { makePoser } from '@/core/framepose';
 import type { Animation, Id, SkeletonDoc } from '@/core/model';
 import { compileSkeleton, createSkeleton } from '@/core/skeleton';
 import type { Skeleton } from '@/core/skeleton';
@@ -20,6 +20,11 @@ export interface RenderOptions {
   padding: number;
   /** Background color (r g b in 0..1); null keeps it transparent. */
   background: [number, number, number] | null;
+  /** The frames rendered: from the first (default 0) up to, not including, the last (default: all). */
+  from?: number;
+  to?: number;
+  /** Seconds the animation runs before the first frame, so the physics has settled (as if it had been looping). */
+  warmUp?: number;
 }
 
 export interface Prepared {
@@ -43,27 +48,14 @@ export function prepareRender(opts: RenderOptions): Prepared {
   const data = compileSkeleton(opts.doc);
   const skeleton: Skeleton = createSkeleton(data, opts.skinId ?? null);
   const hasPhysics = data.constraints.some((c) => c.kind === 'physics');
-  const count = frameCount(anim.duration, fps);
+  const total = frameCount(anim.duration, fps);
+  // the range of frames asked for (clamped, at least one frame)
+  const first = Math.max(0, Math.min(total - 1, Math.floor(opts.from ?? 0)));
+  const count = Math.max(1, Math.min(total, Math.floor(opts.to ?? total)) - first);
 
   // posing runs forward: physics keeps its state from the frame before
-  let at = -1;
-  const pose = (i: number) => {
-    if (i !== at + 1) {
-      // asked out of order: start again from the first frame (cheap, and the only way physics gives the same picture)
-      at = -1;
-      if (i > 0) for (let k = 0; k < i; k++) pose(k);
-    }
-    const t = i / fps;
-    applyAnimation(skeleton, anim, t);
-    if (!hasPhysics) skeleton.updateWorldTransform('none');
-    else if (i === 0) skeleton.updateWorldTransform('reset');
-    else {
-      applyPhysicsResets(skeleton, anim, (i - 1) / fps, t);
-      skeleton.update(1 / fps);
-      skeleton.updateWorldTransform('update');
-    }
-    at = i;
-  };
+  const { pose: poseFrame } = makePoser(skeleton, anim, fps, hasPhysics, opts.warmUp ?? 0);
+  const pose = (i: number) => poseFrame(first + i);
 
   // the bounds of the whole animation, so every frame has the same size and the character does not jump about
   let minX = Infinity;

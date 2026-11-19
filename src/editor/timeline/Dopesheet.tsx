@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react';
+import { keyGrid } from '@/core/edit';
 import { decodeKey, encodeKey } from '@/core/keyrefs';
 import type { KeyRef } from '@/core/keyrefs';
 import { moveKeysBy, setTime } from '@/store/actions';
@@ -472,7 +473,8 @@ export function Dopesheet({ rows, duration, fps, onMenu }: Props) {
         const ui = uiStore.get();
         uiStore.patch({ tlScroll: d.scroll - (e.clientX - d.x) / ui.tlZoom });
       } else if (d.kind === 'keys') {
-        const fps = propsRef.current.fps;
+        // keys snap to whole frames, or to the finer steps of Settings → Key time step (keys between frames)
+        const fps = propsRef.current.fps * keyGrid.steps;
         const target = d.loop ? Math.round((xToTime(x) - d.grab) * fps) / fps : Math.max(0, Math.round((xToTime(x) - d.grab) * fps) / fps);
         const delta = target - d.anchor.time;
         if (Math.abs(delta) > 1e-6) {
@@ -483,7 +485,7 @@ export function Dopesheet({ rows, duration, fps, onMenu }: Props) {
           uiStore.patch({ selectedKeys: moved.map(encodeKey) });
         }
       } else if (d.kind === 'scale') {
-        const fps = propsRef.current.fps;
+        const fps = propsRef.current.fps * keyGrid.steps;
         const target = Math.round(xToTime(x) * fps) / fps;
         const factor = (target - d.pivot) / (d.anchor - d.pivot);
         if (target > d.pivot + 1e-6 && Math.abs(factor - 1) > 1e-6 && scaleSelectedKeyTimes(factor) > 0) d.anchor = target;

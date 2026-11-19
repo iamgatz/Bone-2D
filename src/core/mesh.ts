@@ -820,6 +820,41 @@ export function locateInMesh(world: ArrayLike<number>, triangles: ArrayLike<numb
   return best ? { tri: best.tri, bary: best.bary } : null;
 }
 
+export type TriangleMove = 'first' | 'earlier' | 'later' | 'last';
+
+/** The triangles that contain the point, the one drawn last (on top) first. */
+export function trianglesAt(world: ArrayLike<number>, triangles: ArrayLike<number>, px: number, py: number): number[] {
+  const out: number[] = [];
+  for (let t = 0; t + 2 < triangles.length; t += 3) {
+    const a = triangles[t] * 2;
+    const b = triangles[t + 1] * 2;
+    const c = triangles[t + 2] * 2;
+    const d1 = (px - world[b]) * (world[a + 1] - world[b + 1]) - (world[a] - world[b]) * (py - world[b + 1]);
+    const d2 = (px - world[c]) * (world[b + 1] - world[c + 1]) - (world[b] - world[c]) * (py - world[c + 1]);
+    const d3 = (px - world[a]) * (world[c + 1] - world[a + 1]) - (world[c] - world[a]) * (py - world[a + 1]);
+    const neg = d1 < 0 || d2 < 0 || d3 < 0;
+    const pos = d1 > 0 || d2 > 0 || d3 > 0;
+    if (!(neg && pos)) out.push(t / 3);
+  }
+  return out.reverse();
+}
+
+/**
+ * Spine's Triangle order: the triangles are drawn in the order of the list, so where triangles overlap (a folded mesh) the later one is on top.
+ * Moves one triangle to the first or last place or one place earlier or later; returns the new list and where the triangle is now.
+ */
+export function moveTriangle(triangles: readonly number[], index: number, to: TriangleMove): { triangles: number[]; index: number } {
+  const count = Math.floor(triangles.length / 3);
+  if (index < 0 || index >= count) return { triangles: triangles.slice(), index };
+  const target = to === 'first' ? 0 : to === 'last' ? count - 1 : Math.max(0, Math.min(count - 1, index + (to === 'earlier' ? -1 : 1)));
+  if (target === index) return { triangles: triangles.slice(), index };
+  const list: number[][] = [];
+  for (let t = 0; t < count; t++) list.push([triangles[t * 3], triangles[t * 3 + 1], triangles[t * 3 + 2]]);
+  const [one] = list.splice(index, 1);
+  list.splice(target, 0, one);
+  return { triangles: list.flat(), index: target };
+}
+
 /** Removes the given vertices (never dropping below a 3 vertex hull) and retriangulates in `positions` space. */
 export function removeMeshVertices(mesh: MeshAttachment, remove: Set<number>, positions: ArrayLike<number>): MeshAttachment {
   const n = mesh.uvs.length / 2;

@@ -5,6 +5,7 @@
 import { freshName } from './edit';
 import { uid } from './ids';
 import type { Attachment, Id, SkeletonDoc, Skin } from './model';
+import { attachmentPictures } from './sequence';
 
 export type ScopeKind = 'bone' | 'constraint';
 
@@ -57,6 +58,29 @@ export function duplicateSkin(doc: SkeletonDoc, skinId: Id, opts: DuplicateSkinO
     if (sequence) (anim.sequence ??= {})[copy.id] = clone(sequence);
   }
   return copy;
+}
+
+/**
+ * Points the pictures of a skin at other pictures: `find` inside a picture name becomes `replace` (every attachment of the skin that shows a
+ * region or mesh). It happens only where the new name is a picture that exists (`have`) for every picture the attachment shows, so a
+ * copy of a skin never ends up with a missing picture. Returns how many attachments changed.
+ */
+export function repointSkinPictures(doc: SkeletonDoc, skinId: Id, find: string, replace: string, have: ReadonlySet<string>): number {
+  const skin = doc.skins.find((s) => s.id === skinId);
+  if (!skin || !find) return 0;
+  let n = 0;
+  for (const slotId in skin.attachments) {
+    for (const name in skin.attachments[slotId]) {
+      const att = skin.attachments[slotId][name];
+      if (att.type !== 'region' && att.type !== 'mesh') continue;
+      const path = att.path.split(find).join(replace);
+      if (path === att.path) continue;
+      if (!attachmentPictures({ ...att, path }).every((p) => have.has(p))) continue;
+      att.path = path;
+      n++;
+    }
+  }
+  return n;
 }
 
 /** True when the bone, or a bone above it, is "skin required": a bone below a required one is required too (the runtime has no matrix for it otherwise). */

@@ -21,7 +21,7 @@ export function ExportDialog() {
   const picked = many && /^\d+$/.test(which) ? Math.min(Number(which), skeletons.length - 1) : undefined;
   const doc = picked !== undefined ? skeletons[picked] : project.skeleton;
   const [settings, setSettings] = useState<ExportSettings>(loadExportSettings);
-  const { format, scale, maxSize, padding, pretty, nonessential, pot, includePreview, trim, rotate, filter, mixes, pma, square, alias, multipleOf4, cleanUp } = settings;
+  const { format, scale, maxSize, padding, pretty, nonessential, pot, includePreview, trim, rotate, filter, mixes, pma, square, alias, multipleOf4, cleanUp, splitColor } = settings;
   const change = (patch: Partial<ExportSettings>) => setSettings((s) => ({ ...s, ...patch }));
   const [excluded, setExcluded] = useState<string[]>([]);
   const [tab, setTab] = useState<'data' | 'animation'>('data');
@@ -37,14 +37,14 @@ export function ExportDialog() {
     if (tab !== 'data') return;
     setBusy(true);
     setError(null);
-    (all ? buildAllSkeletonsExport : buildSpineExport)({ format, scale, maxSize, padding, pretty, nonessential, pot, includePreview, trim, rotate, filter, pma, square, alias, multipleOf4, cleanUp, includeMixes: mixes, excludeAnimations: excluded, skeletonIndex: picked })
+    (all ? buildAllSkeletonsExport : buildSpineExport)({ format, scale, maxSize, padding, pretty, nonessential, pot, includePreview, trim, rotate, filter, pma, square, alias, multipleOf4, cleanUp, splitColor, includeMixes: mixes, excludeAnimations: excluded, skeletonIndex: picked })
       .then((r) => alive && setResult(r))
       .catch((e: Error) => alive && (setError(e.message), setResult(null)))
       .finally(() => alive && setBusy(false));
     return () => {
       alive = false;
     };
-  }, [format, scale, maxSize, padding, pretty, nonessential, pot, includePreview, trim, rotate, filter, pma, square, alias, multipleOf4, cleanUp, mixes, excluded, tab, all, picked]);
+  }, [format, scale, maxSize, padding, pretty, nonessential, pot, includePreview, trim, rotate, filter, pma, square, alias, multipleOf4, cleanUp, splitColor, mixes, excluded, tab, all, picked]);
 
   /** One HTML file with the skeleton, the pictures and a player in it: opens offline, for sending to a client. */
   const savePlayer = async () => {
@@ -173,6 +173,8 @@ export function ExportDialog() {
         <Toggle on={alias} onChange={(v) => change({ alias: v })} title="Pictures with exactly the same pixels take one place in the atlas" />
         <label>Clean up animations</label>
         <Toggle on={cleanUp} onChange={(v) => change({ cleanUp: v })} title="Leave out the keys that change nothing (a key in the middle of a run of equal values). The project keeps them" />
+        <label>Split colour keys</label>
+        <Toggle on={splitColor} onChange={(v) => change({ splitColor: v })} title="A slot whose colour keys only change the alpha gets an alpha timeline, one that only changes the colour gets an rgb timeline (as Spine writes them; an animation that a slider plays keeps rgba); off, every colour key is an rgba one" />
         <label>Mix table</label>
         <Toggle on={mixes} onChange={(v) => change({ mixes: v })} title="Write the crossfade times between animations as a JSON file for the game (only when the mix table has any)" />
         <label>Preview page</label>

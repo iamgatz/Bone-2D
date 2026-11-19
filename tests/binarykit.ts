@@ -87,7 +87,7 @@ function idleScaleMode(fromJson: any) {
   };
 }
 
-export function compare(project: Project, options: { nonessential?: boolean } = {}) {
+export function compare(project: Project, options: { nonessential?: boolean; splitColor?: boolean } = {}) {
   const json = exportSpineJson(project.skeleton, options);
   const bytes = exportSpineBinary(project.skeleton, options);
   const atlas = atlasFor(project);

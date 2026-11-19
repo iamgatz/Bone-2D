@@ -5,7 +5,7 @@
  * Images are not part of the JSON: attachments keep their region `path`; pixels come from an atlas (see atlas.ts).
  */
 import { animationEndTime } from '../animate';
-import { curveFromAbsolute } from '../curve';
+import { curveFromAbsolute, sampleKeys } from '../curve';
 import { uid, uniqueName } from '../ids';
 import { deformLength } from '../mesh';
 import { attachmentPictures, cleanSequence, cleanSequenceKey, sequenceFrameNames } from '../sequence';
@@ -107,6 +107,55 @@ function withAlphaChannel(k: Key, alpha: number): Key {
   if (Array.isArray(k.curve)) out.curve = [...k.curve.slice(0, 12), 1 / 3, 1 / 3, 2 / 3, 2 / 3, ...k.curve.slice(12)];
   else if (k.curve !== undefined) out.curve = k.curve;
   return out;
+}
+
+type CurveSpec = 'linear' | 'stepped' | number[];
+const LINEAR_CURVE = [1 / 3, 1 / 3, 2 / 3, 2 / 3];
+
+/** How a timeline runs from `time` on: the curve of its own key there, or the one of the segment `time` falls inside (`inside`). */
+function curveAt(keys: Timeline | null, time: number): { spec: CurveSpec; inside: boolean } {
+  if (!keys?.length) return { spec: 'linear', inside: false };
+  let i = -1;
+  keys.forEach((k, n) => {
+    if (k.time <= time + 1e-5) i = n;
+  });
+  if (i < 0 || i === keys.length - 1) return { spec: 'linear', inside: false };
+  const own = Math.abs(keys[i].time - time) < 1e-5;
+  const c = keys[i].curve;
+  const spec: CurveSpec = c === 'stepped' ? 'stepped' : Array.isArray(c) ? c : 'linear';
+  return { spec, inside: !own && spec !== 'linear' };
+}
+
+/**
+ * Merges a colour (rgb) timeline and an alpha timeline into rgba keys: one key at every time either has a key, the other channels sampled there
+ * (the setup colour for a timeline that is missing). A key that both have keeps both curves. `exact` is false when a key of one timeline falls
+ * inside a curved or stepped segment of the other, or when one is stepped and the other is not (a key has one kind of curve in the editor).
+ */
+export function mergeRgbAlpha(rgb: Timeline | null, alpha: Timeline | null, setup: ArrayLike<number>): { keys: Timeline; exact: boolean } {
+  const times: number[] = [];
+  for (const k of [...(rgb ?? []), ...(alpha ?? [])]) if (!times.some((t) => Math.abs(t - k.time) < 1e-5)) times.push(k.time);
+  times.sort((x, y) => x - y);
+  let exact = true;
+  const keys = times.map((time): Key => {
+    const color = [setup[0], setup[1], setup[2]];
+    const a = [setup[3]];
+    if (rgb?.length) sampleKeys(rgb, time, color);
+    if (alpha?.length) sampleKeys(alpha, time, a);
+    const key: Key = { time, value: [color[0], color[1], color[2], a[0]] };
+    const c = curveAt(rgb, time);
+    const d = curveAt(alpha, time);
+    if (c.inside || d.inside) exact = false;
+    if (c.spec === 'stepped' && d.spec === 'stepped') {
+      key.curve = 'stepped';
+      return key;
+    }
+    if (c.spec === 'stepped' || d.spec === 'stepped') exact = false;
+    const part = (s: { spec: CurveSpec; inside: boolean }, channels: number) => (Array.isArray(s.spec) && !s.inside ? s.spec.slice(0, channels * 4) : Array.from({ length: channels }, () => LINEAR_CURVE).flat());
+    const bezier = (s: { spec: CurveSpec; inside: boolean }) => Array.isArray(s.spec) && !s.inside;
+    if (bezier(c) || bezier(d)) key.curve = [...part(c, 3), ...part(d, 1)];
+    return key;
+  });
+  return { keys, exact };
 }
 
 const single = (name: string, def: number) => (k: J) => [num(k[name] ?? (name === 'value' ? k.angle : undefined), def)];
@@ -474,12 +523,11 @@ export function importSpineJson(input: unknown, name = 'imported'): SpineImportR
       if (t.attachment) tl.attachment = arr(t.attachment).map(obj).map((k) => ({ time: num(k.time, 0), name: typeof k.name === 'string' ? k.name : null }));
       if (t.rgba) tl.rgba = timeline(t.rgba, 4, (k) => [...rgba(k.color, [1, 1, 1, 1])]);
       else if (t.rgb || t.alpha) {
-        warn(`animation "${an}": separate rgb / alpha timelines are only approximated (the other channels stay at the setup value)`);
+        // separate colour and alpha timelines (Spine 4.x): our colour keys hold both, so the two are merged at the times of either
         const setup = slotByName.get(sn)!.color;
-        // curves are approximated as linear (stepped stays stepped)
-        const toRgba = (keys: Timeline, make: (v: number[]) => number[]): Timeline => keys.map((k) => ({ time: k.time, value: make(k.value), ...(k.curve === 'stepped' ? { curve: 'stepped' as const } : {}) }));
-        if (t.rgb) tl.rgba = toRgba(timeline(t.rgb, 3, (k) => rgba(k.color, [1, 1, 1, 1]).slice(0, 3)), (v) => [v[0], v[1], v[2], setup[3]]);
-        else tl.rgba = toRgba(timeline(t.alpha, 1, single('value', 1)), (v) => [setup[0], setup[1], setup[2], v[0]]);
+        const merged = mergeRgbAlpha(t.rgb ? timeline(t.rgb, 3, (k) => rgba(k.color, [1, 1, 1, 1]).slice(0, 3)) : null, t.alpha ? timeline(t.alpha, 1, single('value', 0)) : null, setup);
+        tl.rgba = merged.keys;
+        if (!merged.exact) warn(`animation "${an}": the rgb and alpha timelines of a slot have keys at different times, so the curves between them are approximated`);
       }
       if (t.rgba2 || t.rgb2) {
         const slot = slotByName.get(sn)!;
