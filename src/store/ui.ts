@@ -3,6 +3,8 @@ import { NO_COMPENSATION } from '@/core/compensate';
 import type { Id } from '@/core/model';
 import type { BrushShape, StrengthCurve } from '@/core/brush';
 import type { SoftShape } from '@/core/soft';
+import { NO_TRACK_FILTER } from '@/editor/timeline/rows';
+import type { TrackFilter } from '@/editor/timeline/rows';
 import { createStore, useStore } from './store';
 import { DEFAULT_VIEWS, loadLayout } from './layout';
 import type { Views } from './layout';
@@ -94,6 +96,12 @@ export interface MeshView {
   isolate: boolean;
   /** The vertices cannot be dragged (selecting them still works). */
   freeze: boolean;
+  /** Only the outline (hull) is drawn and can be picked: the inner vertices and edges are out of the way. */
+  hullOnly: boolean;
+  /** A click picks a triangle (Triangle order) instead of a vertex. */
+  pickTriangle: boolean;
+  /** The picked triangle (its place in the drawing order), or null. */
+  triangle: number | null;
   /** Soft selection: dragged vertices pull the ones near them with a falloff (see core/soft.ts). */
   soft: boolean;
   /** How far the pull reaches, in world units. */
@@ -137,6 +145,8 @@ export interface UiState {
   view: ViewOptions;
   overrides: Record<Id, PoseOverride>;
   timelineView: 'dopesheet' | 'graph';
+  /** Which tracks the dopesheet lists (see `filterRows`). */
+  trackFilter: TrackFilter;
   /** Timeline horizontal zoom (pixels per second) and scroll (seconds at left edge). */
   tlZoom: number;
   tlScroll: number;
@@ -198,6 +208,7 @@ export const uiStore = createStore<UiState>({
   view: { grid: true, images: true, bones: true, meshes: true, names: false, constraints: true, constraintInfo: false, outlines: true, bonesOnTop: true, onion: false, trails: false, rulers: false, snap: false, pixel: false, outline: false },
   overrides: {},
   timelineView: 'dopesheet',
+  trackFilter: NO_TRACK_FILTER,
   tlZoom: 220,
   tlScroll: -0.05,
   selectedKeys: [],
@@ -207,7 +218,7 @@ export const uiStore = createStore<UiState>({
   compare: null,
   brush: { size: 40, strength: 0.5, mode: 'add', bone: null, feather: 100, locked: [] },
   weightView: { pies: false, overlay: false, selected: false },
-  meshView: { wireframe: true, dim: false, isolate: false, freeze: false, soft: false, softRadius: 60, softShape: 'smooth' },
+  meshView: { wireframe: true, dim: false, isolate: false, freeze: false, hullOnly: false, pickTriangle: false, triangle: null, soft: false, softRadius: 60, softShape: 'smooth' },
   toast: null,
   panel: saved.panel ?? (typeof window !== 'undefined' && window.innerWidth < 1150 ? { left: 210, right: 240, bottom: 250 } : { left: 270, right: 300, bottom: 300 }),
   views: saved.views ?? DEFAULT_VIEWS,

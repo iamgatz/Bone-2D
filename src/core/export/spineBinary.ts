@@ -683,7 +683,7 @@ export function jsonToBinary(json: J): Uint8Array {
     out2.varint(slotAnims.length, true);
     for (const [slotName, tl] of slotAnims) {
       out2.varint(slot(slotName), true);
-      const kinds = ['attachment', 'rgba', 'rgba2'].filter((k) => tl[k]?.length);
+      const kinds = ['attachment', 'rgba', 'rgb', 'alpha', 'rgba2'].filter((k) => tl[k]?.length);
       out2.varint(kinds.length, true);
       for (const kind of kinds) {
         const keys: J[] = tl[kind];
@@ -695,6 +695,16 @@ export function jsonToBinary(json: J): Uint8Array {
             out2.float(num(k.time, 0));
             ref(out2, k.name ?? null);
           }
+        } else if (kind === 'rgb') {
+          out2.byte(2);
+          out2.varint(keys.length, true);
+          out2.varint(bezierCount(keys, 3), true);
+          colorTimeline(keys, 3, (k) => hexBytes(k.color, [255, 255, 255, 255]).slice(0, 3));
+        } else if (kind === 'alpha') {
+          out2.byte(5);
+          out2.varint(keys.length, true);
+          out2.varint(bezierCount(keys, 1), true);
+          colorTimeline(keys, 1, (k) => [Math.max(0, Math.min(255, Math.round(num(k.value, 0) * 255)))]);
         } else if (kind === 'rgba') {
           out2.byte(1);
           out2.varint(keys.length, true);

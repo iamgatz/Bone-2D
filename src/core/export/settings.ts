@@ -27,6 +27,8 @@ export interface ExportSettings {
   multipleOf4: boolean;
   /** Take the keys that change nothing out of the exported animations (the project keeps them). */
   cleanUp: boolean;
+  /** Write an `alpha` or `rgb` timeline for a slot whose colour keys only change that part (as Spine does), instead of `rgba`. */
+  splitColor: boolean;
 }
 
 export const EXPORT_SCALES = [0.25, 0.5, 0.75, 1, 2] as const;
@@ -51,6 +53,7 @@ export const DEFAULT_EXPORT_SETTINGS: ExportSettings = {
   alias: false,
   multipleOf4: false,
   cleanUp: false,
+  splitColor: false,
 };
 
 const oneOf = <T,>(v: unknown, list: readonly T[], fallback: T): T => (list.includes(v as T) ? (v as T) : fallback);
@@ -78,6 +81,7 @@ export function readExportSettings(raw: unknown): ExportSettings {
     alias: flag(o.alias, d.alias),
     multipleOf4: flag(o.multipleOf4, d.multipleOf4),
     cleanUp: flag(o.cleanUp, d.cleanUp),
+    splitColor: flag(o.splitColor, d.splitColor),
   };
 }
 

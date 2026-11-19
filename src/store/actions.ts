@@ -16,7 +16,7 @@ import { linkedTo, makeLink } from '@/core/links';
 import { KEY_EPS, findAnimation, freshName, sameKeyValue, makeCurve, normalizeBoneOrder, pruneSequences, purgeAttachment, removeBones, removeSlots, rgba2ToRgba, rgbaToRgba2, setSlotDarkColor, snapTime, upsertKey, decompose } from '@/core/edit';
 import type { BoneMats } from '@/core/mesh';
 import { moveKeys, removeKeys, resolveKeys, retargetClip } from '@/core/keyrefs';
-import { duplicateSkin, setSkinRequired, setSkinScope, toggleOverride } from '@/core/skins';
+import { duplicateSkin, repointSkinPictures, setSkinRequired, setSkinScope, toggleOverride } from '@/core/skins';
 import type { DuplicateSkinOptions } from '@/core/skins';
 import type { ScopeKind } from '@/core/skins';
 import type { KeyRef } from '@/core/keyrefs';
@@ -1464,13 +1464,18 @@ export function removeUnusedImages(): number {
   return names.length;
 }
 
-export function duplicateSkinAction(id: Id, opts?: DuplicateSkinOptions) {
+export function duplicateSkinAction(id: Id, opts?: DuplicateSkinOptions, pictures?: { find: string; replace: string }) {
   let made: Id | null = null;
+  let repointed = 0;
   docStore.update('Duplicate skin', (d) => {
     made = duplicateSkin(d.skeleton, id, opts)?.id ?? null;
+    // the copy shows pictures of its own: a part of the picture names is swapped, where the swapped name is a picture that exists
+    if (made && pictures?.find) repointed = repointSkinPictures(d.skeleton, made, pictures.find, pictures.replace, new Set(d.images.map((i) => i.name)));
   });
-  if (made) setActiveSkin(made);
-  else toast('The default skin cannot be duplicated');
+  if (made) {
+    setActiveSkin(made);
+    if (pictures?.find) toast(repointed ? `Duplicated, ${repointed} pictures point at other pictures` : 'Duplicated, no picture name matched a picture that exists', repointed ? 'ok' : 'info');
+  } else toast('The default skin cannot be duplicated');
 }
 
 /** "Skin required": the bone or constraint is only active in the skins that list it. */

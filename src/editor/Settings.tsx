@@ -118,6 +118,8 @@ export function SettingsDialog() {
   const onionTop = useSettings((s) => s.onionTop);
   const onionColorBefore = useSettings((s) => s.onionColorBefore);
   const onionColorAfter = useSettings((s) => s.onionColorAfter);
+  const onionArrows = useSettings((s) => s.onionArrows);
+  const keyGrid = useSettings((s) => s.keyGrid);
   const boneScale = useSettings((s) => s.boneScale);
   const pixelGrid = useSettings((s) => s.pixelGrid);
   const showFps = useSettings((s) => s.showFps);
@@ -164,6 +166,18 @@ export function SettingsDialog() {
             </Row>
             <Row label="Autosave" hint="Keeps the open project in this browser a moment after every change">
               <Toggle on={autosave} onChange={(v) => setSettings({ autosave: v })} title="Autosave" />
+            </Row>
+            <Row label="Key time step" hint="Keys and the playhead snap to whole frames; a finer step lets keys sit between frames (the file stores seconds, so they export as they are)">
+              <SelectField
+                value={String(keyGrid)}
+                options={[
+                  { value: '1', label: 'Whole frames' },
+                  { value: '2', label: 'Half frames' },
+                  { value: '4', label: 'Quarter frames' },
+                  { value: '10', label: 'Tenths of a frame' },
+                ]}
+                onChange={(v) => setSettings({ keyGrid: Number(v) })}
+              />
             </Row>
             <Row label="Hints" hint="The hints that pop up over buttons and fields">
               <Toggle on={tooltips} onChange={(v) => setSettings({ tooltips: v })} title="Hints" />
@@ -235,6 +249,9 @@ export function SettingsDialog() {
             </Row>
             <Row label="Onion skin: shift Y">
               <SelectField value={String(onionOffsetY)} options={OFFSETS.map((n) => ({ value: String(n), label: String(n) }))} onChange={(v) => setSettings({ onionOffsetY: Number(v) })} />
+            </Row>
+            <Row label="Onion skin: motion arrows" hint="Arrows along the path of the selected bones' tips through the ghosts, pointing the way the motion goes">
+              <Toggle on={onionArrows} onChange={(v) => setSettings({ onionArrows: v })} title="Onion skin: motion arrows" />
             </Row>
             <Row label="Onion skin: colours" hint="Before the playhead, after it">
               <ColorSwatch value={onionColorBefore} onChange={(rgb) => setSettings({ onionColorBefore: rgb })} title="Onion skin: colour before" />

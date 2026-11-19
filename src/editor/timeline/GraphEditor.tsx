@@ -2,6 +2,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Eye, EyeOff } from 'lucide-react';
 import { segmentProgress } from '@/core/curve';
+import { keyGrid } from '@/core/edit';
 import { decodeKey, encodeKey } from '@/core/keyrefs';
 import type { KeyRef } from '@/core/keyrefs';
 import { BONE_PROPS, GLOBAL_PHYSICS } from '@/core/model';
@@ -395,7 +396,7 @@ export function GraphEditor({ anim, doc, selection, selectedKeys, fps }: { anim:
         setKeyCurveHandle({ ...c.ref, time: k.time }, c.channel, d.handle!, nx, ny);
       } else if (d.kind === 'key' && d.curve && d.ref) {
         const c = d.curve;
-        const fps = state.current.fps;
+        const fps = state.current.fps * keyGrid.steps;
         // `d.ref` follows the key: after the first move it no longer sits at the time the drag started
         const ref = d.ref;
         setKeyChannelValue(ref, c.channel, toValue(y));

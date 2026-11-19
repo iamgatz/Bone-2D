@@ -93,6 +93,9 @@ export interface Ghost {
   flat?: boolean;
   /** Drawn over the pose, not under it. */
   top?: boolean;
+  /** Which side of the playhead the ghost is on and how far from it (1 = the nearest); onion ghosts only. */
+  side?: 'before' | 'after';
+  index?: number;
 }
 
 const TINT_BEFORE: Ghost['tint'] = [1, 0.62, 0.55, 1];
@@ -117,8 +120,43 @@ export function ghostsFor(scene: Scene, anim: Animation, time: number, fps: numb
     const sign = g.side === 'before' ? -1 : 1;
     const offset: [number, number] | undefined = cfg.offsetX || cfg.offsetY ? [sign * g.index * (cfg.offsetX ?? 0), sign * g.index * (cfg.offsetY ?? 0)] : undefined;
     // the nearest ghost is the strongest
-    return { skeleton, alpha: 0.42 * (1 - (g.index - 1) / Math.max(1, reach + 0.5)), tint: [rgb[0], rgb[1], rgb[2], 1], offset, flat, top };
+    return { skeleton, alpha: 0.42 * (1 - (g.index - 1) / Math.max(1, reach + 0.5)), tint: [rgb[0], rgb[1], rgb[2], 1], offset, flat, top, side: g.side, index: g.index };
   });
+}
+
+export interface MotionArrow {
+  x0: number;
+  y0: number;
+  x1: number;
+  y1: number;
+  /** 'before': the way into the pose (ends at the pose or earlier); 'after': the way on from it. */
+  side: 'before' | 'after';
+}
+
+/**
+ * The motion of bones through the ghosts: for each bone the points where its tip is in the before-ghosts (farthest first), the pose and the
+ * after-ghosts, joined by arrows that point the way time goes. A step shorter than `min` scene units is left out (the bone does not move there).
+ */
+export function motionArrows(pose: Skeleton, ghosts: readonly Ghost[], bones: readonly string[], min = 0.5): MotionArrow[] {
+  const out: MotionArrow[] = [];
+  const before = ghosts.filter((g) => g.side === 'before').sort((a, b) => (b.index ?? 0) - (a.index ?? 0));
+  const after = ghosts.filter((g) => g.side === 'after').sort((a, b) => (a.index ?? 0) - (b.index ?? 0));
+  for (const id of bones) {
+    const points: { x: number; y: number; side: 'before' | 'after' }[] = [];
+    const at = (sk: Skeleton, offset: [number, number] | undefined, side: 'before' | 'after') => {
+      const b = sk.boneById(id);
+      if (b) points.push({ x: b.tipX + (offset?.[0] ?? 0), y: b.tipY + (offset?.[1] ?? 0), side });
+    };
+    for (const g of before) at(g.skeleton, g.offset, 'before');
+    at(pose, undefined, 'before');
+    for (const g of after) at(g.skeleton, g.offset, 'after');
+    for (let i = 0; i + 1 < points.length; i++) {
+      const [a, b] = [points[i], points[i + 1]];
+      if (Math.hypot(b.x - a.x, b.y - a.y) < min) continue;
+      out.push({ x0: a.x, y0: a.y, x1: b.x, y1: b.y, side: b.side });
+    }
+  }
+  return out;
 }
 
 // ---------------------------------------------------------------- a reference: another animation (or the setup pose) drawn under the pose being edited

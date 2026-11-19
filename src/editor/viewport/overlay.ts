@@ -9,6 +9,7 @@ import { docStore } from '@/store/doc';
 import { settingsStore } from '@/store/settings';
 import type { Camera, UiState } from '@/store/ui';
 import { worldToScreen } from '../scene';
+import type { MotionArrow } from '../ghosts';
 import type { Scene } from '../scene';
 import { slotWorldVertices } from './hit';
 import { fpsMeter } from './fps';
@@ -74,6 +75,35 @@ export interface OverlayInput {
   /** Drawn right after the attachment outline, below the bones. */
   under?: (o: OverlayInput) => void;
   extra?: (o: OverlayInput) => void;
+}
+
+/** Arrows along the motion (see `motionArrows`): a line with a head at the later end, in the colour of its side. */
+export function drawMotionArrows(ctx: CanvasRenderingContext2D, w: number, h: number, cam: Camera, arrows: readonly MotionArrow[], before: readonly number[], after: readonly number[]) {
+  const css = (c: readonly number[]) => `rgb(${c.map((v) => Math.round(v * 255)).join(',')})`;
+  ctx.save();
+  ctx.lineWidth = 1.6;
+  ctx.lineCap = 'round';
+  for (const a of arrows) {
+    const [x0, y0] = worldToScreen(cam, w, h, a.x0, a.y0);
+    const [x1, y1] = worldToScreen(cam, w, h, a.x1, a.y1);
+    const len = Math.hypot(x1 - x0, y1 - y0);
+    if (len < 3) continue;
+    const ux = (x1 - x0) / len;
+    const uy = (y1 - y0) / len;
+    const head = Math.min(9, len * 0.5);
+    ctx.strokeStyle = ctx.fillStyle = css(a.side === 'before' ? before : after);
+    ctx.beginPath();
+    ctx.moveTo(x0, y0);
+    ctx.lineTo(x1, y1);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(x1, y1);
+    ctx.lineTo(x1 - ux * head - uy * head * 0.5, y1 - uy * head + ux * head * 0.5);
+    ctx.lineTo(x1 - ux * head + uy * head * 0.5, y1 - uy * head - ux * head * 0.5);
+    ctx.closePath();
+    ctx.fill();
+  }
+  ctx.restore();
 }
 
 /** The grid of single units: a line at every whole number, once a unit is wide enough on the screen (6 pixels) to tell the lines apart. */

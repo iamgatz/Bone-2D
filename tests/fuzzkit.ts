@@ -25,6 +25,7 @@ import { compileSkeleton, createSkeleton, meshWorldVertices, pointWorld } from '
 import { validateProject } from '../src/core/validate';
 import * as A from '../src/store/actions';
 import { docStore } from '../src/store/doc';
+import { setSettings } from '../src/store/settings';
 import * as FO from '../src/store/folderActions';
 import * as SK from '../src/store/skeletonActions';
 import * as AX from '../src/store/axisActions';
@@ -510,6 +511,12 @@ export const ops: Op[] = [
   { name: 'setKeyChannelValue', run: (c) => { const a = A.currentAnimation(); if (!a) return; const refs = allKeyRefs(a).filter((r) => r.kind === 'bone' || r.kind === 'ik' || r.kind === 'slider' || r.kind === 'transform' || r.kind === 'path' || (r.kind === 'physics' && r.prop !== 'reset')); const k = c.pick(refs); if (k) A.setKeyChannelValue(k, 0, c.num(-50, 50)); } },
   { name: 'setKeyCurveHandle', run: (c) => { const a = A.currentAnimation(); if (!a) return; const refs = allKeyRefs(a).filter((r) => r.kind === 'bone' || r.kind === 'ik' || r.kind === 'deform' || r.kind === 'transform' || r.kind === 'path' || (r.kind === 'physics' && r.prop !== 'reset')); const k = c.pick(refs); if (k) A.setKeyCurveHandle(k, 0, c.chance(0.5) ? 1 : 2, c.r(), c.num(-1, 2)); } },
   { name: 'copyPasteKeys', run: (c) => { const a = A.currentAnimation(); if (!a) return; const refs = allKeyRefs(a).filter((r) => r.kind !== 'drawOrder' && r.kind !== 'drawOrderFolder'); const k = c.pick(refs); if (!k) return; A.copyKeys([k]); A.pasteKeys(c.num(0, 2)); } },
+  // ---- triangle order, keys between frames, pictures of a duplicated skin, alpha-only and colour-only keys
+  { name: 'moveTriangle', run: (c) => { const m = c.pick(meshes()); if (!m) return; const n = M.getMesh(m.slotId, m.name)!.triangles.length / 3; M.moveMeshTriangle(m.slotId, m.name, Math.floor(c.r() * n), c.pick(['first', 'earlier', 'later', 'last'] as const)!); } },
+  { name: 'keyStep', run: (c) => { setSettings({ keyGrid: c.pick([1, 2, 4, 10])! }); } },
+  { name: 'duplicateSkinPictures', run: (c) => { const s = c.pick(doc().skins.slice(1)); const a = c.pick(project().images); const b = c.pick(project().images); if (s && a && b) A.duplicateSkinAction(s.id, { scope: c.chance(0.7) }, { find: a.name, replace: b.name }); } },
+  { name: 'keyAlphaOnly', run: (c) => { const s = c.pick(doc().slots); if (!s || !A.currentAnimation()) return; A.setMode('animate'); A.setSlotColor(s.id, [s.color[0], s.color[1], s.color[2], c.r()]); } },
+  { name: 'keyColorOnly', run: (c) => { const s = c.pick(doc().slots); if (!s || !A.currentAnimation()) return; A.setMode('animate'); A.setSlotColor(s.id, [c.r(), c.r(), c.r(), s.color[3]]); } },
   // ---- history
   { name: 'undo', run: () => docStore.undo() },
   { name: 'redo', run: () => docStore.redo() },
@@ -775,7 +782,7 @@ function physicsMismatch(p: Project, sd: any, json: unknown, atlasText: string, 
  * ever be asked to reproduce. A bug is different: it does not move when the input is nudged.
  */
 export function parityMismatch(p: Project): Mismatch | null {
-  const { skeletonData: sd, json, atlasText } = exportAndLoad(p);
+  const { skeletonData: sd, json, atlasText } = exportAndLoad(p, { splitColor: true });
   const data = compileSkeleton(p.skeleton);
   for (const anim of p.skeleton.animations) {
     const exported = sd.findAnimation(anim.name);
@@ -1027,12 +1034,12 @@ export function check(label: string) {
   if (issues.length) throw new Error(`${label}: the document needs repair:\n  - ${issues.join('\n  - ')}`);
   checkSelection(label);
   try {
-    exportAndLoad(p);
+    exportAndLoad(p, { splitColor: true });
   } catch (e) {
     throw new Error(`${label}: the official loader rejected the export: ${(e as Error).message}`);
   }
   finiteSkeleton(p, label);
-  const bad = findNonFinite(exportSpineJson(p.skeleton), 'export');
+  const bad = findNonFinite(exportSpineJson(p.skeleton, { splitColor: true }), 'export');
   if (bad) throw new Error(`${label}: non-finite number in the export at ${bad}`);
 }
 
@@ -1066,6 +1073,7 @@ export function freshSession() {
   addAttachmentRig(f.project); // clipping / bounding boxes (also weighted) / a point, so edits meet them from the first step
   addPathRig(f.project); // paths (open, closed, weighted) and path constraints in every mode
   addPhysicsRig(f.project); // physics constraints of every flavour, animated
+  setSettings({ keyGrid: 1 }); // keys between frames are a preference of the person: every run starts on whole frames
   docStore.replace(f.project);
   uiStore.patch({ mode: 'setup', tool: 'select', animationId: f.project.skeleton.animations[0].id, skinId: null, time: 0, selection: emptySelection, overrides: {}, autoKey: true, playing: false, defaultCurve: 'bezier' });
   return f;
@@ -1095,7 +1103,7 @@ export function playSession(seed: number, steps: number, opts: { parity?: boolea
     try {
       parity(docStore.get(), `seed ${seed} final state`);
       // the binary export must load as the same skeleton as the JSON
-      const bin = compareBinary(docStore.get());
+      const bin = compareBinary(docStore.get(), { splitColor: true });
       if (bin.diffs.length) throw new Error(`seed ${seed} final state: binary differs from JSON: ${bin.diffs.slice(0, 5).join('; ')}`);
       const baked = bakeMismatch(docStore.get());
       if (baked) throw new Error(`seed ${seed} final state: a baked animation poses differently: ${baked}`);

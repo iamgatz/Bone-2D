@@ -4,6 +4,7 @@ import type { KeyRef } from '@/core/keyrefs';
 import { deformProp } from '@/core/keyrefs';
 import { BONE_PROPS, PHYSICS_PARAMS } from '@/core/model';
 import type { Animation, Id, SequenceDef, SequenceKey, SkeletonDoc } from '@/core/model';
+import { nameMatcher } from '@/core/rename';
 import { sequenceOf } from '@/core/sequence';
 
 export interface RowKeyInfo {
@@ -225,4 +226,75 @@ export function buildRows(doc: SkeletonDoc, anim: Animation | null, selectedBone
     if (anim.events.length) rows.push({ id: 'events', label: 'Events', type: 'entity', depth: 1, expandable: false, expanded: false, keys: anim.events.map((k) => ({ time: k.time, refs: [{ kind: 'event' as const, target: '', prop: '', time: k.time }] })), tone: 'event' });
   }
   return rows;
+}
+
+/** What the timeline lists: the kinds of tracks that are shown, a word or pattern for the names, and (for bones and slots) only the selected ones. */
+export interface TrackFilter {
+  /** Typed like the hierarchy filter: words, `*` and `?`, or `/regular expression/`. Empty = every name. */
+  text: string;
+  /** Only the bones and slots that are selected. */
+  selectedOnly: boolean;
+  /** The groups that are left out, by row id (`g:bones`, `g:slots`, `g:ik`, `g:deform`, `g:sequence`, `g:other`). */
+  hidden: string[];
+}
+
+export const NO_TRACK_FILTER: TrackFilter = { text: '', selectedOnly: false, hidden: [] };
+
+export const TRACK_GROUPS: readonly { id: string; label: string }[] = [
+  { id: 'g:bones', label: 'Bones' },
+  { id: 'g:slots', label: 'Slots' },
+  { id: 'g:ik', label: 'Constraints' },
+  { id: 'g:deform', label: 'Deform' },
+  { id: 'g:sequence', label: 'Sequences' },
+  { id: 'g:other', label: 'Draw order & events' },
+];
+
+export const isTrackFilter = (f: TrackFilter): boolean => !!f.text.trim() || f.selectedOnly || f.hidden.length > 0;
+
+/**
+ * The rows that pass the filter. A track row (a bone, a slot, a constraint ...) stays when its name matches; its property rows stay with it, or on
+ * their own when only they match. A group with no row left is dropped. The keys of the rows are not touched, so the diamonds are the same ones.
+ */
+export function filterRows(rows: Row[], filter: TrackFilter): Row[] {
+  if (!isTrackFilter(filter)) return rows;
+  const match = nameMatcher(filter.text);
+  const out: Row[] = [];
+  let group: Row | null = null;
+  let kept: Row[] = [];
+  let entity: Row | null = null;
+  let entityKept = false;
+  let pendingProps: Row[] = [];
+  const flushEntity = () => {
+    if (entity && (entityKept || pendingProps.length)) kept.push(entity, ...pendingProps);
+    entity = null;
+    entityKept = false;
+    pendingProps = [];
+  };
+  const flushGroup = () => {
+    flushEntity();
+    if (group && kept.length) out.push(group, ...kept);
+    group = null;
+    kept = [];
+  };
+  for (const row of rows) {
+    if (row.type === 'group') {
+      flushGroup();
+      if (!filter.hidden.includes(row.id)) group = row;
+      continue;
+    }
+    if (!group) continue;
+    if (row.type === 'entity') {
+      flushEntity();
+      const selectable = group.id === 'g:bones' || group.id === 'g:slots';
+      const chosen = !(filter.selectedOnly && selectable && !row.selected);
+      entity = chosen ? row : null;
+      entityKept = chosen && (!match || match(row.label));
+      pendingProps = [];
+    } else if (entity) {
+      // a property row: with its track when the track matches, or alone when only its name does (the track row is then kept as its header)
+      if (entityKept || !match || match(row.label)) pendingProps.push(row);
+    }
+  }
+  flushGroup();
+  return out;
 }

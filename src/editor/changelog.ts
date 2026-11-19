@@ -12,6 +12,24 @@ export interface Release {
 
 export const CHANGELOG: Release[] = [
   {
+    version: '0.55',
+    date: '2026-11-19',
+    en: [
+      "Mesh: Triangle order (pick a triangle in the viewport, then move it first, earlier, later or last in the drawing order; where triangles overlap, the later one is on top, and the export keeps the order) and Outline only (only the hull is drawn and picked, the inner vertices and edges are out of the way).",
+      "Timeline: a track filter (the funnel button): the kinds of tracks that show, a name to look for (words, * ?, or /regular expression/), and the selected bones and slots only. Keys between frames: Settings → Key time step sets the step the keys and the playhead snap to (whole frames, halves, quarters, tenths); the file stores seconds, so they export as they are.",
+      "Metrics: what this pose costs to draw (draw calls by texture page, blend mode and clipping; pictures and triangles drawn; the triangles a clipping polygon cuts). Ghosting: motion arrows along the path of the selected bones' tips through the ghosts.",
+      "Skins: Duplicate with options can point the copy at other pictures (this text in the picture names becomes that one, where such a picture exists).",
+      "Export: Split colour keys writes an alpha or rgb timeline for a slot whose colour keys only change that part, as Spine does (JSON and binary). Import reads separate rgb and alpha timelines together, curves included, and a missing alpha value is 0 as in Spine.",
+    ],
+    ru: [
+      "Меш: «Порядок треугольников» (выберите треугольник во вьюпорте и сдвиньте его первым, раньше, позже или последним в порядке отрисовки; где треугольники перекрываются, сверху тот, что позже, и экспорт сохраняет порядок) и «Только контур» (рисуется и выбирается только контур, внутренние вершины и рёбра не мешают).",
+      "Таймлайн: фильтр дорожек (кнопка-воронка): какие виды дорожек видны, имя для поиска (слова, * ?, или /регулярное выражение/) и только выбранные кости и слоты. Ключи между кадрами: «Настройки → Шаг времени ключей» задаёт шаг, к которому привязываются ключи и маркер (целые кадры, половины, четверти, десятые); в файле хранятся секунды, так что они экспортируются как есть.",
+      "Метрики: во что обходится отрисовка этой позы (вызовы отрисовки по странице текстуры, режиму смешивания и обрезке; нарисованные картинки и треугольники; треугольники, которые режет обрезающий полигон). Ghosting: стрелки движения вдоль пути кончиков выбранных костей через призраков.",
+      "Скины: «Дублировать с параметрами» может направить копию на другие картинки (этот текст в именах картинок заменяется на тот, где такая картинка есть).",
+      "Экспорт: «Раздельные ключи цвета» пишет дорожку alpha или rgb для слота, у которого ключи цвета меняют только эту часть, как делает Spine (JSON и binary). Импорт читает раздельные дорожки rgb и alpha вместе, вместе с кривыми, а пропущенное значение alpha — это 0, как в Spine.",
+    ],
+  },
+  {
     version: '0.54',
     date: '2026-11-19',
     en: [

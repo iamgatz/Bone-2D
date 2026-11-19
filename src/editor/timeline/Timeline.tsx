@@ -1,7 +1,8 @@
 import { useCallback, useMemo, useRef, useState } from 'react';
-import { ChevronDown, ChevronRight, Copy, Diamond, Eraser, Film, KeyRound, Maximize, Pause, Pencil, Play, Plus, Repeat, SkipBack, SkipForward, Spline, Trash2, Volume2, VolumeX, ZoomIn } from 'lucide-react';
+import { ChevronDown, ChevronRight, Copy, Diamond, Eraser, Filter, Film, KeyRound, Maximize, Pause, Pencil, Play, Plus, Repeat, SkipBack, SkipForward, Spline, Trash2, Volume2, VolumeX, ZoomIn } from 'lucide-react';
 import { GraphEditor } from './GraphEditor';
 import { CURVE_PRESETS } from '@/core/curve';
+import { keyGrid } from '@/core/edit';
 import { setKeysAutoCurve } from '@/store/curveActions';
 import { decodeKey, encodeKey } from '@/core/keyrefs';
 import type { KeyRef } from '@/core/keyrefs';
@@ -20,12 +21,13 @@ import { KEYS } from '../hotkeys';
 import { Button, IconButton, SelectField, TextField, menuKeys, useFocusFirstItem, useOutsideClose } from '../ui/controls';
 import { Dopesheet, ROW_H } from './Dopesheet';
 import type { TimelineMenuRequest } from './Dopesheet';
-import { buildRows } from './rows';
-import type { Row } from './rows';
+import { TRACK_GROUPS, buildRows, filterRows, isTrackFilter } from './rows';
+import type { Row, TrackFilter } from './rows';
 
 function FrameField({ fps, time }: { fps: number; time: number }) {
   const [text, setText] = useState<string | null>(null);
-  const frame = Math.round(time * fps);
+  // between frames when keys may sit there (Settings → Key time step)
+  const frame = keyGrid.steps > 1 ? Math.round(time * fps * 100) / 100 : Math.round(time * fps);
   return (
     <div className="tl-time" title="Frame · seconds (type a frame number)">
       <input
@@ -46,6 +48,30 @@ function FrameField({ fps, time }: { fps: number; time: number }) {
         style={{ width: 38, background: 'transparent', border: 0, outline: 'none', textAlign: 'right', color: 'inherit', font: 'inherit' }}
       />
       <span style={{ color: 'var(--muted)', marginLeft: 6 }}>{time.toFixed(2)}s</span>
+    </div>
+  );
+}
+
+/** The window of the track filter: the kinds of tracks that show, a name to look for (words, `*`, `?` or `/regular expression/`), selected bones and slots only. */
+function TrackFilterMenu({ at, filter, onClose }: { at: { x: number; y: number }; filter: TrackFilter; onClose: () => void }) {
+  const ref = useOutsideClose(true, onClose);
+  const set = (p: Partial<TrackFilter>) => uiStore.patch({ trackFilter: { ...uiStore.get().trackFilter, ...p } });
+  return (
+    <div ref={ref} className="menu-pop" role="dialog" aria-label="Track filter" style={{ position: 'fixed', left: Math.max(8, Math.min(at.x - 230, window.innerWidth - 240)), top: at.y, width: 226, zIndex: 120, padding: 8 }} onKeyDown={(e) => e.stopPropagation()}>
+      <input autoFocus value={filter.text} placeholder="Track name" aria-label="Track name" style={{ width: '100%' }} onChange={(e) => set({ text: e.target.value })} />
+      {TRACK_GROUPS.map((g) => (
+        <label key={g.id} className="hstack" style={{ gap: 6, padding: '3px 0' }}>
+          <input type="checkbox" checked={!filter.hidden.includes(g.id)} onChange={(e) => set({ hidden: e.target.checked ? filter.hidden.filter((h) => h !== g.id) : [...filter.hidden, g.id] })} />
+          <span>{g.label}</span>
+        </label>
+      ))}
+      <label className="hstack" style={{ gap: 6, padding: '3px 0' }} title="Of the bones and slots, only the selected ones">
+        <input type="checkbox" checked={filter.selectedOnly} onChange={(e) => set({ selectedOnly: e.target.checked })} />
+        <span>Selected bones and slots only</span>
+      </label>
+      <Button small disabled={!isTrackFilter(filter)} onClick={() => set({ text: '', selectedOnly: false, hidden: [] })}>
+        Show all
+      </Button>
     </div>
   );
 }
@@ -136,7 +162,9 @@ export function Timeline() {
   const [menu, setMenu] = useState<TimelineMenuRequest | null>(null);
   const bodyRef = useRef<HTMLDivElement>(null);
 
-  const rows = useMemo(() => buildRows(doc, anim, selection.bones, selection.slot, expanded), [doc, anim, selection.bones, selection.slot, expanded]);
+  const trackFilter = useUi((s) => s.trackFilter);
+  const [filterAt, setFilterAt] = useState<{ x: number; y: number } | null>(null);
+  const rows = useMemo(() => filterRows(buildRows(doc, anim, selection.bones, selection.slot, expanded), trackFilter), [doc, anim, selection.bones, selection.slot, expanded, trackFilter]);
   const onMenu = useCallback((m: TimelineMenuRequest) => setMenu(m), []);
 
   const toggleRow = (r: Row) => uiStore.patch({ expanded: { ...uiStore.get().expanded, [r.id]: !r.expanded } });
@@ -218,6 +246,16 @@ export function Timeline() {
         <IconButton icon={Maximize} title="Fit timeline to the animation" onClick={fit} />
         <IconButton icon={ZoomIn} title="Zoom to the selected keys (the loop range when none is selected and one is set, else the whole animation)" disabled={!anim} onClick={zoomKeys} />
         <span className="sep tl-opt2" />
+        <IconButton
+          icon={Filter}
+          title="Filter the tracks: kinds, names, selected only"
+          active={isTrackFilter(trackFilter)}
+          disabled={view !== 'dopesheet'}
+          onClick={(e) => {
+            const r = (e.currentTarget as HTMLElement).getBoundingClientRect();
+            setFilterAt({ x: r.right, y: r.bottom + 4 });
+          }}
+        />
         <IconButton icon={Diamond} title="Dopesheet" active={view === 'dopesheet'} onClick={() => uiStore.patch({ timelineView: 'dopesheet' })} />
         <IconButton icon={Spline} title="Curve graph" active={view === 'graph'} onClick={() => uiStore.patch({ timelineView: 'graph' })} />
       </div>
@@ -298,6 +336,7 @@ export function Timeline() {
         )}
       </div>
       {menu && <TimelineMenu menu={menu} onClose={() => setMenu(null)} />}
+      {filterAt && <TrackFilterMenu at={filterAt} filter={trackFilter} onClose={() => setFilterAt(null)} />}
     </div>
   );
 }

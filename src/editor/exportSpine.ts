@@ -44,6 +44,8 @@ export interface ExportOptions {
   multipleOf4?: boolean;
   /** Take the keys that change nothing out of the exported animations. */
   cleanUp?: boolean;
+  /** Write `alpha` / `rgb` timelines where only that part of a colour changes. */
+  splitColor?: boolean;
   /** Which skeleton of the project (index in its list; default: the edited one). */
   skeletonIndex?: number;
   /** Animations left out of the export (an animation a slider uses always stays). */
@@ -150,7 +152,7 @@ export async function buildSpineExport(opts: ExportOptions): Promise<ExportResul
   const enc = new TextEncoder();
   const files: ZipEntry[] = [];
   const binary = opts.format === 'binary';
-  const json = scaleSpineJson(exportSpineJson(opts.cleanUp ? withCleanAnimations(doc) : doc, { nonessential: opts.nonessential, imagesPath: './images/' }), scale);
+  const json = scaleSpineJson(exportSpineJson(opts.cleanUp ? withCleanAnimations(doc) : doc, { nonessential: opts.nonessential, imagesPath: './images/', splitColor: opts.splitColor }), scale);
   const skeletonFile = binary ? `${base}.skel` : `${base}.json`;
   const skeletonData = binary ? jsonToBinary(json) : enc.encode(JSON.stringify(json, null, opts.pretty ? 2 : 0));
   files.push({ name: skeletonFile, data: skeletonData });

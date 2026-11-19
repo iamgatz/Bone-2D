@@ -1,6 +1,7 @@
 /** Viewport behaviour for the Mesh and Weights tools (vertex editing, deform keys, weight painting, heat map). */
 import { deformedVertices } from '@/core/deformMarks';
 import type { Id, MeshAttachment } from '@/core/model';
+import { trianglesAt } from '@/core/mesh';
 import { softMoves, softWeights } from '@/core/soft';
 import type { GLRenderer } from '@/render/gl';
 import { addMeshVertex, toggleMeshEdge, currentDeform, deleteMeshVertices, getMesh, moveMeshVertices, paintWeights, setDeformKey } from '@/store/meshActions';
@@ -137,7 +138,17 @@ export class MeshTool {
     }
 
     // mesh tool
-    const hit = this.hitVertex(geo.vertices, geo.count, wx, wy, zoom);
+    if (ui.meshView.pickTriangle) {
+      // Triangle order: a click picks the triangle on top at that place, another click there the one under it
+      const at = trianglesAt(geo.vertices, am.mesh.triangles, wx, wy);
+      const now = ui.meshView.triangle;
+      const next = at.length ? (now !== null && at.includes(now) ? at[(at.indexOf(now) + 1) % at.length] : at[0]) : null;
+      uiStore.patch({ meshView: { ...ui.meshView, triangle: next } });
+      this.invalidate();
+      return true;
+    }
+    const pickable = ui.meshView.hullOnly ? Math.min(geo.count, am.mesh.hull) : geo.count;
+    const hit = this.hitVertex(geo.vertices, pickable, wx, wy, zoom);
     if (hit >= 0 && (e.ctrlKey || e.metaKey) && ui.mode === 'setup') {
       // Ctrl+drag from a vertex to another vertex draws a manual edge (or removes the one that is there)
       this.drag = { kind: 'edge', from: hit, x: wx, y: wy };
@@ -175,7 +186,7 @@ export class MeshTool {
     if (!geo) return false;
     const d = this.drag;
     if (!d) {
-      const h = ui.tool === 'mesh' ? this.hitVertex(geo.vertices, geo.count, wx, wy, ui.camera.zoom) : -1;
+      const h = ui.tool === 'mesh' && !ui.meshView.pickTriangle ? this.hitVertex(geo.vertices, ui.meshView.hullOnly ? Math.min(geo.count, am.mesh.hull) : geo.count, wx, wy, ui.camera.zoom) : -1;
       if (h !== this.hoverVertex || ui.tool === 'weights') {
         this.hoverVertex = h;
         this.invalidate();
@@ -195,7 +206,7 @@ export class MeshTool {
       const y0 = Math.min(d.y0, d.y1);
       const y1 = Math.max(d.y0, d.y1);
       const picked = new Set(d.base);
-      for (let i = 0; i < geo.count; i++) {
+      for (let i = 0; i < (ui.meshView.hullOnly ? Math.min(geo.count, am.mesh.hull) : geo.count); i++) {
         const x = geo.vertices[i * 2];
         const y = geo.vertices[i * 2 + 1];
         if (x >= x0 && x <= x1 && y >= y0 && y <= y1) picked.add(i);
@@ -205,7 +216,7 @@ export class MeshTool {
     } else if (d.kind === 'edge') {
       d.x = wx;
       d.y = wy;
-      this.hoverVertex = this.hitVertex(geo.vertices, geo.count, wx, wy, ui.camera.zoom);
+      this.hoverVertex = this.hitVertex(geo.vertices, ui.meshView.hullOnly ? Math.min(geo.count, am.mesh.hull) : geo.count, wx, wy, ui.camera.zoom);
       this.invalidate();
     } else if (d.kind === 'paint') {
       const bone = ui.brush.bone;
@@ -271,7 +282,8 @@ export class MeshTool {
     ctx.lineWidth = 1;
     ctx.strokeStyle = edit ? alpha('--accent', 0.55) : alpha('--accent', 0.22);
     ctx.beginPath();
-    for (let t = 0; !(edit && !ui.meshView.wireframe) && t < tri.length; t += 3) {
+    const hullOnly = edit && ui.tool === 'mesh' && ui.meshView.hullOnly;
+    for (let t = 0; !(edit && !ui.meshView.wireframe) && !hullOnly && t < tri.length; t += 3) {
       const a = P(tri[t]);
       const b = P(tri[t + 1]);
       const c = P(tri[t + 2]);
@@ -283,7 +295,7 @@ export class MeshTool {
     ctx.stroke();
     // manual edges (orange) and the edge being drawn
     const manual = am.mesh.edges ?? [];
-    if (edit && ui.tool === 'mesh' && (manual.length || this.drag?.kind === 'edge')) {
+    if (edit && ui.tool === 'mesh' && !hullOnly && (manual.length || this.drag?.kind === 'edge')) {
       ctx.strokeStyle = token('--mesh-edge');
       ctx.lineWidth = 2;
       ctx.beginPath();
@@ -329,6 +341,29 @@ export class MeshTool {
       if (ui.tool === 'weights' && ui.weightView.pies && am.mesh.weights) this.drawPies(o, am.mesh.weights, (i) => P(i));
       return;
     }
+    // the triangle picked for Triangle order: filled, with its place in the drawing order
+    const picked = ui.meshView.triangle;
+    if (ui.tool === 'mesh' && picked !== null && picked * 3 + 2 < tri.length) {
+      const a = P(tri[picked * 3]);
+      const b = P(tri[picked * 3 + 1]);
+      const c = P(tri[picked * 3 + 2]);
+      ctx.fillStyle = alpha('--accent', 0.3);
+      ctx.strokeStyle = COLORS.accent;
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(a[0], a[1]);
+      ctx.lineTo(b[0], b[1]);
+      ctx.lineTo(c[0], c[1]);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+      ctx.save();
+      ctx.fillStyle = COLORS.accent;
+      ctx.font = '11px system-ui, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText(`${picked + 1}/${tri.length / 3}`, (a[0] + b[0] + c[0]) / 3, (a[1] + b[1] + c[1]) / 3 + 4);
+      ctx.restore();
+    }
     const sel = new Set(ui.selection.vertices);
     // soft selection: the vertices that follow the selected ones, tinted by how much (the weights are those of the drag while one is going)
     const dragging = this.drag?.kind === 'vertices' ? this.drag : null;
@@ -337,7 +372,7 @@ export class MeshTool {
     const slot = scene.skeleton.slotById(am.slotId);
     const shown = slot ? scene.skeleton.slotAttachment(slot) : null;
     const moved = ui.mode === 'animate' && slot && shown && shown.kind === 'mesh' && slot.deform.length ? deformedVertices(shown, slot.deform) : null;
-    for (let i = 0; i < geo.count; i++) {
+    for (let i = 0; i < (hullOnly ? Math.min(geo.count, am.mesh.hull) : geo.count); i++) {
       const [x, y] = P(i);
       const selected = sel.has(i);
       const hovered = i === this.hoverVertex;

@@ -5,9 +5,9 @@ import { encodeGif } from '@/core/export/gif';
 import { useProject } from '@/store/doc';
 import { downloadBlob } from '@/store/project';
 import { toast } from '@/store/ui';
-import { Button, ColorSwatch, SelectField, Toggle } from './ui/controls';
+import { Button, ColorSwatch, NumberField, SelectField, Toggle } from './ui/controls';
 import { Segmented } from './ui/Segmented';
-import { framesToWebm, frameToJpeg, frameToPng, prepareRender } from './renderAnimation';
+import { frameCount, framesToWebm, frameToJpeg, frameToPng, prepareRender } from './renderAnimation';
 import { encodeApng, frameDelay } from '@/core/export/apng';
 import type { Prepared } from './renderAnimation';
 
@@ -32,6 +32,10 @@ export function ExportAnimation() {
   const [fps, setFps] = useState(String(Math.min(60, Math.max(12, doc.fps))));
   const [scale, setScale] = useState('1');
   const [pad, setPad] = useState('8');
+  // the frames rendered (to = null: up to the end) and the seconds of warm up before them
+  const [from, setFrom] = useState(0);
+  const [to, setTo] = useState<number | null>(null);
+  const [warm, setWarm] = useState(0);
   const [transparent, setTransparent] = useState(true);
   const [bg, setBg] = useState<[number, number, number]>([0.075, 0.082, 0.1]);
   const [frameIndex, setFrameIndex] = useState(0);
@@ -42,6 +46,7 @@ export function ExportAnimation() {
   const [prepared, setPrepared] = useState<Prepared | null>(null);
 
   const anim = doc.animations.find((a) => a.id === animId) ?? null;
+  const total = anim ? frameCount(anim.duration, +fps) : 1;
   const solid = format === 'webm' || format === 'jpeg' || !transparent;
   const background = useMemo(() => (solid ? bg : null), [solid, bg]);
 
@@ -51,7 +56,7 @@ export function ExportAnimation() {
     let made: Prepared | null = null;
     const timer = setTimeout(() => {
       try {
-        made = prepareRender({ doc, animation: anim, fps: +fps, scale: +scale, padding: +pad, background });
+        made = prepareRender({ doc, animation: anim, fps: +fps, scale: +scale, padding: +pad, background, from, to: to ?? undefined, warmUp: warm });
         setPrepared(made);
         setError(null);
       } catch (e) {
@@ -63,7 +68,7 @@ export function ExportAnimation() {
       clearTimeout(timer);
       made?.dispose();
     };
-  }, [doc, anim, fps, scale, pad, background]);
+  }, [doc, anim, fps, scale, pad, background, from, to, warm]);
 
   useEffect(() => {
     if (!prepared || !canvas.current) return;
@@ -151,6 +156,13 @@ export function ExportAnimation() {
         <SelectField value={scale} options={['0.25', '0.5', '1', '1.5', '2'].map((v) => ({ value: v, label: `${+v * 100}%` }))} onChange={setScale} />
         <label>Margin</label>
         <SelectField value={pad} options={['0', '4', '8', '16', '32'].map((v) => ({ value: v, label: `${v} px` }))} onChange={setPad} />
+        <label>Frames</label>
+        <div className="hstack">
+          <NumberField label="from" value={from} step={1} precision={0} min={0} max={Math.max(0, total - 1)} onChange={(v) => setFrom(Math.max(0, Math.min(total - 1, Math.round(v))))} title="The first frame that is rendered (the animation has frames 0 to the last one)" />
+          <NumberField label="to" value={to ?? total} step={1} precision={0} min={1} max={total} onChange={(v) => setTo(v >= total ? null : Math.max(1, Math.round(v)))} title="Rendering stops before this frame (the end of the animation is the last frame plus one)" />
+        </div>
+        <label>Warm up</label>
+        <NumberField label="s" value={warm} step={0.25} precision={2} min={0} max={20} onChange={(v) => setWarm(Math.max(0, Math.min(20, v)))} title="Seconds the animation runs before the first frame, as if it had been looping, so the physics has settled (only for a skeleton with physics)" />
         <label>Background</label>
         <div className="hstack">
           {format !== 'webm' && format !== 'jpeg' && <Toggle on={transparent} onChange={setTransparent} title="Transparent background" />}
