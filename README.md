@@ -79,6 +79,7 @@ $env:FUZZ_SEEDS='300'; $env:FUZZ_STEPS='100'; npx vitest run tests/fuzz.test.ts
 - **Constraint arrows** (who drives which bones, with strength; the selection brings its constraints into focus), **weight brush fade shapes**, and soft selection for polygons too.
 - **Checkpoints** (a named copy of the skeleton: ghost of its pose under the current one, what changed, one-click return) and **constraint effects** (the numbers each IK, transform or path constraint adds to a bone).
 - **Undo for replaced pictures** (the old pixels come back, not only the size) and a **weight brush strength curve** (even, fine, bold).
+- **Layer on top** (a second animation baked in additively, a breath over a walk), **fading pictures** (a mouth or an eye fades into the next picture through a partner slot) and a **single-file player page** that opens offline, for sending a result to a client.
 - **Rotate about a point** (a temporary pivot: the bone's origin goes round it, rotation and position keyed together) and a **reference video** drawn over the scene in step with the playhead, for tracing a filmed take.
 - **Sprite sheets and GIF import**: cut a sheet into numbered frames (grid by count or cell size, empty cells at the end skipped) or take an animated GIF apart; the frames play as a sequence, and the dopesheet shows **frame thumbnails** between the keys of a sequence.
 - **Skin from pictures**: pictures named `arctic/head` or `arctic-head` become the pictures of the skin `arctic` in one step (linked meshes for meshes).
