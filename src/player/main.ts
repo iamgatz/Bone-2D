@@ -1,0 +1,217 @@
+/**
+ * The offline player: the script inside the single-file page that "Save player page" in the Export dialog makes. It plays the animations of a
+ * skeleton the way the editor shows them (same posing, same renderer), with nothing to download: the skeleton and the pictures are in the page.
+ * The page shell (a canvas and a control bar) and the data are made by `core/export/playerPage.ts`.
+ */
+import { applyAnimation, applyPhysicsResets } from '@/core/animate';
+import type { Animation } from '@/core/model';
+import { advancePlayback, playOf } from '@/core/playback';
+import { compileSkeleton, createSkeleton } from '@/core/skeleton';
+import type { Skeleton } from '@/core/skeleton';
+import { GLRenderer } from '@/render/gl';
+import type { PlayerPayload } from '@/core/export/playerPage';
+
+const $ = <T extends HTMLElement>(id: string): T => document.getElementById(id) as T;
+
+async function loadImages(payload: PlayerPayload): Promise<Map<string, HTMLImageElement>> {
+  const out = new Map<string, HTMLImageElement>();
+  await Promise.all(
+    Object.entries(payload.images).map(async ([name, url]) => {
+      const img = new Image();
+      img.src = url;
+      try {
+        await img.decode();
+        out.set(name, img);
+      } catch {
+        /* a picture that does not decode is left out: the slot draws nothing */
+      }
+    }),
+  );
+  return out;
+}
+
+async function main() {
+  const payload: PlayerPayload = JSON.parse($('b2d-data').textContent ?? '{}');
+  const doc = payload.skeleton;
+  const canvas = $<HTMLCanvasElement>('stage');
+  const images = await loadImages(payload);
+  const renderer = new GLRenderer(canvas);
+  renderer.source = { get: (n) => (images.has(n) ? { bitmap: images.get(n)!, version: 1 } : null) };
+  renderer.setSmoothing(payload.smooth);
+
+  const data = compileSkeleton(doc);
+  const hasPhysics = data.constraints.some((c) => c.kind === 'physics');
+  let skeleton: Skeleton = createSkeleton(data, null);
+  let anim: Animation | null = doc.animations[0] ?? null;
+  let time = 0;
+  let dir: 1 | -1 = 1;
+  let playing = true;
+  let dark = true;
+  let last = -1;
+  const view = { x: 0, y: 0, zoom: 1 };
+  let fit = { x: 0, y: 0, w: 100, h: 100 };
+
+  const play = $<HTMLButtonElement>('play');
+  const seek = $<HTMLInputElement>('seek');
+  const label = $('time');
+  const animSel = $<HTMLSelectElement>('anim');
+  const skinSel = $<HTMLSelectElement>('skin');
+
+  /** The box every frame of the animation fits in, so the picture does not jump about. */
+  const measure = () => {
+    let minX = Infinity;
+    let minY = Infinity;
+    let maxX = -Infinity;
+    let maxY = -Infinity;
+    const frames = anim ? Math.min(240, Math.max(1, Math.round(anim.duration * doc.fps))) : 1;
+    for (let i = 0; i <= frames; i++) {
+      applyAnimation(skeleton, anim, anim ? (anim.duration * i) / frames : 0);
+      skeleton.updateWorldTransform('none');
+      const b = skeleton.getBounds();
+      if (!b) continue;
+      minX = Math.min(minX, b[0]);
+      minY = Math.min(minY, b[1]);
+      maxX = Math.max(maxX, b[0] + b[2]);
+      maxY = Math.max(maxY, b[1] + b[3]);
+    }
+    fit = minX === Infinity ? { x: 0, y: 0, w: 100, h: 100 } : { x: (minX + maxX) / 2, y: (minY + maxY) / 2, w: Math.max(1, maxX - minX), h: Math.max(1, maxY - minY) };
+    view.x = view.y = 0;
+    view.zoom = 1;
+  };
+
+  /** Poses the skeleton at `t`. `dt` is how long ago the previous pose was (physics keeps its state); `reset` starts the physics again. */
+  const pose = (t: number, dt: number, reset: boolean) => {
+    applyAnimation(skeleton, anim, t);
+    if (!hasPhysics) skeleton.updateWorldTransform('none');
+    else if (reset || last < 0 || !anim) {
+      skeleton.updateWorldTransform('reset');
+    } else {
+      applyPhysicsResets(skeleton, anim, last, t);
+      skeleton.update(dt);
+      skeleton.updateWorldTransform('update');
+    }
+    last = t;
+  };
+
+  const draw = () => {
+    const dpr = window.devicePixelRatio || 1;
+    const w = Math.max(1, Math.round(canvas.clientWidth * dpr));
+    const h = Math.max(1, Math.round(canvas.clientHeight * dpr));
+    if (canvas.width !== w || canvas.height !== h) {
+      canvas.width = w;
+      canvas.height = h;
+    }
+    const scale = Math.min(w / (fit.w * 1.16), h / (fit.h * 1.16)) * view.zoom;
+    renderer.begin({ x: fit.x + view.x, y: fit.y + view.y, scale, width: w, height: h }, dark ? [0.075, 0.082, 0.1, 1] : [0.95, 0.95, 0.96, 1]);
+    renderer.drawSkeleton(skeleton);
+    renderer.end();
+  };
+
+  const showTime = () => {
+    const d = anim?.duration ?? 0;
+    label.textContent = `${time.toFixed(2)} / ${d.toFixed(2)} s`;
+    seek.max = String(Math.max(1, Math.round(d * 1000)));
+    seek.value = String(Math.round(time * 1000));
+    play.textContent = playing ? 'Pause' : 'Play';
+  };
+
+  const choose = (a: Animation | null) => {
+    anim = a;
+    time = 0;
+    dir = 1;
+    last = -1;
+    measure();
+    pose(0, 0, true);
+    showTime();
+  };
+  const setSkin = (id: string | null) => {
+    skeleton = createSkeleton(data, id);
+    last = -1;
+    measure();
+    pose(time, 0, true);
+  };
+
+  for (const a of doc.animations) animSel.add(new Option(a.name, a.id));
+  animSel.hidden = doc.animations.length < 2;
+  animSel.onchange = () => choose(doc.animations.find((a) => a.id === animSel.value) ?? null);
+  skinSel.add(new Option('default', ''));
+  for (const s of doc.skins.slice(1)) skinSel.add(new Option(s.name, s.id));
+  skinSel.hidden = doc.skins.length < 2;
+  skinSel.onchange = () => setSkin(skinSel.value || null);
+  play.onclick = () => {
+    playing = !playing;
+    showTime();
+  };
+  seek.oninput = () => {
+    playing = false;
+    time = Number(seek.value) / 1000;
+    pose(time, 0, true);
+    showTime();
+  };
+  $('bg').onclick = () => {
+    dark = !dark;
+    document.body.classList.toggle('light', !dark);
+  };
+  canvas.addEventListener('wheel', (e) => {
+    e.preventDefault();
+    view.zoom = Math.min(20, Math.max(0.2, view.zoom * Math.exp(-e.deltaY * 0.0015)));
+  }, { passive: false });
+  let drag: { x: number; y: number } | null = null;
+  canvas.onpointerdown = (e) => {
+    drag = { x: e.clientX, y: e.clientY };
+    canvas.setPointerCapture(e.pointerId);
+  };
+  canvas.onpointermove = (e) => {
+    if (!drag) return;
+    const dpr = window.devicePixelRatio || 1;
+    const scale = Math.min((canvas.clientWidth * dpr) / (fit.w * 1.16), (canvas.clientHeight * dpr) / (fit.h * 1.16)) * view.zoom;
+    view.x -= ((e.clientX - drag.x) * dpr) / scale;
+    view.y += ((e.clientY - drag.y) * dpr) / scale;
+    drag = { x: e.clientX, y: e.clientY };
+  };
+  canvas.onpointerup = () => (drag = null);
+  canvas.ondblclick = () => {
+    view.x = view.y = 0;
+    view.zoom = 1;
+  };
+
+  choose(anim);
+  let before = performance.now();
+  const frame = (now: number) => {
+    const dt = Math.min(0.1, (now - before) / 1000);
+    before = now;
+    if (playing && anim && anim.duration > 0) {
+      const next = advancePlayback({ time, dir }, dt, anim.duration, playOf(anim));
+      const wrapped = next.time < time && next.dir === dir;
+      time = next.time;
+      dir = next.dir;
+      if (next.stopped) playing = false;
+      pose(time, dt, wrapped);
+      showTime();
+    }
+    draw();
+    requestAnimationFrame(frame);
+  };
+  requestAnimationFrame(frame);
+  // for tests and embedding: draws one frame at a time without waiting for the browser
+  (window as unknown as { bone2d: unknown }).bone2d = {
+    show(t: number) {
+      playing = false;
+      time = t;
+      pose(t, 0, true);
+      showTime();
+      draw();
+    },
+    animations: doc.animations.map((a) => a.name),
+    canvas,
+  };
+  document.body.dataset.ready = '1';
+}
+
+main().catch((e) => {
+  document.body.dataset.error = String(e?.message ?? e);
+  const msg = document.createElement('p');
+  msg.className = 'error';
+  msg.textContent = `Could not start the player: ${e?.message ?? e}`;
+  document.body.appendChild(msg);
+});

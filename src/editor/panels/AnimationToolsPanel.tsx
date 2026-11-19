@@ -7,7 +7,7 @@ import { markersOf } from '@/core/markers';
 import { hideUnkeyedBones, mirrorCurrentCycle, tweenSelected, wiggleSelected } from '@/store/animToolActions';
 import { docStore } from '@/store/doc';
 import type { Animation } from '@/core/model';
-import { bakeCurrentAnimation, closeCurrentLoop, currentAnimation, setTime, simplifyCurrentAnimation } from '@/store/actions';
+import { bakeCurrentAnimation, closeCurrentLoop, crossfadeSlot, currentAnimation, layerCurrentAnimation, setTime, simplifyCurrentAnimation } from '@/store/actions';
 import { useProject } from '@/store/doc';
 import { addMarkerAtPlayhead, deleteMarker, openMarkerDialog, splitAtMarkersAction } from '@/store/markerActions';
 import { clearRefVideo, loadRefVideo, setRefVideoShow, setRefVideoView, startRefVideoHere, useRefVideo } from '@/store/refVideo';
@@ -70,6 +70,59 @@ function RefVideoControls() {
             <NumberField label="x" value={view.x} step={5} precision={1} onChange={(v) => setRefVideoView({ x: v })} />
             <NumberField label="y" value={view.y} step={5} precision={1} onChange={(v) => setRefVideoView({ y: v })} />
           </Field>
+        </>
+      )}
+    </>
+  );
+}
+
+/** Fades the pictures of the selected slot into each other where this animation changes them. */
+function FadeControls() {
+  const { animationId, slot } = useUi((s) => ({ animationId: s.animationId, slot: s.selection.slot }));
+  const [seconds, setSeconds] = useState(0.15);
+  return (
+    <>
+      <div className="section-label">Fade pictures</div>
+      <p className="hint-text">Where this animation changes the picture of the selected slot (a mouth, an eye), the new picture fades in while the old one fades out, instead of a hard cut. A second slot, drawn right above, carries the old pictures.</p>
+      <Field label="Fade time" title="How long the fade lasts; it is shortened to the time left before the next change">
+        <NumberField label="s" value={seconds} step={0.05} precision={2} min={0.01} max={5} onChange={setSeconds} />
+      </Field>
+      <Button small primary disabled={!animationId || !slot} onClick={() => slot && crossfadeSlot(slot, seconds)}>
+        Fade the selected slot
+      </Button>
+    </>
+  );
+}
+
+/** An animation added on top of this one (breathing over a walk), baked into a new animation. */
+function LayerControls() {
+  const doc = useProject().skeleton;
+  const animationId = useUi((s) => s.animationId);
+  const others = doc.animations.filter((x) => x.id !== animationId);
+  const [layerId, setLayerId] = useState('');
+  const [weight, setWeight] = useState(100);
+  const [loop, setLoop] = useState(true);
+  const chosen = others.find((x) => x.id === layerId) ?? others[0];
+  return (
+    <>
+      <div className="section-label">Layer on top</div>
+      <p className="hint-text">Adds a second animation on top of this one, like a track with additive blending, and bakes the sum into a new animation. The layer moves its own bones; the rest of this animation stays.</p>
+      {others.length === 0 ? (
+        <p className="hint-text">Make a second animation to use as a layer.</p>
+      ) : (
+        <>
+          <Field label="Layer" title="The animation that is added on top">
+            <SelectField<string> value={chosen?.id ?? ''} options={others.map((x) => ({ value: x.id, label: x.name }))} onChange={setLayerId} />
+          </Field>
+          <Field label="Strength" title="How much of the layer is added, in percent">
+            <NumberField label="%" value={weight} step={5} precision={0} min={0} max={200} onChange={(v) => setWeight(Math.round(v))} />
+          </Field>
+          <Field label="Repeat the layer" title="The layer starts again when it ends; otherwise it holds its last pose">
+            <Toggle on={loop} onChange={setLoop} title="Repeat the layer" />
+          </Field>
+          <Button small primary disabled={!animationId || !chosen} onClick={() => chosen && layerCurrentAnimation(chosen.id, { weight: weight / 100, loop })}>
+            Layer into a new animation
+          </Button>
         </>
       )}
     </>
@@ -279,6 +332,10 @@ export function AnimationToolsPanel() {
         <Button small primary disabled={!anim || (loopSelected && selection.bones.length === 0)} onClick={() => closeCurrentLoop(loopKeep, loopSelected)}>
           Close the loop
         </Button>
+
+        <LayerControls />
+
+        <FadeControls />
 
         <div className="section-label">Bake constraints</div>
         <p className="hint-text">{hasConstraints ? 'Writes what the constraints do into plain bone keys, in a new animation. It plays the same without IK, physics or sliders.' : 'This skeleton has no constraints to bake.'}</p>

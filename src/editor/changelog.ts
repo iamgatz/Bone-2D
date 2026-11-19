@@ -12,6 +12,20 @@ export interface Release {
 
 export const CHANGELOG: Release[] = [
   {
+    version: '0.52',
+    date: '2026-11-19',
+    en: [
+      "Layer on top (Animation tools window): pick a second animation, a strength and whether it repeats, and the sum (a breath over a walk) is baked into a new animation, the way a second track with additive blending adds on in a game runtime. The layer moves its own bones, the rest of the first animation stays. Checked against the official runtime's additive track.",
+      "Fade pictures (Animation tools window): where an animation changes the picture of the selected slot (a mouth, an eye), the new picture fades in while the old one fades out instead of a hard cut. No runtime fades one attachment into another, so a second slot (\"<slot> fade\"), drawn right above, carries the old pictures and fades out; both are keyed in the animation and export like any slot.",
+      "Save player page (Export window): one HTML file with the skeleton, its pictures and a small player inside. It opens offline in any browser, with animation and skin pickers, play and pause, a time slider, zoom and pan, and a light or dark background. For sending a result to a client.",
+    ],
+    ru: [
+      "Слой сверху (окно «Инструменты анимации»): выбери вторую анимацию, силу и повторять ли её, и сумма (дыхание поверх ходьбы) запечётся в новую анимацию, как вторая дорожка с аддитивным смешиванием складывается в игровом рантайме. Слой двигает свои кости, остальное в первой анимации остаётся. Проверено на аддитивной дорожке официального рантайма.",
+      "Плавная смена картинок (окно «Инструменты анимации»): где анимация меняет картинку выбранного слота (рот, глаз), новая картинка проявляется, а старая гаснет, вместо резкой смены. Ни один рантайм не растворяет одно вложение в другое, поэтому старые картинки несёт второй слот («<слот> fade»), нарисованный сразу выше, и гаснет; оба слота с ключами в анимации и экспортируются как обычные.",
+      "Сохранить страницу-плеер (окно экспорта): один HTML-файл со скелетом, картинками и небольшим плеером внутри. Открывается без интернета в любом браузере: выбор анимации и скина, пуск и пауза, ползунок времени, масштаб и сдвиг, светлый или тёмный фон. Чтобы отправить результат заказчику.",
+    ],
+  },
+  {
     version: '0.51',
     date: '2026-11-19',
     en: [

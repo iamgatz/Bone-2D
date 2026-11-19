@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Copy, Download, FolderOpen, Package, Save } from 'lucide-react';
+import { Copy, Download, FileCode, FolderOpen, Package, Save } from 'lucide-react';
 import { exportSettingsFromText, exportSettingsToText, loadExportSettings, rememberExportSettings } from '@/core/export/settings';
 import type { ExportSettings } from '@/core/export/settings';
 import { docStore, useProject } from '@/store/doc';
@@ -46,6 +46,18 @@ export function ExportDialog() {
     };
   }, [format, scale, maxSize, padding, pretty, nonessential, pot, includePreview, trim, rotate, filter, mixes, excluded, tab, all, picked]);
 
+  /** One HTML file with the skeleton, the pictures and a player in it: opens offline, for sending to a client. */
+  const savePlayer = async () => {
+    try {
+      const { buildPlayerPage } = await import('./exportPlayer');
+      const page = buildPlayerPage(doc, { smooth: filter !== 'Nearest' });
+      downloadBlob(new Blob([page.html], { type: 'text/html' }), `${base}-player.html`);
+      toast(page.missing.length ? `Player page saved, but these pictures are missing: ${page.missing.join(', ')}` : `Player page saved (${(page.bytes / 1024 / 1024).toFixed(1)} MB)`, page.missing.length ? 'info' : 'ok', page.missing.length ? 7000 : undefined);
+    } catch (e) {
+      toast(`Could not make the player page: ${(e as Error).message}`, 'error');
+    }
+  };
+
   const close = () => uiStore.patch({ exportOpen: false });
   const base = (all ? project.name || 'project' : doc.name || 'skeleton').replace(/[^\w-]+/g, '_');
 
@@ -78,6 +90,11 @@ export function ExportDialog() {
       footer={
         <>
           <Button ghost onClick={close}>Close</Button>
+          {tab === 'data' && (
+          <Button ghost icon={FileCode} disabled={busy} onClick={() => void savePlayer()} title="One HTML file with the skeleton, its pictures and a player: opens offline, nothing to install. For sending to a client">
+            Save player page
+          </Button>
+          )}
           {tab === 'data' && (
           <Button
             primary

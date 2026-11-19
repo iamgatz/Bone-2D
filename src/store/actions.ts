@@ -3,6 +3,10 @@ import { current } from 'immer';
 import type { Draft } from 'immer';
 import { animationEndTime } from '@/core/animate';
 import { DEFAULT_TOLERANCE, bakeAnimation, bakeSkips, scaleTolerance, simplifyAnimation } from '@/core/bake';
+import { applyCrossfade, fadeRefusal } from '@/core/crossfade';
+import type { Crossfade } from '@/core/crossfade';
+import { layerBones, stackLayer } from '@/core/layers';
+import type { LayerOptions } from '@/core/layers';
 import type { BakeOptions } from '@/core/bake';
 import { cleanUpAnimation } from '@/core/cleanup';
 import { closeLoop } from '@/core/loops';
@@ -997,6 +1001,61 @@ export function bakeCurrentAnimation(options: Partial<BakeOptions>): Id | null {
   if (skipped.length) toast(`Baked into "${baked.name}", but path constraint "${skipped.join('", "')}" has no path on some frames: its bones are not baked`, 'info', 7000);
   else toast(`Baked into "${baked.name}": ${Object.keys(baked.bones).length} bones carry keys`, 'ok');
   return baked.id;
+}
+
+/** Bakes `layer` on top of the current animation into a new animation (breathing over a walk). Returns its id. */
+export function layerCurrentAnimation(layerId: Id, options: Partial<LayerOptions>): Id | null {
+  const anim = currentAnimation();
+  const doc = skeletonDoc();
+  const layer = doc.animations.find((x) => x.id === layerId);
+  if (!anim || !layer) return null;
+  if (layer.id === anim.id) {
+    toast('Choose another animation for the layer', 'error');
+    return null;
+  }
+  const ids = new Set(doc.bones.map((x) => x.id));
+  const moved = layerBones(layer, ids);
+  if (!moved.length) {
+    toast(`"${layer.name}" moves no bones`, 'info');
+    return null;
+  }
+  const out = stackLayer(anim, layer, ids, doc.fps, options);
+  out.name = freshName(`${anim.name} + ${layer.name}`, doc.animations);
+  docStore.update('Layer animation', (d) => {
+    d.skeleton.animations.push(out);
+  });
+  selectAnimation(out.id);
+  toast(`Layered "${layer.name}" over "${anim.name}" into "${out.name}": ${moved.length} bones`, 'ok');
+  return out.id;
+}
+
+/** Fades the pictures of a slot into each other where this animation changes them (a second slot shows the old picture). Returns the partner slot. */
+export function crossfadeSlot(slotId: Id, seconds: number): Id | null {
+  const anim = currentAnimation();
+  const doc = skeletonDoc();
+  const slot = doc.slots.find((s) => s.id === slotId);
+  if (!anim || !slot) return null;
+  const why = fadeRefusal(doc, slot, anim);
+  if (why) {
+    toast(
+      why === 'no-keys' ? 'This animation changes no picture of the slot' : why === 'two-color' ? 'A slot with a dark color cannot fade' : why === 'color-keys' ? 'The slot already has color keys in this animation' : 'This slot changes no picture',
+      'info',
+    );
+    return null;
+  }
+  if (!applyCrossfade(structuredClone(doc), anim.id, slotId, seconds)) {
+    toast('No change of picture is long enough to fade', 'info');
+    return null;
+  }
+  let made: Crossfade | null = null;
+  docStore.update('Crossfade pictures', (d) => {
+    made = applyCrossfade(d.skeleton, anim.id, slotId, seconds);
+  });
+  const got = made as Crossfade | null;
+  if (!got) return null;
+  uiStore.patch({ selectedKeys: [] });
+  toast(`Faded ${got.fades} changes of picture; "${skeletonDoc().slots.find((s) => s.id === got.partner)?.name ?? ''}" shows the old pictures`, 'ok');
+  return got.partner;
 }
 
 export function selectAnimation(id: Id) {

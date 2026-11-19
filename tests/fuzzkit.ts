@@ -425,6 +425,27 @@ export const ops: Op[] = [
       A.setBonePose([{ id: b.id, props: next }], 'Rotate');
     },
   },
+  // an animation layered on top of the current one: a new animation with finite keys that exports and loads
+  {
+    name: 'layerAnimation',
+    run: (c) => {
+      const cur = A.currentAnimation();
+      const other = c.pick(doc().animations.filter((a) => a.id !== cur?.id));
+      if (!cur || !other) return;
+      const id = A.layerCurrentAnimation(other.id, { weight: c.num(0, 2), loop: c.chance(0.6), step: c.chance(0.3) ? 2 : 1 });
+      const made = id ? doc().animations.find((a) => a.id === id) : undefined;
+      if (made && !Object.values(made.bones).every((tl) => (Object.values(tl) as { value: number[] }[][]).every((t) => t.every((k) => k.value.every(Number.isFinite))))) throw new Error('a layered animation has a key that is not finite');
+    },
+  },
+  // the pictures of a slot fade into each other: a partner slot shows the old picture (refused when the slot has no picture keys or has color keys)
+  {
+    name: 'crossfadeSlot',
+    run: (c) => {
+      const keyed = doc().slots.filter((s) => A.currentAnimation()?.slots[s.id]?.attachment?.length);
+      const s = c.pick(keyed.length && c.chance(0.8) ? keyed : doc().slots);
+      if (s) A.crossfadeSlot(s.id, c.num(0.02, 0.6));
+    },
+  },
   { name: 'sequenceOff', run: (c) => { const withSeq = [...regions(), ...meshes()]; const r = c.pick(withSeq); if (r && c.chance(0.5)) SQ.setSequence(r.slotId, r.name, null); } },
   { name: 'closeLoop', run: (c) => { A.closeCurrentLoop(c.chance(0.7) ? 'first' : 'last', c.chance(0.3)); } },
   { name: 'deleteKeys', run: (c) => { const a = A.currentAnimation(); if (!a) return; const refs = allKeyRefs(a); A.deleteKeys(refs.filter(() => c.chance(0.15))); } },
@@ -576,10 +597,18 @@ const NOISE_FACTOR = 10;
 /**
  * Size of the nudges: the exporter rounds to 5 decimals (5e-6), the official runtime keeps animation data in float32 (6e-8
  * relative); these are a few times that. Several runs, because some poses sit on a knife-edge (a slider whose time lands exactly on
- * a key time: float32 decides whether the key counts) and each run falls on either side with probability 1/2; they are made only
+ * a key time: float32 decides whether the key counts) and each run falls on either side with probability 1/2 (fourteen runs: seed 569 of the layered op list needed more than six to see both sides); they are made only
  * when a difference has to be judged.
  */
 const NUDGES: [number, number][] = [
+  [2e-5, 2e-6],
+  [2e-5, 2e-6],
+  [2e-5, 2e-6],
+  [2e-5, 2e-6],
+  [2e-5, 2e-6],
+  [2e-5, 2e-6],
+  [2e-5, 2e-6],
+  [2e-5, 2e-6],
   [2e-5, 2e-6],
   [2e-5, 2e-6],
   [2e-5, 2e-6],
