@@ -12,6 +12,18 @@ export interface Release {
 
 export const CHANGELOG: Release[] = [
   {
+    version: '0.68',
+    date: '2026-11-19',
+    en: [
+      "Compare, take the parts you want: every difference that is gone here or differs now has a tick box in the Checkpoints list, and Take brings the ticked ones from the checkpoint or from the compared project file into the skeleton as one step (Undo takes it back). A bone that comes back brings the bones it hangs on, a slot its attachments in the skins, a constraint what it works on, a skin or animation the whole thing; the pictures a taken skin needs are read from the file. Nothing the open skeleton has and the other version lacks is ever deleted, and a bone is never hung under its own child.",
+      "A compared project file can be gone back to as a whole now (the button was greyed out): the skeleton becomes the one in the file and the pictures it has that the project lacks are read from it. One step of the history.",
+    ],
+    ru: [
+      "Сравнение: взять нужное. У каждого различия, которого здесь нет или которое теперь иное, в списке контрольных точек есть флажок, а кнопка «Взять» переносит отмеченное из контрольной точки или сравниваемого файла проекта в скелет одним шагом (Отмена возвращает). Вернувшаяся кость приносит кости, на которых висит, слот приносит свои картинки в скинах, констрейнт то, с чем работает, скин или анимация приходят целиком; картинки, нужные взятому скину, читаются из файла. Ничего, что есть в открытом скелете и нет в другой версии, не удаляется, и кость никогда не подвешивается под собственного потомка.",
+      "К сравниваемому файлу проекта теперь можно вернуться целиком (кнопка была неактивна): скелет становится таким, как в файле, а картинки, которые есть в файле и которых нет в проекте, читаются из него. Один шаг истории.",
+    ],
+  },
+  {
     version: '0.67',
     date: '2026-11-19',
     en: [

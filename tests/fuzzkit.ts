@@ -534,6 +534,8 @@ export const ops: Op[] = [
   { name: 'flipScale', run: (c) => { const b = c.pick(doc().bones); if (!b) return; A.setSelection({ bones: [b.id] }); POSE.flipScale(c.chance(0.5) ? 'x' : 'y'); } },
   { name: 'resetShape', run: (c) => { const polys: { slotId: string; name: string }[] = []; for (const slotId of Object.keys(doc().skins[0].attachments)) for (const a of Object.values(doc().skins[0].attachments[slotId])) if (a.type === 'clipping' || a.type === 'boundingbox') polys.push({ slotId, name: a.name }); const p = c.pick(polys); if (p) POLY.resetPolygonShape(p.slotId, p.name); } },
   { name: 'importReview', run: (c) => { const a = c.pick(doc().animations); if (!a) return; RV.importReviewText(serializeReview('fuzz', [makeComment(`f${Math.floor(c.r() * 1000)}`, a.name, c.r() * a.duration * 1.2, 'a note', 'Fuzz')])); } },
+  { name: 'takeFromCheckpoint', run: (c) => { const cp = c.pick(CP.checkpointsOfActive()); if (!cp) return; const can = diffSkeletons(cp.skeleton, docStore.get().skeleton).filter((x) => x.kind !== 'added' && (x.area === 'skeleton' || x.id)); if (!can.length) return; const picked = can.filter(() => c.chance(0.5)); if (!picked.length) picked.push(can[0]); CP.takeNow(cp, picked.map((x) => ({ area: x.area, id: x.id }))); getScene(); } },
+  { name: 'backToFile', run: (c) => { const cp = c.pick(CP.checkpointsOfActive().filter((x) => x.fromFile)); if (!cp) return; if (CP.restoreNow(cp) && diffSkeletons(cp.skeleton, docStore.get().skeleton).filter((x) => x.area !== 'skeleton').length) throw new Error('a restored project file differs from the file'); getScene(); } },
   { name: 'compareFile', run: () => { compareWithProjectText(JSON.stringify({ bone2d: 1, project: project(), images: {} }), 'fuzz.bone2d'); } },
   { name: 'keyAlphaOnly', run: (c) => { const s = c.pick(doc().slots); if (!s || !A.currentAnimation()) return; A.setMode('animate'); A.setSlotColor(s.id, [s.color[0], s.color[1], s.color[2], c.r()]); } },
   { name: 'keyColorOnly', run: (c) => { const s = c.pick(doc().slots); if (!s || !A.currentAnimation()) return; A.setMode('animate'); A.setSlotColor(s.id, [c.r(), c.r(), c.r(), s.color[3]]); } },
@@ -884,7 +886,7 @@ export function parityMismatch(p: Project): Mismatch | null {
         }
       }
       // (a slider whose driver sits on the 0/360 wrap applies its animation at time 0 in one runtime and at 360 in the other)
-      const colors = ambiguous.size ? null : colorMismatch(p, ours, official);
+      const colors = ambiguous.size ? null : colorMismatch(p, ours, official, judge);
       if (colors) return { ...colors, animation: anim.name, time: t };
       const shapes = attachmentMismatch(p, ours, official, ambiguous, judge);
       if (shapes) return { ...shapes, animation: anim.name, time: t };
@@ -897,7 +899,7 @@ export function parityMismatch(p: Project): Mismatch | null {
  * Slot colors, light and dark. They travel as 8-bit hex in the JSON and a bezier can extrapolate the rounding error, hence the
  * tolerance: a wrong channel, clamp or mix is off by far more.
  */
-function colorMismatch(p: Project, ours: ReturnType<typeof createSkeleton>, official: any): Omit<Mismatch, 'animation' | 'time'> | null {
+function colorMismatch(p: Project, ours: ReturnType<typeof createSkeleton>, official: any, judge: (read: (sk: any) => number, diff: number) => boolean): Omit<Mismatch, 'animation' | 'time'> | null {
   for (const os of official.slots) {
     const slotDoc = p.skeleton.slots.find((s) => s.name === os.data.name);
     const slot = slotDoc && ours.slotById(slotDoc.id);
@@ -915,7 +917,13 @@ function colorMismatch(p: Project, ours: ReturnType<typeof createSkeleton>, offi
       pairs.push([`sequence frame (ours: ${mine ? mine.kind + ' ' + mine.name : 'none'} seq=${JSON.stringify(seq)} idx=${slot.sequenceIndex}; official: ${shown.name} ${shown.sequence.regions.length} frames)`, seq ? resolveSequenceIndex(seq, slot.sequenceIndex) : NaN, shown.sequence.resolveIndex(os.appliedPose)]);
     }
     // a slider whose mix is 13 hands the 8-bit rounding of the colour keys back 13 times larger
-    for (const [what, x, y] of pairs) if (!(Math.abs(x - y) <= 1.5e-2 * colorAmplification(p))) return { bone: `slot "${os.data.name}"`, what, ours: x, official: y };
+    for (const [what, x, y] of pairs) {
+      if (Math.abs(x - y) <= 1.5e-2 * colorAmplification(p)) continue;
+      // a slider whose time lands on a key of the colour (to within the rounding of the file) takes it in one runtime and not in the other: the same knife edge as for bones
+      const ch = /^color\.([rgba])$/.exec(what)?.[1];
+      if (ch && judge((sk) => sk.slots.find((q: { data: { name: string } }) => q.data.name === os.data.name)?.appliedPose.color[ch] ?? NaN, x - y)) continue;
+      return { bone: `slot "${os.data.name}"`, what, ours: x, official: y };
+    }
   }
   return null;
 }
