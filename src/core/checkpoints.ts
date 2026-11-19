@@ -19,6 +19,8 @@ export interface Checkpoint {
   images: ImageRef[];
   /** The crossfade table of the Preview window: it names animations of the skeleton, so it goes back with it. */
   mixes: Project['mixes'];
+  /** The name of the project file this one was read from (a version to compare with, made by "Compare with a project file"); it cannot be restored. */
+  fromFile?: string;
 }
 
 /** At most this many checkpoints are kept for one skeleton; marking another drops the oldest. */
@@ -204,6 +206,21 @@ export function diffSkeletons(before: SkeletonDoc, after: SkeletonDoc): Change[]
   if (before.name !== after.name) own.push('name');
   if (own.length) out.push({ area: 'skeleton', kind: 'changed', name: after.name, fields: own });
   return out;
+}
+
+const AREA_NAME: Record<ChangeArea, string> = { bone: 'Bone', slot: 'Slot', skin: 'Skin', constraint: 'Constraint', event: 'Event', animation: 'Animation', skeleton: 'Skeleton' };
+
+/** The list of changes as plain text, one line each, to paste into a message or a review ("+ Bone arm", "~ Animation walk (12 keys: +2 -0 ~10)"). */
+export function changesToText(changes: readonly Change[]): string {
+  const sign = { added: '+', removed: '-', changed: '~' } as const;
+  return changes
+    .map((c) => {
+      let line = `${sign[c.kind]} ${AREA_NAME[c.area]} ${c.name}`;
+      if (c.fields?.length) line += ` (${c.fields.join(', ')})`;
+      if (c.keys) line += ` ${c.keys.added + c.keys.removed + c.keys.changed} keys: +${c.keys.added} -${c.keys.removed} ~${c.keys.changed}`;
+      return line;
+    })
+    .join('\n');
 }
 
 /** Counts of the added, removed and changed things in a list of changes. */

@@ -12,6 +12,18 @@ export interface Release {
 
 export const CHANGELOG: Release[] = [
   {
+    version: '0.59',
+    date: '2026-11-19',
+    en: [
+      "Compare with a project file (Checkpoints → the file-diff button, or the command palette): another version of the project, such as a teammate's copy or an older save, is read without opening it, shown as a pose under the current one and listed as what was added, removed and changed (bones, slots, skins, constraints, events, animations with their key counts). Things are matched by id, so it fits copies of the same project. Copy changes puts the list on the clipboard as plain text for a message or a review.",
+      "Why: in the Spine community teams report that sharing and merging project files is hard because the format is noisy; a readable list of what really changed between two files is the part that does not need a server. The checkpoint of a file cannot be restored (its pictures are not loaded); open the file as a project to work on it.",
+    ],
+    ru: [
+      "Сравнение с файлом проекта (Контрольные точки → кнопка со сравнением файлов или палитра команд): другая версия проекта, например копия коллеги или старое сохранение, читается без открытия, показывается позой под текущей и списком того, что добавлено, убрано и изменено (кости, слоты, скины, констрейнты, события, анимации с числом ключей). Вещи сопоставляются по id, так что это подходит для копий одного проекта. «Скопировать изменения» кладёт список в буфер обмена простым текстом для сообщения или ревью.",
+      "Зачем: в сообществе Spine команды пишут, что делиться файлами проекта и сливать их трудно из-за шумного формата; читаемый список того, что реально изменилось между двумя файлами, это часть, которой не нужен сервер. Контрольную точку из файла восстановить нельзя (её картинки не загружены); чтобы работать с файлом, откройте его как проект.",
+    ],
+  },
+  {
     version: '0.58',
     date: '2026-11-19',
     en: [

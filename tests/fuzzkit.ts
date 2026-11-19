@@ -38,6 +38,7 @@ import * as PRE from '../src/store/presetActions';
 import * as POSE from '../src/store/poseActions';
 import * as POLY from '../src/store/polygonActions';
 import * as RV from '../src/store/reviewActions';
+import { compareWithProjectText } from '../src/store/checkpoints';
 import { makeComment, serializeReview } from '../src/core/review';
 import * as NU from '../src/store/nudgeActions';
 import * as SS from '../src/store/selectionSetActions';
@@ -526,6 +527,7 @@ export const ops: Op[] = [
   { name: 'flipScale', run: (c) => { const b = c.pick(doc().bones); if (!b) return; A.setSelection({ bones: [b.id] }); POSE.flipScale(c.chance(0.5) ? 'x' : 'y'); } },
   { name: 'resetShape', run: (c) => { const polys: { slotId: string; name: string }[] = []; for (const slotId of Object.keys(doc().skins[0].attachments)) for (const a of Object.values(doc().skins[0].attachments[slotId])) if (a.type === 'clipping' || a.type === 'boundingbox') polys.push({ slotId, name: a.name }); const p = c.pick(polys); if (p) POLY.resetPolygonShape(p.slotId, p.name); } },
   { name: 'importReview', run: (c) => { const a = c.pick(doc().animations); if (!a) return; RV.importReviewText(serializeReview('fuzz', [makeComment(`f${Math.floor(c.r() * 1000)}`, a.name, c.r() * a.duration * 1.2, 'a note', 'Fuzz')])); } },
+  { name: 'compareFile', run: () => { compareWithProjectText(JSON.stringify({ bone2d: 1, project: project(), images: {} }), 'fuzz.bone2d'); } },
   { name: 'keyAlphaOnly', run: (c) => { const s = c.pick(doc().slots); if (!s || !A.currentAnimation()) return; A.setMode('animate'); A.setSlotColor(s.id, [s.color[0], s.color[1], s.color[2], c.r()]); } },
   { name: 'keyColorOnly', run: (c) => { const s = c.pick(doc().slots); if (!s || !A.currentAnimation()) return; A.setMode('animate'); A.setSlotColor(s.id, [c.r(), c.r(), c.r(), s.color[3]]); } },
   // ---- history
