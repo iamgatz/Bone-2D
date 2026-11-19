@@ -120,6 +120,7 @@ export function SettingsDialog() {
   const onionColorAfter = useSettings((s) => s.onionColorAfter);
   const onionArrows = useSettings((s) => s.onionArrows);
   const keyGrid = useSettings((s) => s.keyGrid);
+  const lastChosenCurve = useSettings((s) => s.lastChosenCurve);
   const boneScale = useSettings((s) => s.boneScale);
   const pixelGrid = useSettings((s) => s.pixelGrid);
   const showFps = useSettings((s) => s.showFps);
@@ -178,6 +179,9 @@ export function SettingsDialog() {
                 ]}
                 onChange={(v) => setSettings({ keyGrid: Number(v) })}
               />
+            </Row>
+            <Row label="New keys use the last chosen interpolation" hint="A new key gets the interpolation you set last on a key (smooth, linear or stepped) instead of the one picked in the timeline">
+              <Toggle on={lastChosenCurve} onChange={(v) => setSettings({ lastChosenCurve: v })} title="New keys use the last chosen interpolation" />
             </Row>
             <Row label="Hints" hint="The hints that pop up over buttons and fields">
               <Toggle on={tooltips} onChange={(v) => setSettings({ tooltips: v })} title="Hints" />

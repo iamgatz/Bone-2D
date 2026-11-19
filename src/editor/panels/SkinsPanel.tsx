@@ -1,13 +1,13 @@
 import { useMemo, useState } from 'react';
-import { Copy, CopyPlus, FolderInput, Layers, Lock, LockOpen, Palette, Pencil, Pin, Plus, Trash2, Link2, Bone as BoneIcon } from 'lucide-react';
+import { Copy, CopyPlus, FolderInput, Merge, Layers, Lock, LockOpen, Palette, Pencil, Pin, Plus, Trash2, Link2, Bone as BoneIcon } from 'lucide-react';
 import type { Bone, Constraint, Id, Project, SkeletonDoc, Skin } from '@/core/model';
 import { overrideCount, overrideState } from '@/core/skins';
-import type { DuplicateSkinOptions } from '@/core/skins';
+import type { DuplicateSkinOptions, MergeSkinOptions } from '@/core/skins';
 import { planSkinImages, suggestSkinPrefixes } from '@/core/skinImages';
-import { createSkin, createSkinFromImages, deleteSkin, duplicateSkinAction, renameSkin, setActiveSkin, toggleSkinMix, toggleSkinPin, setSkinRequiredAction, setSkinScopeAction, toggleSkinOverride } from '@/store/actions';
+import { createSkin, createSkinFromImages, deleteSkin, duplicateSkinAction, mergeSkinAction, renameSkin, setActiveSkin, toggleSkinMix, toggleSkinPin, setSkinRequiredAction, setSkinScopeAction, toggleSkinOverride } from '@/store/actions';
 import { useProject } from '@/store/doc';
 import { useUi } from '@/store/ui';
-import { Button, IconButton, Toggle } from '../ui/controls';
+import { Button, IconButton, SelectField, Toggle } from '../ui/controls';
 
 /** Bones in tree order with their depth (parents come first in the document, so one pass is enough). */
 function boneRows(doc: SkeletonDoc): { bone: Bone; depth: number }[] {
@@ -89,6 +89,37 @@ function DuplicateOptions({ skin, onDone }: { skin: Skin; onDone: () => void }) 
   );
 }
 
+/** Merge the skin into another one: its attachments are copied there; what comes along is up to the toggles. */
+function MergeOptions({ doc, skin, onDone }: { doc: SkeletonDoc; skin: Skin; onDone: () => void }) {
+  const targets = doc.skins.filter((s) => s.id !== skin.id);
+  const [into, setInto] = useState<Id>(targets[0]?.id ?? '');
+  const [opts, setOpts] = useState<Required<MergeSkinOptions>>({ overwrite: false, scope: true, animations: true });
+  const row = (label: string, key: keyof MergeSkinOptions, tip: string) => (
+    <div className="hstack" title={tip}>
+      <span className="grow">{label}</span>
+      <Toggle on={opts[key]} onChange={(v) => setOpts({ ...opts, [key]: v })} title={label} />
+    </div>
+  );
+  return (
+    <div className="skin-from">
+      <SelectField wide label="Merge into" value={into} options={targets.map((s) => ({ value: s.id, label: s.name }))} onChange={setInto} />
+      {row('Replace attachments that exist', 'overwrite', 'An attachment of the other skin with the same slot and name is replaced by this one; off, it stays')}
+      {row('Bones and constraints', 'scope', 'The bones and constraints that exist only in this skin join the other skin')}
+      {row('Animation keys', 'animations', 'The deform and sequence keys of every animation come along for the attachments that are copied')}
+      <Button
+        small
+        primary
+        disabled={!into}
+        onClick={() => {
+          if (mergeSkinAction(skin.id, into, opts)) onDone();
+        }}
+      >
+        Merge
+      </Button>
+    </div>
+  );
+}
+
 function SkinFromImages({ doc, images, onDone }: { doc: SkeletonDoc; images: Project['images']; onDone: () => void }) {
   const [prefix, setPrefix] = useState('');
   const suggestions = useMemo(() => suggestSkinPrefixes(doc, images), [doc, images]);
@@ -136,6 +167,7 @@ export function SkinsPanel() {
   const [renaming, setRenaming] = useState<string | null>(null);
   const [fromImages, setFromImages] = useState(false);
   const [dupOptions, setDupOptions] = useState(false);
+  const [merging, setMerging] = useState(false);
   const skinPins = useUi((s) => s.skinPins);
   const defaultSkin = doc.skins[0];
   const current = doc.skins.find((s) => s.id === skinId) ?? defaultSkin;
@@ -158,11 +190,13 @@ export function SkinsPanel() {
         <span className="title">Skins</span>
         <IconButton icon={Copy} title="Duplicate skin" small disabled={isDefault} onClick={() => duplicateSkinAction(current.id)} />
         <IconButton icon={CopyPlus} title="Duplicate skin with options: a name, what comes along" small disabled={isDefault} active={dupOptions} onClick={() => setDupOptions(!dupOptions)} />
+        <IconButton icon={Merge} title="Merge this skin into another skin: its attachments are copied there" small disabled={doc.skins.length < 2} active={merging} onClick={() => setMerging(!merging)} />
         <IconButton icon={FolderInput} title="Skin from pictures: the pictures that carry a prefix become the pictures of a new skin" small active={fromImages} onClick={() => setFromImages(!fromImages)} />
         <IconButton icon={Plus} title="New skin" small onClick={() => createSkin()} />
       </div>
       <div className="panel-body">
         {dupOptions && !isDefault && <DuplicateOptions key={current.id} skin={current} onDone={() => setDupOptions(false)} />}
+        {merging && doc.skins.length > 1 && <MergeOptions key={current.id} doc={doc} skin={current} onDone={() => setMerging(false)} />}
         {fromImages && <SkinFromImages doc={doc} images={project.images} onDone={() => setFromImages(false)} />}
         {doc.skins.map((s, i) => (
           <div key={s.id} className={`row${s === current ? ' selected' : ''}`} onClick={() => setActiveSkin(i === 0 ? null : s.id)} onDoubleClick={() => i > 0 && setRenaming(s.id)}>

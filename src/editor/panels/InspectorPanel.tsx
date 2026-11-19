@@ -13,7 +13,7 @@ import { BLEND_MODES, attachmentImage, pathNodeCount, polygonVertexCount } from 
 import { findKeyIndex } from '@/core/curve';
 import { folderOfSlot } from '@/core/folders';
 import { deleteFolder, renameFolder, setSlotFolder } from '@/store/folderActions';
-import { setSelection, deleteKeys, keySelectedBones, removeSkinImage, renameBone, renameSlot, setAnimationDuration, setAttachmentProps, setBonePose, setBoneProps, setFps, setSkinImage, setSlotAttachment, setSlotBone, setSlotColor, setSlotProps, setTool, currentAnimation } from '@/store/actions';
+import { setSelection, deleteKeys, keyConstrainedBones, keySelectedBones, removeSkinImage, renameBone, renameSlot, setAnimationDuration, setAttachmentProps, setBonePose, setBoneProps, setFps, setSkinImage, setSlotAttachment, setSlotBone, setSlotColor, setSlotProps, setTool, currentAnimation } from '@/store/actions';
 import type { PoseProps } from '@/store/actions';
 import { docStore, useProject } from '@/store/doc';
 import { bindPathToBones, setPathClosed, unbindPath } from '@/store/pathActions';
@@ -105,9 +105,14 @@ function BoneInspector({ id }: { id: Id }) {
         title="Transform"
         actions={
           animate && (
-            <Button ghost small title="Key all transform channels" onClick={() => keySelectedBones()}>
-              Key all
-            </Button>
+            <>
+              <Button ghost small title="Key the pose the bone has after the constraints (IK, physics, ...) instead of its own pose" onClick={() => keyConstrainedBones()}>
+                Key constrained
+              </Button>
+              <Button ghost small title="Key all transform channels" onClick={() => keySelectedBones()}>
+                Key all
+              </Button>
+            </>
           )
         }
       >

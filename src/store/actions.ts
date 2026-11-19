@@ -16,8 +16,8 @@ import { linkedTo, makeLink } from '@/core/links';
 import { KEY_EPS, findAnimation, freshName, sameKeyValue, makeCurve, normalizeBoneOrder, pruneSequences, purgeAttachment, removeBones, removeSlots, rgba2ToRgba, rgbaToRgba2, setSlotDarkColor, snapTime, upsertKey, decompose } from '@/core/edit';
 import type { BoneMats } from '@/core/mesh';
 import { moveKeys, removeKeys, resolveKeys, retargetClip } from '@/core/keyrefs';
-import { duplicateSkin, repointSkinPictures, setSkinRequired, setSkinScope, toggleOverride } from '@/core/skins';
-import type { DuplicateSkinOptions } from '@/core/skins';
+import { duplicateSkin, mergeSkin, repointSkinPictures, setSkinRequired, setSkinScope, toggleOverride } from '@/core/skins';
+import type { DuplicateSkinOptions, MergeSkinOptions } from '@/core/skins';
 import type { ScopeKind } from '@/core/skins';
 import type { KeyRef } from '@/core/keyrefs';
 import { RAD2DEG, atan2Deg, matInvert, matMul } from '@/core/math';
@@ -38,6 +38,7 @@ import { assets } from './assets';
 import type { ImageAsset } from './assets';
 import { entriesOf, pathedFromInput, readEntries } from './dropped';
 import { docStore } from './doc';
+import { settingsStore } from './settings';
 import { ATTACHMENT_TOOLS, emptySelection, toast, uiStore } from './ui';
 import type { PoseOverride, Selection, Tool } from './ui';
 
@@ -476,6 +477,40 @@ function keyBonesChannels(list: { id: Id; channels: Set<Channel> }[], label: str
     const a = d.skeleton.animations.find((x) => x.id === anim.id);
     if (!a) return;
     for (const p of prepared) keyBoneInDraft(d, a, p.id, p.pose, p.channels, time, ui.defaultCurve);
+    extendDuration(a, time);
+  });
+  uiStore.patch({ overrides: {} });
+}
+
+/**
+ * Key Constrained: keys the pose the selected bones have after the constraints (IK, transform, path, physics, sliders), as the viewport shows
+ * it now, instead of their own local pose. With it a physics motion or an IK pose is baked into ordinary keys one frame at a time.
+ */
+export function keyConstrainedBones() {
+  const ui = uiStore.get();
+  const anim = currentAnimation();
+  if (!anim || ui.mode !== 'animate') return;
+  if (!ui.selection.bones.length) {
+    toast('Select a bone to key');
+    return;
+  }
+  const time = ui.time;
+  const skeleton = getScene().skeleton;
+  const prepared = ui.selection.bones
+    .map((id) => {
+      const b = skeleton.boneById(id);
+      if (!b) return null;
+      b.validateApplied();
+      // the turn nearest to the rotation the bone has on its own, so that a key does not spin the bone a whole turn
+      const rotation = b.rotation + ((((b.arotation - b.rotation + 180) % 360) + 360) % 360) - 180;
+      return { id, pose: { x: b.ax, y: b.ay, rotation, scaleX: b.ascaleX, scaleY: b.ascaleY, shearX: b.ashearX, shearY: b.ashearY } };
+    })
+    .filter((x): x is NonNullable<typeof x> => x !== null);
+  if (!prepared.length) return;
+  docStore.update('Key constrained', (d) => {
+    const a = d.skeleton.animations.find((x) => x.id === anim.id);
+    if (!a) return;
+    for (const p of prepared) keyBoneInDraft(d, a, p.id, p.pose, new Set<BoneProp>(['rotate', 'translate', 'scale', 'shear']), time, ui.defaultCurve);
     extendDuration(a, time);
   });
   uiStore.patch({ overrides: {} });
@@ -1180,6 +1215,8 @@ export function setKeysCurve(refs: KeyRef[], kind: 'linear' | 'stepped' | 'bezie
       }
     }
   });
+  // "last chosen": the next new key starts with this interpolation (a custom curve counts as smooth)
+  if (settingsStore.get().lastChosenCurve) uiStore.patch({ defaultCurve: kind === 'linear' || kind === 'stepped' ? kind : 'bezier' });
 }
 
 // ------------------------------------------------------------------ events
@@ -1476,6 +1513,21 @@ export function duplicateSkinAction(id: Id, opts?: DuplicateSkinOptions, picture
     setActiveSkin(made);
     if (pictures?.find) toast(repointed ? `Duplicated, ${repointed} pictures point at other pictures` : 'Duplicated, no picture name matched a picture that exists', repointed ? 'ok' : 'info');
   } else toast('The default skin cannot be duplicated');
+}
+
+/** Merges a skin into another: its attachments (and, with the options, bones, constraints and keys) are copied there; the skin itself stays. */
+export function mergeSkinAction(fromId: Id, intoId: Id, opts?: MergeSkinOptions) {
+  let result: { added: number; replaced: number } | null = null;
+  let into = '';
+  docStore.update('Merge skins', (d) => {
+    result = mergeSkin(d.skeleton, fromId, intoId, opts);
+    into = d.skeleton.skins.find((s) => s.id === intoId)?.name ?? '';
+  });
+  const r = result as { added: number; replaced: number } | null;
+  if (!r) toast('Pick another skin to merge into');
+  else if (!r.added && !r.replaced) toast('Nothing to merge: every attachment is already there', 'info');
+  else toast(`Merged into "${into}": ${r.added} added, ${r.replaced} replaced`, 'ok');
+  return r;
 }
 
 /** "Skin required": the bone or constraint is only active in the skins that list it. */
