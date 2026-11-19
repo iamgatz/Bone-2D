@@ -2,6 +2,7 @@
  * What is in a project, in numbers, and what looks forgotten: the Metrics window reads this. No DOM; the checks are cheap and only report, they never change the document.
  */
 import type { Animation, Attachment, Project } from './model';
+import { unusedImages } from './images';
 import { attachmentPictures } from './sequence';
 
 export interface Stats {
@@ -32,6 +33,8 @@ export interface Warning {
   kind: WarningKind;
   /** The thing the warning is about (an image, animation or slot name). */
   subject: string;
+  /** Where it is, by id: what a fix and a click on the warning need (a slot, a skin, an attachment name, an animation). */
+  ref?: { slot?: string; skin?: string; name?: string; animation?: string };
 }
 
 /** Counts the keys of an animation: every array of objects that have a numeric `time`. */
@@ -110,16 +113,15 @@ export const MAX_INFLUENCES = 4;
 
 export function projectWarnings(project: Project): Warning[] {
   const out: Warning[] = [];
-  const used = new Set<string>();
-  const seen = new Map<string, number>();
-  for (const a of attachmentsOf(project)) {
-    if (a.type === 'region' || a.type === 'mesh') {
-      for (const picture of attachmentPictures(a)) used.add(picture);
-      seen.set(a.path, (seen.get(a.path) ?? 0) + 1);
-      const have = new Set(project.images.map((i) => i.name));
-      if (a.sequence && attachmentPictures(a).some((p) => !have.has(p))) out.push({ kind: 'missingFrame', subject: a.name });
+  const have = new Set(project.images.map((i) => i.name));
+  for (const skin of project.skeleton.skins) {
+    for (const [slotId, bySlot] of Object.entries(skin.attachments)) {
+      for (const a of Object.values(bySlot)) {
+        const ref = { slot: slotId, skin: skin.id, name: a.name };
+        if ((a.type === 'region' || a.type === 'mesh') && a.sequence && attachmentPictures(a).some((p) => !have.has(p))) out.push({ kind: 'missingFrame', subject: a.name, ref });
+        if (a.type === 'mesh' && a.weights?.some((w) => w.length > MAX_INFLUENCES)) out.push({ kind: 'tooManyInfluences', subject: a.name, ref });
+      }
     }
-    if (a.type === 'mesh' && a.weights?.some((w) => w.length > MAX_INFLUENCES)) out.push({ kind: 'tooManyInfluences', subject: a.name });
   }
   // a linked mesh that shares the deform of its source is moved by the keys of the source: keys of its own are not exported
   for (const anim of project.skeleton.animations) {
@@ -128,15 +130,16 @@ export function projectWarnings(project: Project): Warning[] {
       for (const [slotId, byName] of Object.entries(bySlot)) {
         for (const [name, keys] of Object.entries(byName)) {
           const att = skin?.attachments[slotId]?.[name];
-          if (att?.type === 'mesh' && att.link?.deform && keys.length) out.push({ kind: 'ignoredDeform', subject: `${anim.name}: ${name}` });
+          if (att?.type === 'mesh' && att.link?.deform && keys.length) out.push({ kind: 'ignoredDeform', subject: `${anim.name}: ${name}`, ref: { animation: anim.id, skin: skinId, slot: slotId, name } });
         }
       }
     }
   }
-  for (const img of project.images) if (!used.has(img.name)) out.push({ kind: 'unusedImage', subject: img.name });
-  for (const anim of project.skeleton.animations) if (countKeys(anim) === 0) out.push({ kind: 'emptyAnimation', subject: anim.name });
+  // an image another skeleton of the project shows is in use
+  for (const name of unusedImages(project)) out.push({ kind: 'unusedImage', subject: name });
+  for (const anim of project.skeleton.animations) if (countKeys(anim) === 0) out.push({ kind: 'emptyAnimation', subject: anim.name, ref: { animation: anim.id } });
   const filled = new Set<string>();
   for (const skin of project.skeleton.skins) for (const [slot, by] of Object.entries(skin.attachments)) if (Object.keys(by).length) filled.add(slot);
-  for (const s of project.skeleton.slots) if (!filled.has(s.id)) out.push({ kind: 'emptySlot', subject: s.name });
+  for (const s of project.skeleton.slots) if (!filled.has(s.id)) out.push({ kind: 'emptySlot', subject: s.name, ref: { slot: s.id } });
   return out;
 }

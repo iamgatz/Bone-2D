@@ -1,8 +1,10 @@
 import { useMemo } from 'react';
-import { AlertTriangle, CheckCircle2 } from 'lucide-react';
+import { AlertTriangle, CheckCircle2, Wrench } from 'lucide-react';
 import { estimatePages, poseMetrics } from '@/core/drawstats';
+import { canFix, isSafeFix } from '@/core/problems';
 import { MAX_INFLUENCES, projectStats, projectWarnings } from '@/core/stats';
 import type { Warning } from '@/core/stats';
+import { fixAllSafeWarnings, fixWarning, revealWarning } from '@/store/problemActions';
 import { useProject } from '@/store/doc';
 import { useUi } from '@/store/ui';
 import { getScene } from '../scene';
@@ -15,6 +17,15 @@ const WARNING_TEXT: Record<Warning['kind'], string> = {
   duplicatePath: 'Two attachments use the same image',
   missingFrame: 'A picture of the sequence is missing: the export cannot be read by an engine',
   ignoredDeform: 'Deform keys on a linked mesh that shares the deform of its source: the keys are not exported, move the source instead',
+};
+
+/** What the fix button of each warning does, shown as its tooltip. */
+const FIX_TEXT: Partial<Record<Warning['kind'], string>> = {
+  unusedImage: 'Remove this image from the project',
+  tooManyInfluences: 'Keep the 4 strongest bones of each vertex that has more: the pose does not change',
+  ignoredDeform: 'Delete these deform keys: the export ignores them',
+  emptyAnimation: 'Delete this animation',
+  emptySlot: 'Delete this slot',
 };
 
 /** The Metrics window: how big the skeleton is, and what looks forgotten before an export. */
@@ -82,7 +93,14 @@ export function MetricsPanel() {
             </div>
           ))}
         </div>
-        <div className="section-label">Before export</div>
+        <div className="section-label">
+          Before export
+          {warnings.some(isSafeFix) && (
+            <button className="btn sm" style={{ marginLeft: 8 }} title="Fix every problem that loses nothing: unused images, surplus influences, ignored deform keys" onClick={() => fixAllSafeWarnings()}>
+              <Wrench size={12} /> Fix all that are safe
+            </button>
+          )}
+        </div>
         {warnings.length === 0 ? (
           <div className="warn ok">
             <CheckCircle2 size={14} /> Nothing looks forgotten
@@ -92,7 +110,14 @@ export function MetricsPanel() {
             <div key={i} className="warn">
               <AlertTriangle size={14} />
               <span className="warn-text">{WARNING_TEXT[w.kind]}</span>
-              <b>{w.subject}</b>
+              <b style={w.ref?.slot || w.ref?.animation ? { cursor: 'pointer' } : undefined} onClick={() => revealWarning(w)}>
+                {w.subject}
+              </b>
+              {canFix(w) && (
+                <button className="btn sm" title={FIX_TEXT[w.kind]} onClick={() => fixWarning(w)}>
+                  <Wrench size={12} /> Fix
+                </button>
+              )}
             </div>
           ))
         )}
