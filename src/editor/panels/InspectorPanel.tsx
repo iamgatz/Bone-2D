@@ -1,7 +1,7 @@
 import { SoftControls } from './SoftControls';
 import { ConstraintEffects } from './ConstraintEffects';
 import { PivotSection } from './PivotSection';
-import { Bone as BoneIcon, BoxSelect, Crosshair, Image as ImageIcon, Layers, Link2, Scissors, Spline, Triangle, X } from 'lucide-react';
+import { Bone as BoneIcon, BoxSelect, Crosshair, Image as ImageIcon, Layers, Link2, RotateCcw, Scissors, Spline, Triangle, X } from 'lucide-react';
 import { useState } from 'react';
 import { createTransformConstraint, PRESET_LABEL } from '@/store/transformActions';
 import type { TransformPreset } from '@/store/transformActions';
@@ -13,6 +13,7 @@ import { BLEND_MODES, attachmentImage, pathNodeCount, polygonVertexCount } from 
 import { findKeyIndex } from '@/core/curve';
 import { folderOfSlot } from '@/core/folders';
 import { deleteFolder, renameFolder, setSlotFolder } from '@/store/folderActions';
+import { resetPolygonShape } from '@/store/polygonActions';
 import { setSelection, deleteKeys, keyConstrainedBones, keySelectedBones, removeSkinImage, renameBone, renameSlot, setAnimationDuration, setAttachmentProps, setBonePose, setBoneProps, setFps, setSkinImage, setSlotAttachment, setSlotBone, setSlotColor, setSlotProps, setTool, currentAnimation } from '@/store/actions';
 import type { PoseProps } from '@/store/actions';
 import { docStore, useProject } from '@/store/doc';
@@ -516,6 +517,11 @@ function PolygonInspector({ slotId, att, disabled }: { slotId: Id; att: PolygonA
       {!disabled && (
         <Button primary={tool === 'mesh'} icon={Triangle} onClick={() => setTool('mesh')} title="Edit vertices (M)">
           Edit vertices
+        </Button>
+      )}
+      {!disabled && (
+        <Button ghost small icon={RotateCcw} onClick={() => resetPolygonShape(slotId, att.name)} title="Reset the polygon to a square around the bone (weights and deform keys of the old shape go)">
+          Reset shape
         </Button>
       )}
       {!disabled && tool === 'mesh' && <SoftControls />}

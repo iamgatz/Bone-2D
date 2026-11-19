@@ -12,6 +12,22 @@ export interface Release {
 
 export const CHANGELOG: Release[] = [
   {
+    version: '0.57',
+    date: '2026-11-19',
+    en: [
+      "Duplicate and Mirror now bring the constraints that act on the copied bones (IK, transform, path, physics): a constraint whose constrained bones are all copied is copied onto the copies. Its target stays the original bone unless that was copied too, and a mirrored IK flips its bend direction.",
+      "Clipping and bounding box: a Reset shape button puts the polygon back to a square around its bone (weights and deform keys of the old shape go).",
+      "Commands: Flip scale X / Y of the selected bones, and Move the bone up / down among its siblings (Spine's Bone Order Up / Down; the descendants go along).",
+      "Fixes: deform keys of a skin no longer go stale when a skin picture replaces an attachment, or when the source of a linked mesh that takes its deform changes shape.",
+    ],
+    ru: [
+      "«Дублировать» и «Отразить» теперь берут с собой констрейнты, которые действуют на копируемые кости (IK, transform, path, physics): констрейнт, у которого все ограничиваемые кости скопированы, копируется на копии. Его цель остаётся прежней костью, если её не копировали тоже, а у отражённого IK направление изгиба меняется.",
+      "Clipping и bounding box: кнопка «Сбросить форму» возвращает многоугольник к квадрату вокруг его кости (веса и ключи деформации старой формы пропадают).",
+      "Команды: «Отразить масштаб X / Y выбранных костей» и «Сдвинуть кость выше / ниже среди соседей» (Bone Order Up / Down в Spine; потомки идут следом).",
+      "Исправления: ключи деформации скина больше не устаревают, когда картинка скина заменяет вложение или когда меняется форма источника связанного меша, который берёт его деформацию.",
+    ],
+  },
+  {
     version: '0.56',
     date: '2026-11-19',
     en: [

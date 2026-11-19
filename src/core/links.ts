@@ -97,7 +97,8 @@ export function syncLinkedMeshes(doc: SkeletonDoc): number {
         }
         if (att.link.skin === defaultId) att.link.skin = null;
         if (att.link.slot === slotId) att.link.slot = null;
-        const old = att.link.deform ? null : { ...att }; // a linked mesh with deform keys of its own: they have to follow its new shape
+        // deform keys of its own (made for it, or copied with a skin) have to follow its new shape, also when it takes the deform of its source
+        const old = { ...att };
         if (copyShape(att, source.mesh)) {
           changes++;
           if (old) keepOwnDeform(doc, skin, slotId, name, old, att);

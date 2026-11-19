@@ -3,7 +3,7 @@
  * attachment in the skin "arctic". A skin with forty slots is then one step instead of forty edits of the "in skin" field.
  */
 import { current, isDraft } from 'immer';
-import { freshName } from './edit';
+import { dropDeformTimeline, freshName, pruneSequences } from './edit';
 import { baseOf } from './images';
 import { makeLink } from './links';
 import { newSkin } from './model';
@@ -93,6 +93,18 @@ export function suggestSkinPrefixes(doc: SkeletonDoc, images: ImageRef[], min = 
  * Puts a picture in a skin in place of the attachment `placeholder` of the default skin. A mesh gets a linked mesh that keeps its shape,
  * weights and deform; a region gets a copy with the picture's size. Works on a draft. Returns false when there is nothing to replace.
  */
+/** The deform and sequence keys a skin made for an attachment it is about to replace do not fit the new one. */
+function dropReplacedTimelines(doc: SkeletonDoc, skinId: Id, slotId: Id, name: string) {
+  if (!doc.skins.find((s) => s.id === skinId)?.attachments[slotId]?.[name]) return;
+  for (const a of doc.animations) {
+    dropDeformTimeline(a, skinId, slotId, name);
+    if (a.sequence?.[skinId]?.[slotId]) {
+      delete a.sequence[skinId][slotId][name];
+      pruneSequences(a);
+    }
+  }
+}
+
 export function putSkinImage(doc: SkeletonDoc, skinId: Id, slotId: Id, placeholder: string, img: { name: string; width: number; height: number }): boolean {
   const defSkin = doc.skins[0];
   const def = defSkin?.attachments[slotId]?.[placeholder];
@@ -104,10 +116,12 @@ export function putSkinImage(doc: SkeletonDoc, skinId: Id, slotId: Id, placehold
     const shape = structuredClone(isDraft(def) ? current(def) : def);
     delete shape.sequence; // one picture
     delete shape.region;
+    dropReplacedTimelines(doc, skin.id, slotId, placeholder);
     (skin.attachments[slotId] ??= {})[placeholder] = { ...shape, name: placeholder, path: img.name, color: [1, 1, 1, 1], link: makeLink(doc, slotId, { skinId: defSkin.id, slotId, name: placeholder }) };
     return true;
   }
   const base: Pick<RegionAttachment, 'x' | 'y' | 'rotation' | 'scaleX' | 'scaleY'> = def.type === 'region' ? def : { x: 0, y: 0, rotation: 0, scaleX: 1, scaleY: 1 };
+  dropReplacedTimelines(doc, skin.id, slotId, placeholder);
   (skin.attachments[slotId] ??= {})[placeholder] = {
     type: 'region',
     name: placeholder,

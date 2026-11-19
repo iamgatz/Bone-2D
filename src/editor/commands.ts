@@ -12,7 +12,7 @@ import { docStore } from '@/store/doc';
 import { openKeyDialog } from '@/store/keyDialog';
 import { LAYOUTS, VIEW_LIST } from '@/store/layout';
 import { startSetParent } from '@/store/parentActions';
-import { copyPose, duplicateSelection, pastePose, resetPose, swapSides } from '@/store/poseActions';
+import { copyPose, duplicateSelection, flipScale, moveBoneOrderAction, pastePose, resetPose, swapSides } from '@/store/poseActions';
 import { newProject, openProjectFile, packageProject, saveProjectFile } from '@/store/project';
 import { loadSample } from '@/store/sample';
 import { toast, uiStore } from '@/store/ui';
@@ -70,6 +70,10 @@ export function buildCommands(): Command[] {
     { id: 'view.isolate', group: 'View', title: 'Show only the selection', keys: KEYS.isolate, run: () => void isolateSelection() },
     { id: 'edit.parent', group: 'Edit', title: 'Set parent', keys: KEYS.parent, run: () => void startSetParent() },
     { id: 'edit.reset', group: 'Edit', title: 'Reset pose', run: () => resetPose() },
+    { id: 'edit.flipscalex', group: 'Edit', title: 'Flip scale X of the selected bones', run: () => flipScale('x') },
+    { id: 'edit.flipscaley', group: 'Edit', title: 'Flip scale Y of the selected bones', run: () => flipScale('y') },
+    { id: 'edit.boneup', group: 'Edit', title: 'Move the bone up among its siblings', run: () => moveBoneOrderAction(-1) },
+    { id: 'edit.bonedown', group: 'Edit', title: 'Move the bone down among its siblings', run: () => moveBoneOrderAction(1) },
     { id: 'edit.copypose', group: 'Edit', title: 'Copy pose', run: () => copyPose() },
     { id: 'edit.swapsides', group: 'Edit', title: 'Swap left and right pose', run: () => swapSides() },
     { id: 'edit.pastepose', group: 'Edit', title: 'Paste pose', run: () => pastePose() },

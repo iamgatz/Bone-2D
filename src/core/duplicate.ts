@@ -7,7 +7,7 @@ import { decompose, freshName, normalizeBoneOrder } from './edit';
 import { uid } from './ids';
 import { matInvert, matMul } from './math';
 import type { Mat } from './math';
-import type { Attachment, Bone, Id, Inherit, SkeletonDoc, Slot } from './model';
+import type { Attachment, Bone, Constraint, Id, Inherit, SkeletonDoc, Slot } from './model';
 
 const IDENTITY: Mat = { a: 1, b: 0, c: 0, d: 1, x: 0, y: 0 };
 
@@ -35,9 +35,16 @@ export function mirrorName(name: string): string {
 export interface Duplicated {
   bones: Id[];
   slots: Id[];
+  /** The constraints that were copied along (see `duplicateBones`). */
+  constraints: Id[];
 }
 
-/** Copies the bones (and their subtrees) in `ids`. `mats` are the setup-pose world matrices of the bones of `doc`. */
+/**
+ * Copies the bones (and their subtrees) in `ids`. `mats` are the setup-pose world matrices of the bones of `doc`.
+ * A constraint whose constrained bones are all copied is copied too, onto the copies (Spine: duplicating a bone brings its constraints). Its
+ * target (IK, path) or source (transform) is the copy when that bone or slot was copied as well, and the original otherwise. A mirrored
+ * copy flips the bend direction of an IK constraint. Sliders are not copied. The keys of the constraints are not copied, like the keys of the bones.
+ */
 export function duplicateBones(doc: SkeletonDoc, mats: Map<Id, Mat>, ids: Id[], mirror: boolean): Duplicated {
   const byId = new Map(doc.bones.map((b) => [b.id, b] as const));
   const picked = new Set(ids.filter((id) => byId.has(id)));
@@ -88,6 +95,26 @@ export function duplicateBones(doc: SkeletonDoc, mats: Map<Id, Mat>, ids: Id[], 
   }
   doc.slots.splice(0, doc.slots.length, ...order);
   const boneOf = (id: Id) => clones.get(id)?.id ?? id;
+  const consClones = new Map<Id, Constraint>();
+  for (const c of [...doc.constraints]) {
+    if (c.type === 'slider') continue;
+    const constrained = c.type === 'physics' ? [c.bone] : c.bones;
+    if (!constrained.length || !constrained.every((b) => clones.has(b))) continue;
+    const base = { id: uid(), name: freshName(mirror ? mirrorName(c.name) : `${c.name} copy`, [...doc.constraints, ...consClones.values()]) };
+    const n = JSON.parse(JSON.stringify(c)) as Exclude<Constraint, { type: 'slider' }>;
+    Object.assign(n, base);
+    if (n.type === 'physics') n.bone = boneOf(n.bone);
+    else {
+      n.bones = n.bones.map(boneOf);
+      if (n.type === 'ik') {
+        n.target = boneOf(n.target);
+        if (mirror) n.bendPositive = !n.bendPositive;
+      } else if (n.type === 'transform') n.source = boneOf(n.source);
+      else n.target = slotClone.get(n.target)?.id ?? n.target;
+    }
+    consClones.set(c.id, n);
+  }
+  doc.constraints.push(...consClones.values());
   for (const skin of doc.skins) {
     for (const [slotId, c] of slotClone) {
       const atts = skin.attachments[slotId];
@@ -101,6 +128,7 @@ export function duplicateBones(doc: SkeletonDoc, mats: Map<Id, Mat>, ids: Id[], 
       skin.attachments[c.id] = copied;
     }
     for (const [from, c] of clones) if (skin.bones.includes(from)) skin.bones.push(c.id);
+    for (const [from, c] of consClones) if (skin.constraints.includes(from)) skin.constraints.push(c.id);
   }
-  return { bones: added.map((b) => b.id), slots: newSlots.map((s) => s.id) };
+  return { bones: added.map((b) => b.id), slots: newSlots.map((s) => s.id), constraints: [...consClones.values()].map((c) => c.id) };
 }
