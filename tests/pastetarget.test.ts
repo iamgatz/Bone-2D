@@ -22,6 +22,23 @@ describe('retargetClip', () => {
     expect(retargetClip([bone('a'), bone('b')], ['c'], null).map((c) => c.target)).toEqual(['a', 'b']);
   });
 
+  it('sends the keys of several bones onto as many other selected bones, one for one, in the order of the document', () => {
+    const order = ['a', 'b', 'c', 'd', 'e'];
+    // copied from a and b (in any order), pasted onto d and c: a goes to the first of them in the document (c), b to d
+    expect(retargetClip([bone('b'), bone('a')], ['d', 'c'], null, order).map((c) => c.target)).toEqual(['d', 'c']);
+    expect(retargetClip([bone('a'), bone('b'), bone('a')], ['d', 'c'], null, order).map((c) => c.target)).toEqual(['c', 'd', 'c']);
+    // not as many bones selected, or the same bones: they stay
+    expect(retargetClip([bone('a'), bone('b')], ['c', 'd', 'e'], null, order).map((c) => c.target)).toEqual(['a', 'b']);
+    expect(retargetClip([bone('a'), bone('b')], ['b', 'a'], null, order).map((c) => c.target)).toEqual(['a', 'b']);
+    // without the order the lists are taken as they come
+    expect(retargetClip([bone('a'), bone('b')], ['d', 'c'], null).map((c) => c.target)).toEqual(['d', 'c']);
+  });
+
+  it('leaves the keys that are not bone keys alone when it moves the bone keys', () => {
+    const ik = { kind: 'ik' as const, target: 'ik1', prop: '', time: 0 };
+    expect(retargetClip([bone('a'), ik, bone('b')], ['c', 'd'], null, ['a', 'b', 'c', 'd']).map((c) => c.target)).toEqual(['c', 'ik1', 'd']);
+  });
+
   it('does the same for the keys of one slot', () => {
     expect(retargetClip([slot('s1')], [], 's2').map((c) => c.target)).toEqual(['s2']);
     expect(retargetClip([slot('s1')], [], 's1').map((c) => c.target)).toEqual(['s1']);
@@ -57,6 +74,26 @@ describe('pasting keys', () => {
     expect(validateProject(docStore.get())).toEqual([]);
     docStore.undo();
     expect(anim().bones[lower.id]?.rotate?.some((k) => k.value[0] === mine[0].value[0]) ?? false).toBe(false);
+  });
+
+  it('puts the keys of two bones on two other bones, each pair matched in the order of the document', () => {
+    const bones = doc().bones;
+    const [a, b, c, d] = [bones[1], bones[2], bones[3], bones[4]];
+    A.setTime(0.2);
+    A.setBonePose([{ id: a.id, props: { rotation: 30 } }, { id: b.id, props: { rotation: -40 } }]);
+    A.copyKeys([
+      { kind: 'bone', target: b.id, prop: 'rotate', time: 0.2 },
+      { kind: 'bone', target: a.id, prop: 'rotate', time: 0.2 },
+    ]);
+    const src = (id: string) => A.currentAnimation()!.bones[id].rotate!.find((k) => Math.abs(k.time - 0.2) < 1e-3)!.value[0];
+    A.setSelection({ bones: [d.id, c.id] });
+    const pasted = A.pasteKeys(0.8);
+    expect(pasted.map((p) => p.target).sort()).toEqual([c.id, d.id].sort());
+    const keyOf = (id: string) => A.currentAnimation()!.bones[id].rotate!.find((k) => Math.abs(k.time - 0.8) < 1e-3)!;
+    // the keys carry the same swing as their source (their values are relative to the setup pose of the bone)
+    expect(keyOf(c.id).value[0]).toBeCloseTo(src(a.id), 6);
+    expect(keyOf(d.id).value[0]).toBeCloseTo(src(b.id), 6);
+    expect(validateProject(docStore.get())).toEqual([]);
   });
 
   it('still pastes onto the same bone when it is the one selected', () => {

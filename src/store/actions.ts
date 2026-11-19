@@ -1601,12 +1601,13 @@ export function pasteKeys(time: number): KeyRef[] {
   const out: KeyRef[] = [];
   const doc = skeletonDoc();
   const fps = doc.fps;
-  // keys copied from one bone go onto the bone that is selected now (the other arm), else back where they came from
+  // keys copied from one bone go onto the bone that is selected now (the other arm), keys from several bones onto as many selected bones, else back where they came from
   const sel = uiStore.get().selection;
   const items = retargetClip(
     clipboard,
     sel.bones.filter((id) => doc.bones.some((b) => b.id === id)),
     sel.slot && doc.slots.some((s) => s.id === sel.slot) ? sel.slot : null,
+    doc.bones.map((b) => b.id),
   );
   docStore.update('Paste keys', (d) => {
     const a = d.skeleton.animations.find((x) => x.id === anim.id);

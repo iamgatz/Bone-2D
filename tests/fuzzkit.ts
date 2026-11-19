@@ -552,6 +552,7 @@ export const ops: Op[] = [
     });
   } },
   { name: 'resetPath', run: (c) => { const paths: { slotId: string; name: string }[] = []; for (const slotId of Object.keys(doc().skins[0].attachments)) for (const a of Object.values(doc().skins[0].attachments[slotId])) if (a.type === 'path') paths.push({ slotId, name: a.name }); const p = c.pick(paths); if (p) PA.resetPathShape(p.slotId, p.name); } },
+  { name: 'copyPasteBones', run: (c) => { const a = A.currentAnimation(); if (!a || doc().bones.length < 4) return; const refs = allKeyRefs(a).filter((r) => r.kind === 'bone'); const from = [...new Set(refs.map((r) => r.target))].slice(0, 2); if (from.length < 2) return; A.copyKeys(refs.filter((r) => from.includes(r.target))); const others = doc().bones.filter((b) => !from.includes(b.id)); if (others.length < 2) return; A.setSelection({ bones: [c.pick(others)!.id, c.pick(others)!.id].filter((x, i, l) => l.indexOf(x) === i) }); A.pasteKeys(c.r() * a.duration); } },
   { name: 'fixProblems', run: (c) => { const w = c.pick(projectWarnings(project()).filter(canFix)); if (c.chance(0.5) || !w) PRB.fixAllSafeWarnings(); else PRB.fixWarning(w); } },
   // ---- history
   { name: 'undo', run: () => docStore.undo() },

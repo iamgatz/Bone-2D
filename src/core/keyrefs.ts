@@ -188,12 +188,26 @@ export function pruneEmpty(anim: Animation) {
  * Where copied keys go when they are pasted: onto the bone (or slot) that is selected now, when the copy came from one other bone (slot).
  * So the swing of one arm can be pasted onto the other. A copy from several bones, or a paste with the same bone selected, stays where it was.
  * Several selected bones each get a copy of the keys.
+ *
+ * A copy from several bones goes onto as many other selected bones, one for one (Spine 4.3: "copying keys from multiple bones and pasting to
+ * different bones, like when pasting bone transforms"): both lists are put in the order of the bones in the document (`boneOrder`), so the
+ * first copied bone goes to the first selected bone, and so on: the swing of a whole left arm chain onto the right one.
+ * When the number of selected bones is another one, or they are the very bones the keys came from, the keys stay where they were.
  */
-export function retargetClip<T extends { kind: KeyKind; target: Id }>(clip: readonly T[], selectedBones: readonly Id[], selectedSlot: Id | null): T[] {
+export function retargetClip<T extends { kind: KeyKind; target: Id }>(clip: readonly T[], selectedBones: readonly Id[], selectedSlot: Id | null, boneOrder?: readonly Id[]): T[] {
   let out = [...clip];
   const bones = [...new Set(clip.filter((c) => c.kind === 'bone').map((c) => c.target))];
   if (bones.length === 1 && selectedBones.length && !(selectedBones.length === 1 && selectedBones[0] === bones[0])) {
     out = out.flatMap((c) => (c.kind !== 'bone' ? [c] : selectedBones.map((b) => ({ ...c, target: b }))));
+  } else if (bones.length >= 2 && selectedBones.length === bones.length && new Set(selectedBones).size === bones.length) {
+    const rank = (id: Id) => (boneOrder ? boneOrder.indexOf(id) : 0);
+    const byOrder = (ids: readonly Id[]) => (boneOrder ? [...ids].sort((a, b) => rank(a) - rank(b)) : [...ids]);
+    const from = byOrder(bones);
+    const to = byOrder(selectedBones);
+    if (from.some((id, i) => id !== to[i])) {
+      const to_ = new Map(from.map((id, i) => [id, to[i]] as const));
+      out = out.map((c) => (c.kind === 'bone' ? { ...c, target: to_.get(c.target) ?? c.target } : c));
+    }
   }
   const slots = [...new Set(clip.filter((c) => c.kind === 'slot').map((c) => c.target))];
   if (slots.length === 1 && selectedSlot && selectedSlot !== slots[0]) out = out.map((c) => (c.kind === 'slot' ? { ...c, target: selectedSlot } : c));

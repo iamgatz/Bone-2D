@@ -9,6 +9,7 @@ import { BONE_PROPS, GLOBAL_PHYSICS } from '@/core/model';
 import type { Animation, Id, Key, SkeletonDoc } from '@/core/model';
 import { moveKeysBy, setKeyChannelValue, setKeyCurveHandle, setTime } from '@/store/actions';
 import { docStore } from '@/store/doc';
+import { useSettings } from '@/store/settings';
 import { uiStore } from '@/store/ui';
 import type { Selection } from '@/store/ui';
 import { tr, useLang } from '@/i18n';
@@ -63,8 +64,11 @@ export function channelNames(kind: KeyRef['kind'], prop: string): string[] {
   return CHANNEL_NAMES[prop] ?? [prop];
 }
 
-/** Curves for: timelines of selected keys, else all timelines of the selected bones. */
-export function buildCurves(doc: SkeletonDoc, anim: Animation | null, selection: Selection, selectedKeys: string[]): Curve[] {
+/**
+ * Curves for: timelines of selected keys, else all timelines of the selected bones (`sync` 'dopesheet', Spine's dopesheet-centric mode:
+ * a key selected in the Dopesheet shows its own timeline). With `sync` 'selection' the keys do not matter: the selected bones' timelines.
+ */
+export function buildCurves(doc: SkeletonDoc, anim: Animation | null, selection: Selection, selectedKeys: string[], sync: 'dopesheet' | 'selection' = 'dopesheet'): Curve[] {
   if (!anim) return [];
   const out: Curve[] = [];
   const seen = new Set<string>();
@@ -84,7 +88,7 @@ export function buildCurves(doc: SkeletonDoc, anim: Animation | null, selection:
     if (!b || !tl) return;
     for (const p of BONE_PROPS) if (!only || only === p) add('bone', boneId, p, tl[p], b.name, CHANNEL_NAMES[p]);
   };
-  const refs = selectedKeys.map(decodeKey);
+  const refs = sync === 'selection' ? [] : selectedKeys.map(decodeKey);
   for (const r of refs) {
     if (r.kind === 'bone') addBone(r.target, r.prop);
     else if (r.kind === 'slot' && (r.prop === 'rgba' || r.prop === 'rgba2')) add('slot', r.target, r.prop, anim.slots[r.target]?.[r.prop], doc.slots.find((s) => s.id === r.target)?.name ?? '?', CHANNEL_NAMES[r.prop]);
@@ -114,7 +118,8 @@ interface Drag {
 }
 
 export function GraphEditor({ anim, doc, selection, selectedKeys, fps }: { anim: Animation | null; doc: SkeletonDoc; selection: Selection; selectedKeys: string[]; fps: number }) {
-  const curves = useMemo(() => buildCurves(doc, anim, selection, selectedKeys), [doc, anim, selection, selectedKeys]);
+  const sync = useSettings((s) => s.graphSync);
+  const curves = useMemo(() => buildCurves(doc, anim, selection, selectedKeys, sync), [doc, anim, selection, selectedKeys, sync]);
   const [hidden, setHidden] = useState<Record<string, boolean>>({});
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const hostRef = useRef<HTMLDivElement>(null);
