@@ -51,6 +51,18 @@ export async function serializeProject(): Promise<string> {
   return JSON.stringify(file);
 }
 
+/** The project a project file holds, read without opening it (nothing in the editor changes). Null when the text is not a Bone 2D project file. */
+export function readProjectFile(text: string): Project | null {
+  try {
+    const file = JSON.parse(text) as ProjectFile;
+    if (!file || typeof file !== 'object' || (file.bone2d !== 1 && file.marrow !== 1) || !file.project?.skeleton || typeof file.project.skeleton !== 'object') return null;
+    repairProject(file.project);
+    return migrateProject(file.project);
+  } catch {
+    return null;
+  }
+}
+
 export interface LoadReport {
   /** Problems found in the file and fixed while opening it (dangling ids, stale deform keys, NaN ...). */
   repaired: string[];

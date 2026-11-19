@@ -1,9 +1,9 @@
 import { useMemo } from 'react';
-import { Eye, EyeOff, Flag, Pencil, RotateCcw, Trash2 } from 'lucide-react';
-import { diffSkeletons, nextCheckpointName, summarizeChanges } from '@/core/checkpoints';
+import { ClipboardCopy, Eye, EyeOff, FileDiff, Flag, Pencil, RotateCcw, Trash2 } from 'lucide-react';
+import { changesToText, diffSkeletons, nextCheckpointName, summarizeChanges } from '@/core/checkpoints';
 import type { Change, Checkpoint } from '@/core/checkpoints';
 import { askName } from '@/store/ask';
-import { checkpointsOfActive, deleteCheckpoint, markCheckpoint, renameCheckpoint, restoreCheckpoint, toggleCompare, useCheckpointList } from '@/store/checkpoints';
+import { checkpointsOfActive, deleteCheckpoint, markCheckpoint, pickProjectToCompare, renameCheckpoint, restoreCheckpoint, toggleCompare, useCheckpointList } from '@/store/checkpoints';
 import { useProject } from '@/store/doc';
 import { toast, useUi } from '@/store/ui';
 import { IconButton } from '../ui/controls';
@@ -21,6 +21,16 @@ function Changes({ cp }: { cp: Checkpoint }) {
     <>
       <div className="row">
         <span className="label dim" title="Compared with the pose drawn in violet under the current one">{`+${sum.added}  −${sum.removed}  ~${sum.changed}`}</span>
+        <span className="actions pinned">
+          <IconButton
+            icon={ClipboardCopy}
+            title="Copy the list of changes as text (to paste into a message)"
+            small
+            onClick={() => {
+              void navigator.clipboard?.writeText(changesToText(changes)).then(() => toast('Changes copied', 'ok'), () => toast('Could not copy', 'error'));
+            }}
+          />
+        </span>
       </div>
       {changes.slice(0, 60).map((c, i) => (
         <div key={i} className="row change-row" title={c.keys ? `+${c.keys.added} −${c.keys.removed} ~${c.keys.changed}` : undefined}>
@@ -62,6 +72,7 @@ export function Checkpoints() {
         <span className="ico"><Flag size={12} /></span>
         <span className="label dim" title="Mark the skeleton as it is now. Later: show its pose under the current one, see what changed, or go back to it">Kept until the project is closed</span>
         <span className="actions pinned">
+          <IconButton icon={FileDiff} title="Compare with a project file: another version of the project (a teammate's copy, an older save)" small onClick={() => pickProjectToCompare()} />
           <IconButton icon={Flag} title="Mark a checkpoint" small onClick={() => void mark()} />
         </span>
       </div>
@@ -73,7 +84,7 @@ export function Checkpoints() {
             <span className="row-meta">{new Date(c.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
             <span className="actions">
               <IconButton icon={compare === c.id ? EyeOff : Eye} title={compare === c.id ? 'Stop comparing' : 'Compare: show this pose under the current one and list the changes'} small active={compare === c.id} onClick={() => toggleCompare(c.id)} />
-              <IconButton icon={RotateCcw} title="Go back to this checkpoint (Undo brings the work back)" small onClick={() => restoreCheckpoint(c.id)} />
+              <IconButton icon={RotateCcw} title={c.fromFile ? 'A project file cannot be restored here: open it as a project' : 'Go back to this checkpoint (Undo brings the work back)'} small disabled={!!c.fromFile} onClick={() => restoreCheckpoint(c.id)} />
               <IconButton
                 icon={Pencil}
                 title="Rename this checkpoint"

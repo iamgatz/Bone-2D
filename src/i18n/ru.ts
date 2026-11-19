@@ -1848,4 +1848,12 @@ export const RU: Record<string, string> = {
   'Mark the comment as dealt with': 'Отметить замечание как учтённое',
   'a reviewer': 'рецензент',
   'Select the bone the comment points at': 'Выбрать кость, на которую указывает замечание',
+  'Compare with a project file': 'Сравнить с файлом проекта',
+  "Compare with a project file: another version of the project (a teammate's copy, an older save)": 'Сравнить с файлом проекта: другая версия проекта (копия коллеги, старое сохранение)',
+  'Copy the list of changes as text (to paste into a message)': 'Скопировать список изменений текстом (чтобы вставить в сообщение)',
+  'Changes copied': 'Изменения скопированы',
+  'This is not a Bone 2D project file': 'Это не файл проекта Bone 2D',
+  'A project file cannot be restored here: open it as a project': 'Файл проекта здесь не восстановить: откройте его как проект',
+  'Compared with {}: +{} −{} ~{}': 'Сравнение с {1}: +{2} −{3} ~{4}',
+  '{} has the same skeleton': 'В {} тот же скелет',
 };
