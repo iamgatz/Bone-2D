@@ -12,6 +12,22 @@ export interface Release {
 
 export const CHANGELOG: Release[] = [
   {
+    version: '0.56',
+    date: '2026-11-19',
+    en: [
+      "From the Spine 4.3 changelog: Key Constrained (the Key constrained button in the Inspector, or the command palette) keys the pose a bone has after its constraints, IK or physics included, so that motion can be baked into ordinary keys at the playhead.",
+      "Settings: New keys use the last chosen interpolation (smooth, linear or stepped, whichever you set last on a key).",
+      "Skins: Merge into (the merge button of the Skins panel) copies the attachments of a skin into another one, with a say in replacing the ones that exist and in bringing the bones, constraints and animation keys along.",
+      "File: Package project (ZIP) makes one archive with the project file and the pictures as files of their own.",
+    ],
+    ru: [
+      "Из changelog Spine 4.3: «Ключ после констрейнтов» (кнопка в инспекторе или палитра команд) ставит ключи на позу, которую кость имеет после констрейнтов, IK и физики в том числе, так что движение запекается в обычные ключи под маркером.",
+      "Настройки: «Новые ключи берут последнюю выбранную интерполяцию» (плавную, линейную или по кадрам, какую вы выбрали последней у ключа).",
+      "Скины: «Слить в» (кнопка слияния в панели скинов) копирует вложения скина в другой, с выбором: заменять ли существующие и переносить ли кости, констрейнты и ключи анимаций.",
+      "Файл: «Упаковать проект (ZIP)» делает один архив с файлом проекта и картинками отдельными файлами.",
+    ],
+  },
+  {
     version: '0.55',
     date: '2026-11-19',
     en: [

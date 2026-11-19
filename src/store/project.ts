@@ -1,4 +1,7 @@
 /** Project persistence: new / save / open / autosave (IndexedDB). Images are embedded as data URLs. */
+import { packageEntries } from '@/core/export/packageProject';
+import type { PackageImage } from '@/core/export/packageProject';
+import { createZip } from '@/core/export/zip';
 import { emptyProject, migrateProject } from '@/core/model';
 import type { Project } from '@/core/model';
 import { repairProject } from '@/core/validate';
@@ -163,6 +166,20 @@ async function writeTo(handle: FileHandle, blob: Blob) {
   docStore.dirty = false;
   void rememberRecent(handle);
   toast(`Saved ${handle.name}`, 'ok');
+}
+
+/** Package Project: one ZIP with the project file and the pictures as files of their own (an `images` folder). */
+export async function packageProject() {
+  const text = await serializeProject();
+  const project = docStore.get();
+  const images: PackageImage[] = [];
+  for (const img of project.images) {
+    const a = assets.get(img.name);
+    if (a) images.push({ name: img.name, type: a.blob.type, bytes: new Uint8Array(await a.blob.arrayBuffer()) });
+  }
+  const name = (project.name || 'untitled').replace(/[^\w\- ]+/g, '_');
+  downloadBlob(new Blob([createZip(packageEntries(name, text, images)) as BlobPart], { type: 'application/zip' }), `${name}.zip`);
+  toast(`Packaged the project, pictures: ${images.length}`, 'ok');
 }
 
 /** Save writes to the file the project was opened from or saved to; the first save (or "Save as") asks where. */

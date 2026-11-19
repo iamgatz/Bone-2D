@@ -33,6 +33,8 @@ export interface Settings {
   onionArrows: boolean;
   /** Steps of a frame that keys and the playhead snap to: 1 whole frames, 2 halves, 4 quarters, 10 tenths (keys between frames). */
   keyGrid: number;
+  /** A new key starts with the interpolation chosen last for a key (the Smooth / Linear / Stepped menu of the timeline follows what Set interpolation picks). */
+  lastChosenCurve: boolean;
   /** Draw the grid of single units (pixels of the pictures at 100%) when zoomed in far enough to tell them apart. */
   pixelGrid: boolean;
   /** Show the frames drawn in the last second and the time of the last one, in a corner of the viewport. */
@@ -70,6 +72,7 @@ export const DEFAULT_SETTINGS: Settings = {
   onionColorAfter: [0.55, 0.82, 1],
   onionArrows: false,
   keyGrid: 1,
+  lastChosenCurve: false,
   pixelGrid: false,
   showFps: false,
   boneScale: 100,
@@ -106,6 +109,7 @@ export function readSettings(raw: string | null): Settings {
     if (isRgb(data.onionColorAfter)) out.onionColorAfter = data.onionColorAfter;
     if (typeof data.onionArrows === 'boolean') out.onionArrows = data.onionArrows;
     if (data.keyGrid === 1 || data.keyGrid === 2 || data.keyGrid === 4 || data.keyGrid === 10) out.keyGrid = data.keyGrid;
+    if (typeof data.lastChosenCurve === 'boolean') out.lastChosenCurve = data.lastChosenCurve;
     if (typeof data.pixelGrid === 'boolean') out.pixelGrid = data.pixelGrid;
     if (typeof data.showFps === 'boolean') out.showFps = data.showFps;
     if ((BONE_SCALES as readonly unknown[]).includes(data.boneScale)) out.boneScale = data.boneScale as number;

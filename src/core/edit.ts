@@ -124,7 +124,7 @@ export function removeBones(doc: SkeletonDoc, ids: Iterable<Id>, bindPose?: Bone
             return sum > 0 ? kept.map((inf) => [inf[0], inf[1], inf[2], inf[3] / sum] as typeof inf) : kept;
           });
           // influences vanished: deform values follow the bones that stay
-          if (before && att.type === 'mesh' && touched && skinIndex === 0) reconcileDeform(doc, slotId, name, before, att, null, (id) => wasBone.has(id));
+          if (before && att.type === 'mesh' && touched) reconcileDeform(doc, slotId, name, before, att, null, (id) => wasBone.has(id), skin.id);
           // a path whose influences changed can no longer use its deform keys (their layout is per influence)
           if (att.type === 'path' && touched) for (const a of doc.animations) for (const skinId of Object.keys(a.deform)) dropDeformTimeline(a, skinId, slotId, name);
         }
@@ -174,12 +174,12 @@ export function dropDeformTimeline(a: Animation, skinId: Id, slotId: Id, attName
 }
 
 /**
- * Keeps the deform keys of a default-skin mesh valid after the mesh changed from `before` to `after`
+ * Keeps the deform keys of a mesh of a skin (the default skin unless `skinId` says another) valid after the mesh changed from `before` to `after`
  * (vertices added / removed, influences changed). Keys follow their vertices when the layouts are compatible;
  * otherwise (bind / unbind, re-trace) the timelines are dropped. Returns true when timelines had to be dropped.
  */
-export function reconcileDeform(doc: SkeletonDoc, slotId: Id, attName: string, before: MeshAttachment, after: MeshAttachment, map: VertexMap | 'drop' = null, hasBoneBefore?: (id: Id) => boolean): boolean {
-  const skinId = doc.skins[0]?.id;
+export function reconcileDeform(doc: SkeletonDoc, slotId: Id, attName: string, before: MeshAttachment, after: MeshAttachment, map: VertexMap | 'drop' = null, hasBoneBefore?: (id: Id) => boolean, ofSkin?: Id): boolean {
+  const skinId = ofSkin ?? doc.skins[0]?.id;
   if (!skinId) return false;
   const boneIds = new Set(doc.bones.map((b) => b.id));
   const hasBone = (id: Id) => boneIds.has(id);

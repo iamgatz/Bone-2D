@@ -2,7 +2,7 @@
  * Every action of the editor by name, for the command palette (Ctrl+K): type a few letters of what you want. Spine has no such thing.
  * The titles are English strings like the rest of the interface and get translated where they are shown.
  */
-import { closeCurrentLoop, keyEditedBones, keySelectedBones, selectAnimation, setMode, setTool, togglePlay } from '@/store/actions';
+import { closeCurrentLoop, keyConstrainedBones, keyEditedBones, keySelectedBones, selectAnimation, setMode, setTool, togglePlay } from '@/store/actions';
 import { setAxesSplit } from '@/store/axisActions';
 import { selectionBack, selectionForward } from '@/store/selHistory';
 import { hideUnkeyedBones, mirrorCurrentCycle } from '@/store/animToolActions';
@@ -13,7 +13,7 @@ import { openKeyDialog } from '@/store/keyDialog';
 import { LAYOUTS, VIEW_LIST } from '@/store/layout';
 import { startSetParent } from '@/store/parentActions';
 import { copyPose, duplicateSelection, pastePose, resetPose, swapSides } from '@/store/poseActions';
-import { newProject, openProjectFile, saveProjectFile } from '@/store/project';
+import { newProject, openProjectFile, packageProject, saveProjectFile } from '@/store/project';
 import { loadSample } from '@/store/sample';
 import { toast, uiStore } from '@/store/ui';
 import { clearGuides } from '@/store/guideActions';
@@ -51,6 +51,7 @@ export function buildCommands(): Command[] {
     { id: 'file.new', group: 'File', title: 'New project', run: () => newProject() },
     { id: 'file.open', group: 'File', title: 'Open…', keys: KEYS.open, run: () => void openProjectFile() },
     { id: 'file.save', group: 'File', title: 'Save', keys: KEYS.save, run: () => void saveProjectFile() },
+    { id: 'file.package', group: 'File', title: 'Package project (ZIP)', run: () => void packageProject() },
     { id: 'file.saveas', group: 'File', title: 'Save as…', keys: KEYS.saveAs, run: () => void saveProjectFile(true) },
     { id: 'file.export', group: 'File', title: 'Export', keys: KEYS.export, run: open('exportOpen') },
     { id: 'file.import', group: 'File', title: 'Import Spine data (JSON 4.0–4.3, binary 4.3)…', run: () => openSpineImport() },
@@ -75,6 +76,7 @@ export function buildCommands(): Command[] {
     { id: 'mode.toggle', group: 'Animation', title: 'Setup ⇄ Animate', keys: KEYS.mode, run: () => setMode(uiStore.get().mode === 'setup' ? 'animate' : 'setup') },
     { id: 'anim.keyedited', group: 'Animation', title: 'Key edited channels', keys: KEYS.key, run: () => keyEditedBones() },
     { id: 'anim.keyshown', group: 'Animation', title: 'Key all channels of the selected bones', keys: KEYS.keyShown, run: () => keySelectedBones() },
+    { id: 'anim.keyconstrained', group: 'Animation', title: 'Key the pose after the constraints', run: () => keyConstrainedBones() },
     { id: 'anim.marker.add', group: 'Animation', title: 'Add a marker at the playhead', run: () => void addMarkerAtPlayhead() },
     { id: 'anim.marker.next', group: 'Animation', title: 'Go to the next marker', run: () => goToMarker(1) },
     { id: 'anim.marker.prev', group: 'Animation', title: 'Go to the previous marker', run: () => goToMarker(-1) },

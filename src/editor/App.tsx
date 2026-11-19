@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react';
-import { ArrowLeftRight, Bone, BoxSelect, Download, Eye, EyeOff, FilePlus2, FolderOpen, Grid3x3, Bell, Search, Home, Layers, ClipboardCopy, ClipboardPaste, Copy, FlipHorizontal2, GitBranch, RotateCcw, SlidersHorizontal, Image as ImageIcon, CircleHelp, MessageSquareText, Link2, Map as MapIcon, Maximize, Play, Redo2, Route, Ruler, Magnet, Trash2, Save, Sparkles, Type, Undo2 } from 'lucide-react';
+import { ArrowLeftRight, Bone, BoxSelect, Download, Eye, EyeOff, FilePlus2, FolderOpen, Package, Grid3x3, Bell, Search, Home, Layers, ClipboardCopy, ClipboardPaste, Copy, FlipHorizontal2, GitBranch, RotateCcw, SlidersHorizontal, Image as ImageIcon, CircleHelp, MessageSquareText, Link2, Map as MapIcon, Maximize, Play, Redo2, Route, Ruler, Magnet, Trash2, Save, Sparkles, Type, Undo2 } from 'lucide-react';
 import { decodeKey } from '@/core/keyrefs';
 import { selectionBack, selectionForward, startSelectionHistory } from '@/store/selHistory';
 import { clearSelection, copyKeys, deleteBones, deleteKeys, keySelectedBones, pasteKeys, sanitizeSelection, setMode, setSelection, setTime, setTool, togglePlay } from '@/store/actions';
 import { docStore, useProject } from '@/store/doc';
-import { newProject, openProjectFile, restoreAutosave, saveProjectFile, startAutosave } from '@/store/project';
+import { newProject, openProjectFile, packageProject, restoreAutosave, saveProjectFile, startAutosave } from '@/store/project';
 import { openAtlasUnpack, openSpineImport } from './importSpine';
 import { deleteConstraint } from '@/store/ikActions';
 import { loadSample } from '@/store/sample';
@@ -96,6 +96,7 @@ function TopBar() {
             <MenuItem icon={FolderOpen} close={close} hotkey={KEYS.open} onClick={() => openProjectFile()}>Open…</MenuItem>
             <MenuItem icon={Save} close={close} hotkey={KEYS.save} onClick={() => saveProjectFile()}>Save</MenuItem>
             <MenuItem icon={Save} close={close} hotkey={KEYS.saveAs} onClick={() => saveProjectFile(true)}>Save as…</MenuItem>
+            <MenuItem icon={Package} close={close} onClick={() => void packageProject()}>Package project (ZIP)…</MenuItem>
             <div className="menu-sep" />
             <MenuItem icon={Download} close={close} hotkey={KEYS.export} onClick={() => uiStore.patch({ exportOpen: true })}>Export for Spine 4.3…</MenuItem>
             <MenuItem icon={FolderOpen} close={close} onClick={() => openSpineImport()}>Import Spine data (JSON 4.0–4.3, binary 4.3)…</MenuItem>

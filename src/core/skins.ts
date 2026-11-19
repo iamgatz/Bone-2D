@@ -179,3 +179,55 @@ export function overrideCount(skin: Skin): number {
   for (const atts of Object.values(skin.attachments)) n += Object.keys(atts).length;
   return n;
 }
+
+export interface MergeSkinOptions {
+  /** An attachment of the target with the same slot and name is replaced (default false: the one in the target stays). */
+  overwrite?: boolean;
+  /** The bones and constraints the skin brings join the target's (default true; the default skin has no scope). */
+  scope?: boolean;
+  /** The deform and sequence keys of every animation come along for the attachments that came over (default true). */
+  animations?: boolean;
+}
+
+/**
+ * Merges a skin into another (Spine: dropping a skin on a skin): its attachments are copied into the target, where the target has none of
+ * that slot and name, or everywhere with `overwrite`. The source skin stays as it is. Returns how many attachments were added and replaced,
+ * or null when a skin is missing or both are the same one.
+ */
+export function mergeSkin(doc: SkeletonDoc, fromId: Id, intoId: Id, opts: MergeSkinOptions = {}): { added: number; replaced: number } | null {
+  const from = doc.skins.find((s) => s.id === fromId);
+  const into = doc.skins.find((s) => s.id === intoId);
+  if (!from || !into || from === into) return null;
+  let added = 0;
+  let replaced = 0;
+  const came: { slotId: Id; name: string; replaced: boolean }[] = [];
+  for (const slotId of Object.keys(from.attachments)) {
+    for (const name of Object.keys(from.attachments[slotId])) {
+      const there = into.attachments[slotId]?.[name] !== undefined;
+      if (there && !opts.overwrite) continue;
+      (into.attachments[slotId] ??= {})[name] = clone(from.attachments[slotId][name]);
+      if (there) replaced++;
+      else added++;
+      came.push({ slotId, name, replaced: there });
+    }
+  }
+  if ((opts.scope ?? true) && !isDefaultSkin(doc, into.id)) {
+    for (const b of from.bones) if (!into.bones.includes(b)) into.bones.push(b);
+    for (const c of from.constraints) if (!into.constraints.includes(c)) into.constraints.push(c);
+  }
+  for (const anim of doc.animations) {
+    for (const c of came) {
+      // keys that were made for the attachment that is replaced do not fit the new one: they go, whether or not the new keys come along
+      if (c.replaced) {
+        if (anim.deform[into.id]?.[c.slotId]) delete anim.deform[into.id][c.slotId][c.name];
+        if (anim.sequence?.[into.id]?.[c.slotId]) delete anim.sequence[into.id][c.slotId][c.name];
+      }
+      if (!(opts.animations ?? true)) continue;
+      const deform = anim.deform[from.id]?.[c.slotId]?.[c.name];
+      if (deform) ((anim.deform[into.id] ??= {})[c.slotId] ??= {})[c.name] = clone(deform);
+      const seq = anim.sequence?.[from.id]?.[c.slotId]?.[c.name];
+      if (seq) (((anim.sequence ??= {})[into.id] ??= {})[c.slotId] ??= {})[c.name] = clone(seq);
+    }
+  }
+  return { added, replaced };
+}
