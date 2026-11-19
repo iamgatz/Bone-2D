@@ -1,5 +1,5 @@
 /** Clipping / bounding box / point attachments: creation and vertex editing (always in the setup pose). */
-import { freshName } from '@/core/edit';
+import { dropDeformTimeline, freshName } from '@/core/edit';
 import { matInvert } from '@/core/math';
 import { vertexWorldPositions } from '@/core/mesh';
 import { DEFAULT_BOUNDING_BOX_COLOR, DEFAULT_CLIPPING_COLOR, DEFAULT_POINT_COLOR, newSlot, polygonVertexCount } from '@/core/model';
@@ -77,6 +77,26 @@ export function createPoint(wx: number, wy: number): { slotId: Id; name: string 
   if (!bone) return null;
   const [x, y] = bone.worldToLocal(wx, wy);
   return addSlotWith('point', (name) => ({ type: 'point', name, x, y, rotation: 0, color: [...DEFAULT_POINT_COLOR] }), boneId);
+}
+
+/** The side of the square a polygon is reset to, in the units of the bone it sits on. */
+export const DEFAULT_POLYGON_SIZE = 100;
+
+/**
+ * Reset (Spine's button on clipping and bounding box attachments): the polygon goes back to a square around the origin of its bone, without
+ * weights, and the deform keys made for the old shape go. One undo step.
+ */
+export function resetPolygonShape(slotId: Id, name: string, size = DEFAULT_POLYGON_SIZE) {
+  if (!getPolygon(slotId, name)) return;
+  const h = size / 2;
+  docStore.update('Reset shape', (d) => {
+    const p = d.skeleton.skins[0].attachments[slotId]?.[name];
+    if (!p || (p.type !== 'clipping' && p.type !== 'boundingbox')) return;
+    p.vertices = [-h, -h, h, -h, h, h, -h, h];
+    p.weights = null;
+    for (const a of d.skeleton.animations) for (const skinId of Object.keys(a.deform)) dropDeformTimeline(a, skinId, slotId, name);
+  });
+  uiStore.patch({ selection: { ...uiStore.get().selection, vertices: [] } });
 }
 
 /** Moves polygon vertices to world positions (setup pose). Weighted vertices move every influence along. */

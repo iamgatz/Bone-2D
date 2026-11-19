@@ -1,4 +1,5 @@
 import { sidePairs } from '@/core/animtools';
+import { moveBoneOrder } from '@/core/boneorder';
 import { duplicateBones } from '@/core/duplicate';
 import type { BonePose, Id, PoseEntry } from '@/core/model';
 import { blendPose, newPose, newPoseName } from '@/core/poses';
@@ -13,6 +14,40 @@ function targets(): Id[] {
   const doc = docStore.get().skeleton;
   const sel = uiStore.get().selection.bones.filter((id) => doc.bones.some((b) => b.id === id));
   return sel.length ? sel : doc.bones.map((b) => b.id);
+}
+
+/**
+ * Scale X Flip / Scale Y Flip: turns the scale of the selected bones inside out (x or y times -1), the way the pose is edited now: in Setup
+ * mode the setup pose, in Animate mode a key or a pending edit (Auto-key).
+ */
+export function flipScale(axis: 'x' | 'y'): number {
+  const doc = docStore.get().skeleton;
+  const ids = uiStore.get().selection.bones.filter((id) => doc.bones.some((b) => b.id === id));
+  if (!ids.length) {
+    toast('Select a bone to flip');
+    return 0;
+  }
+  const updates = ids.flatMap((id) => {
+    const p = currentPose(id);
+    return p ? [{ id, props: axis === 'x' ? { scaleX: -p.scaleX } : { scaleY: -p.scaleY } }] : [];
+  });
+  setBonePose(updates, axis === 'x' ? 'Flip scale X' : 'Flip scale Y');
+  return updates.length;
+}
+
+/** Bone Order Up / Down: the first selected bone changes places with the sibling above or below it in the tree. */
+export function moveBoneOrderAction(direction: -1 | 1): boolean {
+  const id = uiStore.get().selection.bones[0];
+  if (!id) {
+    toast('Select a bone to move');
+    return false;
+  }
+  let moved = false;
+  docStore.update(direction === -1 ? 'Bone order up' : 'Bone order down', (d) => {
+    moved = moveBoneOrder(d.skeleton, id, direction);
+  });
+  if (!moved) toast(direction === -1 ? 'The bone is already the first of its parent' : 'The bone is already the last of its parent', 'info');
+  return moved;
 }
 
 /** Sets the pose of the selected bones (all bones when none is selected) back to the setup pose. Animate mode: keys the setup values at the playhead. */
@@ -120,7 +155,7 @@ export function duplicateSelection(mirror: boolean) {
     return;
   }
   const { mats } = setupMats();
-  let made: { bones: Id[]; slots: Id[] } = { bones: [], slots: [] };
+  let made: { bones: Id[]; slots: Id[]; constraints: Id[] } = { bones: [], slots: [], constraints: [] };
   docStore.update(mirror ? 'Mirror bones' : 'Duplicate bones', (d) => {
     made = duplicateBones(d.skeleton, mats, ui.selection.bones, mirror);
   });
@@ -129,7 +164,7 @@ export function duplicateSelection(mirror: boolean) {
     return;
   }
   setSelection({ bones: made.bones });
-  toast('Copied with the slots and images. Constraints and animation keys are not copied');
+  toast('Copied with the slots, images and constraints. Animation keys are not copied');
 }
 
 // ---------------------------------------------------------------- the pose library (kept in the project file, not exported)

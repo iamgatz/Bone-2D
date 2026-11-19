@@ -35,6 +35,8 @@ import * as AT from '../src/store/animToolActions';
 import * as LIM from '../src/store/limitActions';
 import * as CH from '../src/store/chainActions';
 import * as PRE from '../src/store/presetActions';
+import * as POSE from '../src/store/poseActions';
+import * as POLY from '../src/store/polygonActions';
 import * as NU from '../src/store/nudgeActions';
 import * as SS from '../src/store/selectionSetActions';
 import * as CP from '../src/store/checkpoints';
@@ -518,6 +520,9 @@ export const ops: Op[] = [
   { name: 'mergeSkins', run: (c) => { const a = c.pick(doc().skins); const b = c.pick(doc().skins); if (a && b) A.mergeSkinAction(a.id, b.id, { overwrite: c.chance(0.5), scope: c.chance(0.7), animations: c.chance(0.7) }); } },
   { name: 'keyConstrained', run: (c) => { const b = c.pick(doc().bones); if (!b || !A.currentAnimation()) return; A.setMode('animate'); A.setSelection({ bones: [b.id] }); A.keyConstrainedBones(); } },
   { name: 'lastCurve', run: (c) => { setSettings({ lastChosenCurve: c.chance(0.5) }); } },
+  { name: 'boneOrder', run: (c) => { const b = c.pick(doc().bones); if (!b) return; A.setSelection({ bones: [b.id] }); POSE.moveBoneOrderAction(c.chance(0.5) ? -1 : 1); } },
+  { name: 'flipScale', run: (c) => { const b = c.pick(doc().bones); if (!b) return; A.setSelection({ bones: [b.id] }); POSE.flipScale(c.chance(0.5) ? 'x' : 'y'); } },
+  { name: 'resetShape', run: (c) => { const polys: { slotId: string; name: string }[] = []; for (const slotId of Object.keys(doc().skins[0].attachments)) for (const a of Object.values(doc().skins[0].attachments[slotId])) if (a.type === 'clipping' || a.type === 'boundingbox') polys.push({ slotId, name: a.name }); const p = c.pick(polys); if (p) POLY.resetPolygonShape(p.slotId, p.name); } },
   { name: 'keyAlphaOnly', run: (c) => { const s = c.pick(doc().slots); if (!s || !A.currentAnimation()) return; A.setMode('animate'); A.setSlotColor(s.id, [s.color[0], s.color[1], s.color[2], c.r()]); } },
   { name: 'keyColorOnly', run: (c) => { const s = c.pick(doc().slots); if (!s || !A.currentAnimation()) return; A.setMode('animate'); A.setSlotColor(s.id, [c.r(), c.r(), c.r(), s.color[3]]); } },
   // ---- history
