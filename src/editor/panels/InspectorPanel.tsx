@@ -17,7 +17,7 @@ import { resetPolygonShape } from '@/store/polygonActions';
 import { setSelection, deleteKeys, keyConstrainedBones, keySelectedBones, removeSkinImage, renameBone, renameSlot, setAnimationDuration, setAttachmentProps, setBonePose, setBoneProps, setFps, setSkinImage, setSlotAttachment, setSlotBone, setSlotColor, setSlotProps, setTool, currentAnimation } from '@/store/actions';
 import type { PoseProps } from '@/store/actions';
 import { docStore, useProject } from '@/store/doc';
-import { bindPathToBones, setPathClosed, unbindPath } from '@/store/pathActions';
+import { bindPathToBones, resetPathShape, setPathClosed, unbindPath } from '@/store/pathActions';
 import { MAX_SPLIT } from '@/core/split';
 import { splitBone } from '@/store/splitActions';
 import { limitDrivenBy, rotationLimitOf } from '@/core/limits';
@@ -552,6 +552,11 @@ function PathAttachmentInspector({ slotId, att, disabled }: { slotId: Id; att: P
       <Button primary={tool === 'mesh'} icon={Triangle} onClick={() => setTool('mesh')} title="Edit nodes (M)">
         Edit nodes
       </Button>
+      {!disabled && (
+        <Button ghost small icon={RotateCcw} onClick={() => resetPathShape(slotId, att.name)} title="Reset the path to a straight line of two nodes around the bone (weights and deform keys of the old path go)">
+          Reset path
+        </Button>
+      )}
       {!disabled && (
         <div className="hstack mt">
           <Button ghost disabled={!selectedBones.length} onClick={() => bindPathToBones(slotId, att.name, selectedBones)} title="Let the selected bones move the path (automatic weights)">

@@ -1890,4 +1890,12 @@ export const RU: Record<string, string> = {
   'Nothing to fix': 'Исправлять нечего',
   'Fixed {#} problem': 'Исправлено проблем: {}',
   'Fixed {#} problems': 'Исправлено проблем: {}',
+  'Reset path': 'Сбросить путь',
+  'Reset the path to a straight line of two nodes around the bone (weights and deform keys of the old path go)': 'Вернуть путь к прямой из двух узлов около кости (веса и ключи деформации старого пути пропадают)',
+  'Bone icon rotation': 'Поворот значка кости',
+  'Turns the icon that a bone without length is drawn with (only how it looks in the editor)': 'Поворачивает значок, которым рисуется кость без длины (меняет только вид в редакторе)',
+  'Breadcrumb parents': 'Родителей в хлебных крошках',
+  'How many parent bones the trail of the selection over the viewport lists (the nearest ones)': 'Сколько родительских костей перечисляет цепочка выделения над окном (ближайшие)',
+  'Selection': 'Выделение',
+  '{#} bones': 'костей: {}',
 };

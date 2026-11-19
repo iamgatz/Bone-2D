@@ -7,6 +7,7 @@
  */
 import { dropDeformTimeline, freshName } from '@/core/edit';
 import { matApply, matInvert } from '@/core/math';
+import { defaultPathVertices } from '@/core/path';
 import type { Mat } from '@/core/math';
 import { autoWeights, normalizeInfluences, vertexWorldPositions } from '@/core/mesh';
 import { DEFAULT_PATH_COLOR, newSlot, pathNodeCount, polygonVertexCount } from '@/core/model';
@@ -173,6 +174,23 @@ export function deletePathNodes(slotId: Id, name: string, nodes: number[]): bool
   });
   setSelection({ ...uiStore.get().selection, vertices: [] });
   return true;
+}
+
+/**
+ * Reset (Spine's button on a path): the path goes back to a plain open path of two nodes around the origin of its bone, without
+ * weights; the deform keys made for the old points go. One undo step.
+ */
+export function resetPathShape(slotId: Id, name: string) {
+  if (!getPath(slotId, name)) return;
+  docStore.update('Reset path', (d) => {
+    const p = d.skeleton.skins[0].attachments[slotId]?.[name];
+    if (!p || p.type !== 'path') return;
+    p.vertices = defaultPathVertices();
+    p.weights = null;
+    p.closed = false;
+    dropDeformKeys(d, slotId, name);
+  });
+  uiStore.patch({ selection: { ...uiStore.get().selection, vertices: [] } });
 }
 
 /** Closes or opens a path. Closing needs real outer handles, so the placeholder ones mirror their neighbours. */

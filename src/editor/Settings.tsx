@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { RotateCcw } from 'lucide-react';
 import { setLang, useLang } from '@/i18n';
-import { BONE_SCALES, DEFAULT_SETTINGS, resetSettings, setSettings, useSettings } from '@/store/settings';
+import { BONE_SCALE_RANGE, DEFAULT_SETTINGS, resetSettings, setSettings, useSettings } from '@/store/settings';
 import { toast, uiStore } from '@/store/ui';
 import { Button, ColorSwatch, Dialog, SelectField, Toggle } from './ui/controls';
 import { Segmented } from './ui/Segmented';
@@ -122,6 +122,8 @@ export function SettingsDialog() {
   const keyGrid = useSettings((s) => s.keyGrid);
   const lastChosenCurve = useSettings((s) => s.lastChosenCurve);
   const boneScale = useSettings((s) => s.boneScale);
+  const boneIconRotation = useSettings((s) => s.boneIconRotation);
+  const breadcrumbParents = useSettings((s) => s.breadcrumbParents);
   const pixelGrid = useSettings((s) => s.pixelGrid);
   const showFps = useSettings((s) => s.showFps);
   const tooltips = useSettings((s) => s.tooltips);
@@ -199,7 +201,16 @@ export function SettingsDialog() {
               )}
             </Row>
             <Row label="Bone size" hint="How thick the bones and joints are drawn">
-              <SelectField value={String(boneScale)} options={BONE_SCALES.map((n) => ({ value: String(n), label: `${n}%` }))} onChange={(v) => setSettings({ boneScale: Number(v) })} />
+              <input type="range" aria-label="Bone size" min={BONE_SCALE_RANGE.min} max={BONE_SCALE_RANGE.max} step={BONE_SCALE_RANGE.step} value={boneScale} onChange={(e) => setSettings({ boneScale: Number(e.target.value) })} />
+              <span className="chip">{`${boneScale}%`}</span>
+            </Row>
+            <Row label="Breadcrumb parents" hint="How many parent bones the trail of the selection over the viewport lists (the nearest ones)">
+              <input type="range" aria-label="Breadcrumb parents" min={0} max={10} step={1} value={breadcrumbParents} onChange={(e) => setSettings({ breadcrumbParents: Number(e.target.value) })} />
+              <span className="chip">{String(breadcrumbParents)}</span>
+            </Row>
+            <Row label="Bone icon rotation" hint="Turns the icon that a bone without length is drawn with (only how it looks in the editor)">
+              <input type="range" aria-label="Bone icon rotation" min={-180} max={180} step={15} value={boneIconRotation} onChange={(e) => setSettings({ boneIconRotation: Number(e.target.value) })} />
+              <span className="chip">{`${boneIconRotation}°`}</span>
             </Row>
             <Row label="Smooth images" hint="Off shows the pixels as they are (pixel art)">
               <Toggle on={smoothing} onChange={(v) => setSettings({ smoothing: v })} title="Smooth images" />
