@@ -10,6 +10,8 @@ import { compileSkeleton, createSkeleton } from '@/core/skeleton';
 import type { Skeleton } from '@/core/skeleton';
 import { GLRenderer } from '@/render/gl';
 import type { PlayerPayload } from '@/core/export/playerPage';
+import { makeComment, serializeReview } from '@/core/review';
+import type { ReviewComment } from '@/core/review';
 
 const $ = <T extends HTMLElement>(id: string): T => document.getElementById(id) as T;
 
@@ -173,6 +175,90 @@ async function main() {
   canvas.ondblclick = () => {
     view.x = view.y = 0;
     view.zoom = 1;
+  };
+
+  // ---- comments: the reviewer puts a note on a moment of an animation and sends a small file back (see core/review.ts)
+  const note = $<HTMLButtonElement>('note');
+  const send = $<HTMLButtonElement>('send');
+  const dlg = $('dlg');
+  const who = $<HTMLInputElement>('who');
+  const what = $<HTMLTextAreaElement>('what');
+  const mine = $('mine');
+  const comments: ReviewComment[] = [];
+  const NAME_KEY = 'bone2d-reviewer';
+  const remembered = () => {
+    try {
+      return localStorage.getItem(NAME_KEY) ?? '';
+    } catch {
+      return '';
+    }
+  };
+  const randomId = () => {
+    const bytes = new Uint8Array(8);
+    if (typeof crypto !== 'undefined' && typeof crypto.getRandomValues === 'function') crypto.getRandomValues(bytes);
+    else for (let i = 0; i < bytes.length; i++) bytes[i] = Math.floor(Math.random() * 256);
+    return Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('');
+  };
+  const listMine = () => {
+    mine.textContent = '';
+    for (const c of comments) {
+      const li = document.createElement('li');
+      li.textContent = `${c.animation} ${c.time.toFixed(2)} s: ${c.text}`;
+      li.onclick = () => {
+        const a = doc.animations.find((x) => x.name === c.animation);
+        if (a && a !== anim) {
+          animSel.value = a.id;
+          choose(a);
+        }
+        playing = false;
+        time = c.time;
+        pose(time, 0, true);
+        showTime();
+      };
+      mine.appendChild(li);
+    }
+    send.hidden = comments.length === 0;
+    send.textContent = `Send comments (${comments.length})`;
+  };
+  const closeDialog = () => {
+    dlg.hidden = true;
+  };
+  note.onclick = () => {
+    playing = false;
+    showTime();
+    $('dlghead').textContent = `${anim?.name ?? ''} · ${time.toFixed(2)} s`;
+    who.value = who.value || remembered();
+    dlg.hidden = false;
+    what.focus();
+  };
+  $('dcancel').onclick = closeDialog;
+  $('dsave').onclick = () => {
+    const text = what.value.trim();
+    if (!text || !anim) return;
+    try {
+      localStorage.setItem(NAME_KEY, who.value.trim());
+    } catch {
+      /* the name is not remembered: nothing else is lost */
+    }
+    comments.push(makeComment(randomId(), anim.name, time, text, who.value));
+    what.value = '';
+    listMine();
+    what.focus();
+  };
+  dlg.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') closeDialog();
+  });
+  send.onclick = () => {
+    const blob = new Blob([serializeReview(payload.title, comments)], { type: 'application/json' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `${(payload.title || 'animation').replace(/[^\w-]+/g, '_')}-comments.b2dreview.json`;
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(() => {
+      URL.revokeObjectURL(a.href);
+      a.remove();
+    }, 2000);
   };
 
   choose(anim);

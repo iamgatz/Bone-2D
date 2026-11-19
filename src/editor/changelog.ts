@@ -12,6 +12,18 @@ export interface Release {
 
 export const CHANGELOG: Release[] = [
   {
+    version: '0.58',
+    date: '2026-11-19',
+    en: [
+      "Review comments, with no server and no account: the player page (Export → Save player page) now has a Comment button. A reviewer puts a note on a moment of an animation, with their name, and downloads a small file; File → Import review comments turns the notes into timeline markers with the author, the bone they point at and a Resolved mark (resolved ones fade). Importing the same file twice changes nothing; the file is read strictly (a limited number of notes, plain text only).",
+      "Why: collaboration and feedback are among the most asked for things in the Spine and Rive communities, and neither has comments in the editor yet. See docs/PRODUCT_DIRECTIONS.md for the evidence and the ideas that were turned down.",
+    ],
+    ru: [
+      "Замечания рецензента без сервера и без аккаунтов: у страницы-плеера (Экспорт → Сохранить страницу-плеер) появилась кнопка Comment. Рецензент ставит заметку на момент анимации, подписывается и скачивает маленький файл; «Файл → Импорт замечаний рецензента» превращает заметки в маркеры таймлайна с автором, костью, на которую они указывают, и отметкой «Решено» (решённые бледнеют). Повторный импорт того же файла ничего не меняет; файл читается строго (ограниченное число заметок, только простой текст).",
+      "Зачем: совместная работа и обратная связь входят в самое частое, о чём просят в сообществах Spine и Rive, а комментариев в редакторе нет ни у того, ни у другого. Доказательства и отвергнутые идеи — в docs/PRODUCT_DIRECTIONS.md.",
+    ],
+  },
+  {
     version: '0.57',
     date: '2026-11-19',
     en: [

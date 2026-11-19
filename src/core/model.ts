@@ -576,6 +576,11 @@ export interface Marker {
   name: string;
   color: number;
   text: string;
+  /** A comment that came from a review (core/review.ts): who wrote it, which bone it points at, and whether it is dealt with. */
+  review?: boolean;
+  author?: string;
+  bone?: string;
+  resolved?: boolean;
 }
 export const MARKER_COLORS = 6;
 

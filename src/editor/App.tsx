@@ -4,6 +4,7 @@ import { decodeKey } from '@/core/keyrefs';
 import { selectionBack, selectionForward, startSelectionHistory } from '@/store/selHistory';
 import { clearSelection, copyKeys, deleteBones, deleteKeys, keySelectedBones, pasteKeys, sanitizeSelection, setMode, setSelection, setTime, setTool, togglePlay } from '@/store/actions';
 import { docStore, useProject } from '@/store/doc';
+import { pickReviewFile } from '@/store/reviewActions';
 import { newProject, openProjectFile, packageProject, restoreAutosave, saveProjectFile, startAutosave } from '@/store/project';
 import { openAtlasUnpack, openSpineImport } from './importSpine';
 import { deleteConstraint } from '@/store/ikActions';
@@ -97,6 +98,7 @@ function TopBar() {
             <MenuItem icon={Save} close={close} hotkey={KEYS.save} onClick={() => saveProjectFile()}>Save</MenuItem>
             <MenuItem icon={Save} close={close} hotkey={KEYS.saveAs} onClick={() => saveProjectFile(true)}>Save as…</MenuItem>
             <MenuItem icon={Package} close={close} onClick={() => void packageProject()}>Package project (ZIP)…</MenuItem>
+            <MenuItem icon={MessageSquareText} close={close} onClick={() => pickReviewFile()}>Import review comments…</MenuItem>
             <div className="menu-sep" />
             <MenuItem icon={Download} close={close} hotkey={KEYS.export} onClick={() => uiStore.patch({ exportOpen: true })}>Export for Spine 4.3…</MenuItem>
             <MenuItem icon={FolderOpen} close={close} onClick={() => openSpineImport()}>Import Spine data (JSON 4.0–4.3, binary 4.3)…</MenuItem>

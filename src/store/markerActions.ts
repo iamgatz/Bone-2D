@@ -34,13 +34,14 @@ export function addMarkerAtPlayhead(): Id | null {
   return id;
 }
 
-export function updateMarker(id: Id, patch: Partial<Pick<Marker, 'name' | 'text' | 'color' | 'time'>>) {
+export function updateMarker(id: Id, patch: Partial<Pick<Marker, 'name' | 'text' | 'color' | 'time' | 'resolved'>>) {
   const anim = currentAnimation();
   if (!anim) return;
   docStore.update('Edit marker', (d) => {
     const m = d.skeleton.animations.find((x) => x.id === anim.id)?.markers?.find((x) => x.id === id);
     if (!m) return;
     if (patch.name !== undefined) m.name = patch.name;
+    if (patch.resolved !== undefined && m.review) m.resolved = patch.resolved;
     if (patch.text !== undefined) m.text = patch.text;
     if (patch.color !== undefined) m.color = Math.min(Math.max(0, Math.round(patch.color)), MARKER_COLORS - 1);
     if (patch.time !== undefined && Number.isFinite(patch.time)) m.time = Math.min(Math.max(0, patch.time), anim.duration);

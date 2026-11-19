@@ -3,8 +3,8 @@ import { MARKER_COLORS } from '@/core/model';
 import { currentAnimation } from '@/store/actions';
 import { useProject } from '@/store/doc';
 import { closeMarkerDialog, deleteMarker, updateMarker, useMarkerDialog } from '@/store/markerActions';
-import { setTime } from '@/store/actions';
-import { Button, Dialog, NumberField, TextField } from '../ui/controls';
+import { setSelection, setTime } from '@/store/actions';
+import { Button, Dialog, NumberField, TextField, Toggle } from '../ui/controls';
 import { Field } from '../ui/Field';
 import { MARKER_TOKENS } from '../ui/tokens';
 
@@ -15,7 +15,8 @@ export function MarkerDialogHost() {
 }
 
 function MarkerDialog({ id }: { id: string }) {
-  const fps = useProject().skeleton.fps; // also follows every edit
+  const doc = useProject().skeleton; // also follows every edit
+  const fps = doc.fps;
   const m = currentAnimation()?.markers?.find((x) => x.id === id);
   if (!m) return <Dialog title="Marker" onClose={closeMarkerDialog}><p className="hint-text">This marker no longer exists.</p></Dialog>;
   return (
@@ -39,6 +40,21 @@ function MarkerDialog({ id }: { id: string }) {
       <Field label="Name">
         <TextField value={m.name} placeholder="beat, hit, footstep…" onCommit={(v) => updateMarker(id, { name: v.trim() })} wide />
       </Field>
+      {m.review && (
+        <Field label="From" title="This comment came from a review file">
+          <span className="hint-text">{m.author || 'a reviewer'}</span>
+          {m.bone && (
+            <Button small ghost disabled={!doc.bones.some((b) => b.name === m.bone)} title="Select the bone the comment points at" onClick={() => setSelection({ bones: doc.bones.filter((b) => b.name === m.bone).map((b) => b.id).slice(0, 1) })}>
+              {m.bone}
+            </Button>
+          )}
+        </Field>
+      )}
+      {m.review && (
+        <Field label="Resolved" title="Mark the comment as dealt with">
+          <Toggle on={!!m.resolved} onChange={(v) => updateMarker(id, { resolved: v })} title="Resolved" />
+        </Field>
+      )}
       <Field label="Frame" title="The frame of the marker (seconds are frame / fps)">
         <NumberField label="f" value={Math.round(m.time * fps * 100) / 100} step={1} precision={2} min={0} onChange={(f) => updateMarker(id, { time: f / fps })} />
         <span className="hint-text">{`${m.time.toFixed(3)} s`}</span>
