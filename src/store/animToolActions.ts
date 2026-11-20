@@ -44,7 +44,7 @@ export function wiggleSelected(options: Omit<WiggleOptions, 'fps'>): number {
       const next = wiggleKeys(JSON.parse(JSON.stringify(keys)) as Key[], { ...options, fps });
       if (next === keys) continue;
       // a colour outside 0..1 never shows and cannot be exported, so the shake stays inside
-      if (ref.kind === 'slot' && ref.prop.startsWith('rgba')) for (const k of next) k.value = (k.value as number[]).map((x) => Math.min(1, Math.max(0, x)));
+      if (ref.kind === 'slot' && ref.prop.startsWith('rgba')) for (const k of next) k.value = (k.value).map((x) => Math.min(1, Math.max(0, x)));
       keys.splice(0, keys.length, ...next);
       changed++;
     }

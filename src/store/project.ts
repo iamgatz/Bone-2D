@@ -306,18 +306,19 @@ export async function restoreAutosave(): Promise<boolean> {
 
 export function startAutosave(): () => void {
   let timer: ReturnType<typeof setTimeout> | null = null;
+  const save = async () => {
+    if (!settingsStore.get().autosave) return;
+    try {
+      const text = await serializeProject();
+      await idbSet('autosave', text);
+      void maybeAutoBackup(text);
+    } catch (e) {
+      console.warn('autosave failed', e);
+    }
+  };
   const schedule = () => {
     if (timer) clearTimeout(timer);
-    timer = setTimeout(async () => {
-      if (!settingsStore.get().autosave) return;
-      try {
-        const text = await serializeProject();
-        await idbSet('autosave', text);
-        void maybeAutoBackup(text);
-      } catch (e) {
-        console.warn('autosave failed', e);
-      }
-    }, 1200);
+    timer = setTimeout(() => void save(), 1200);
   };
   const unsubs = [docStore.subscribe(schedule), assets.subscribe(schedule)];
   return () => {

@@ -2,7 +2,7 @@ import { applyPatches, enablePatches, produceWithPatches, setAutoFreeze } from '
 import type { Draft, Patch } from 'immer';
 import { syncLinkedMeshes } from '@/core/links';
 import { emptyProject } from '@/core/model';
-import type { Project, SkeletonDoc } from '@/core/model';
+import type { Project } from '@/core/model';
 import { useStore } from './store';
 import type { Store } from './store';
 
@@ -75,7 +75,7 @@ export class DocStore implements Store<Project> {
     const [next, patches, inverse] = produceWithPatches(this.state, (d) => {
       recipe(d);
       // a linked mesh follows the shape of its source: the copy is brought up to date in the same step (and the same undo)
-      syncLinkedMeshes(d.skeleton as SkeletonDoc);
+      syncLinkedMeshes(d.skeleton);
     });
     if (patches.length === 0) return;
     this.state = next;

@@ -82,7 +82,7 @@ export function setPhysicsValue(id: Id, param: PhysicsParam, raw: number, label 
 }
 
 /** Puts a reset key at the playhead: the simulation of the constraint (or of all of them, `GLOBAL_PHYSICS`) restarts there. */
-export function addPhysicsReset(id: Id | typeof GLOBAL_PHYSICS, label = 'Key a physics reset') {
+export function addPhysicsReset(id: Id, label = 'Key a physics reset') {
   const ui = uiStore.get();
   const anim = getScene().animation;
   if (!anim) return;

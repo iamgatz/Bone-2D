@@ -14,7 +14,7 @@ import { uiStore } from '../src/store/ui';
 import { buildFixture } from './fixture';
 import { loadOfficial } from './official';
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
+ 
 
 /** Every region and mesh of the default skin: where a skin can put its own picture. */
 function placeholders(project: Project): { slotId: string; name: string; mesh: boolean; w: number; h: number }[] {
@@ -158,7 +158,7 @@ describe('the skin', () => {
     applySkinPicks(doc, 'arctic', planSkinImages(doc, project.images, 'arctic'), project.images);
     expect(validateProject(project)).toEqual([]);
     const pages = packAtlas(project.images.map((i) => ({ name: i.name, width: i.width, height: i.height })), { maxSize: 2048, padding: 2 });
-    const sd = loadOfficial(exportSpineJson(doc) as any, writeAtlas(pages, (i) => `atlas${i}.png`));
+    const sd = loadOfficial(exportSpineJson(doc), writeAtlas(pages, (i) => `atlas${i}.png`));
     expect(sd.findSkin('arctic')).toBeTruthy();
   });
 });

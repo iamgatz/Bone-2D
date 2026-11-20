@@ -842,7 +842,7 @@ function padDuration(out: Json, duration: number, _names: Names) {
   const firstKeys = (group: Json | undefined): Json[] | null => {
     if (!group) return null;
     for (const target in group) {
-      const entry = group[target] as unknown;
+      const entry = group[target];
       if (Array.isArray(entry) && entry.length) return entry as Json[];
       if (entry && typeof entry === 'object') {
         for (const label in entry as Json) {

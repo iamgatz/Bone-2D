@@ -9,7 +9,7 @@ import type { Skeleton } from './skeleton';
 
 export interface FramePoser {
   /** Poses the skeleton at frame `i` (any order: a frame that is not the next one starts again from the beginning). */
-  pose(i: number): void;
+  pose: (i: number) => void;
   /** How many frames of warm up run before frame 0. */
   readonly warmFrames: number;
 }

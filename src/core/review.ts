@@ -41,6 +41,7 @@ export interface ReviewFile {
 }
 
 const ID = /^[\w.:-]{1,64}$/;
+// eslint-disable-next-line no-control-regex -- strips control characters
 const clip = (v: unknown, max: number): string => (typeof v === 'string' ? v.replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f]/g, '').slice(0, max) : '');
 
 /** A new comment, as the player page makes it. `id` is anything unique (the page uses a random one). */

@@ -105,7 +105,7 @@ export class GLRenderer {
     this.gl = gl;
     const vs = compile(gl, gl.VERTEX_SHADER, VS);
     const fs = compile(gl, gl.FRAGMENT_SHADER, FS);
-    const prog = gl.createProgram()!;
+    const prog = gl.createProgram();
     gl.attachShader(prog, vs);
     gl.attachShader(prog, fs);
     gl.bindAttribLocation(prog, 0, 'aPos');
@@ -179,7 +179,7 @@ export class GLRenderer {
     const hit = this.textures.get(name);
     if (hit && hit.version === src.version) return hit;
     const gl = this.gl;
-    const tex = hit?.tex ?? gl.createTexture()!;
+    const tex = hit?.tex ?? gl.createTexture();
     gl.bindTexture(gl.TEXTURE_2D, tex);
     gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, false);
     gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, false);

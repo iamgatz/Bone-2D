@@ -72,9 +72,9 @@ function apply1(bone: Bone, targetX: number, targetY: number, compress: boolean,
   const p = bone.parent;
   if (!p) return;
   const skeleton = bone.skeleton;
-  let pa = p.a;
+  const pa = p.a;
   let pb = p.b;
-  let pc = p.c;
+  const pc = p.c;
   let pd = p.d;
   let rotationIK = -bone.ashearX - bone.arotation;
   let tx = 0;

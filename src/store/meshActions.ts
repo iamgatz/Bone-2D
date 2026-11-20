@@ -701,7 +701,7 @@ export function currentDeform(slotId: Id): number[] | null {
   if (!slot) return null;
   const att = scene.skeleton.slotAttachment(slot);
   if (!att || (att.kind !== 'mesh' && att.kind !== 'path')) return null;
-  return slot.deform.length === att.deformLength ? slot.deform.slice() : new Array(att.deformLength).fill(0);
+  return slot.deform.length === att.deformLength ? slot.deform.slice() : new Array<number>(att.deformLength).fill(0);
 }
 
 /**

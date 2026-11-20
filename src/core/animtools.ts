@@ -141,7 +141,7 @@ export function mirrorCycle(doc: SkeletonDoc, anim: Animation, name: string, opt
       const joined = joinHalves(own?.[prop], other, half);
       if (joined.length) piece[prop] = joined;
     }
-    if (Object.keys(piece).length) out.bones[bone.id] = piece as never;
+    if (Object.keys(piece).length) out.bones[bone.id] = piece;
     else delete out.bones[bone.id];
   }
   const slotSides = sidePairs(doc.slots);
@@ -153,7 +153,7 @@ export function mirrorCycle(doc: SkeletonDoc, anim: Animation, name: string, opt
       const joined = joinHalves(own?.[prop] as { time: number }[] | undefined, src?.[prop] as { time: number }[] | undefined, half);
       if (joined.length) piece[prop] = joined;
     }
-    if (Object.keys(piece).length) out.slots[slot.id] = piece as never;
+    if (Object.keys(piece).length) out.slots[slot.id] = piece;
     else delete out.slots[slot.id];
   }
   const ikSides = sidePairs(doc.constraints.filter((c) => c.type === 'ik'));
@@ -169,7 +169,7 @@ export function mirrorCycle(doc: SkeletonDoc, anim: Animation, name: string, opt
   for (const group of ['slider', 'path', 'physics'] as const) {
     for (const [id, tl] of Object.entries(anim[group] ?? {})) {
       const piece: Record<string, Key[]> = {};
-      for (const [prop, keys] of Object.entries(tl) as [string, Key[] | undefined][]) if (keys?.length) piece[prop] = repeat(keys);
+      for (const [prop, keys] of Object.entries(tl as Record<string, Key[] | undefined>)) if (keys?.length) piece[prop] = repeat(keys);
       (out[group] as Record<Id, unknown>)[id] = piece;
     }
   }

@@ -1,7 +1,6 @@
 /** Ghosting: ghosts at the keys, shifted, as a flat colour, over the pose; and the stored preferences for them. */
 import { describe, expect, it } from 'vitest';
 import { newAnimation } from '../src/core/model';
-import type { Project } from '../src/core/model';
 import { ghostsFor, keyGhostTimes, keyTimes, motionArrows } from '../src/editor/ghosts';
 import { getScene } from '../src/store/scene';
 import { docStore } from '../src/store/doc';
@@ -17,7 +16,7 @@ function rig() {
   anim.bones[b1.id] = { rotate: [{ time: 0, value: [0] }, { time: 0.5, value: [30] }, { time: 1.5, value: [0] }] };
   anim.bones[b2.id] = { rotate: [{ time: 0.25, value: [0] }, { time: 1, value: [20] }] };
   doc.animations.push(anim);
-  docStore.replace(project as Project);
+  docStore.replace(project);
   uiStore.patch({ mode: 'animate', animationId: anim.id, time: 0.6 });
   return { doc, anim, b1, b2 };
 }

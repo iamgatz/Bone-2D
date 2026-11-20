@@ -133,7 +133,7 @@ export function buildFixture(): Fixture {
   // ------------------------------------------------------------ animation
   const anim = newAnimation('walk', 1.2);
   const bez = (v: number[]) => v;
-  const tl = (keys: [number, number[], (number[] | 'stepped')?][]): Timeline => keys.map(([time, value, curve]) => ({ time, value, ...(curve ? { curve: curve as number[] | 'stepped' } : {}) }));
+  const tl = (keys: [number, number[], (number[] | 'stepped')?][]): Timeline => keys.map(([time, value, curve]) => ({ time, value, ...(curve ? { curve: curve } : {}) }));
   anim.bones[by.torso.id] = {
     rotate: tl([[0, [0], bez([0.3, 0, 0.7, 1])], [0.4, [25], 'stepped'], [0.7, [-15]], [1.2, [10]]]),
     translate: tl([[0, [0, 0], bez([0.25, 0.1, 0.75, 0.9, 0.2, 0.5, 0.8, 0.5])], [0.6, [10, -8]], [1.2, [-5, 12]]]),

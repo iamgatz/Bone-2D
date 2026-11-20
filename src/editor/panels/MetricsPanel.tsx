@@ -37,11 +37,13 @@ export function MetricsPanel() {
   const time = useUi((s) => s.time);
   const mode = useUi((s) => s.mode);
   const animationId = useUi((s) => s.animationId);
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- the pages depend on the images and skins only
   const pageOf = useMemo(() => estimatePages(project), [project.images, project.skeleton.skins]);
   const pose = useMemo(() => {
     const scene = getScene();
     const hidden = new Set(project.skeleton.slots.filter((s) => s.hidden).map((s) => s.id));
     return poseMetrics(scene.skeleton, { pageOf, skip: (s) => hidden.has(s.data.id) });
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- the scene is outside React: the playhead, mode and animation say when it moved
   }, [project, time, mode, animationId, pageOf]);
   const constraintTotal = Object.values(stats.constraints).reduce((a, b) => a + b, 0);
   const rows: [string, string | number][] = [

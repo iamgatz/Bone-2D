@@ -4,7 +4,7 @@ import { freshName, pruneSequences } from '@/core/edit';
 import { duplicateSkin, mergeSkin, repointSkinPictures, setSkinRequired, setSkinScope, toggleOverride } from '@/core/skins';
 import type { DuplicateSkinOptions, MergeSkinOptions, ScopeKind } from '@/core/skins';
 import { newSkin } from '@/core/model';
-import type { Id, ImageRef, SkeletonDoc } from '@/core/model';
+import type { Id } from '@/core/model';
 import { applySkinPicks, planSkinImages, putSkinImage } from '@/core/skinImages';
 import { docStore } from './doc';
 import { toast, uiStore } from './ui';
@@ -86,7 +86,7 @@ export function setSkinImage(skinId: Id, slotId: Id, placeholder: string, imageN
   const img = project().images.find((i) => i.name === imageName);
   if (!img) return;
   docStore.update('Skin image', (d) => {
-    putSkinImage(d.skeleton as SkeletonDoc, skinId, slotId, placeholder, img);
+    putSkinImage(d.skeleton, skinId, slotId, placeholder, img);
   });
 }
 
@@ -103,7 +103,7 @@ export function createSkinFromImages(prefix: string): Id | null {
   }
   let result = { skinId: '' as Id, placed: 0 };
   docStore.update('Skin from images', (d) => {
-    result = applySkinPicks(d.skeleton as SkeletonDoc, prefix, picks, d.images as ImageRef[]);
+    result = applySkinPicks(d.skeleton, prefix, picks, d.images);
   });
   if (!result.placed) return null;
   setActiveSkin(result.skinId);

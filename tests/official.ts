@@ -5,7 +5,7 @@ import { exportSpineJson } from '../src/core/export/spineJson';
 import { attachmentPictures } from '../src/core/sequence';
 import type { Project } from '../src/core/model';
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
+ 
 export const S = spine as any;
 
 class FakeTexture extends S.Texture {

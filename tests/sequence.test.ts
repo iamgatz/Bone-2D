@@ -26,7 +26,7 @@ import { emptySelection, uiStore } from '../src/store/ui';
 import { buildFixture } from './fixture';
 import { loadOfficial, loadOfficialBinary } from './official';
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
+ 
 
 const SEQ: SequenceDef = { count: 6, start: 3, digits: 2, setupIndex: 1 };
 
@@ -69,7 +69,7 @@ function rig(kind: 'region' | 'mesh'): Rig {
   }
   if (!base) throw new Error('the fixture has no region');
   const region: RegionAttachment = { ...structuredClone(base), name: 'flame', path: 'flame_', sequence: { ...SEQ } };
-  const att: Attachment = kind === 'region' ? region : ({ ...meshFromRegion(region), name: 'flame', path: 'flame_', sequence: { ...SEQ } } as MeshAttachment);
+  const att: Attachment = kind === 'region' ? region : ({ ...meshFromRegion(region), name: 'flame', path: 'flame_', sequence: { ...SEQ } });
   skin.attachments[slotId].flame = att;
   doc.slots.find((s) => s.id === slotId)!.attachment = 'flame';
   for (const picture of attachmentPictures(att)) project.images.push({ id: picture, name: picture, width: base.width || 32, height: base.height || 32 });
@@ -123,7 +123,7 @@ describe('frame names and indexes', () => {
     const att = r.project.skeleton.skins[0].attachments[r.slotId].flame;
     expect(attachmentPictures(att)).toEqual(['flame_03', 'flame_04', 'flame_05', 'flame_06', 'flame_07', 'flame_08']);
     expect(setupPicture(att)).toBe('flame_04');
-    const plain = Object.values(r.project.skeleton.skins[0].attachments[r.slotId]).find((a) => a.type === 'region' && !(a as RegionAttachment).sequence)!;
+    const plain = Object.values(r.project.skeleton.skins[0].attachments[r.slotId]).find((a) => a.type === 'region' && !(a).sequence)!;
     expect(attachmentPictures(plain)).toEqual([(plain as RegionAttachment).path]);
   });
 

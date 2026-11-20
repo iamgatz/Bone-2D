@@ -73,10 +73,10 @@ describe('engineNeeds', () => {
     const doc = plain().project.skeleton;
     const region = Object.values(doc.skins[0].attachments).flatMap((m) => Object.values(m)).find((a) => a.type === 'region');
     if (region?.type === 'region') region.sequence = { count: 2, start: 0, digits: 0, setupIndex: 0 };
-    doc.animations[0].drawOrderFolder = { f1: [{ time: 0, order: [] }] } as never;
+    doc.animations[0].drawOrderFolder = { f1: [{ time: 0, order: [] }] };
     doc.events.push({ id: 'e1', name: 'step', int: 0, float: 0, string: '', audio: 'step.wav' });
     const mesh = Object.entries(doc.skins[0].attachments).flatMap(([slotId, m]) => Object.values(m).map((a) => ({ slotId, a }))).find((x) => x.a.type === 'mesh' && !x.a.link);
-    if (mesh?.a.type === 'mesh') mesh.a.link = { skin: null, source: 'x', slot: 'another slot', deform: false } as never;
+    if (mesh?.a.type === 'mesh') mesh.a.link = { skin: null, source: 'x', slot: 'another slot', deform: false };
     const got = ids(engineNeeds(doc));
     expect(got).toEqual(expect.arrayContaining(['sequence', 'folder', 'audio', 'linked']));
     expect(engineNeeds(doc).find((n) => n.id === 'audio')!.level).toBe('note');

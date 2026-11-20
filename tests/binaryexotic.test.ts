@@ -11,7 +11,7 @@ import { importSpineJson } from '../src/core/import/spineJson';
 import { diffGraphs } from './binarykit';
 import { loadOfficial, loadOfficialBinary } from './official';
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
+ 
 
 const STRINGS = ['slotA', 'slotB', 'body', 'mesh', 'linked', 'sideview'];
 const ref = (s: string | null) => (s === null ? 0 : STRINGS.indexOf(s) + 1);

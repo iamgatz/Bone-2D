@@ -91,7 +91,7 @@ export function addPathRig(project: Project): PathRig {
     };
   }
 
-  const tl = (keys: [number, number[], (number[] | 'stepped')?][]): Timeline => keys.map(([time, value, curve]) => ({ time, value, ...(curve ? { curve: curve as number[] | 'stepped' } : {}) }));
+  const tl = (keys: [number, number[], (number[] | 'stepped')?][]): Timeline => keys.map(([time, value, curve]) => ({ time, value, ...(curve ? { curve: curve } : {}) }));
   const anim = doc.animations.find((a) => a.name === 'walk') ?? doc.animations[0];
   anim.bones[boneId.pathHolder] = { rotate: tl([[0, [0]], [1.2, [35]]]) };
   anim.bones[boneId.wA] = { rotate: tl([[0, [0]], [0.6, [25], [0.3, 0, 0.7, 1]], [1.2, [-10]]]) };

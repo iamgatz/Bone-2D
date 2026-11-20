@@ -46,6 +46,7 @@ export function AssetsPanel() {
     const all = new Map<string, number>();
     for (const doc of skeletonList(project)) for (const [name, n] of imageUsage(doc)) all.set(name, (all.get(name) ?? 0) + n);
     return all;
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- `project` changes with every edit; these two are what the count depends on
   }, [project.skeleton, project.others]);
   const byName = useMemo(() => new Map(project.images.map((i) => [i.name, i] as const)), [project.images]);
   const groups = useMemo(() => imageGroups(project.images.map((i) => i.name)), [project.images]);

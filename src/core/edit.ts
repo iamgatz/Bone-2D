@@ -95,7 +95,7 @@ export function removeBones(doc: SkeletonDoc, ids: Iterable<Id>, bindPose?: Bone
   const deadConstraints = new Set(doc.constraints.filter((c) => constraintBoneIds(c).some((b) => gone.has(b))).map((c) => c.id));
   doc.constraints = doc.constraints.filter((c) => !deadConstraints.has(c.id));
   const wasBone = new Set([...doc.bones.map((b) => b.id), ...gone]);
-  doc.skins.forEach((skin, skinIndex) => {
+  doc.skins.forEach((skin) => {
     skin.bones = skin.bones.filter((b) => !gone.has(b));
     skin.constraints = skin.constraints.filter((c) => !deadConstraints.has(c));
     for (const slotId in skin.attachments) {
@@ -217,7 +217,7 @@ export function purgeAttachment(doc: SkeletonDoc, slotId: Id, name: string) {
 export function upsertKey<K extends { time: number }>(keys: K[], key: K, eps = KEY_EPS): K {
   for (let i = 0; i < keys.length; i++) {
     if (Math.abs(keys[i].time - key.time) <= eps) {
-      keys[i] = { ...keys[i], ...key, time: keys[i].time } as K;
+      keys[i] = { ...keys[i], ...key, time: keys[i].time };
       return keys[i];
     }
   }

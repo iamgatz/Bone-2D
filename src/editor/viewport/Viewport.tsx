@@ -146,8 +146,8 @@ export function Viewport() {
       const hiddenSlots = new Set(doc.slots.filter((s) => s.hidden).map((s) => s.id));
       const hiddenBones = new Set(doc.bones.filter((b) => b.hidden).map((b) => b.id));
       const prefs = settingsStore.get();
-      renderer!.setSmoothing(prefs.smoothing);
-      renderer!.begin({ x: ui.camera.x, y: ui.camera.y, scale: ui.camera.zoom * dpr, width: glCanvas.width, height: glCanvas.height, flip: !!ui.camera.flip }, [...prefs.viewportBg, 1]);
+      renderer.setSmoothing(prefs.smoothing);
+      renderer.begin({ x: ui.camera.x, y: ui.camera.y, scale: ui.camera.zoom * dpr, width: glCanvas.width, height: glCanvas.height, flip: !!ui.camera.flip }, [...prefs.viewportBg, 1]);
       const onionOn = ui.view.onion && ui.mode === 'animate' && scene.animation;
       const onion = onionOn
         ? ghostsFor(
@@ -161,14 +161,14 @@ export function Viewport() {
             ui.selection.bones.length ? { bones: ui.selection.bones, slots: ui.selection.slot ? [ui.selection.slot] : [] } : null,
           )
         : [];
-      const drawGhost = (g: (typeof onion)[number]) => renderer!.drawSkeleton(g.skeleton, { skip: (s) => hiddenSlots.has(s.data.id), alpha: g.alpha, tint: g.tint, flat: g.flat, offset: g.offset });
+      const drawGhost = (g: (typeof onion)[number]) => renderer.drawSkeleton(g.skeleton, { skip: (s) => hiddenSlots.has(s.data.id), alpha: g.alpha, tint: g.tint, flat: g.flat, offset: g.offset });
       for (const g of onion) if (!g.top) drawGhost(g);
       if (ui.reference) {
         // the reference (another animation or the setup pose) under the pose being edited
         const other = ui.reference === 'setup' ? null : doc.animations.find((a) => a.id === ui.reference);
         if (ui.reference === 'setup' || other) {
           const g = referenceGhost(scene, other ?? null, ui.mode === 'animate' ? ui.time : 0, ui.loop, ui.skinId);
-          renderer!.drawSkeleton(g.skeleton, { skip: (s) => hiddenSlots.has(s.data.id), alpha: g.alpha, tint: g.tint });
+          renderer.drawSkeleton(g.skeleton, { skip: (s) => hiddenSlots.has(s.data.id), alpha: g.alpha, tint: g.tint });
         }
       }
       if (ui.compare) {
@@ -177,16 +177,16 @@ export function Viewport() {
         if (cp) {
           try {
             const g = checkpointGhost(cp.skeleton, ui.mode === 'animate' ? ui.animationId : null, ui.mode === 'animate' ? ui.time : 0, ui.loop, ui.skinId);
-            if (g) renderer!.drawSkeleton(g.skeleton, { skip: (s) => hiddenSlots.has(s.data.id), alpha: g.alpha, tint: g.tint });
+            if (g) renderer.drawSkeleton(g.skeleton, { skip: (s) => hiddenSlots.has(s.data.id), alpha: g.alpha, tint: g.tint });
           } catch (e) {
             console.error(e);
           }
         }
       }
-      if (ui.view.images) renderer!.drawSkeleton(scene.skeleton, { skip: (s) => hiddenSlots.has(s.data.id) });
+      if (ui.view.images) renderer.drawSkeleton(scene.skeleton, { skip: (s) => hiddenSlots.has(s.data.id) });
       for (const g of onion) if (g.top) drawGhost(g);
-      controller.meshTool.drawHeat(renderer!, scene);
-      renderer!.end();
+      controller.meshTool.drawHeat(renderer, scene);
+      renderer.end();
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       drawOverlay({ ctx, w, h, cam: ui.camera, scene, ui, hoverBone: controller.hoverBone, hiddenBones, hiddenSlots, interaction: controller.interaction, under: (o) => {
           controller.pathTool.drawUnder(o);

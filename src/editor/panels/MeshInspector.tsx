@@ -304,7 +304,7 @@ export function MeshGroup({ slotId, att, part }: { slotId: Id; att: MeshAttachme
               {welds.length > 0 && (
                 <Field label="Weld">
                   <SelectField value={weldKey} options={welds.map((w, i) => ({ value: String(i), label: `${w.label} (${w.shared})` }))} onChange={setWeldPick} />
-                  <SelectField value={weldMode} options={[{ value: 'overlapping', label: 'Overlapping' }, { value: 'all', label: 'All' }]} onChange={(v) => setWeldMode(v as 'all' | 'overlapping')} />
+                  <SelectField value={weldMode} options={[{ value: 'overlapping', label: 'Overlapping' }, { value: 'all', label: 'All' }]} onChange={(v) => setWeldMode(v)} />
                   <Button icon={Link2} disabled={!weld || weld.shared < 2} onClick={() => weld && weldMeshWeights(slotId, att.name, weld.slotId, weld.name, weldMode)} title="Take the weights of the other mesh where this one lies over it (both need the same two or more bones; the number in brackets is how many they share)">
                     Weld
                   </Button>

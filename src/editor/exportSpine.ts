@@ -12,6 +12,7 @@ import { activeIndex, skeletonList } from '@/core/skeletons';
 import type { ZipEntry } from '@/core/export/zip';
 import { assets } from '@/store/assets';
 import { docStore } from '@/store/doc';
+import { canvasToBlob } from './ui/canvas';
 
 export interface ExportOptions {
   /** The skeleton file: Spine JSON, or the smaller binary .skel. */
@@ -89,7 +90,7 @@ async function pageToPng(page: AtlasPage, pixels: Map<string, Uint8ClampedArray>
   const data = composePage(page, (n) => (pixels.has(n) ? { data: pixels.get(n)! } : undefined), padding);
   if (pma) premultiplyAlpha(data);
   ctx.putImageData(new ImageData(data as Uint8ClampedArray<ArrayBuffer>, page.width, page.height), 0, 0);
-  const blob: Blob = await new Promise((resolve, reject) => canvas.toBlob((b) => (b ? resolve(b) : reject(new Error('PNG encode failed'))), 'image/png'));
+  const blob = await canvasToBlob(canvas);
   return new Uint8Array(await blob.arrayBuffer());
 }
 
@@ -135,7 +136,7 @@ export async function buildSpineExport(opts: ExportOptions): Promise<ExportResul
   const full = skeletonList(project)[opts.skeletonIndex ?? activeIndex(project)] ?? project.skeleton;
   const keep = new Set(full.constraints.flatMap((c) => (c.type === 'slider' && c.animation ? [c.animation] : [])));
   const doc = opts.excludeAnimations?.length ? { ...full, animations: full.animations.filter((a) => keep.has(a.id) || !opts.excludeAnimations!.includes(a.id)) } : full;
-  const base = (opts.baseName ?? doc.name ?? 'skeleton').replace(/[^\w\-]+/g, '_') || 'skeleton';
+  const base = (opts.baseName ?? doc.name ?? 'skeleton').replace(/[^\w-]+/g, '_') || 'skeleton';
   const images = usedImages(full);
   const missing = images.filter((i) => !assets.has(i.name)).map((i) => i.name);
   const scale = opts.scale && opts.scale > 0 ? opts.scale : 1;

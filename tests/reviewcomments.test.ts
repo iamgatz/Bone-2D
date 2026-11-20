@@ -107,7 +107,7 @@ describe('applyReview', () => {
     const a = anim(doc);
     (a.markers ??= []).push({ id: 'plain', time: 0.1, name: 'beat', color: 0, text: '' });
     applyReview(doc, [makeComment('c1', 'walk', 0.1, 'a', 'A'), makeComment('c2', 'walk', 0.2, 'b', 'A')]);
-    a.markers!.find((m) => m.id === markerIdOf({ id: 'c1' }))!.resolved = true;
+    a.markers.find((m) => m.id === markerIdOf({ id: 'c1' }))!.resolved = true;
     expect(reviewCounts(doc)).toEqual({ open: 1, resolved: 1 });
   });
 });

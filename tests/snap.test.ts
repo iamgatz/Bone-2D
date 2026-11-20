@@ -86,7 +86,7 @@ describe('guide actions', () => {
 
   it('are repaired when a project holds damaged ones', () => {
     const f = buildFixture().project;
-    f.guides = { x: [5, 5, NaN], y: [9, 2] } as never;
+    f.guides = { x: [5, 5, NaN], y: [9, 2] };
     expect(repairProject(f).some((m) => /guides/.test(m))).toBe(true);
     expect(f.guides).toEqual({ x: [5], y: [2, 9] });
   });

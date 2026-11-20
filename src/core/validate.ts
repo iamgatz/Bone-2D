@@ -128,7 +128,7 @@ function repairOthers(project: Project, note: Note) {
     project.others = [];
     note('the list of other skeletons was repaired');
   }
-  const kept = project.others.filter((o) => o && typeof o === 'object' && Array.isArray((o as SkeletonDoc).bones));
+  const kept = project.others.filter((o) => o && typeof o === 'object' && Array.isArray((o).bones));
   if (kept.length !== project.others.length) note('skeletons that could not be read were dropped');
   project.others = kept;
   const at = project.activeAt;

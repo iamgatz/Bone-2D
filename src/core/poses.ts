@@ -52,7 +52,7 @@ export function repairPoses(list: unknown): { poses: PoseEntry[]; notes: string[
     }
     const bones: Record<string, BonePose> = {};
     for (const [name, p] of Object.entries(raw.bones)) {
-      if (p && typeof p === 'object' && POSE_FIELDS.every((k) => finite((p as BonePose)[k]))) bones[name] = Object.fromEntries(POSE_FIELDS.map((k) => [k, (p as BonePose)[k]])) as unknown as BonePose;
+      if (p && typeof p === 'object' && POSE_FIELDS.every((k) => finite((p)[k]))) bones[name] = Object.fromEntries(POSE_FIELDS.map((k) => [k, (p)[k]])) as unknown as BonePose;
       else notes.push(`pose "${raw.name}": bone "${name}" had no valid numbers`);
     }
     if (!Object.keys(bones).length) {

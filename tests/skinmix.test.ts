@@ -11,7 +11,7 @@ import { docStore } from '../src/store/doc';
 import { uiStore } from '../src/store/ui';
 import { exportAndLoad } from './official';
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
+ 
 const S = spine as any;
 
 const region = (name: string, path: string): RegionAttachment => ({ type: 'region', name, path, x: 0, y: 0, rotation: 0, scaleX: 1, scaleY: 1, width: 20, height: 20, color: [1, 1, 1, 1] });
@@ -98,7 +98,7 @@ describe('composeSkins', () => {
 describe('skin mix in the editor', () => {
   function load() {
     const r = rig();
-    docStore.replace({ ...docStore.get(), skeleton: r.doc, images: r.project.images } as any);
+    docStore.replace({ ...docStore.get(), skeleton: r.doc, images: r.project.images });
     uiStore.patch({ skinId: null, skinMix: [] });
     return r;
   }
@@ -135,7 +135,7 @@ describe('deforming a mesh that only a worn skin has', () => {
     r.doc.slots.find((s) => s.id === r.body.id)!.attachment = 'extra';
     const anim = newAnimation('wave', 1);
     r.doc.animations.push(anim);
-    docStore.replace({ ...docStore.get(), skeleton: r.doc, images: r.project.images } as any);
+    docStore.replace({ ...docStore.get(), skeleton: r.doc, images: r.project.images });
     uiStore.patch({ mode: 'animate', animationId: anim.id, time: 0.5, skinId: null, skinMix: [r.red.id] });
     const base = M.currentDeform(r.body.id)!;
     expect(base).not.toBeNull();

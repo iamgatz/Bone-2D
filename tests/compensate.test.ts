@@ -100,7 +100,7 @@ describe('compensateEdit', () => {
 describe('through setBonePose', () => {
   it('uses the compensation of the UI in Setup mode, as one history step', () => {
     const { project } = buildFixture();
-    docStore.replace(project as Project);
+    docStore.replace(project);
     uiStore.patch({ mode: 'setup', compensate: { bones: true, images: false } });
     const torso = project.skeleton.bones.find((b) => b.name === 'torso')!;
     const kid = project.skeleton.bones.find((b) => b.parent === torso.id && b.inherit === 'normal')!;

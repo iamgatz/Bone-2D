@@ -42,7 +42,7 @@ export function closeLoop(anim: Animation, options: CloseLoopOptions = {}): numb
   const keep = options.keep ?? 'first';
   const scope = options.bones ? options.bones.map((id) => anim.bones[id]) : [anim.bones, anim.slots, anim.deform, anim.transform, anim.slider, anim.path, anim.physics];
   let changed = 0;
-  for (const list of keyListsIn(scope)) if (list.every(isNumberKey) && closeTimeline(list as Key[], anim.duration, keep)) changed++;
+  for (const list of keyListsIn(scope)) if (list.every(isNumberKey) && closeTimeline(list, anim.duration, keep)) changed++;
   return changed;
 }
 

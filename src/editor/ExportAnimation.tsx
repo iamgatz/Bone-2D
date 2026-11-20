@@ -83,7 +83,7 @@ export function ExportAnimation() {
     if (!prepared || !anim || progress !== null) return;
     cancel.current = false;
     setProgress(0);
-    const base = (doc.name || 'skeleton').replace(/[^\w\-]+/g, '_') + '-' + anim.name.replace(/[^\w\-]+/g, '_');
+    const base = (doc.name || 'skeleton').replace(/[^\w-]+/g, '_') + '-' + anim.name.replace(/[^\w-]+/g, '_');
     try {
       if (format === 'webm') {
         const blob = await framesToWebm(prepared, (n) => setProgress(n / prepared.count), () => cancel.current);

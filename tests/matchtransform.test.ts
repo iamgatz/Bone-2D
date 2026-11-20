@@ -10,7 +10,7 @@ import { uiStore } from '../src/store/ui';
 import { buildFixture } from './fixture';
 import { S, exportAndLoad } from './official';
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
+ 
 
 const clone = (p: Project): Project => JSON.parse(JSON.stringify(p));
 

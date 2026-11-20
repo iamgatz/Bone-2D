@@ -72,7 +72,7 @@ describe('helpers', () => {
     p.skeleton.animations.push(an);
     expect(pruneFolders(p.skeleton).sort()).toEqual(['G', 'H']);
     expect(p.skeleton.drawOrderFolders).toEqual([{ id: 'F', name: 'f', slots: [a] }]);
-    expect(Object.keys(an.drawOrderFolder!)).toEqual(['F']);
+    expect(Object.keys(an.drawOrderFolder)).toEqual(['F']);
     expect(b).toBeTruthy();
   });
 });

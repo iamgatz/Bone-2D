@@ -6,7 +6,7 @@ import type { BoneMats } from '@/core/mesh';
 import { RAD2DEG, atan2Deg, matInvert, matMul } from '@/core/math';
 import type { Mat } from '@/core/math';
 import { AXIS_GROUPS, newBone } from '@/core/model';
-import type { Animation, AxisGroup, Bone, BoneProp, Id, Inherit, Project } from '@/core/model';
+import type { Animation, AxisGroup, Bone, BoneProp, Id, Project } from '@/core/model';
 import { rotationLimitOf } from '@/core/limits';
 import { getScene, getSetupSkeleton } from '@/store/scene';
 import { docStore } from './doc';
@@ -137,7 +137,7 @@ export function reparentBone(id: Id, newParent: Id | null) {
     b.scaleY = dec.scaleY;
     b.shearX = dec.shearX;
     b.shearY = dec.shearY;
-    b.inherit = 'normal' as Inherit;
+    b.inherit = 'normal';
     normalizeBoneOrder(d.skeleton);
   });
 }

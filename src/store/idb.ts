@@ -5,6 +5,8 @@ export const DB = 'bone2d';
 export const LEGACY_DB = 'marrow';
 const STORE = 'kv';
 
+const FAILED = new Error('IndexedDB request failed');
+
 function open(name = DB): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
     const req = indexedDB.open(name, 1);
@@ -13,7 +15,7 @@ function open(name = DB): Promise<IDBDatabase> {
       else req.transaction?.abort(); // the legacy database is only read: do not create an empty one when it does not exist
     };
     req.onsuccess = () => resolve(req.result);
-    req.onerror = () => reject(req.error);
+    req.onerror = () => reject(req.error ?? FAILED);
   });
 }
 
@@ -23,7 +25,7 @@ export async function idbSet(key: string, value: unknown): Promise<void> {
     const tx = db.transaction(STORE, 'readwrite');
     tx.objectStore(STORE).put(value, key);
     tx.oncomplete = () => resolve();
-    tx.onerror = () => reject(tx.error);
+    tx.onerror = () => reject(tx.error ?? FAILED);
   });
   db.close();
 }
@@ -34,7 +36,7 @@ export async function idbGet<T = unknown>(key: string, name = DB): Promise<T | u
     const tx = db.transaction(STORE, 'readonly');
     const r = tx.objectStore(STORE).get(key);
     r.onsuccess = () => resolve(r.result as T | undefined);
-    r.onerror = () => reject(r.error);
+    r.onerror = () => reject(r.error ?? FAILED);
   });
   db.close();
   return v;
@@ -46,7 +48,7 @@ export async function idbDelete(key: string): Promise<void> {
     const tx = db.transaction(STORE, 'readwrite');
     tx.objectStore(STORE).delete(key);
     tx.oncomplete = () => resolve();
-    tx.onerror = () => reject(tx.error);
+    tx.onerror = () => reject(tx.error ?? FAILED);
   });
   db.close();
 }

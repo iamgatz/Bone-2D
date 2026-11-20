@@ -40,7 +40,7 @@ describe('mergeSkin', () => {
   it('copies what the target does not have and leaves what it has', () => {
     const { doc, red, blue, slotId, name } = setup();
     const extra = structuredClone(red.attachments[slotId][name]);
-    red.attachments[slotId].extra = { ...extra, name: 'extra' } as Attachment;
+    red.attachments[slotId].extra = { ...extra, name: 'extra' };
     const r = mergeSkin(doc, red.id, blue.id)!;
     expect(r).toEqual({ added: 1, replaced: 0 });
     expect(pathOf(blue.attachments[slotId][name])).toBe('blue/x'); // kept
@@ -89,7 +89,7 @@ describe('mergeSkin', () => {
 
   it('merges into the default skin without a scope', () => {
     const { doc, red, slotId, name } = setup();
-    red.attachments[slotId].other = { ...structuredClone(red.attachments[slotId][name]), name: 'other' } as Attachment;
+    red.attachments[slotId].other = { ...structuredClone(red.attachments[slotId][name]), name: 'other' };
     const r = mergeSkin(doc, red.id, doc.skins[0].id)!;
     expect(r.added).toBe(1);
     expect(doc.skins[0].bones).toEqual([]);

@@ -8,7 +8,7 @@ import { docStore } from '../src/store/doc';
 import { buildFixture } from './fixture';
 import { exportAndLoad, loadOfficialBinary } from './official';
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
+ 
 
 function withAudio() {
   const { project } = buildFixture();
@@ -45,7 +45,7 @@ describe('event sounds', () => {
   it('are the same in the binary file', () => {
     const { project } = withAudio();
     const { json, atlasText } = exportAndLoad(project);
-    const sd = loadOfficialBinary(jsonToBinary(json as any), atlasText) as any;
+    const sd = loadOfficialBinary(jsonToBinary(json as any), atlasText);
     const def = sd.findEvent('hit');
     expect(def.audioPath).toBe('sounds/hit.ogg');
     expect(def.setupPose.volume).toBeCloseTo(0.6, 5);

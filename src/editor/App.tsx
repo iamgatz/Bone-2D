@@ -373,7 +373,7 @@ export function App() {
     const stopLayout = startLayoutPersist();
     const stopSanitize = docStore.subscribe(sanitizeSelection); // undo / redo can remove what is selected
     const stopSelHistory = startSelectionHistory();
-    restoreAutosave().then((ok) => {
+    void restoreAutosave().then((ok) => {
       if (!ok) {
         setTimeout(() => viewportApi.frame(), 60);
         if (settingsStore.get().showWelcome) uiStore.patch({ welcomeOpen: true });

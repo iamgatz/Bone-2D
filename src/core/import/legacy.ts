@@ -17,7 +17,7 @@
 
 type J = Record<string, any>;
 
-const obj = (v: unknown): J => (v && typeof v === 'object' && !Array.isArray(v) ? (v as J) : {});
+const obj = (v: unknown): J => (v && typeof v === 'object' && !Array.isArray(v) ? (v) : {});
 const arr = (v: unknown): any[] => (Array.isArray(v) ? v : []);
 const num = (v: unknown, d: number): number => (typeof v === 'number' && Number.isFinite(v) ? v : d);
 

@@ -18,6 +18,7 @@ export function safeZipPath(path: string): string {
   const parts = path
     .replace(/\\/g, '/')
     .split('/')
+    // eslint-disable-next-line no-control-regex -- control characters are not allowed in a file name
     .map((p) => p.replace(/[<>:"|?*\u0000-\u001f]/g, '_').trim())
     .filter((p) => p && p !== '.' && p !== '..');
   return parts.join('/') || 'image';

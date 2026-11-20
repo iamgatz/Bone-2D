@@ -62,7 +62,7 @@ describe('the solver', () => {
 describe('export', () => {
   it('writes one JSON timeline per axis, with the keys and curves it has', () => {
     const { p, bone } = splitProject();
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+     
     const json = exportSpineJson(p.skeleton) as any;
     const t = json.animations.walk.bones[p.skeleton.bones[1].name];
     expect(bone).toBeTruthy();

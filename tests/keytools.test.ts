@@ -2,7 +2,6 @@
 import { describe, expect, it } from 'vitest';
 import { favorKeys, neutralOf, scaledTimes } from '../src/core/keytools';
 import { newAnimation } from '../src/core/model';
-import type { Project } from '../src/core/model';
 import { encodeKey } from '../src/core/keyrefs';
 import { favorSelectedKeys, keyStash, scaleSelectedKeyTimes, storeSelectedKeys, swapStoredKeys } from '../src/store/keyToolActions';
 import { docStore } from '../src/store/doc';
@@ -16,30 +15,30 @@ describe('favorKeys', () => {
     const mk = () => keys([0, 0], [1, 10], [2, 4]);
     let k = mk();
     expect(favorKeys(k, [1], 'previous', 0.5)).toBe(1);
-    expect(k[1].value![0]).toBeCloseTo(5, 9);
+    expect(k[1].value[0]).toBeCloseTo(5, 9);
     k = mk();
     favorKeys(k, [1], 'next', 0.5);
-    expect(k[1].value![0]).toBeCloseTo(7, 9);
+    expect(k[1].value[0]).toBeCloseTo(7, 9);
     k = mk();
     favorKeys(k, [1], 'average', 1);
-    expect(k[1].value![0]).toBeCloseTo(2, 9);
+    expect(k[1].value[0]).toBeCloseTo(2, 9);
     k = mk();
     favorKeys(k, [1], 'average', 0.25);
-    expect(k[1].value![0]).toBeCloseTo(10 + (2 - 10) * 0.25, 9);
+    expect(k[1].value[0]).toBeCloseTo(10 + (2 - 10) * 0.25, 9);
   });
 
   it('at an end only the neighbour there is counts, and a missing side does nothing', () => {
     const k = keys([0, 6], [1, 2]);
     expect(favorKeys(k, [0], 'previous', 1)).toBe(0);
     expect(favorKeys(k, [0], 'average', 1)).toBe(1);
-    expect(k[0].value![0]).toBeCloseTo(2, 9);
+    expect(k[0].value[0]).toBeCloseTo(2, 9);
   });
 
   it('keys next to each other are measured against the values from before the call', () => {
     const k = keys([0, 0], [1, 10], [2, 20], [3, 0]);
     favorKeys(k, [1, 2], 'previous', 1);
-    expect(k[1].value![0]).toBe(0);
-    expect(k[2].value![0]).toBe(10); // the old value of key 1, not the new one
+    expect(k[1].value[0]).toBe(0);
+    expect(k[2].value[0]).toBe(10); // the old value of key 1, not the new one
   });
 
   it('neutral takes every channel to the setup value; amounts are clamped; no change returns 0', () => {
@@ -64,18 +63,18 @@ describe('favorKeys as a block', () => {
   it('moves the selected keys together until the first meets the key before it, the differences kept', () => {
     const k = keys([0, 0], [1, 10], [2, 14], [3, 30]);
     expect(favorKeys(k, [1, 2], 'shiftPrevious', 1)).toBe(2);
-    expect(k.map((x) => x.value![0])).toEqual([0, 0, 4, 30]);
+    expect(k.map((x) => x.value[0])).toEqual([0, 0, 4, 30]);
   });
   it('or until the last meets the key after it, by an amount', () => {
     const k = keys([0, 0], [1, 10], [2, 14], [3, 30]);
     favorKeys(k, [1, 2], 'shiftNext', 0.5);
-    expect(k.map((x) => x.value![0])).toEqual([0, 18, 22, 30]);
+    expect(k.map((x) => x.value[0])).toEqual([0, 18, 22, 30]);
   });
   it('does nothing without a neighbour on that side', () => {
     const k = keys([0, 5], [1, 10]);
     expect(favorKeys(k, [0], 'shiftPrevious', 1)).toBe(0);
     expect(favorKeys(k, [1], 'shiftNext', 1)).toBe(0);
-    expect(k.map((x) => x.value![0])).toEqual([5, 10]);
+    expect(k.map((x) => x.value[0])).toEqual([5, 10]);
   });
 });
 
@@ -102,7 +101,7 @@ describe('the actions', () => {
     anim.bones[bone.id] = { rotate: [0, 0.5, 1, 1.5].map((time, i) => ({ time, value: [i * 10] })), scale: [{ time: 0, value: [1, 1] }, { time: 1, value: [2, 3] }] };
     project.skeleton.animations.push(anim);
     project.skeleton.fps = 20;
-    docStore.replace(project as Project);
+    docStore.replace(project);
     uiStore.patch({ animationId: anim.id, mode: 'animate', time: 0, selectedKeys: [] });
     return { bone, anim };
   }
@@ -137,7 +136,7 @@ describe('the actions', () => {
   });
   it('Store and Swap: set the values aside, trade them with the keys, trade back', () => {
     const { bone, anim } = open();
-    const rot = () => docStore.get().skeleton.animations.find((a) => a.id === anim.id)!.bones[bone.id].rotate!.map((k) => k.value![0]);
+    const rot = () => docStore.get().skeleton.animations.find((a) => a.id === anim.id)!.bones[bone.id].rotate!.map((k) => k.value[0]);
     uiStore.patch({ selectedKeys: sel(bone.id, 'rotate', 0.5, 1) });
     expect(storeSelectedKeys()).toBe(2);
     expect(keyStash.get().items.map((i) => i.value)).toEqual([[10], [20]]);

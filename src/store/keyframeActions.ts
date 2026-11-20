@@ -41,7 +41,7 @@ export function moveKeysBy(refs: KeyRef[], dt: number, ripple = false, loop = fa
 export function saveKeyCurve(ref: KeyRef): boolean {
   const anim = currentAnimation();
   if (!anim) return false;
-  const keys = resolveKeys(anim, ref) as { time: number; curve?: unknown }[] | undefined;
+  const keys = resolveKeys(anim, ref);
   const key = keyAt(keys, ref.time);
   const curve = curveOfKey(key?.curve);
   if (!curve) {
@@ -72,7 +72,7 @@ export function setKeysCurve(refs: KeyRef[], kind: 'linear' | 'stepped' | 'bezie
     const a = d.skeleton.animations.find((x) => x.id === anim.id);
     if (!a) return;
     for (const ref of refs) {
-      const keys = resolveKeys(a, ref) as { time: number; value?: number[]; curve?: unknown }[] | undefined;
+      const keys = resolveKeys(a, ref);
       const k = keyAt(keys, ref.time);
       if (!k || !('value' in k) || !k.value) continue;
       const channels = ref.kind === 'deform' ? 1 : k.value.length;
@@ -97,7 +97,7 @@ export function setKeyChannelValue(ref: KeyRef, channel: number, value: number) 
   docStore.update('Edit key value', (d) => {
     const a = d.skeleton.animations.find((x) => x.id === anim.id);
     if (!a) return;
-    const keys = resolveKeys(a, ref) as { time: number; value?: number[] }[] | undefined;
+    const keys = resolveKeys(a, ref);
     const k = keyAt(keys, ref.time);
     if (k?.value) k.value[channel] = value;
   });
@@ -110,16 +110,16 @@ export function setKeyCurveHandle(ref: KeyRef, channel: number, handle: 1 | 2, n
   docStore.update('Edit curve', (d) => {
     const a = d.skeleton.animations.find((x) => x.id === anim.id);
     if (!a) return;
-    const keys = resolveKeys(a, ref) as { time: number; value?: number[]; curve?: unknown }[] | undefined;
+    const keys = resolveKeys(a, ref);
     const k = keyAt(keys, ref.time);
     if (!k || !k.value) return;
     const channels = ref.kind === 'deform' ? 1 : k.value.length;
     let curve = k.curve;
     if (!Array.isArray(curve)) {
       curve = [];
-      for (let c = 0; c < channels; c++) (curve as number[]).push(1 / 3, 1 / 3, 2 / 3, 2 / 3);
+      for (let c = 0; c < channels; c++) (curve).push(1 / 3, 1 / 3, 2 / 3, 2 / 3);
     }
-    const arr = curve as number[];
+    const arr = curve;
     const i = channel * 4 + (handle === 1 ? 0 : 2);
     arr[i] = Math.max(0, Math.min(1, nx));
     arr[i + 1] = ny;
@@ -144,7 +144,7 @@ export function copyKeys(refs: KeyRef[]) {
   for (const r of refs) {
     const keys = resolveKeys(anim, r);
     const k = keys?.find((x) => Math.abs(x.time - r.time) < 1e-4);
-    if (k) clipboard.push({ kind: r.kind, target: r.target, prop: r.prop, dt: r.time - min, key: structuredClone(k) as Record<string, unknown> });
+    if (k) clipboard.push({ kind: r.kind, target: r.target, prop: r.prop, dt: r.time - min, key: structuredClone(k) });
   }
   toast(`Copied ${clipboard.length} key${clipboard.length === 1 ? '' : 's'}`);
 }
@@ -188,16 +188,16 @@ export function pasteKeys(time: number, hold = false): KeyRef[] {
         else if (c.kind === 'physics') ((a.physics[c.target] ??= {}) as Record<string, unknown>)[c.prop] = keys = [];
         else if (c.kind === 'deform') {
           const [skinId, att] = c.prop.split('\u0001');
-          keys = (((a.deform[skinId] ??= {})[c.target] ??= {})[att] = []) as unknown as { time: number }[];
+          keys = ((a.deform[skinId] ??= {})[c.target] ??= {})[att] = [];
         } else if (c.kind === 'sequence') {
           const [skinId, att] = c.prop.split('\u0001');
-          keys = ((((a.sequence ??= {})[skinId] ??= {})[c.target] ??= {})[att] = []) as unknown as { time: number }[];
+          keys = (((a.sequence ??= {})[skinId] ??= {})[c.target] ??= {})[att] = [];
         }
       }
       if (!keys) continue;
       // a pasted key that says what the key there already says changes nothing, so the curve that was drawn on it stays
       const there = (keys as { time: number }[]).find((k) => Math.abs(k.time - t) <= KEY_EPS);
-      if (!there || !sameKeyValue(there, c.key)) upsertKey(keys as { time: number }[], { ...c.key, time: t } as { time: number });
+      if (!there || !sameKeyValue(there, c.key)) upsertKey(keys as { time: number }[], { ...c.key, time: t });
       out.push({ kind: c.kind, target: c.target, prop: c.prop, time: t });
     }
     extendDuration(a, Math.max(...out.map((o) => o.time)));

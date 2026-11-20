@@ -5,7 +5,7 @@ export interface Store<T> {
   get(): T;
   set(next: T | ((prev: T) => T)): void;
   patch(p: Partial<T>): void;
-  subscribe(fn: () => void): () => void;
+  subscribe: (fn: () => void) => () => void;
 }
 
 export function createStore<T extends object>(initial: T): Store<T> {
@@ -15,7 +15,7 @@ export function createStore<T extends object>(initial: T): Store<T> {
   return {
     get: () => state,
     set(next) {
-      const v = typeof next === 'function' ? (next as (p: T) => T)(state) : next;
+      const v = typeof next === 'function' ? (next)(state) : next;
       if (v === state) return;
       state = v;
       emit();

@@ -25,7 +25,7 @@ describe('project stats', () => {
     const a = newAnimation('x', 1);
     expect(countKeys(a)).toBe(0);
     const bone = project.skeleton.bones[0].id;
-    a.bones[bone] = { rotate: [{ time: 0, value: [0] }, { time: 1, value: [10] }], translate: [{ time: 0.5, value: [1, 2] }] } as never;
+    a.bones[bone] = { rotate: [{ time: 0, value: [0] }, { time: 1, value: [10] }], translate: [{ time: 0.5, value: [1, 2] }] };
     expect(countKeys(a)).toBe(3);
   });
 

@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
+ 
 /**
  * Export scale. The oracle is the official loader's own `scale`: the unscaled JSON read with `SkeletonJson.scale = s` must be the same
  * skeleton as our scaled JSON read at scale 1.

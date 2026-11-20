@@ -35,6 +35,6 @@ export function withCleanAnimations<T extends { animations: Animation[] }>(doc: 
 /** Cleans an animation in place; returns the number of keys removed. */
 export function cleanUpAnimation(anim: Animation): number {
   let removed = 0;
-  for (const list of keyListsIn([anim.bones, anim.slots, anim.deform, anim.transform, anim.slider, anim.path, anim.physics])) if (list.every(isNumberKey)) removed += dropFlatKeys(list as Key[]);
+  for (const list of keyListsIn([anim.bones, anim.slots, anim.deform, anim.transform, anim.slider, anim.path, anim.physics])) if (list.every(isNumberKey)) removed += dropFlatKeys(list);
   return removed;
 }

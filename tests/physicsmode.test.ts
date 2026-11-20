@@ -13,7 +13,7 @@ import { compileSkeleton, createSkeleton } from '../src/core/skeleton';
 import type { PhysicsMode } from '../src/core/skeleton';
 import { S, exportAndLoad, startLikeOfficial } from './official';
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
+ 
 
 const MODES: [PhysicsMode, number][] = [
   ['none', S.Physics.none],

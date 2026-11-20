@@ -108,7 +108,7 @@ describe('the fixes', () => {
     const n = deformLength(mesh, has);
     const anim = doc.animations[0];
     for (const a of doc.animations) delete a.deform[doc.skins[0].id]?.[slotId]?.[mesh.name]; // the keys of the fixture were made for the old weights
-    (((anim.deform[doc.skins[0].id] ??= {})[slotId] ??= {})[mesh.name] ??= []).push({ time: 0.2, value: Array.from({ length: n }, (_, i) => (i % 5) * 0.1) } as never);
+    (((anim.deform[doc.skins[0].id] ??= {})[slotId] ??= {})[mesh.name] ??= []).push({ time: 0.2, value: Array.from({ length: n }, (_, i) => (i % 5) * 0.1) });
     expect(repairProject(structuredClone(project))).toEqual([]);
     expect(fixProblem(project, projectWarnings(project).find((x) => x.kind === 'tooManyInfluences')!)).toBe(true);
     expect(repairProject(structuredClone(project))).toEqual([]);
@@ -142,7 +142,7 @@ describe('the fixes', () => {
     syncLinkedMeshes(doc);
     const has = (id: string) => doc.bones.some((b) => b.id === id);
     const anim = doc.animations[0];
-    (((anim.deform.altskin ??= {})[slotId] ??= {})[mesh.name] ??= []).push({ time: 0, value: new Array(deformLength(mesh, has)).fill(0) } as never);
+    (((anim.deform.altskin ??= {})[slotId] ??= {})[mesh.name] ??= []).push({ time: 0, value: new Array(deformLength(mesh, has)).fill(0) });
     const w = projectWarnings(project).find((x) => x.kind === 'ignoredDeform')!;
     expect(w).toBeTruthy();
     expect(fixProblem(project, w)).toBe(true);

@@ -83,7 +83,7 @@ export function buildRows(doc: SkeletonDoc, anim: Animation | null, selectedBone
     const tl = anim.bones[bone.id];
     const selected = selectedBones.includes(bone.id);
     if (!tl && !selected) continue;
-    const props = BONE_PROPS.filter((p) => tl?.[p]?.length).map((p) => ({ prop: p, kind: 'bone' as const, target: bone.id, keys: tl![p]! }));
+    const props = BONE_PROPS.filter((p) => tl?.[p]?.length).map((p) => ({ prop: p, kind: 'bone' as const, target: bone.id, keys: tl[p]! }));
     const id = `bone:${bone.id}`;
     const open = isOpen(id, selected);
     const keys: RowKeyInfo[] = [];
@@ -116,7 +116,7 @@ export function buildRows(doc: SkeletonDoc, anim: Animation | null, selectedBone
   for (const c of doc.constraints) {
     if (c.type === 'slider') {
       const tl = anim.slider?.[c.id];
-      const props = (['time', 'mix'] as const).filter((p) => tl?.[p]?.length).map((p) => ({ prop: p, kind: 'slider' as const, target: c.id, keys: tl![p]! }));
+      const props = (['time', 'mix'] as const).filter((p) => tl?.[p]?.length).map((p) => ({ prop: p, kind: 'slider' as const, target: c.id, keys: tl[p]! }));
       if (!props.length) continue;
       const id = `slider:${c.id}`;
       const open = isOpen(id, false);
@@ -129,7 +129,7 @@ export function buildRows(doc: SkeletonDoc, anim: Animation | null, selectedBone
     }
     if (c.type === 'path') {
       const tl = anim.path?.[c.id];
-      const props = (['position', 'spacing', 'mix'] as const).filter((p) => tl?.[p]?.length).map((p) => ({ prop: p, kind: 'path' as const, target: c.id, keys: tl![p]! }));
+      const props = (['position', 'spacing', 'mix'] as const).filter((p) => tl?.[p]?.length).map((p) => ({ prop: p, kind: 'path' as const, target: c.id, keys: tl[p]! }));
       if (!props.length) continue;
       const id = `path:${c.id}`;
       const open = isOpen(id, false);
@@ -142,7 +142,7 @@ export function buildRows(doc: SkeletonDoc, anim: Animation | null, selectedBone
     }
     if (c.type === 'physics') {
       const tl = anim.physics?.[c.id];
-      const props = ([...PHYSICS_PARAMS, 'reset'] as const).filter((p) => tl?.[p]?.length).map((p) => ({ prop: p, kind: 'physics' as const, target: c.id, keys: tl![p]! }));
+      const props = ([...PHYSICS_PARAMS, 'reset'] as const).filter((p) => tl?.[p]?.length).map((p) => ({ prop: p, kind: 'physics' as const, target: c.id, keys: tl[p]! }));
       if (!props.length) continue;
       const id = `physics:${c.id}`;
       const open = isOpen(id, false);

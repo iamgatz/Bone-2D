@@ -251,9 +251,9 @@ export class Bone {
       return;
     }
     let pa = parent.a;
-    let pb = parent.b;
+    const pb = parent.b;
     let pc = parent.c;
-    let pd = parent.d;
+    const pd = parent.d;
     const pad = pa * pd - pb * pc;
     // a singular parent (a bone scaled to 0, say) has no inverse; the official code divides by zero here and produces NaN
     // for the whole subtree, we keep every transform finite instead

@@ -15,7 +15,7 @@ import { uiStore } from '../src/store/ui';
 import { buildFixture } from './fixture';
 import { S, exportAndLoad } from './official';
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
+ 
 
 /** The fixture with a clean animation "talk" that changes the picture of the slot "body" three times. */
 function rig() {
@@ -170,7 +170,7 @@ describe('against the official runtime', () => {
 describe('the action', () => {
   function open() {
     const r = rig();
-    docStore.replace(r.project as Project);
+    docStore.replace(r.project);
     uiStore.patch({ animationId: r.talk.id, time: 0, playing: false, selectedKeys: [] });
     return r;
   }

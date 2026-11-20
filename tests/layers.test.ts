@@ -6,14 +6,14 @@ import { describe, expect, it } from 'vitest';
 import { DEFAULT_TOLERANCE, scaleTolerance } from '../src/core/bake';
 import { DEFAULT_LAYER, layerBones, layerTime, layeredLocal, stackLayer } from '../src/core/layers';
 import { newAnimation } from '../src/core/model';
-import type { Animation, Key, Project } from '../src/core/model';
+import type { Animation, Key } from '../src/core/model';
 import * as A from '../src/store/actions';
 import { docStore } from '../src/store/doc';
 import { uiStore } from '../src/store/ui';
 import { buildFixture } from './fixture';
 import { S, exportAndLoad } from './official';
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
+ 
 
 const key = (time: number, ...value: number[]): Key => ({ time, value });
 
@@ -151,7 +151,7 @@ describe('against the official runtime', () => {
 describe('the action', () => {
   function open() {
     const r = rig();
-    docStore.replace(r.project as Project);
+    docStore.replace(r.project);
     uiStore.patch({ animationId: r.base.id, time: 0, playing: false, selectedKeys: [] });
     return r;
   }

@@ -101,7 +101,7 @@ export function applyCrossfade(doc: SkeletonDoc, animId: Id, slotId: Id, seconds
     const mine = (skin.attachments[partner.id] ??= {});
     for (const name in own) {
       const att = own[name];
-      if (att.type === 'region' || att.type === 'mesh') mine[name] = JSON.parse(JSON.stringify(att)); // not structuredClone: the document may be an immer draft
+      if (att.type === 'region' || att.type === 'mesh') mine[name] = JSON.parse(JSON.stringify(att)) as typeof att; // not structuredClone: the document may be an immer draft
     }
   }
 

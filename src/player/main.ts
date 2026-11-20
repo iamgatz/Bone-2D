@@ -37,7 +37,7 @@ async function loadImages(payload: PlayerPayload): Promise<Map<string, HTMLImage
 }
 
 async function main() {
-  const payload: PlayerPayload = JSON.parse($('b2d-data').textContent ?? '{}');
+  const payload = JSON.parse($('b2d-data').textContent ?? '{}') as PlayerPayload;
   const doc = payload.skeleton;
   const canvas = $<HTMLCanvasElement>('stage');
   const over = $<HTMLCanvasElement>('over');
@@ -367,10 +367,11 @@ async function main() {
   document.body.dataset.ready = '1';
 }
 
-main().catch((e) => {
-  document.body.dataset.error = String(e?.message ?? e);
+main().catch((e: unknown) => {
+  const reason = e instanceof Error ? e.message : String(e);
+  document.body.dataset.error = reason;
   const msg = document.createElement('p');
   msg.className = 'error';
-  msg.textContent = playerText(playerLang(navigator.language), 'couldNotStart', { message: String(e?.message ?? e) });
+  msg.textContent = playerText(playerLang(navigator.language), 'couldNotStart', { message: reason });
   document.body.appendChild(msg);
 });

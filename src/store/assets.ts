@@ -122,8 +122,8 @@ export const assets = new AssetRegistry();
 export function blobToDataURL(blob: Blob): Promise<string> {
   return new Promise((resolve, reject) => {
     const r = new FileReader();
-    r.onload = () => resolve(String(r.result));
-    r.onerror = () => reject(r.error);
+    r.onload = () => resolve(r.result as string);
+    r.onerror = () => reject(r.error ?? new Error('Could not read the file'));
     r.readAsDataURL(blob);
   });
 }
