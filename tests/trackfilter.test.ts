@@ -1,6 +1,6 @@
 /** The track filter of the dopesheet: kinds of tracks, a name pattern, selected bones and slots only. */
 import { describe, expect, it } from 'vitest';
-import { NO_TRACK_FILTER, TRACK_GROUPS, buildRows, filterRows, isTrackFilter } from '../src/editor/timeline/rows';
+import { NO_TRACK_FILTER, TRACK_GROUPS, buildRows, filterRows, isTrackFilter } from '../src/core/timelineRows';
 import { buildFixture } from './fixture';
 
 function rows(pick: (doc: ReturnType<typeof buildFixture>['project']['skeleton']) => string[] = () => [], expanded: Record<string, boolean> = {}) {

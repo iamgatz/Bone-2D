@@ -5,7 +5,7 @@ import { newAnimation } from '../src/core/model';
 import type { Project } from '../src/core/model';
 import { steppedTime } from '../src/core/playback';
 import { compileSkeleton, createSkeleton } from '../src/core/skeleton';
-import { getScene } from '../src/editor/scene';
+import { getScene } from '../src/store/scene';
 import { docStore } from '../src/store/doc';
 import { uiStore } from '../src/store/ui';
 import { buildFixture } from './fixture';

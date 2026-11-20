@@ -5,7 +5,7 @@ import { resolveSequenceIndex, sequenceFrameNames, sequenceFramePath } from '@/c
 import { useProject } from '@/store/doc';
 import { findFrames, keySequence, makeSequence, sequenceKeyAt, setSequence } from '@/store/sequenceActions';
 import { useUi } from '@/store/ui';
-import { getScene } from '../scene';
+import { getScene } from '@/store/scene';
 import { Button, NumberField, SelectField } from '../ui/controls';
 import { Field, KeyButton } from '../ui/Field';
 import { Section } from '../ui/Section';

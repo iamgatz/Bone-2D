@@ -1,6 +1,6 @@
 /**
  * The view of the player page: where the skeleton is on the canvas, and which bone a click points at. The player draws with these numbers
- * and the click uses the same ones, so what is hit is what is seen. No DOM.
+ * and the click uses the same ones, so what is hit is what is seen.
  */
 
 /** The box every frame of the animation fits in. */

@@ -12,7 +12,7 @@ import type { Mat } from '@/core/math';
 import { autoWeights, normalizeInfluences, vertexWorldPositions } from '@/core/mesh';
 import { DEFAULT_PATH_COLOR, newSlot, pathNodeCount, polygonVertexCount } from '@/core/model';
 import type { Id, Influence, PathAttachment } from '@/core/model';
-import { getSetupSkeleton } from '@/editor/scene';
+import { getSetupSkeleton } from '@/store/scene';
 import { setSelection } from './actions';
 import { docStore } from './doc';
 import { boneSegments, setupMats } from './meshActions';

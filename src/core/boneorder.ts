@@ -1,8 +1,24 @@
 /**
  * The order of the bones among their siblings (Spine's Bone Order Up / Down): a bone changes places with the sibling next to it, and its
- * descendants go with it. The list keeps parents before children. No DOM.
+ * descendants go with it. The list keeps parents before children.
  */
 import type { Id, SkeletonDoc } from './model';
+
+/** The bones with every parent before its children; otherwise the order they came in. */
+export function parentFirst<B extends { id: Id; parent: Id | null }>(bones: readonly B[]): B[] {
+  const out: B[] = [];
+  const placed = new Set<Id>();
+  const byId = new Map(bones.map((b) => [b.id, b] as const));
+  const visit = (b: B, depth: number) => {
+    if (placed.has(b.id) || depth > bones.length) return;
+    const parent = b.parent ? byId.get(b.parent) : undefined;
+    if (parent) visit(parent, depth + 1);
+    placed.add(b.id);
+    out.push(b);
+  };
+  for (const b of bones) visit(b, 0);
+  return out;
+}
 
 /** The bone and every bone below it, in list order. */
 function subtreeOf(doc: SkeletonDoc, id: Id): Set<Id> {

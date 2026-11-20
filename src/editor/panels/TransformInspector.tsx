@@ -1,7 +1,7 @@
 import { ArrowRight, Link2, Plus, Trash2, X } from 'lucide-react';
+import { hasKey } from '@/core/edit';
 import { TRANSFORM_PROPS } from '@/core/model';
 import type { Id, TransformProp } from '@/core/model';
-import { findKeyIndex } from '@/core/curve';
 import { currentAnimation, deleteKeys } from '@/store/actions';
 import { useProject } from '@/store/doc';
 import { useUi } from '@/store/ui';
@@ -29,11 +29,7 @@ export function TransformInspector({ id }: { id: Id }) {
   const animate = mode === 'animate';
   const keys = currentAnimation()?.transform?.[id];
   const keyed =
-    !!keys &&
-    (() => {
-      const i = findKeyIndex(keys, time + 1e-4);
-      return i >= 0 && Math.abs(keys[i].time - time) < 1e-4;
-    })();
+    hasKey(keys, time);
   const cur = animate ? currentTransformMix(id) : null; // the animated mixes
   const mixOf = (k: TransformProp) => (cur ? cur[TRANSFORM_PROPS.indexOf(k)] : c.mix[k]);
 

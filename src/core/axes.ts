@@ -2,11 +2,10 @@
  * Split axes (Spine's translatex / translatey, scalex / scaley, shearx / sheary): one timeline per axis with its own key times and curves,
  * instead of the combined x + y timeline. Splitting keeps the motion exactly; merging samples both axes at every key time of either.
  */
+import { SAME_EPS } from './math';
 import { sampleKeys } from './curve';
 import { AXIS_GROUPS } from './model';
 import type { AxisGroup, BoneTimelines, Curve, Key, Timeline } from './model';
-
-const EPS = 1e-6;
 
 /** What a group rests at when a timeline has no key yet (identity of translate / shear, 1 for a scale). */
 const NEUTRAL: Record<AxisGroup, number> = { translate: 0, scale: 1, shear: 0 };
@@ -53,10 +52,10 @@ export function mergeGroup(tl: BoneTimelines, g: AxisGroup): boolean {
   if (!isSplit(tl, g)) return false;
   const lines: (Timeline | undefined)[] = [tl[ax], tl[ay]];
   const times: number[] = [];
-  for (const line of lines) for (const k of line ?? []) if (!times.some((t) => Math.abs(t - k.time) <= EPS)) times.push(k.time);
+  for (const line of lines) for (const k of line ?? []) if (!times.some((t) => Math.abs(t - k.time) <= SAME_EPS)) times.push(k.time);
   times.sort((a, b) => a - b);
   const tmp = [0];
-  const keyAt = (line: Timeline | undefined, time: number) => line?.find((k) => Math.abs(k.time - time) <= EPS);
+  const keyAt = (line: Timeline | undefined, time: number) => line?.find((k) => Math.abs(k.time - time) <= SAME_EPS);
   const out: Timeline = times.map((time, i) => {
     const value = lines.map((line) => (line?.length && sampleKeys(line, time, tmp) ? tmp[0] : NEUTRAL[g]));
     const here = lines.map((line) => keyAt(line, time)?.curve);

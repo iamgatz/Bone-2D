@@ -21,8 +21,8 @@ import { KEYS } from '../hotkeys';
 import { Button, IconButton, SelectField, TextField, menuKeys, useFocusFirstItem, useOutsideClose } from '../ui/controls';
 import { Dopesheet, ROW_H } from './Dopesheet';
 import type { TimelineMenuRequest } from './Dopesheet';
-import { TRACK_GROUPS, buildRows, filterRows, isTrackFilter } from './rows';
-import type { Row, TrackFilter } from './rows';
+import { TRACK_GROUPS, buildRows, filterRows, isTrackFilter } from '@/core/timelineRows';
+import type { Row, TrackFilter } from '@/core/timelineRows';
 
 function FrameField({ fps, time }: { fps: number; time: number }) {
   const [text, setText] = useState<string | null>(null);

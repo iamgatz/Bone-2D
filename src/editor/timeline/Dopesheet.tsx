@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react';
+import { drawWhenDirty, localPoint } from '../ui/canvas';
 import { keyGrid } from '@/core/edit';
 import { decodeKey, encodeKey } from '@/core/keyrefs';
 import type { KeyRef } from '@/core/keyrefs';
@@ -14,7 +15,7 @@ import { soundShape, soundStore } from '@/store/sounds';
 import { openKeyDialog } from '@/store/keyDialog';
 import { openMarkerDialog } from '@/store/markerActions';
 import { uiStore } from '@/store/ui';
-import type { Row } from './rows';
+import type { Row } from '@/core/timelineRows';
 import { MARKER_TOKENS, alpha, token } from '../ui/tokens';
 
 export const ROW_H = 24;
@@ -73,7 +74,6 @@ export function Dopesheet({ rows, duration, fps, onMenu }: Props) {
     const host = hostRef.current!;
     const rctx = ruler.getContext('2d')!;
     const ctx = canvas.getContext('2d')!;
-    let raf = 0;
     let w = 0;
     let hostH = 0;
     let lastRows: Row[] | null = null;
@@ -118,7 +118,6 @@ export function Dopesheet({ rows, duration, fps, onMenu }: Props) {
       const cw = canvas.width / dpr;
       const ch = canvas.height / dpr;
 
-      // ------------------------------------------------ ruler
       rctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       rctx.clearRect(0, 0, w, 28);
       rctx.fillStyle = token('--tl-ruler');
@@ -197,7 +196,6 @@ export function Dopesheet({ rows, duration, fps, onMenu }: Props) {
       rctx.fill();
       rctx.fillRect(px - 0.5, 0, 1, 18);
 
-      // ------------------------------------------------ keys
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       ctx.clearRect(0, 0, cw, ch);
       ctx.fillStyle = token('--sunken-2');
@@ -361,24 +359,9 @@ export function Dopesheet({ rows, duration, fps, onMenu }: Props) {
       }
     };
 
-    const loop = () => {
-      if (dirty.current) {
-        dirty.current = false;
-        try {
-          draw();
-        } catch (e) {
-          console.error(e);
-        }
-      }
-      raf = requestAnimationFrame(loop);
-    };
-    raf = requestAnimationFrame(loop);
+    const stopLoop = drawWhenDirty(dirty, draw);
 
-    // ------------------------------------------------ interaction helpers
-    const local = (e: { clientX: number; clientY: number }, el: HTMLElement) => {
-      const r = el.getBoundingClientRect();
-      return [e.clientX - r.left, e.clientY - r.top] as const;
-    };
+    const local = localPoint;
     const xToTime = (x: number) => x / uiStore.get().tlZoom + uiStore.get().tlScroll;
 
     const hitKey = (x: number, y: number): { row: Row; key: Row['keys'][number] } | null => {
@@ -568,7 +551,7 @@ export function Dopesheet({ rows, duration, fps, onMenu }: Props) {
     canvas.addEventListener('dblclick', onDouble);
 
     return () => {
-      cancelAnimationFrame(raf);
+      stopLoop();
       ro.disconnect();
       unsubs.forEach((u) => u());
       ruler.removeEventListener('pointerdown', onRulerDown);

@@ -73,7 +73,7 @@ import { setKeysAutoCurve } from '../src/store/curveActions';
 import { favorSelectedKeys, scaleSelectedKeyTimes, storeSelectedKeys, swapStoredKeys } from '../src/store/keyToolActions';
 import { encodeKey } from '../src/core/keyrefs';
 import { emptySelection, uiStore } from '../src/store/ui';
-import { getScene } from '../src/editor/scene';
+import { getScene } from '../src/store/scene';
 import { addAttachmentRig, buildFixture } from './fixture';
 import { addPathRig } from './pathrig';
 import { addPhysicsRig } from './physicsrig';

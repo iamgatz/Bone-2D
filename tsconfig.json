@@ -9,6 +9,7 @@
     "strict": true,
     "noImplicitOverride": true,
     "noFallthroughCasesInSwitch": true,
+    "noUnusedLocals": true,
     "isolatedModules": true,
     "skipLibCheck": true,
     "noEmit": true,

@@ -21,7 +21,7 @@ import { settingsStore } from '@/store/settings';
 import { createIkFromDrag } from '@/store/ikActions';
 import { applyParent, cancelSetParent } from '@/store/parentActions';
 import { POLYGON_TOOLS, toast, uiStore } from '@/store/ui';
-import { flipSign, getScene, getSetupSkeleton, screenToWorld } from '../scene';
+import { flipSign, getScene, getSetupSkeleton, screenToWorld } from '@/store/scene';
 import { RULER } from './overlay';
 import type { Interaction } from './overlay';
 import { hitAttachment, hitBone } from './hit';
@@ -75,12 +75,6 @@ export class ViewportController {
     return [e.clientX - r.left, e.clientY - r.top];
   }
 
-  private world(e: { clientX: number; clientY: number }): [number, number] {
-    const [w, h] = this.size();
-    const [sx, sy] = this.local(e);
-    return screenToWorld(uiStore.get().camera, w, h, sx, sy);
-  }
-
   /** A point snapped to the guides and the grid when Snap is on (View menu), else as it is. */
   private snapped(wx: number, wy: number): [number, number] {
     const ui = uiStore.get();
@@ -108,8 +102,6 @@ export class ViewportController {
     for (const sl of docStore.get().skeleton.slots) if (sl.hidden) s.add(sl.id);
     return s;
   }
-
-  // ---------------------------------------------------------------- events
 
   onPointerDown = (e: PointerEvent) => {
     if (this.drag) return;

@@ -18,7 +18,7 @@ import { compileSkeleton, createSkeleton } from '../src/core/skeleton';
 import { repairProject, validateProject } from '../src/core/validate';
 import { duplicateSkin } from '../src/core/skins';
 import { moveKeys, removeKeys, resolveKeys } from '../src/core/keyrefs';
-import { buildRows } from '../src/editor/timeline/rows';
+import { buildRows } from '../src/core/timelineRows';
 import * as A from '../src/store/actions';
 import { docStore } from '../src/store/doc';
 import * as SQ from '../src/store/sequenceActions';

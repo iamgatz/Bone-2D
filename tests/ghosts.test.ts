@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { newAnimation } from '../src/core/model';
 import type { Project } from '../src/core/model';
 import { ghostsFor, keyGhostTimes, keyTimes, motionArrows } from '../src/editor/ghosts';
-import { getScene } from '../src/editor/scene';
+import { getScene } from '../src/store/scene';
 import { docStore } from '../src/store/doc';
 import { DEFAULT_SETTINGS, readSettings } from '../src/store/settings';
 import { uiStore } from '../src/store/ui';

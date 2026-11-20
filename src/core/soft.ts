@@ -5,8 +5,6 @@
  */
 export type SoftShape = 'smooth' | 'linear' | 'sharp';
 
-export const SOFT_SHAPES: readonly SoftShape[] = ['smooth', 'linear', 'sharp'];
-
 /** The share of the drag a vertex at distance `t` (0 at the selection, 1 at the radius) follows. */
 export function softFalloff(t: number, shape: SoftShape): number {
   if (!(t < 1)) return 0;

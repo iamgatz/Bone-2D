@@ -11,7 +11,7 @@ import { matInvert } from '@/core/math';
 import type { Id, Influence, MeshAttachment, RegionAttachment } from '@/core/model';
 import { setupPicture } from '@/core/sequence';
 import { skinHolding } from '@/core/skeleton';
-import { getScene, getSetupSkeleton } from '@/editor/scene';
+import { getScene, getSetupSkeleton } from '@/store/scene';
 import { assets } from './assets';
 import { docStore } from './doc';
 import { setSelection } from './actions';
@@ -76,8 +76,6 @@ function writeMesh(slotId: Id, name: string, mesh: MeshAttachment, label: string
   if (dropped) toast(`Deform keys of "${name}" were removed: the mesh layout changed`);
 }
 
-// ------------------------------------------------------------------ creation
-
 export function convertToMesh(slotId: Id, name: string, kind: 'trace' | 'quad' = 'trace', opts: TraceOptions = {}) {
   const region = getRegion(slotId, name);
   if (!region) return;
@@ -111,8 +109,6 @@ export function regenerateMesh(slotId: Id, name: string, opts: TraceOptions) {
   writeMesh(slotId, name, next, 'Re-trace mesh', 'drop'); // a new vertex set: old deform keys mean nothing
   setSelection({ slot: slotId, attachment: name, bones: uiStore.get().selection.bones, vertices: [] });
 }
-
-// ------------------------------------------------------------------ setup-space vertex editing
 
 /** Moves vertices to world positions in the setup pose. */
 export function moveMeshVertices(slotId: Id, name: string, moves: { index: number; x: number; y: number }[]) {
@@ -281,8 +277,6 @@ export function clearMeshEdges(slotId: Id, name: string) {
   writeMesh(slotId, name, { ...mesh, edges: [], triangles: triangulate(world, mesh.hull, []) }, 'Clear edges');
 }
 
-// ------------------------------------------------------------------ several meshes at once
-
 export interface MeshRef {
   slotId: Id;
   name: string;
@@ -391,8 +385,6 @@ export function paintWeightsGroup(stroke: BrushStroke, bone: Id) {
     paintWeights(m.slotId, m.name, stroke, bone);
   }
 }
-
-// ------------------------------------------------------------------ binding & weights
 
 export function boneSegments(boneIds: Id[]) {
   const setup = getSetupSkeleton();
@@ -701,8 +693,6 @@ export function paintWeights(slotId: Id, name: string, stroke: BrushStroke, bone
     }
   });
 }
-
-// ------------------------------------------------------------------ deform (Animate mode)
 
 /** Current deform array of a slot's attachment in the posed scene (zeros when none). */
 export function currentDeform(slotId: Id): number[] | null {

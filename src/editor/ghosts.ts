@@ -2,11 +2,12 @@
  * Onion skin (Spine calls it ghosting): the poses of the frames before and after the playhead, drawn faded under the current one,
  * so the motion can be judged without playing it.
  */
+import { keyLists, keyListsIn } from '@/core/keylists';
 import { applyAnimation } from '@/core/animate';
 import type { Animation, SkeletonDoc } from '@/core/model';
 import { compileSkeleton, createSkeleton } from '@/core/skeleton';
 import type { Skeleton, SkeletonData } from '@/core/skeleton';
-import type { Scene } from './scene';
+import type { Scene } from '@/store/scene';
 
 export type OnionStyle = 'image' | 'silhouette' | 'xray';
 export type OnionMode = 'frames' | 'keys';
@@ -31,17 +32,9 @@ export interface OnionConfig {
 
 /** The distinct times at which an animation has a key (of the given bones and their slots only, when `bones` is given), sorted. */
 export function keyTimes(anim: Animation, only?: { bones: readonly string[]; slots?: readonly string[] } | null): number[] {
+  const scope = only && (only.bones.length || only.slots?.length) ? [...only.bones.map((id) => anim.bones[id]), ...(only.slots ?? []).map((id) => anim.slots[id])] : keyLists(anim);
   const times = new Set<number>();
-  const walk = (v: unknown) => {
-    if (Array.isArray(v)) {
-      if (v.length && typeof v[0] === 'object' && v[0] !== null && typeof (v[0] as { time?: unknown }).time === 'number') for (const k of v as { time: number }[]) times.add(k.time);
-      else v.forEach(walk);
-    } else if (v && typeof v === 'object') for (const x of Object.values(v)) walk(x);
-  };
-  if (only && (only.bones.length || only.slots?.length)) {
-    for (const id of only.bones) walk(anim.bones[id]);
-    for (const id of only.slots ?? []) walk(anim.slots[id]);
-  } else walk({ ...anim, id: undefined, name: undefined, play: undefined, markers: undefined });
+  for (const list of keyListsIn(scope)) for (const k of list) times.add(k.time);
   return [...times].sort((a, b) => a - b);
 }
 
@@ -159,8 +152,6 @@ export function motionArrows(pose: Skeleton, ghosts: readonly Ghost[], bones: re
   return out;
 }
 
-// ---------------------------------------------------------------- a reference: another animation (or the setup pose) drawn under the pose being edited
-
 const TINT_REFERENCE: Ghost['tint'] = [0.62, 1, 0.66, 1];
 
 /**
@@ -184,8 +175,6 @@ export function referenceGhost(scene: Scene, anim: Animation | null, time: numbe
   skeleton.updateWorldTransform(scene.data.constraints.some((c) => c.kind === 'physics') ? 'reset' : 'none');
   return { skeleton, alpha: 0.45, tint: TINT_REFERENCE };
 }
-
-// ---------------------------------------------------------------- a checkpoint: the pose of the skeleton as it was, drawn under the current one
 
 const TINT_CHECKPOINT: Ghost['tint'] = [0.74, 0.64, 1, 1];
 

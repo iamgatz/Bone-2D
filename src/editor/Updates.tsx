@@ -49,9 +49,8 @@ function useActivity(enabled: boolean): Activity {
           commits: rows.map((r) => ({ sha: r.sha.slice(0, 7), url: r.html_url, message: r.commit.message.split('\n')[0], date: (r.commit.author?.date ?? '').slice(0, 10) })),
         });
       })
-      .catch((e) => {
+      .catch(() => {
         if (!ctl.signal.aborted) setActivity({ state: 'error' });
-        void e;
       });
     return () => ctl.abort();
   }, [enabled]);

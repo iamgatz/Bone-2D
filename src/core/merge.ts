@@ -2,7 +2,7 @@
  * Take from a checkpoint (or from another version of the project): the things the person picks out of the list of differences are put into
  * the open skeleton, the rest stays as it is. A thing that is gone comes back (with the bones it hangs on), a thing that changed goes back to
  * the other version, the skeleton's own settings are taken over. What is only in the open skeleton is never deleted here (use the tools for that).
- * Pure: it works on a project (a draft inside an undoable step) and a skeleton to take from, and leaves the latter alone. No DOM.
+ * Pure: it works on a project (a draft inside an undoable step) and a skeleton to take from, and leaves the latter alone.
  */
 import type { ChangeArea } from './checkpoints';
 import { uid, uniqueName } from './ids';

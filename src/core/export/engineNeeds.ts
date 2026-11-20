@@ -2,7 +2,7 @@
  * What an export asks of the engine that plays it: the features the skeleton uses and the settings it is exported with, each with what the
  * runtime or the material has to do. The most common reason an animation looks different in the game than in the editor is a mismatch
  * between the two (the version of the runtime, the alpha mode of the texture, a feature the integration does not draw), so the export dialog
- * lists them before the file is sent off. Only facts about the data: nothing here guesses what a given engine does. No DOM.
+ * lists them before the file is sent off. Only facts about the data: nothing here guesses what a given engine does.
  */
 import type { SkeletonDoc } from '../model';
 

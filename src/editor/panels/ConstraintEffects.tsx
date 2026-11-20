@@ -4,7 +4,7 @@ import type { PoseNumbers } from '@/core/constraintInfo';
 import type { Id } from '@/core/model';
 import { useProject } from '@/store/doc';
 import { useUi } from '@/store/ui';
-import { getProbeSkeleton } from '../scene';
+import { getProbeSkeleton } from '@/store/scene';
 import { Section } from '../ui/Section';
 
 const signed = (v: number, digits: number): string => {

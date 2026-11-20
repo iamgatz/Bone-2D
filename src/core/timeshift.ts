@@ -3,36 +3,11 @@
  * (bones, slots, constraints, deform, sequences, draw order, events), the markers and the play range after the cut move by the same amount.
  * Making a pause in the middle of a walk, or closing the hole a deleted pose left, is one step instead of selecting every key and shifting them.
  * Asked for by animators of other editors (Live2D: "insert and delete empty keyframes on the timeline, later keys shifting to fill or close the gap").
- * No DOM.
+ *
  */
+import { keyLists } from './keylists';
+import { KEY_EPS } from './edit';
 import type { Animation } from './model';
-
-const EPS = 1e-4;
-
-/** Every list of keys of the animation (arrays of objects with a numeric `time`), found the way Clean Up and the key counter find them. */
-function keyLists(anim: Animation): { time: number }[][] {
-  const lists: { time: number }[][] = [];
-  const walk = (v: unknown) => {
-    if (Array.isArray(v)) {
-      if (v.length && typeof v[0] === 'object' && v[0] !== null && typeof (v[0] as { time?: unknown }).time === 'number') lists.push(v as { time: number }[]);
-      else v.forEach(walk);
-    } else if (v && typeof v === 'object') for (const x of Object.values(v)) walk(x);
-  };
-  walk(anim.bones);
-  walk(anim.slots);
-  walk(anim.deform);
-  walk(anim.sequence);
-  walk(anim.ik);
-  walk(anim.transform);
-  walk(anim.slider);
-  walk(anim.path);
-  walk(anim.physics);
-  walk(anim.drawOrder);
-  walk(anim.drawOrderFolder);
-  walk(anim.events);
-  return lists;
-}
-
 
 export interface TimeShift {
   /** How many keys moved, were removed, or markers moved. */
@@ -51,14 +26,14 @@ export function insertTime(anim: Animation, at: number, seconds: number): TimeSh
   if (!(seconds > 0) || !Number.isFinite(at) || at < 0) return { moved, removed: 0, duration: anim.duration };
   for (const keys of keyLists(anim)) {
     for (const k of keys) {
-      if (k.time >= at - EPS) {
+      if (k.time >= at - KEY_EPS) {
         k.time = (k.time + seconds);
         moved++;
       }
     }
   }
   for (const m of anim.markers ?? []) {
-    if (m.time >= at - EPS) {
+    if (m.time >= at - KEY_EPS) {
       m.time = (m.time + seconds);
       moved++;
     }
@@ -66,7 +41,7 @@ export function insertTime(anim: Animation, at: number, seconds: number): TimeSh
   const range = anim.play?.range;
   if (range) {
     // a play range that spans the cut gets longer; one that starts after it moves
-    anim.play!.range = [range[0] >= at - EPS ? (range[0] + seconds) : range[0], range[1] >= at - EPS ? (range[1] + seconds) : range[1]];
+    anim.play!.range = [range[0] >= at - KEY_EPS ? (range[0] + seconds) : range[0], range[1] >= at - KEY_EPS ? (range[1] + seconds) : range[1]];
   }
   anim.duration = (anim.duration + seconds);
   return { moved, removed: 0, duration: anim.duration };
@@ -86,17 +61,17 @@ export function deleteTime(anim: Animation, at: number, seconds: number, minDura
   for (const keys of keyLists(anim)) {
     for (let i = keys.length - 1; i >= 0; i--) {
       const t = keys[i].time;
-      if (t >= at - EPS && t < end - EPS) {
+      if (t >= at - KEY_EPS && t < end - KEY_EPS) {
         keys.splice(i, 1);
         removed++;
-      } else if (t >= end - EPS) {
+      } else if (t >= end - KEY_EPS) {
         keys[i].time = (Math.max(at, t - span));
         moved++;
       }
     }
   }
   for (const m of anim.markers ?? []) {
-    if (m.time >= end - EPS) {
+    if (m.time >= end - KEY_EPS) {
       m.time = (m.time - span);
       moved++;
     } else if (m.time > at) {
@@ -106,16 +81,16 @@ export function deleteTime(anim: Animation, at: number, seconds: number, minDura
   }
   const range = anim.play?.range;
   if (range) {
-    const pull = (t: number) => (t >= end - EPS ? (t - span) : t > at ? (at) : t);
+    const pull = (t: number) => (t >= end - KEY_EPS ? (t - span) : t > at ? (at) : t);
     const next: [number, number] = [pull(range[0]), pull(range[1])];
-    anim.play!.range = next[1] - next[0] > EPS ? next : null;
+    anim.play!.range = next[1] - next[0] > KEY_EPS ? next : null;
   }
   anim.duration = (Math.max(minDuration, anim.duration - span));
   // nothing lies beyond the end (float noise in the sums could leave a time a hair past it)
   for (const m of anim.markers ?? []) m.time = Math.min(m.time, anim.duration);
   if (anim.play?.range) {
     const [a, b] = [Math.min(anim.play.range[0], anim.duration), Math.min(anim.play.range[1], anim.duration)];
-    anim.play.range = b - a > EPS ? [a, b] : null;
+    anim.play.range = b - a > KEY_EPS ? [a, b] : null;
   }
   return { moved, removed, duration: anim.duration };
 }

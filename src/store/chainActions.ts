@@ -1,12 +1,12 @@
 /** Spreads a physics parameter over a chain of bones along a curve (stiff at the root, loose at the tip). */
-import { chainBones, chainValues } from '@/core/chains';
+import { chainValues } from '@/core/chains';
 import type { ChainShape } from '@/core/chains';
 import { freshName } from '@/core/edit';
 import { newPhysicsConstraint } from '@/core/model';
 import type { Id, PhysicsParam } from '@/core/model';
 import { docStore } from './doc';
 import { clampPhysicsValue } from './physicsActions';
-import { toast, uiStore } from './ui';
+import { toast } from './ui';
 
 export interface ChainCurve {
   param: PhysicsParam;
@@ -16,11 +16,6 @@ export interface ChainCurve {
   power: number;
   /** Give the bones that have no physics constraint one. */
   create: boolean;
-}
-
-/** The bones the tool will touch for the current selection. */
-export function selectedChain(): Id[] {
-  return chainBones(docStore.get().skeleton, uiStore.get().selection.bones);
 }
 
 /** Applies the curve to the chain (physics constraint setup values). Returns the number of bones changed. */

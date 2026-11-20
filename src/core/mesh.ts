@@ -8,8 +8,6 @@ import { DEG2RAD, distToSegmentSq, matApply, matInvert, pointInPolygon } from '.
 import type { Mat } from './math';
 import { constrainTriangles, segmentsCross } from './constrain';
 
-// ------------------------------------------------------------------ region -> mesh
-
 /** A 4 vertex quad covering the region (vertices in slot-bone space, hull = 4). */
 export function meshFromRegion(r: RegionAttachment): MeshAttachment {
   const w = r.width;
@@ -57,8 +55,6 @@ export function imageToBoneSpace(r: RegionAttachment, imgW: number, imgH: number
     return [lx * c - ly * s + r.x, lx * s + ly * c + r.y];
   };
 }
-
-// ------------------------------------------------------------------ polygon helpers
 
 export function polygonArea(p: ArrayLike<[number, number]>): number {
   let a = 0;
@@ -141,8 +137,6 @@ export function offsetPolygon(points: [number, number][], dist: number): [number
   }
   return out;
 }
-
-// ------------------------------------------------------------------ alpha tracing
 
 export interface TraceOptions {
   /** Alpha (0-255) above which a pixel counts as solid. */
@@ -247,8 +241,6 @@ export function traceOutline(rgba: ArrayLike<number>, w: number, h: number, opts
   if (pad !== 0) poly = offsetPolygon(poly, pad);
   return poly.map(clamp);
 }
-
-// ------------------------------------------------------------------ triangulation
 
 /**
  * Delaunay triangulation of `points` (flat x,y), keeping only triangles whose centroid is inside the hull polygon. The outline and the
@@ -406,8 +398,6 @@ export function generateMeshFromImage(region: RegionAttachment, rgba: ArrayLike<
   };
 }
 
-// ------------------------------------------------------------------ setup-space positions
-
 export type BoneMats = Map<Id, Mat>;
 
 /** Setup-pose world positions of every mesh vertex (x,y pairs). */
@@ -441,8 +431,6 @@ export function vertexWorldPositions(mesh: { vertices: number[]; weights: Influe
   }
   return out;
 }
-
-// ------------------------------------------------------------------ weights
 
 export interface BoneSegment {
   id: Id;
@@ -800,8 +788,6 @@ export function setBoneWeight(list: Influence[], bone: Id, target: number, bindF
   return normalizeInfluences(cur, maxInfluences);
 }
 
-// ------------------------------------------------------------------ vertex editing (setup space)
-
 /** Barycentric UV + weights for a new point from the triangle that contains it (or the nearest triangle). */
 export function locateInMesh(world: ArrayLike<number>, triangles: ArrayLike<number>, px: number, py: number): { tri: number; bary: [number, number, number] } | null {
   let best: { tri: number; bary: [number, number, number]; score: number } | null = null;
@@ -879,8 +865,6 @@ export function removeMeshVertices(mesh: MeshAttachment, remove: Set<number>, po
   const edges = remapEdges(mesh.edges ?? [], keep);
   return { ...mesh, uvs, vertices, weights, hull, edges, triangles: triangulate(pos, hull, edges) };
 }
-
-// ------------------------------------------------------------------ deform layout
 
 /**
  * Number of deform values an attachment expects: x,y per vertex, or x,y per influence for weighted meshes.

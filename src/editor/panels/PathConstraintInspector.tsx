@@ -1,5 +1,5 @@
 import { Spline } from 'lucide-react';
-import { findKeyIndex } from '@/core/curve';
+import { hasKey } from '@/core/edit';
 import { PATH_POSITION_MODES, PATH_ROTATE_MODES, PATH_SPACING_MODES } from '@/core/model';
 import type { Id, PathPositionMode, PathRotateMode, PathSpacingMode } from '@/core/model';
 import { currentAnimation, deleteKeys } from '@/store/actions';
@@ -29,9 +29,7 @@ export function PathConstraintInspector({ id }: { id: Id }) {
   const anim = currentAnimation();
   const keyedAt = (prop: 'position' | 'spacing' | 'mix') => {
     const keys = anim?.path?.[id]?.[prop];
-    if (!keys?.length) return false;
-    const i = findKeyIndex(keys, time + 1e-4);
-    return i >= 0 && Math.abs(keys[i].time - time) < 1e-4;
+    return hasKey(keys, time);
   };
   const cur = (animate ? currentPathValues(id) : null) ?? { position: c.position, spacing: c.spacing, mix: [c.mix.rotate, c.mix.x, c.mix.y] as [number, number, number] };
   const boneName = (b: Id) => doc.bones.find((x) => x.id === b)?.name ?? '?';

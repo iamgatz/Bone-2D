@@ -8,8 +8,10 @@ import { addMeshVertex, toggleMeshEdge, currentDeform, deleteMeshVertices, getMe
 import { docStore } from '@/store/doc';
 import { setSelection } from '@/store/actions';
 import { toast, uiStore } from '@/store/ui';
-import { worldToScreen } from '../scene';
-import type { Scene } from '../scene';
+import { worldToScreen } from '@/store/scene';
+import type { Scene } from '@/store/scene';
+import { dragMarquee, drawMarquee, hitVertex, startMarquee } from './marquee';
+import type { Marquee } from './marquee';
 import { COLORS } from './overlay';
 import type { OverlayInput } from './overlay';
 import { slotWorldVertices } from './hit';
@@ -19,7 +21,7 @@ import { boneCss, boundBones, overlayColors, pieVertices } from './weightColors'
 
 type Drag =
   | { kind: 'vertices'; start: Float32Array; weights: Map<number, number>; p0: [number, number]; base: number[] | null }
-  | { kind: 'marquee'; x0: number; y0: number; x1: number; y1: number; base: number[] }
+  | Marquee
   | { kind: 'paint' }
   | { kind: 'edge'; from: number; x: number; y: number };
 
@@ -76,19 +78,6 @@ export class MeshTool {
 
   private worldVerts(scene: Scene, slotId: Id) {
     return slotWorldVertices(scene.skeleton, slotId);
-  }
-
-  private hitVertex(v: Float32Array, count: number, wx: number, wy: number, zoom: number, tolPx = 9): number {
-    let best = -1;
-    let bd = (tolPx / zoom) ** 2;
-    for (let i = 0; i < count; i++) {
-      const d = (v[i * 2] - wx) ** 2 + (v[i * 2 + 1] - wy) ** 2;
-      if (d <= bd) {
-        bd = d;
-        best = i;
-      }
-    }
-    return best;
   }
 
   pointerDown(e: PointerEvent, wx: number, wy: number, scene: Scene): boolean {
@@ -148,7 +137,7 @@ export class MeshTool {
       return true;
     }
     const pickable = ui.meshView.hullOnly ? Math.min(geo.count, am.mesh.hull) : geo.count;
-    const hit = this.hitVertex(geo.vertices, pickable, wx, wy, zoom);
+    const hit = hitVertex(geo.vertices, pickable, wx, wy, zoom);
     if (hit >= 0 && (e.ctrlKey || e.metaKey) && ui.mode === 'setup') {
       // Ctrl+drag from a vertex to another vertex draws a manual edge (or removes the one that is there)
       this.drag = { kind: 'edge', from: hit, x: wx, y: wy };
@@ -173,7 +162,7 @@ export class MeshTool {
       return true;
     }
     if (!e.shiftKey) setSelection({ ...ui.selection, vertices: [] });
-    this.drag = { kind: 'marquee', x0: wx, y0: wy, x1: wx, y1: wy, base: e.shiftKey ? ui.selection.vertices : [] };
+    this.drag = startMarquee(wx, wy, e.shiftKey ? ui.selection.vertices : []);
     return true;
   }
 
@@ -186,7 +175,7 @@ export class MeshTool {
     if (!geo) return false;
     const d = this.drag;
     if (!d) {
-      const h = ui.tool === 'mesh' && !ui.meshView.pickTriangle ? this.hitVertex(geo.vertices, ui.meshView.hullOnly ? Math.min(geo.count, am.mesh.hull) : geo.count, wx, wy, ui.camera.zoom) : -1;
+      const h = ui.tool === 'mesh' && !ui.meshView.pickTriangle ? hitVertex(geo.vertices, ui.meshView.hullOnly ? Math.min(geo.count, am.mesh.hull) : geo.count, wx, wy, ui.camera.zoom) : -1;
       if (h !== this.hoverVertex || ui.tool === 'weights') {
         this.hoverVertex = h;
         this.invalidate();
@@ -199,12 +188,7 @@ export class MeshTool {
       if (ui.mode === 'setup') moveMeshVertices(am.slotId, am.name, softMoves(d.start, d.weights, dx, dy));
       else if (d.base) setDeformKey(am.slotId, am.name, d.base, [...d.weights].map(([index, w]) => ({ index, dx: dx * w, dy: dy * w })));
     } else if (d.kind === 'marquee') {
-      d.x1 = wx;
-      d.y1 = wy;
-      const x0 = Math.min(d.x0, d.x1);
-      const x1 = Math.max(d.x0, d.x1);
-      const y0 = Math.min(d.y0, d.y1);
-      const y1 = Math.max(d.y0, d.y1);
+      const [x0, y0, x1, y1] = dragMarquee(d, wx, wy);
       const picked = new Set(d.base);
       for (let i = 0; i < (ui.meshView.hullOnly ? Math.min(geo.count, am.mesh.hull) : geo.count); i++) {
         const x = geo.vertices[i * 2];
@@ -216,7 +200,7 @@ export class MeshTool {
     } else if (d.kind === 'edge') {
       d.x = wx;
       d.y = wy;
-      this.hoverVertex = this.hitVertex(geo.vertices, ui.meshView.hullOnly ? Math.min(geo.count, am.mesh.hull) : geo.count, wx, wy, ui.camera.zoom);
+      this.hoverVertex = hitVertex(geo.vertices, ui.meshView.hullOnly ? Math.min(geo.count, am.mesh.hull) : geo.count, wx, wy, ui.camera.zoom);
       this.invalidate();
     } else if (d.kind === 'paint') {
       const bone = ui.brush.bone;
@@ -249,8 +233,6 @@ export class MeshTool {
     deleteMeshVertices(am.slotId, am.name, sel.vertices);
     return true;
   }
-
-  // ---------------------------------------------------------------- drawing
 
   /** Wire, outline and vertices of the selected mesh. */
   drawOverlay = (o: OverlayInput) => {
@@ -394,15 +376,7 @@ export class MeshTool {
       }
     }
     const d = this.drag;
-    if (d?.kind === 'marquee') {
-      const [x0, y0] = worldToScreen(cam, w, h, d.x0, d.y0);
-      const [x1, y1] = worldToScreen(cam, w, h, d.x1, d.y1);
-      ctx.fillStyle = COLORS.accentSoft;
-      ctx.strokeStyle = COLORS.accent;
-      ctx.lineWidth = 1;
-      ctx.fillRect(Math.min(x0, x1), Math.min(y0, y1), Math.abs(x1 - x0), Math.abs(y1 - y0));
-      ctx.strokeRect(Math.min(x0, x1) + 0.5, Math.min(y0, y1) + 0.5, Math.abs(x1 - x0), Math.abs(y1 - y0));
-    }
+    if (d?.kind === 'marquee') drawMarquee(ctx, cam, w, h, d);
   };
 
   /** Pies: one pie chart per vertex, a slice per bone in the colour of that bone, selected vertices larger. */

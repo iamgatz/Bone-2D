@@ -7,15 +7,13 @@
  * runtime and plays it.
  */
 import { emptyProject, newAnimation, newBone, newPhysicsConstraint, newSkin, newSlot } from '@/core/model';
-import type { Animation, Bone, Constraint, ImageRef, Inherit, Influence, MeshAttachment, Project, RegionAttachment, RGBA, Timeline } from '@/core/model';
+import type { Animation, Bone, Constraint, ImageRef, Inherit, MeshAttachment, Project, RegionAttachment, RGBA, Timeline } from '@/core/model';
 import { uid } from '@/core/ids';
 import { adjacency, bindMesh, interiorPoints, smoothWeights, subdivideOutline, triangulate } from '@/core/mesh';
 import type { BoneMats } from '@/core/mesh';
 import { compileSkeleton, createSkeleton } from '@/core/skeleton';
 import { ellipse, pictureBox, spline, translate, tube } from './geometry';
 import type { Pt } from './geometry';
-
-// ---------------------------------------------------------------- the bones, in world coordinates of the setup pose (x to the right, y up)
 
 interface BoneSpec {
   name: string;
@@ -86,8 +84,6 @@ function fromBone(name: string, pts: Pt[]): Pt[] {
   const s = Math.sin(rad(b.angle));
   return pts.map(([x, y]) => [b.x + x * c - y * s, b.y + x * s + y * c]);
 }
-
-// ---------------------------------------------------------------- the parts: outlines of the pictures, in world coordinates
 
 export type ArtKind = 'body' | 'head' | 'tail' | 'arm' | 'leg' | 'foot' | 'hand' | 'ear' | 'scarfTail' | 'scarfRing' | 'eyeOpen' | 'eyeClosed';
 
@@ -173,8 +169,6 @@ for (const part of Object.keys(PARTS)) {
   else for (const skin of SKINS) DEMO_IMAGES.push({ name: imageName(part, skin), part, skin, width, height });
 }
 
-// ---------------------------------------------------------------- the slots in draw order, and what each one shows
-
 interface SlotSpec {
   name: string;
   bone: string;
@@ -209,8 +203,6 @@ const SLOTS: SlotSpec[] = [
   { name: 'arm near', bone: 'arm near 1', part: 'arm', chain: ['arm near 1', 'arm near 2'], spacing: 12, blend: 10 },
   { name: 'hand near', bone: 'hand near', part: 'hand' },
 ];
-
-// ---------------------------------------------------------------- weights along a chain of bones
 
 interface Seg {
   id: string;
@@ -266,8 +258,6 @@ function chainWeights(world: ArrayLike<number>, segs: Seg[], blend: number): { b
   return out;
 }
 
-// ---------------------------------------------------------------- the animations
-
 const EASE = [0.35, 0, 0.65, 1];
 type KeyIn = [time: number, value: number[], ease?: boolean];
 
@@ -275,8 +265,6 @@ type KeyIn = [time: number, value: number[], ease?: boolean];
 function line(rows: KeyIn[], channels = 1): Timeline {
   return rows.map(([time, value, eased]) => ({ time, value, ...(eased ? { curve: Array.from({ length: channels }, () => EASE).flat() } : {}) }));
 }
-
-// ---------------------------------------------------------------- the build
 
 export function buildDemoRig(images: Record<string, ImageRef>): Project {
   const project = emptyProject('kit');

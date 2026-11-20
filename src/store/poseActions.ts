@@ -167,8 +167,6 @@ export function duplicateSelection(mirror: boolean) {
   toast('Copied with the slots, images and constraints. Animation keys are not copied');
 }
 
-// ---------------------------------------------------------------- the pose library (kept in the project file, not exported)
-
 /** The pose of the selected bones (all bones when none is selected) as it is shown now, by bone name. */
 function capture(): Record<string, BonePose> {
   const doc = docStore.get().skeleton;

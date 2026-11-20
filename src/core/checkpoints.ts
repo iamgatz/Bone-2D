@@ -138,11 +138,7 @@ function tally(a: unknown, b: unknown, t: Tally) {
 /** The keys of an animation that differ, or null when nothing but maybe the identity does. Names are not counted (they are listed on their own). */
 export function animationKeyChanges(a: Animation, b: Animation): Tally | null {
   const t: Tally = { added: 0, removed: 0, changed: 0 };
-  const { name: _n, ...ra } = a;
-  const { name: _m, ...rb } = b;
-  void _n;
-  void _m;
-  tally(ra, rb, t);
+  tally({ ...a, name: undefined }, { ...b, name: undefined }, t);
   return t.added || t.removed || t.changed ? t : null;
 }
 

@@ -2,7 +2,7 @@
 import { freshName, makeCurve, upsertKey } from '@/core/edit';
 import type { Id, SliderConstraint } from '@/core/model';
 import { newSliderConstraint } from '@/core/model';
-import { getScene } from '@/editor/scene';
+import { getScene } from '@/store/scene';
 import { setSelection } from './actions';
 import { docStore } from './doc';
 import { toast, uiStore } from './ui';

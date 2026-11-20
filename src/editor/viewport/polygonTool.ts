@@ -7,9 +7,11 @@ import { docStore } from '@/store/doc';
 import { addPolygonVertex, createPoint, createPolygon, deletePolygonVertices, getPolygon, movePolygonVertices } from '@/store/polygonActions';
 import type { PolygonKind } from '@/store/polygonActions';
 import { POLYGON_TOOLS, toast, uiStore } from '@/store/ui';
-import { worldToScreen } from '../scene';
-import type { Scene } from '../scene';
+import { worldToScreen } from '@/store/scene';
+import type { Scene } from '@/store/scene';
 import { slotWorldVertices } from './hit';
+import { dragMarquee, drawMarquee, hitVertex, startMarquee } from './marquee';
+import type { Marquee } from './marquee';
 import { COLORS } from './overlay';
 import type { OverlayInput } from './overlay';
 import { alpha, token } from '../ui/tokens';
@@ -36,7 +38,7 @@ interface Draft {
 
 type Drag =
   | { kind: 'vertices'; start: Float32Array; weights: Map<number, number>; p0: [number, number] }
-  | { kind: 'marquee'; x0: number; y0: number; x1: number; y1: number; base: number[] };
+  | Marquee;
 
 const rgba = (c: ArrayLike<number>, a: number) => `rgba(${Math.round(c[0] * 255)},${Math.round(c[1] * 255)},${Math.round(c[2] * 255)},${a})`;
 
@@ -58,21 +60,6 @@ export class PolygonTool {
     if (!POLYGON_TOOLS.includes(ui.tool)) this.draft = null; // an unfinished polygon is dropped when another tool is picked
     return POLYGON_TOOLS.includes(ui.tool) || (ui.tool === 'mesh' && activePolygon() !== null);
   }
-
-  private hitVertex(v: Float32Array, count: number, wx: number, wy: number, zoom: number, tolPx = 9): number {
-    let best = -1;
-    let bd = (tolPx / zoom) ** 2;
-    for (let i = 0; i < count; i++) {
-      const d = (v[i * 2] - wx) ** 2 + (v[i * 2 + 1] - wy) ** 2;
-      if (d <= bd) {
-        bd = d;
-        best = i;
-      }
-    }
-    return best;
-  }
-
-  // ---------------------------------------------------------------- creating
 
   private draftClick(e: PointerEvent, wx: number, wy: number, kind: PolygonKind): boolean {
     const ui = uiStore.get();
@@ -115,8 +102,6 @@ export class PolygonTool {
     return true;
   }
 
-  // ---------------------------------------------------------------- pointer events
-
   pointerDown(e: PointerEvent, wx: number, wy: number, scene: Scene): boolean {
     const ui = uiStore.get();
     if (ui.tool === 'point') {
@@ -137,7 +122,7 @@ export class PolygonTool {
     }
     const geo = slotWorldVertices(scene.skeleton, ap.slotId);
     if (!geo) return false;
-    const hit = this.hitVertex(geo.vertices, geo.count, wx, wy, ui.camera.zoom);
+    const hit = hitVertex(geo.vertices, geo.count, wx, wy, ui.camera.zoom);
     if (hit >= 0) {
       const cur = ui.selection.vertices;
       let vertices: number[];
@@ -157,7 +142,7 @@ export class PolygonTool {
       return true;
     }
     if (!e.shiftKey) setSelection({ ...ui.selection, vertices: [] });
-    this.drag = { kind: 'marquee', x0: wx, y0: wy, x1: wx, y1: wy, base: e.shiftKey ? ui.selection.vertices : [] };
+    this.drag = startMarquee(wx, wy, e.shiftKey ? ui.selection.vertices : []);
     return true;
   }
 
@@ -174,7 +159,7 @@ export class PolygonTool {
     if (!geo) return false;
     const d = this.drag;
     if (!d) {
-      const h = ui.tool === 'mesh' ? this.hitVertex(geo.vertices, geo.count, wx, wy, ui.camera.zoom) : -1;
+      const h = ui.tool === 'mesh' ? hitVertex(geo.vertices, geo.count, wx, wy, ui.camera.zoom) : -1;
       if (h !== this.hoverVertex) {
         this.hoverVertex = h;
         this.invalidate();
@@ -186,12 +171,7 @@ export class PolygonTool {
       const dy = wy - d.p0[1];
       movePolygonVertices(ap.slotId, ap.name, softMoves(d.start, d.weights, dx, dy));
     } else {
-      d.x1 = wx;
-      d.y1 = wy;
-      const x0 = Math.min(d.x0, d.x1);
-      const x1 = Math.max(d.x0, d.x1);
-      const y0 = Math.min(d.y0, d.y1);
-      const y1 = Math.max(d.y0, d.y1);
+      const [x0, y0, x1, y1] = dragMarquee(d, wx, wy);
       const picked = new Set(d.base);
       for (let i = 0; i < geo.count; i++) {
         const x = geo.vertices[i * 2];
@@ -224,8 +204,6 @@ export class PolygonTool {
     deletePolygonVertices(ap.slotId, ap.name, sel.vertices);
     return true;
   }
-
-  // ---------------------------------------------------------------- drawing
 
   /** Every clipping polygon, bounding box and point of the current pose, plus the polygon being drawn. Under the bones. */
   drawUnder = (o: OverlayInput) => {
@@ -315,15 +293,7 @@ export class PolygonTool {
     }
     this.drawDraft(o);
     const d = this.drag;
-    if (d?.kind === 'marquee') {
-      const [x0, y0] = worldToScreen(cam, w, h, d.x0, d.y0);
-      const [x1, y1] = worldToScreen(cam, w, h, d.x1, d.y1);
-      ctx.fillStyle = COLORS.accentSoft;
-      ctx.strokeStyle = COLORS.accent;
-      ctx.lineWidth = 1;
-      ctx.fillRect(Math.min(x0, x1), Math.min(y0, y1), Math.abs(x1 - x0), Math.abs(y1 - y0));
-      ctx.strokeRect(Math.min(x0, x1) + 0.5, Math.min(y0, y1) + 0.5, Math.abs(x1 - x0), Math.abs(y1 - y0));
-    }
+    if (d?.kind === 'marquee') drawMarquee(ctx, cam, w, h, d);
     ctx.restore();
   };
 

@@ -2,12 +2,11 @@
  * Markers on the timeline of an animation (a name, a colour and a note at a time), and what they make possible: cutting one long
  * animation into several clips at the markers. Pure functions over the document.
  */
+import { SAME_EPS } from './math';
 import { sampleKeys } from './curve';
 import { uid } from './ids';
 import { MARKER_COLORS, newAnimation } from './model';
 import type { Animation, Id, Marker } from './model';
-
-const EPS = 1e-6;
 
 /** The markers of an animation, in time order. */
 export const markersOf = (anim: Pick<Animation, 'markers'> | null | undefined): Marker[] => [...(anim?.markers ?? [])].sort((a, b) => a.time - b.time);
@@ -41,7 +40,7 @@ export function cleanMarkers(raw: unknown, duration: number): Marker[] {
 export function addMarker(anim: Animation, time: number, name = '', color = 0, text = ''): Marker {
   const list = (anim.markers ??= []);
   const t = Math.max(0, time);
-  const here = list.find((m) => Math.abs(m.time - t) < EPS);
+  const here = list.find((m) => Math.abs(m.time - t) < SAME_EPS);
   if (here) return here;
   const m: Marker = { id: uid(), time: t, name, color, text };
   list.push(m);
@@ -67,10 +66,8 @@ export function markerNear(anim: Pick<Animation, 'markers'> | null | undefined, 
 /** The nearest marker before (`dir` -1) or after (+1) a time, or null. */
 export function neighbourMarker(anim: Animation | null | undefined, time: number, dir: 1 | -1): Marker | null {
   const list = markersOf(anim);
-  return (dir > 0 ? list.find((m) => m.time > time + EPS) : [...list].reverse().find((m) => m.time < time - EPS)) ?? null;
+  return (dir > 0 ? list.find((m) => m.time > time + SAME_EPS) : [...list].reverse().find((m) => m.time < time - SAME_EPS)) ?? null;
 }
-
-// ---------------------------------------------------------------- cutting
 
 type AnyKey = { time: number; value?: number[]; curve?: unknown };
 
@@ -80,12 +77,12 @@ type AnyKey = { time: number; value?: number[]; curve?: unknown };
  * the state in force at t0. `events` are only the ones inside: [t0, t1) (the end belongs to the next piece unless it is the last one).
  */
 function cutKeys<T extends AnyKey>(keys: T[], t0: number, t1: number, kind: 'number' | 'colour' | 'state' | 'event', lastPiece: boolean): T[] {
-  const inside = keys.filter((k) => k.time >= t0 - EPS && (kind === 'event' && !lastPiece ? k.time < t1 - EPS : k.time <= t1 + EPS));
+  const inside = keys.filter((k) => k.time >= t0 - SAME_EPS && (kind === 'event' && !lastPiece ? k.time < t1 - SAME_EPS : k.time <= t1 + SAME_EPS));
   const shifted = inside.map((k) => ({ ...structuredClone(k), time: Math.max(0, k.time - t0) }) as T);
   if (kind === 'event' || !keys.length) return shifted;
-  const active = [...keys].reverse().find((k) => k.time <= t0 + EPS);
+  const active = [...keys].reverse().find((k) => k.time <= t0 + SAME_EPS);
   if (kind === 'state') {
-    if (active && !inside.some((k) => Math.abs(k.time - t0) < EPS)) shifted.unshift({ ...structuredClone(active), time: 0 } as T);
+    if (active && !inside.some((k) => Math.abs(k.time - t0) < SAME_EPS)) shifted.unshift({ ...structuredClone(active), time: 0 } as T);
     return shifted;
   }
   // numbers: sampled keys at both edges
@@ -96,7 +93,7 @@ function cutKeys<T extends AnyKey>(keys: T[], t0: number, t1: number, kind: 'num
     // a colour never shows outside 0..1 (and the export cannot write it), so an overshooting curve is cut where the piece starts
     return kind === 'colour' ? v.map((x) => Math.min(1, Math.max(0, x))) : v;
   };
-  if (!inside.some((k) => Math.abs(k.time - t0) < EPS)) {
+  if (!inside.some((k) => Math.abs(k.time - t0) < SAME_EPS)) {
     const v = sample(t0);
     if (v && active) {
       const copy = structuredClone(active) as AnyKey;
@@ -107,7 +104,7 @@ function cutKeys<T extends AnyKey>(keys: T[], t0: number, t1: number, kind: 'num
       shifted.unshift(copy as T);
     }
   }
-  if (!inside.some((k) => Math.abs(k.time - t1) < EPS) && keys.some((k) => k.time > t1 + EPS)) {
+  if (!inside.some((k) => Math.abs(k.time - t1) < SAME_EPS) && keys.some((k) => k.time > t1 + SAME_EPS)) {
     const v = sample(t1);
     if (v && active !== undefined) {
       const end = structuredClone(keys[keys.length - 1]) as AnyKey;
@@ -199,7 +196,7 @@ export interface SplitPiece {
  * a piece is named after the marker it starts at (the first one keeps the animation's own name). Pieces shorter than `minLength` are left out.
  */
 export function splitPieces(anim: Animation, minLength = 1e-3): SplitPiece[] {
-  const marks = markersOf(anim).filter((m) => m.time > EPS && m.time < anim.duration - EPS);
+  const marks = markersOf(anim).filter((m) => m.time > SAME_EPS && m.time < anim.duration - SAME_EPS);
   const edges = [{ time: 0, name: anim.name }, ...marks.map((m, i) => ({ time: m.time, name: m.name.trim() || `${anim.name} ${i + 2}` })), { time: anim.duration, name: '' }];
   const pieces: SplitPiece[] = [];
   for (let i = 0; i < edges.length - 1; i++) {
@@ -221,7 +218,7 @@ export function splitAtMarkers(anim: Animation, taken: Iterable<string>): Animat
   };
   return pieces.map((p, i) => {
     const piece = cutAnimation(anim, p.from, p.to, unique(i === 0 ? `${anim.name} 1` : p.name), i === pieces.length - 1);
-    const marks = markersOf(anim).filter((m) => m.time >= p.from - EPS && m.time <= p.to + EPS && m.time > p.from + EPS);
+    const marks = markersOf(anim).filter((m) => m.time >= p.from - SAME_EPS && m.time <= p.to + SAME_EPS && m.time > p.from + SAME_EPS);
     if (marks.length) piece.markers = marks.map((m) => ({ ...m, id: uid(), time: m.time - p.from }));
     return piece;
   });

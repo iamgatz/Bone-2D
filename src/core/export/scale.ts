@@ -4,7 +4,6 @@
  * nothing that is an angle, a color, a time or a ratio. The tests load the unscaled JSON with the official loader at this scale and
  * the scaled JSON at scale 1 and compare the two skeletons.
  */
-/* eslint-disable @typescript-eslint/no-explicit-any */
 
 type J = any;
 
@@ -123,8 +122,7 @@ export function scaleSpineJson(json: J, s: number): J {
       scaleKeys(tl.translatex, ['value'], s);
       scaleKeys(tl.translatey, ['value'], s);
     }
-    for (const [name, keys] of Object.entries<J>(anim.ik ?? {})) {
-      void name;
+    for (const keys of Object.values<J>(anim.ik ?? {})) {
       for (const k of keys as J[]) {
         if (typeof k.softness === 'number') k.softness = q(k.softness * s);
         // the curve of an ik key has two channels (mix, softness): only softness carries a length

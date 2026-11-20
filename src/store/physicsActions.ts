@@ -2,7 +2,7 @@
 import { freshName, makeCurve, upsertKey } from '@/core/edit';
 import { GLOBAL_PHYSICS, newPhysicsConstraint } from '@/core/model';
 import type { Id, PhysicsConstraint, PhysicsParam } from '@/core/model';
-import { getScene, restartScene } from '@/editor/scene';
+import { getScene, restartScene } from '@/store/scene';
 import { setSelection } from './actions';
 import { docStore } from './doc';
 import { toast, uiStore } from './ui';

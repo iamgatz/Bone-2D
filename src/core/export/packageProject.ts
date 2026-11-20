@@ -1,6 +1,6 @@
 /**
  * Package Project (Spine 4.3's command of the same name): one ZIP with the project file, which opens again as it is, and the pictures of the
- * project as files of their own in an `images` folder, for the artist's tools. No DOM.
+ * project as files of their own in an `images` folder, for the artist's tools.
  */
 import type { ZipEntry } from './zip';
 

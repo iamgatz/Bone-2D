@@ -6,7 +6,6 @@
 import type { Attachment, SequenceDef, SequenceKey, SequenceMode } from './model';
 import { SEQUENCE_MODES } from './model';
 
-
 /** The name of the picture of frame `index`: the path with the number (start + index) added, zero padded to `digits`. */
 export function sequenceFramePath(path: string, seq: SequenceDef, index: number): string {
   const frame = String(seq.start + index);

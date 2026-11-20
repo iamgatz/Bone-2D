@@ -116,8 +116,6 @@ export function countSimplifiable(anim: Animation, tolerance: Tolerance, fps: nu
   return simplifyAnimation(structuredClone(anim), tolerance, fps, boneIds);
 }
 
-// ------------------------------------------------------------------ bake
-
 export interface BakeOptions {
   /** `constrained`: the bones a constraint moves; `all`: every bone; or an explicit list. */
   bones: 'constrained' | 'all' | Id[];

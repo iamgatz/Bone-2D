@@ -1,7 +1,7 @@
 /** Set Parent: pick, then click the new parent. Bones stay where they are; a slot changes bone; one history step. */
 import { beforeEach, describe, expect, it } from 'vitest';
 import { emptyProject, newBone } from '@/core/model';
-import { getSetupSkeleton } from '@/editor/scene';
+import { getSetupSkeleton } from '@/store/scene';
 import { applyParent, cancelSetParent, startSetParent } from '@/store/parentActions';
 import { docStore } from '@/store/doc';
 import { setSelection } from '@/store/actions';

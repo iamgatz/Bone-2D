@@ -3,8 +3,8 @@ import { NO_COMPENSATION } from '@/core/compensate';
 import type { Id } from '@/core/model';
 import type { BrushShape, StrengthCurve } from '@/core/brush';
 import type { SoftShape } from '@/core/soft';
-import { NO_TRACK_FILTER } from '@/editor/timeline/rows';
-import type { TrackFilter } from '@/editor/timeline/rows';
+import { NO_TRACK_FILTER } from '@/core/timelineRows';
+import type { TrackFilter } from '@/core/timelineRows';
 import { createStore, useStore } from './store';
 import { DEFAULT_VIEWS, loadLayout } from './layout';
 import type { Views } from './layout';
@@ -142,7 +142,7 @@ export interface UiState {
   defaultCurve: CurveKind;
   camera: Camera;
   skinId: Id | null;
-  /** Skins shown together with the active one (editor only, never exported). */
+  /** Skins shown together with the active one. */
   skinMix: Id[];
   /** Skins kept shown when another skin is chosen (see toggleSkinPin). */
   skinPins: Id[];
@@ -162,9 +162,9 @@ export interface UiState {
   expanded: Record<string, boolean>;
   /** Bones, slots and constraints whose timelines the editor does not play (Mute; kept for the session, never saved or exported). */
   muted: string[];
-  /** Drawn faded under the pose being edited, to compare with: an animation id, `'setup'` for the setup pose, or null (kept for the session, never saved or exported). */
+  /** Drawn faded under the pose being edited, to compare with: an animation id, `'setup'` for the setup pose, or null. */
   reference: string | null;
-  /** The checkpoint whose pose is drawn under the current one, to compare with (kept for the session, never saved or exported). */
+  /** The checkpoint whose pose is drawn under the current one, to compare with. */
   compare: string | null;
   brush: WeightBrush;
   weightView: WeightView;

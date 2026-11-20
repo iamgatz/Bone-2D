@@ -3,11 +3,11 @@
  * (the value is constant across it whatever the curves are). The first and the last key of a timeline are kept: they hold the pose at
  * the ends of the animation, and a timeline that rests on the setup pose is kept too, because a layered animation (a runtime's upper track) relies on it.
  */
+import { keyListsIn } from './keylists';
+import { SAME_EPS } from './math';
 import type { Animation, Key } from './model';
 
-const EPS = 1e-6;
-
-const sameValue = (a: number[], b: number[]) => a.length === b.length && a.every((v, i) => Math.abs(v - b[i]) <= EPS);
+const sameValue = (a: number[], b: number[]) => a.length === b.length && a.every((v, i) => Math.abs(v - b[i]) <= SAME_EPS);
 
 const isNumberKey = (k: unknown): k is Key => !!k && typeof k === 'object' && typeof (k as Key).time === 'number' && Array.isArray((k as Key).value);
 
@@ -35,18 +35,6 @@ export function withCleanAnimations<T extends { animations: Animation[] }>(doc: 
 /** Cleans an animation in place; returns the number of keys removed. */
 export function cleanUpAnimation(anim: Animation): number {
   let removed = 0;
-  const walk = (v: unknown) => {
-    if (Array.isArray(v)) {
-      if (v.length && v.every(isNumberKey)) removed += dropFlatKeys(v as Key[]);
-      else v.forEach(walk);
-    } else if (v && typeof v === 'object') for (const x of Object.values(v)) walk(x);
-  };
-  walk(anim.bones);
-  walk(anim.slots);
-  walk(anim.deform);
-  walk(anim.transform);
-  walk(anim.slider);
-  walk(anim.path);
-  walk(anim.physics);
+  for (const list of keyListsIn([anim.bones, anim.slots, anim.deform, anim.transform, anim.slider, anim.path, anim.physics])) if (list.every(isNumberKey)) removed += dropFlatKeys(list as Key[]);
   return removed;
 }

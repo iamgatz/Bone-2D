@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { referenceGhost, referenceTime } from '@/editor/ghosts';
 import { emptyProject, newAnimation, newBone } from '@/core/model';
 import { compileSkeleton, createSkeleton } from '@/core/skeleton';
-import type { Scene } from '@/editor/scene';
+import type { Scene } from '@/store/scene';
 
 describe('reference time', () => {
   it('is the playhead time inside the animation', () => {

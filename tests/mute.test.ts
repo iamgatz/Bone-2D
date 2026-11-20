@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import { sameKeyValue } from '@/core/edit';
 import { hasMutedKeys, withoutMuted } from '@/core/mute';
 import { emptyProject, newAnimation, newBone } from '@/core/model';
-import { getScene } from '@/editor/scene';
+import { getScene } from '@/store/scene';
 import * as A from '@/store/actions';
 import { docStore } from '@/store/doc';
 import { clearMute, toggleMute } from '@/store/muteActions';

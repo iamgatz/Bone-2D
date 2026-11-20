@@ -1,4 +1,5 @@
 import { SoftControls } from './SoftControls';
+import { hasKey } from '@/core/edit';
 import { ConstraintEffects } from './ConstraintEffects';
 import { PivotSection } from './PivotSection';
 import { Bone as BoneIcon, BoxSelect, Crosshair, Image as ImageIcon, Layers, Link2, RotateCcw, Scissors, Spline, Triangle, X } from 'lucide-react';
@@ -8,15 +9,14 @@ import type { TransformPreset } from '@/store/transformActions';
 import { AXIS_GROUPS, INHERIT_MODES } from '@/core/model';
 import { isSplit } from '@/core/axes';
 import { setAxesSplit } from '@/store/axisActions';
-import type { Animation, AxisGroup, BlendMode, BoneProp, Id, Inherit, MeshAttachment, PhysicsParam, PathAttachment, PointAttachment, PolygonAttachment, RGBA, RegionAttachment } from '@/core/model';
+import type { AxisGroup, BlendMode, BoneProp, Id, Inherit, PhysicsParam, PathAttachment, PointAttachment, PolygonAttachment, RGBA, RegionAttachment } from '@/core/model';
 import { BLEND_MODES, attachmentImage, pathNodeCount, polygonVertexCount } from '@/core/model';
-import { findKeyIndex } from '@/core/curve';
 import { folderOfSlot } from '@/core/folders';
 import { deleteFolder, renameFolder, setSlotFolder } from '@/store/folderActions';
 import { resetPolygonShape } from '@/store/polygonActions';
 import { setSelection, deleteKeys, keyConstrainedBones, keySelectedBones, removeSkinImage, renameBone, renameSlot, setAnimationDuration, setAttachmentProps, setBonePose, setBoneProps, setFps, setSkinImage, setSlotAttachment, setSlotBone, setSlotColor, setSlotProps, setTool, currentAnimation } from '@/store/actions';
 import type { PoseProps } from '@/store/actions';
-import { docStore, useProject } from '@/store/doc';
+import { useProject } from '@/store/doc';
 import { bindPathToBones, resetPathShape, setPathClosed, unbindPath } from '@/store/pathActions';
 import { MAX_SPLIT } from '@/core/split';
 import { splitBone } from '@/store/splitActions';
@@ -26,7 +26,7 @@ import type { ChainShape } from '@/core/chains';
 import { applyChainCurve } from '@/store/chainActions';
 import { addLimit, removeLimit, setLimit } from '@/store/limitActions';
 import { uiStore, useUi } from '@/store/ui';
-import { getScene } from '../scene';
+import { getScene } from '@/store/scene';
 import { Button, ColorSwatch, IconButton, NumberField, SelectField, TextField, Toggle } from '../ui/controls';
 import { Field, KeyButton } from '../ui/Field';
 import { Section } from '../ui/Section';
@@ -39,13 +39,6 @@ import { ConstraintInspector } from './ConstraintInspector';
 
 /** The short names of the three split switches. */
 const AXIS_SHORT: Record<AxisGroup, string> = { translate: 'Pos', scale: 'Scl', shear: 'Shr' };
-
-function hasKeyAt(anim: Animation | undefined, boneId: Id, prop: BoneProp, time: number): boolean {
-  const keys = anim?.bones[boneId]?.[prop];
-  if (!keys || !keys.length) return false;
-  const i = findKeyIndex(keys, time + 1e-4);
-  return i >= 0 && Math.abs(keys[i].time - time) < 1e-4;
-}
 
 function BoneInspector({ id }: { id: Id }) {
   const project = useProject();
@@ -68,7 +61,7 @@ function BoneInspector({ id }: { id: Id }) {
   const controlScene = limit ? getScene().skeleton.boneById(limit.control) : undefined;
   if (limit && control) pose.rotation = animate && controlScene ? controlScene.rotation : control.rotation;
   const keyedOn = (p: BoneProp) => (p === 'rotate' && limit ? limit.control : id);
-  const keyed = (p: BoneProp) => animate && hasKeyAt(anim, keyedOn(p), p, time);
+  const keyed = (p: BoneProp) => animate && hasKey(anim?.bones[keyedOn(p)]?.[p], time);
   const keyButton = (p: BoneProp, label: string) => (
     <KeyButton on={keyed(p)} title={`${keyed(p) ? 'Remove' : 'Set'} ${label} key at the playhead`} onClick={() => (keyed(p) ? deleteKeys([{ kind: 'bone', target: keyedOn(p), prop: p, time }]) : keySelectedBones([p]))} />
   );

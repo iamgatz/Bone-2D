@@ -121,8 +121,3 @@ export function TooltipHost() {
     document.body,
   );
 }
-
-/** The attributes that give an element a tooltip (and its accessible name when it has no text). */
-export function tipProps(text: string | undefined, hotkey?: string): { 'data-tip'?: string; 'data-tip-key'?: string } {
-  return text ? { 'data-tip': text, ...(hotkey ? { 'data-tip-key': hotkey } : {}) } : {};
-}

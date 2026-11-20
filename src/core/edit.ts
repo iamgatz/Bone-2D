@@ -1,4 +1,5 @@
 /** Pure document edit helpers. They mutate the passed (draft) document in place, so they work under immer and in tests. */
+import { parentFirst } from './boneorder';
 import { pruneFolders } from './folders';
 import { dropBonesFromSets } from './selsets';
 import { uniqueName } from './ids';
@@ -9,6 +10,13 @@ import type { Animation, Curve, Id, Key, MeshAttachment, RGB, SkeletonDoc, Timel
 import { RAD2DEG, atan2Deg, matApply, matInvert } from './math';
 
 export const KEY_EPS = 1e-4;
+
+/** The key of a timeline at `time` (within KEY_EPS), if there is one. */
+export function keyAt<K extends { time: number }>(keys: readonly K[] | undefined, time: number): K | undefined {
+  return keys?.find((k) => Math.abs(k.time - time) < KEY_EPS);
+}
+
+export const hasKey = (keys: readonly { time: number }[] | undefined, time: number): boolean => keyAt(keys, time) !== undefined;
 
 export type CurveKindName = 'linear' | 'bezier' | 'stepped';
 
@@ -40,20 +48,7 @@ export function descendantsOf(doc: SkeletonDoc, ids: Iterable<Id>): Set<Id> {
 
 /** Keeps parents before children (stable). */
 export function normalizeBoneOrder(doc: SkeletonDoc) {
-  const out: typeof doc.bones = [];
-  const placed = new Set<Id>();
-  const byId = new Map(doc.bones.map((b) => [b.id, b] as const));
-  const visit = (b: (typeof doc.bones)[number], depth: number) => {
-    if (placed.has(b.id) || depth > doc.bones.length) return;
-    if (b.parent) {
-      const p = byId.get(b.parent);
-      if (p) visit(p, depth + 1);
-    }
-    placed.add(b.id);
-    out.push(b);
-  };
-  for (const b of doc.bones) visit(b, 0);
-  doc.bones.splice(0, doc.bones.length, ...out);
+  doc.bones.splice(0, doc.bones.length, ...parentFirst(doc.bones));
 }
 
 export function removeSlots(doc: SkeletonDoc, slotIds: Set<Id>) {
@@ -271,13 +266,6 @@ export function sameKeyValue(a: object, b: object): boolean {
   return ka.length === kb.length && ka.every((k) => k in b && same((a as Record<string, unknown>)[k], (b as Record<string, unknown>)[k]));
 }
 
-export function removeKeyAt<K extends { time: number }>(keys: K[], time: number, eps = KEY_EPS): boolean {
-  const i = keys.findIndex((k) => Math.abs(k.time - time) <= eps);
-  if (i < 0) return false;
-  keys.splice(i, 1);
-  return true;
-}
-
 export function sortKeys<K extends { time: number }>(keys: K[]) {
   keys.sort((a, b) => a.time - b.time);
 }
@@ -367,10 +355,6 @@ export function setSlotDarkColor(doc: SkeletonDoc, slotId: Id, dark: RGB | null)
     tl.rgba = rgba2ToRgba(tl.rgba2);
     delete tl.rgba2;
   }
-}
-
-export function timelineEnd(t: Timeline | undefined): number {
-  return t && t.length ? t[t.length - 1].time : 0;
 }
 
 export type { Key };

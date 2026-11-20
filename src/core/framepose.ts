@@ -1,7 +1,7 @@
 /**
  * Posing an animation frame by frame, as the exporters of pictures do it: the same solver and the same physics stepping as the viewport, forward in
  * time (physics keeps its state from the frame before). Warm up runs the animation for a while before the first frame, as if it had been looping,
- * so the physics bones have settled when the recording starts (Spine's Warm Up). No DOM.
+ * so the physics bones have settled when the recording starts (Spine's Warm Up).
  */
 import { applyAnimation, applyPhysicsResets } from './animate';
 import type { Animation } from './model';

@@ -3,7 +3,6 @@
  * handles with the mesh tool. In Animate mode dragging deforms (keys) the path instead of changing the setup pose.
  */
 import { distToSegmentSq } from '@/core/math';
-import { pathNodeCount } from '@/core/model';
 import type { Id } from '@/core/model';
 import { samplePath } from '@/core/path';
 import { meshWorldVertices } from '@/core/skeleton';
@@ -15,8 +14,10 @@ import { createPath, deletePathNodes, getPath, insertPathNode } from '@/store/pa
 import type { PathNodeDraft } from '@/store/pathActions';
 import { movePolygonVertices } from '@/store/polygonActions';
 import { toast, uiStore } from '@/store/ui';
-import { getScene, worldToScreen } from '../scene';
-import type { Scene } from '../scene';
+import { getScene, worldToScreen } from '@/store/scene';
+import type { Scene } from '@/store/scene';
+import { dragMarquee, drawMarquee, startMarquee } from './marquee';
+import type { Marquee } from './marquee';
 import { COLORS } from './overlay';
 import type { OverlayInput } from './overlay';
 import { alpha, token } from '../ui/tokens';
@@ -41,7 +42,7 @@ interface Draft {
 type Drag =
   | { kind: 'draftHandle' }
   | { kind: 'points'; moves: Map<number, { x: number; y: number; s: number }>; p0: [number, number]; base: number[] | null }
-  | { kind: 'marquee'; x0: number; y0: number; x1: number; y1: number; base: number[] };
+  | Marquee;
 
 const rgba = (c: ArrayLike<number>, a: number) => `rgba(${Math.round(c[0] * 255)},${Math.round(c[1] * 255)},${Math.round(c[2] * 255)},${a})`;
 
@@ -87,8 +88,6 @@ export class PathTool {
     return ui.tool === 'path' || (ui.tool === 'mesh' && activePath() !== null);
   }
 
-  // ---------------------------------------------------------------- creating
-
   private draftDown(e: PointerEvent, wx: number, wy: number): boolean {
     const ui = uiStore.get();
     if (ui.mode !== 'setup') {
@@ -132,8 +131,6 @@ export class PathTool {
     this.invalidate();
     return true;
   }
-
-  // ---------------------------------------------------------------- editing
 
   private hitPoint(pts: number[], att: PathAttachmentData, wx: number, wy: number, zoom: number): number {
     const tolAnchor = (9 / zoom) ** 2;
@@ -201,7 +198,7 @@ export class PathTool {
       return true;
     }
     if (!e.shiftKey) setSelection({ ...ui.selection, vertices: [] });
-    this.drag = { kind: 'marquee', x0: wx, y0: wy, x1: wx, y1: wy, base: e.shiftKey ? ui.selection.vertices : [] };
+    this.drag = startMarquee(wx, wy, e.shiftKey ? ui.selection.vertices : []);
     return true;
   }
 
@@ -247,12 +244,7 @@ export class PathTool {
       if (!d.base) movePolygonVertices(ap.slotId, ap.name, [...d.moves].map(([index, m]) => ({ index, x: m.x + dx * m.s, y: m.y + dy * m.s })));
       else setDeformKey(ap.slotId, ap.name, d.base, [...d.moves].map(([index, m]) => ({ index, dx: dx * m.s, dy: dy * m.s })));
     } else if (d.kind === 'marquee') {
-      d.x1 = wx;
-      d.y1 = wy;
-      const x0 = Math.min(d.x0, d.x1);
-      const x1 = Math.max(d.x0, d.x1);
-      const y0 = Math.min(d.y0, d.y1);
-      const y1 = Math.max(d.y0, d.y1);
+      const [x0, y0, x1, y1] = dragMarquee(d, wx, wy);
       const picked = new Set(d.base);
       for (const p of grabbable(geo.att)) {
         const x = geo.pts[p * 2];
@@ -302,8 +294,6 @@ export class PathTool {
     );
     return true;
   }
-
-  // ---------------------------------------------------------------- drawing
 
   /** Every visible path of the current pose, the handles of the selected one, and the path being drawn. Under the bones. */
   drawUnder = (o: OverlayInput) => {
@@ -377,15 +367,7 @@ export class PathTool {
     }
     this.drawDraft(o);
     const d = this.drag;
-    if (d?.kind === 'marquee') {
-      const [x0, y0] = worldToScreen(cam, w, h, d.x0, d.y0);
-      const [x1, y1] = worldToScreen(cam, w, h, d.x1, d.y1);
-      ctx.fillStyle = COLORS.accentSoft;
-      ctx.strokeStyle = COLORS.accent;
-      ctx.lineWidth = 1;
-      ctx.fillRect(Math.min(x0, x1), Math.min(y0, y1), Math.abs(x1 - x0), Math.abs(y1 - y0));
-      ctx.strokeRect(Math.min(x0, x1) + 0.5, Math.min(y0, y1) + 0.5, Math.abs(x1 - x0), Math.abs(y1 - y0));
-    }
+    if (d?.kind === 'marquee') drawMarquee(ctx, cam, w, h, d);
     ctx.restore();
   };
 

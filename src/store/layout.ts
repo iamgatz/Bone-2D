@@ -74,8 +74,6 @@ export function saveLayout(layout: SavedLayout) {
   }
 }
 
-// ---------------------------------------------------------------- arrangements the person saved under a name
-
 export interface NamedLayout extends SavedLayout {
   id: string;
   name: string;

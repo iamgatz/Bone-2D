@@ -15,7 +15,6 @@
  * with the mirror, 4.3 does not; not reported, a mirrored target with a shear offset is too rare to warn about every file).
  */
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
 type J = Record<string, any>;
 
 const obj = (v: unknown): J => (v && typeof v === 'object' && !Array.isArray(v) ? (v as J) : {});
@@ -112,7 +111,6 @@ export function upgradeLegacySpineJson(input: J): LegacyUpgrade {
 
   const root: J = { ...input };
 
-  // ----------------------------------------------------------- constraints: one list in update order
   interface Entry {
     kind: 'ik' | 'transform' | 'path' | 'physics';
     order: number;
@@ -138,7 +136,6 @@ export function upgradeLegacySpineJson(input: J): LegacyUpgrade {
   if (entries.some((e) => e.kind === 'physics')) warn('physics constraints use the 4.3 simulation, which smooths the motion between steps: it moves slightly differently from 4.2');
   for (const kind of ['ik', 'transform', 'path', 'physics']) delete root[kind];
 
-  // ----------------------------------------------------------- animations: deform moved under `attachments` in 4.1
   const animations: J = {};
   for (const [name, am] of Object.entries(obj(input.animations))) {
     const a = obj(am);
@@ -154,9 +151,7 @@ export function upgradeLegacySpineJson(input: J): LegacyUpgrade {
         for (const [att, frames] of Object.entries(obj(perSlot))) slotOut[att] = { ...obj(slotOut[att]), deform: frames };
       }
     }
-    const { deform: _deform, ...rest } = a;
-    void _deform;
-    animations[name] = { ...rest, attachments };
+    animations[name] = { ...a, deform: undefined, attachments };
   }
   if (input.animations !== undefined) root.animations = animations;
 

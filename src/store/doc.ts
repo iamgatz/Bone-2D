@@ -164,7 +164,3 @@ export const docStore = new DocStore();
 export function useProject(): Project {
   return useStore(docStore, (p) => p);
 }
-
-export function useDoc<S>(selector: (p: Project) => S, equals?: (a: S, b: S) => boolean): S {
-  return useStore(docStore, selector, equals);
-}

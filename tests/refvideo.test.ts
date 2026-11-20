@@ -1,7 +1,7 @@
 /** The reference video: which moment goes with a time of the animation, when it is moved, and where it is drawn. */
 import { describe, expect, it } from 'vitest';
 import { DEFAULT_REF_VIDEO, cleanRefVideoView, syncPlan, videoRect, videoTimeFor } from '../src/core/refVideo';
-import { screenToWorld, worldToScreen } from '../src/editor/scene';
+import { screenToWorld, worldToScreen } from '../src/store/scene';
 
 describe('videoTimeFor', () => {
   it('adds the offset and stays inside the video', () => {

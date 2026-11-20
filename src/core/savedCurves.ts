@@ -1,7 +1,7 @@
 /**
  * Saved easing curves: a bezier a person liked on a key can be kept under a name and put on other keys later (Rive's users ask for
  * exactly this: "save easing curves", it would speed the work up a lot). A curve is the four numbers of one channel: the two handles
- * (x1, y1, x2, y2) of the segment, the way a key stores them. No DOM.
+ * (x1, y1, x2, y2) of the segment, the way a key stores them.
  */
 
 export type CurveNumbers = [number, number, number, number];

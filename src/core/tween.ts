@@ -2,6 +2,7 @@
  * Tween: a pose between the keys on either side of the playhead (an animator's breakdown). 0 is the previous key, 1 the next one, and a value
  * outside 0..1 overshoots, which is how a motion gets its anticipation or its settle.
  */
+import { KEY_EPS } from './edit';
 import { BONE_PROPS } from './model';
 import type { Animation, BoneProp, Id } from './model';
 
@@ -11,7 +12,7 @@ interface TimeValue {
 }
 
 /** The keys just before and just after `t` (a key at `t` itself is neither). With a key on one side only, that key stands for both. */
-export function neighbours(keys: readonly TimeValue[] | undefined, t: number, eps = 1e-4): { prev: TimeValue; next: TimeValue } | null {
+export function neighbours(keys: readonly TimeValue[] | undefined, t: number, eps = KEY_EPS): { prev: TimeValue; next: TimeValue } | null {
   if (!keys?.length) return null;
   let prev: TimeValue | null = null;
   let next: TimeValue | null = null;
