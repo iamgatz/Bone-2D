@@ -12,6 +12,16 @@ export interface Release {
 
 export const CHANGELOG: Release[] = [
   {
+    version: '0.76',
+    date: '2026-11-20',
+    en: [
+      'Links that open the demo: ?demo opens the fox, ?demo=wave opens it playing the wave animation (also walk, jump, idle). If you worked here before, your earlier work is copied to the History window first.',
+    ],
+    ru: [
+      'Ссылки, открывающие демо: ?demo открывает лису, ?demo=wave открывает её с играющей анимацией wave (есть ещё walk, jump, idle). Если вы здесь уже работали, прежняя работа сначала копируется в окно «История».',
+    ],
+  },
+  {
     version: '0.75',
     date: '2026-11-20',
     en: [

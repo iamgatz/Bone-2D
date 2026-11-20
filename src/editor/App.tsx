@@ -60,6 +60,7 @@ import { deleteConstraint } from '@/store/ikActions';
 import { loadSample } from '@/store/sample';
 import { uiStore, useUi } from '@/store/ui';
 import { setLang, useLang } from '@/i18n';
+import { openDeepLink } from './deeplink';
 import { startPlaybackLoop } from './playback';
 import { AssetsPanel } from './panels/AssetsPanel';
 import { InspectorPanel } from './panels/InspectorPanel';
@@ -639,12 +640,14 @@ export function App() {
     const stopLayout = startLayoutPersist();
     const stopSanitize = docStore.subscribe(sanitizeSelection); // undo / redo can remove what is selected
     const stopSelHistory = startSelectionHistory();
-    void restoreAutosave().then((ok) => {
-      if (!ok) {
-        setTimeout(() => viewportApi.frame(), 60);
-        if (settingsStore.get().showWelcome) uiStore.patch({ welcomeOpen: true });
-      }
-    });
+    void openDeepLink(window.location.search)
+      .then((opened) => opened || restoreAutosave())
+      .then((ok) => {
+        if (!ok) {
+          setTimeout(() => viewportApi.frame(), 60);
+          if (settingsStore.get().showWelcome) uiStore.patch({ welcomeOpen: true });
+        }
+      });
     const warn = (e: BeforeUnloadEvent) => {
       if (docStore.dirty) e.preventDefault();
     };

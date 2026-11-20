@@ -2208,4 +2208,5 @@ export const RU: Record<string, string> = {
   'Skins: {#}': 'Скины: {}',
   'Pictures: {#}': 'Картинки: {}',
   'Warnings: {#}': 'Предупреждения: {}',
+  'Your earlier work is kept in the History window': 'Ваша прежняя работа сохранена в окне «История»',
 };
