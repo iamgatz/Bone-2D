@@ -12,6 +12,22 @@ export interface Release {
 
 export const CHANGELOG: Release[] = [
   {
+    version: '0.78',
+    date: '2026-11-20',
+    en: [
+      'The welcome window has the EN / RU switch, so the very first screen can be read in your language.',
+      'Menus and windows no longer stretch the page: a menu that is taller than the room below it scrolls inside itself, and one that would run past an edge is moved back into the window (the Windows menu, the timeline menus, the track filter).',
+      'Screen readers: every field and list now has a name (for example "Position X"), the page has a header, a main area and named side panels, dialog titles are headings, and the dopesheet can be reached with the keyboard. Checked with axe-core on the welcome window, the editor, an animated bone, a weighted mesh and the Export, Settings and Help windows, in English and Russian.',
+      'Narrow panels, round two: a deep chain in the hierarchy no longer pushes names and buttons out (the indent flattens after five levels, the hover buttons float over the end of the row), and a button with a long label wraps instead of sticking out of the Inspector.',
+    ],
+    ru: [
+      'В приветственном окне есть переключатель EN / RU: первый же экран можно прочитать на своём языке.',
+      'Меню и окна больше не растягивают страницу: меню выше свободного места прокручивается внутри себя, а то, что вылезло бы за край, сдвигается обратно в окно (меню «Окна», меню таймлайна, фильтр дорожек).',
+      'Для экранных дикторов: у каждого поля и списка есть имя (например, «Позиция X»), у страницы есть шапка, основная область и подписанные боковые панели, заголовки окон — заголовки, а таблица ключей доступна с клавиатуры. Проверено axe-core на приветственном окне, редакторе, анимированной кости, меше с весами и окнах «Экспорт», «Настройки» и «Справка», на английском и русском.',
+      'Узкие панели, второй заход: длинная цепочка в иерархии больше не выталкивает имена и кнопки (отступ после пятого уровня сужается, кнопки при наведении лежат поверх конца строки), а кнопка с длинной подписью переносится на вторую строку и не торчит из инспектора.',
+    ],
+  },
+  {
     version: '0.77',
     date: '2026-11-20',
     en: [

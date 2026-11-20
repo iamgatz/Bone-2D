@@ -12,7 +12,8 @@ async function openDemo(page: Page) {
   await page.addInitScript(() => localStorage.clear());
   await page.goto('/');
   await page.locator('.overlay .choice.primary').click();
-  await expect(page.locator('.row .label').first()).toBeVisible();
+  // the demo is in when the hierarchy lists its bones (an empty project has only the root)
+  await expect.poll(() => page.locator('.row .label').count()).toBeGreaterThan(5);
 }
 
 test('the demo rig loads and the hierarchy lists its bones', async ({ page }) => {
@@ -139,6 +140,55 @@ test('wide panels in a narrow window give way to the viewport, and no column is 
   expect(w.right).toBeGreaterThanOrEqual(230);
   expect(w.center).toBeGreaterThanOrEqual(300);
   expect(w.spill).toBeLessThanOrEqual(0);
+});
+
+for (const size of [
+  { width: 1100, height: 560 },
+  { width: 1280, height: 700 },
+]) {
+  test(`menus and windows stay inside the window and never stretch the page (${size.width}x${size.height})`, async ({ page }) => {
+    await page.setViewportSize(size);
+    await openDemo(page);
+    const bad = await page.evaluate(
+      async (urls) => {
+        const { uiStore } = (await import(urls[0])) as UiModule;
+        const de = document.documentElement;
+        const out: string[] = [];
+        const stretched = () => de.scrollHeight > innerHeight + 1 || de.scrollWidth > innerWidth + 1;
+        for (const b of [...document.querySelectorAll<HTMLButtonElement>('.menu > button')].filter((x) => x.offsetParent)) {
+          const name = b.getAttribute('aria-label') ?? b.textContent ?? '?';
+          b.click();
+          await new Promise((r) => setTimeout(r, 120));
+          const r = document.querySelector('.menu-pop')?.getBoundingClientRect();
+          if (stretched() || !r || r.top < 0 || r.left < 0 || r.bottom > innerHeight + 0.5 || r.right > innerWidth + 0.5)
+            out.push(`menu ${name}`);
+          b.click();
+          await new Promise((r) => setTimeout(r, 60));
+        }
+        for (const k of ['exportOpen', 'helpOpen', 'updatesOpen', 'feedbackOpen', 'settingsOpen', 'welcomeOpen', 'paletteOpen'] as const) {
+          uiStore.patch({ [k]: true });
+          await new Promise((r) => setTimeout(r, 150));
+          const d = document.querySelector('.overlay > *')?.getBoundingClientRect();
+          if (stretched() || !d || d.top < 0 || d.bottom > innerHeight + 0.5) out.push(`window ${k}`);
+          uiStore.patch({ [k]: false });
+        }
+        return out;
+      },
+      [UI],
+    );
+    expect(bad).toEqual([]);
+  });
+}
+
+test('the welcome window has the language switch', async ({ page }) => {
+  await page.addInitScript(() => localStorage.clear());
+  await page.goto('/');
+  const lang = page.locator('.overlay .lang');
+  await expect(lang).toBeVisible();
+  await lang.getByRole('radio', { name: 'RU' }).click();
+  await expect(page.locator('.overlay .dialog')).toContainText('Добро пожаловать');
+  await lang.getByRole('radio', { name: 'EN' }).click();
+  await expect(page.locator('.overlay .dialog')).toContainText('Welcome');
 });
 
 test('the Export window groups its settings', async ({ page }) => {

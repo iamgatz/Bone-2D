@@ -59,7 +59,8 @@ import { openAtlasUnpack, openSpineImport } from './importSpine';
 import { deleteConstraint } from '@/store/ikActions';
 import { loadSample } from '@/store/sample';
 import { uiStore, useUi } from '@/store/ui';
-import { setLang, useLang } from '@/i18n';
+import { useLang } from '@/i18n';
+import { LangToggle } from './ui/LangToggle';
 import { openDeepLink } from './deeplink';
 import { startPlaybackLoop } from './playback';
 import { AssetsPanel } from './panels/AssetsPanel';
@@ -106,19 +107,6 @@ import { applyLayout, startLayoutPersist, toggleAllViews, toggleView } from '@/s
 import { microMove } from '@/store/nudgeActions';
 import { applySavedLayout, deleteSavedLayout, saveLayoutDialog, useNamedLayouts } from '@/store/layoutActions';
 
-function LangToggle() {
-  const lang = useLang();
-  return (
-    <Segmented
-      className="lang"
-      label="Language"
-      value={lang}
-      onChange={setLang}
-      options={(['en', 'ru'] as const).map((l) => ({ value: l, label: l.toUpperCase() }))}
-    />
-  );
-}
-
 function TopBar() {
   useSettings((s) => s.keyMap); // the combinations can be changed in Settings
   const project = useProject();
@@ -135,8 +123,8 @@ function TopBar() {
   }, []);
 
   return (
-    <div className="topbar">
-      <div className="brand">
+    <header className="topbar">
+      <div className="brand" role="heading" aria-level={1}>
         <span className="brand-mark">
           <svg width="16" height="16" viewBox="0 0 32 32">
             <path d="M9 22 L16 10 L23 22" stroke="currentColor" strokeWidth="3" fill="none" strokeLinecap="round" strokeLinejoin="round" />
@@ -465,7 +453,7 @@ function TopBar() {
       <Button primary icon={Download} onClick={() => uiStore.patch({ exportOpen: true })}>
         Export
       </Button>
-    </div>
+    </header>
   );
 }
 
@@ -619,7 +607,11 @@ function HelpDialog() {
 function Toast() {
   const t = useUi((s) => s.toast);
   if (!t) return null;
-  return <div className={`toast ${t.kind}`}>{t.text}</div>;
+  return (
+    <div className={`toast ${t.kind}`} role="status">
+      {t.text}
+    </div>
+  );
 }
 
 export function App() {
@@ -792,7 +784,12 @@ export function App() {
       <div className="main">
         {leftOn && (
           <>
-            <aside className="left" style={{ width: panel.left }} onPointerDownCapture={() => setFocusArea('tree')}>
+            <aside
+              className="left"
+              aria-label="Hierarchy and images"
+              style={{ width: panel.left }}
+              onPointerDownCapture={() => setFocusArea('tree')}
+            >
               {views.tree && <TreePanel />}
               {views.animations && <AnimationsPanel />}
               {views.skins && <SkinsPanel />}
@@ -808,7 +805,7 @@ export function App() {
             <Splitter dir="v" onDrag={drag('left', 1, 200, 480)} />
           </>
         )}
-        <section className="center">
+        <main className="center">
           <div className="viewport-wrap" onPointerDownCapture={() => setFocusArea('viewport')}>
             <Viewport />
             <ViewportHud />
@@ -821,11 +818,16 @@ export function App() {
               </div>
             </>
           )}
-        </section>
+        </main>
         {views.inspector && (
           <>
             <Splitter dir="v" onDrag={drag('right', -1, 230, 480)} />
-            <aside className="right" style={{ width: panel.right }} onPointerDownCapture={() => setFocusArea('viewport')}>
+            <aside
+              className="right"
+              aria-label="Inspector"
+              style={{ width: panel.right }}
+              onPointerDownCapture={() => setFocusArea('viewport')}
+            >
               <InspectorPanel />
             </aside>
           </>

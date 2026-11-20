@@ -167,7 +167,7 @@ function BoneInspector({ id }: { id: Id }) {
         collapsible={false}
         actions={animate && <span className="chip animate">animating</span>}
       >
-        <TextField value={bone.name} onCommit={(v) => renameBone(id, v)} wide />
+        <TextField name="Bone name" value={bone.name} onCommit={(v) => renameBone(id, v)} wide />
       </Section>
       <Section
         id="bone.transform"
@@ -661,7 +661,7 @@ function SlotInspector({ slotId, attachmentName }: { slotId: Id; attachmentName:
   return (
     <>
       <Section id="slot.name" title="Slot" icon={Layers} collapsible={false}>
-        <TextField value={slot.name} onCommit={(v) => renameSlot(slotId, v)} wide />
+        <TextField name="Slot name" value={slot.name} onCommit={(v) => renameSlot(slotId, v)} wide />
       </Section>
       <div className="group">
         <Field label="Bone">
@@ -722,7 +722,7 @@ function SlotInspector({ slotId, attachmentName }: { slotId: Id; attachmentName:
         )}
         {!animate && folder && (
           <Field label="Folder name">
-            <TextField value={folder.name} onCommit={(v) => renameFolder(folder.id, v)} wide />
+            <TextField name="Folder name" value={folder.name} onCommit={(v) => renameFolder(folder.id, v)} wide />
             <IconButton
               icon={X}
               small
@@ -989,7 +989,7 @@ export function InspectorPanel() {
           <>
             <Section id="skeleton" title="Skeleton" collapsible={false}>
               <div className="mb">
-                <TextField value={doc.name} onCommit={(v) => renameSkeletonAt(activeIndex(project), v)} wide />
+                <TextField name="Skeleton name" value={doc.name} onCommit={(v) => renameSkeletonAt(activeIndex(project), v)} wide />
               </div>
               <Field label="FPS">
                 <NumberField label="fps" value={doc.fps} step={1} precision={0} min={1} max={240} onChange={(v) => setFps(v)} />

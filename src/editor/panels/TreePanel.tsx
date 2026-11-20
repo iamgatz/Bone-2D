@@ -67,6 +67,11 @@ import { RenameBar } from './RenameBar';
 import { SelectionSets } from './SelectionSets';
 import { SkeletonBar } from './SkeletonBar';
 
+/** How far a row of the given depth is moved in: 14 px a level for the first five, then 6 px, so a deep chain still leaves room for a name in a narrow panel. */
+function indent(depth: number): number {
+  return 8 + Math.min(depth, 5) * 14 + Math.max(depth - 5, 0) * 6;
+}
+
 function InlineName({ value, editing, onDone }: { value: string; editing: boolean; onDone: (v: string | null) => void }) {
   if (!editing)
     return (
@@ -167,7 +172,7 @@ export function TreePanel() {
       <div key={slot.id}>
         <div
           className={`row${selected && !selection.attachment ? ' selected' : ''}`}
-          style={{ paddingLeft: 8 + depth * 14 }}
+          style={{ paddingLeft: indent(depth) }}
           draggable
           onDragStart={(e) => {
             e.dataTransfer.setData('application/x-bone2d-slot', slot.id);
@@ -207,7 +212,7 @@ export function TreePanel() {
             <div
               key={name}
               className={`row${selected && selection.attachment === name ? ' selected' : ''}`}
-              style={{ paddingLeft: 8 + (depth + 1) * 14 + 16 }}
+              style={{ paddingLeft: indent(depth + 1) + 16 }}
               onClick={() => selectSlot(slot.id, name)}
             >
               <span className="ico">
@@ -252,7 +257,7 @@ export function TreePanel() {
       <div key={bone.id}>
         <div
           className={`row${selected ? ' selected' : ''}${dropOn === bone.id ? ' drop' : ''}`}
-          style={{ paddingLeft: 8 + depth * 14 }}
+          style={{ paddingLeft: indent(depth) }}
           draggable
           onDragStart={(e) => {
             e.dataTransfer.setData('application/x-bone2d-bone', bone.id);
@@ -564,13 +569,13 @@ export function TreePanel() {
                         />
                       </Field>
                       <Field label="Text" title="The text the event carries by default">
-                        <TextField value={ev.string} onCommit={(v) => updateEvent(ev.id, { string: v })} wide />
+                        <TextField name="Event string" value={ev.string} onCommit={(v) => updateEvent(ev.id, { string: v })} wide />
                       </Field>
                       <Field
                         label="Sound"
                         title="The path of the sound file for the engine (kept in the export; the editor does not play it)"
                       >
-                        <TextField value={ev.audio ?? ''} onCommit={(v) => updateEvent(ev.id, { audio: v })} wide />
+                        <TextField name="Event sound" value={ev.audio ?? ''} onCommit={(v) => updateEvent(ev.id, { audio: v })} wide />
                       </Field>
                       {ev.audio && (
                         <>

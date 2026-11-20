@@ -592,6 +592,9 @@ export function Dopesheet({ rows, duration, fps, onMenu }: Props) {
       <div
         className="tl-canvas-host"
         ref={hostRef}
+        tabIndex={0}
+        role="region"
+        aria-label="Dopesheet"
         onScroll={(e) => {
           const labels = document.getElementById('tl-label-scroll');
           if (labels && labels.scrollTop !== e.currentTarget.scrollTop) labels.scrollTop = e.currentTarget.scrollTop;

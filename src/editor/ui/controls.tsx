@@ -1,4 +1,4 @@
-import { useLayoutEffect, useEffect, useRef, useState } from 'react';
+import { createContext, useContext, useLayoutEffect, useEffect, useRef, useState } from 'react';
 import type { CSSProperties, ReactNode } from 'react';
 import type { LucideIcon } from 'lucide-react';
 import { Check, X } from 'lucide-react';
@@ -112,6 +112,13 @@ function fmt(v: number, precision: number): string {
   return s.includes('.') ? s.replace(/\.?0+$/, '') : s;
 }
 
+/** The label of the inspector row (`Field`) a control sits in, so that a number or a select in it has a name for a screen reader ("Position X"). */
+export const FieldLabelContext = createContext('');
+function useControlName(own?: string) {
+  const row = useContext(FieldLabelContext);
+  return row && own ? `${row} ${own}` : row || own || undefined;
+}
+
 export function NumberField(props: {
   label: string;
   value: number;
@@ -130,6 +137,7 @@ export function NumberField(props: {
   const [text, setText] = useState<string | null>(null);
   const scrub = useRef<{ x: number; v: number } | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const name = useControlName(props.label);
 
   const commit = (raw: string) => {
     const v = parseNumberExpr(raw, value);
@@ -173,6 +181,8 @@ export function NumberField(props: {
         ref={inputRef}
         type="text"
         inputMode="decimal"
+        aria-label={name}
+        disabled={props.disabled}
         spellCheck={false}
         value={text ?? fmt(value, precision) + (props.suffix ?? '')}
         onFocus={(e) => {
@@ -201,8 +211,16 @@ export function NumberField(props: {
   );
 }
 
-export function TextField(props: { label?: string; value: string; onCommit: (v: string) => void; wide?: boolean; placeholder?: string }) {
+export function TextField(props: {
+  label?: string;
+  name?: string;
+  value: string;
+  onCommit: (v: string) => void;
+  wide?: boolean;
+  placeholder?: string;
+}) {
   const [text, setText] = useState<string | null>(null);
+  const name = useControlName(props.name ?? props.label ?? props.placeholder);
   return (
     <div className={`field${props.wide ? ' wide' : ''}`}>
       {props.label && (
@@ -212,6 +230,7 @@ export function TextField(props: { label?: string; value: string; onCommit: (v: 
       )}
       <input
         type="text"
+        aria-label={name}
         spellCheck={false}
         placeholder={props.placeholder}
         value={text ?? props.value}
@@ -238,11 +257,13 @@ export function TextField(props: { label?: string; value: string; onCommit: (v: 
 
 export function SelectField<T extends string>(props: {
   label?: string;
+  name?: string;
   value: T;
   options: { value: T; label: string }[];
   onChange: (v: T) => void;
   wide?: boolean;
 }) {
+  const name = useControlName(props.name ?? props.label);
   return (
     <div className={`field${props.wide ? ' wide' : ''}`}>
       {props.label && (
@@ -250,7 +271,7 @@ export function SelectField<T extends string>(props: {
           {props.label}
         </span>
       )}
-      <select value={props.value} onChange={(e) => props.onChange(e.target.value as T)}>
+      <select aria-label={name} value={props.value} onChange={(e) => props.onChange(e.target.value as T)}>
         {props.options.map((o) => (
           <option key={o.value} value={o.value}>
             {o.label}
@@ -288,6 +309,37 @@ export function ColorSwatch({
       <input type="color" aria-label={title ?? 'Color'} value={rgbaToHex(value)} onChange={(e) => onChange(hexToRgb(e.target.value))} />
     </span>
   );
+}
+
+/**
+ * Keeps a pop-up (a menu, the track filter) inside the window: if it would run past an edge it is moved back, and if it is taller than the
+ * window it scrolls inside itself. Without this a long menu near the bottom stretches the page (or is cut off). Works for `absolute` and
+ * `fixed` pop-ups alike, because it only uses `translate`.
+ */
+export function useFitInWindow(ref: { current: HTMLElement | null }, active = true) {
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (!active || !el) return;
+    const edge = 8;
+    el.style.translate = '';
+    el.style.maxHeight = '';
+    el.style.overflowY = '';
+    const natural = el.getBoundingClientRect();
+    if (natural.height > innerHeight - natural.top - edge) {
+      // too tall for the room below it: stay under its button and scroll inside, unless that leaves a sliver (then take the whole window)
+      const below = innerHeight - natural.top - edge;
+      el.style.maxHeight = `${below >= 260 ? below : innerHeight - edge * 2}px`;
+      el.style.overflowY = 'auto';
+    }
+    const r = el.getBoundingClientRect();
+    let dx = 0;
+    let dy = 0;
+    if (r.right > innerWidth - edge) dx = innerWidth - edge - r.right;
+    if (r.left + dx < edge) dx = edge - r.left;
+    if (r.bottom > innerHeight - edge) dy = innerHeight - edge - r.bottom;
+    if (r.top + dy < edge) dy = edge - r.top;
+    if (dx || dy) el.style.translate = `${dx}px ${dy}px`;
+  });
 }
 
 export function useOutsideClose(open: boolean, close: () => void) {
@@ -343,6 +395,7 @@ export function Menu(props: { label: ReactNode; children: (close: () => void) =>
   const trigger = useRef<HTMLButtonElement>(null);
   const pop = useRef<HTMLDivElement>(null);
   useFocusFirstItem(pop, open);
+  useFitInWindow(pop, open);
   const Icon = props.icon;
   return (
     <div className="menu" ref={ref}>
@@ -465,7 +518,9 @@ export function Dialog(props: { title: string; onClose: () => void; children: Re
         style={props.width ? { width: props.width } : undefined}
       >
         <div className="dialog-head">
-          <span>{props.title}</span>
+          <span role="heading" aria-level={2}>
+            {props.title}
+          </span>
           <span className="spacer" />
           <IconButton icon={X} title="Close" onClick={props.onClose} small />
         </div>

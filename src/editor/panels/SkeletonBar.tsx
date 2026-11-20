@@ -13,6 +13,7 @@ export function SkeletonBar() {
     <div className="skel-bar">
       <SelectField
         wide
+        name="Skeleton"
         value={String(at)}
         options={list.map((d, i) => ({ value: String(i), label: d.name }))}
         onChange={(v) => switchToSkeleton(Number(v))}

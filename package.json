@@ -1,7 +1,7 @@
 {
   "name": "bone-2d",
   "private": true,
-  "version": "0.77.0",
+  "version": "0.78.0",
   "description": "Open-source browser-based 2D skeletal animation editor with Spine 4.3 compatible export",
   "license": "MIT",
   "keywords": [
@@ -47,6 +47,7 @@
     "react-dom": "^19.3.1"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.14.0",
     "@eslint/js": "^9.39.5",
     "@esotericsoftware/spine-core": "^4.3.13",
     "@playwright/test": "^1.65.1",
