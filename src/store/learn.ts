@@ -87,6 +87,7 @@ let ownSlotTotal = 0;
 let meshTotal = 0;
 let weightedTotal = 0;
 let ikTotal = 0;
+let eventKeyTotal = 0;
 // IK: the number of constraints when the lesson began, and the count of document edits when a new one first appeared
 let baseIk: number | null = null;
 let editsAtIk: number | null = null;
@@ -94,6 +95,9 @@ let editsAtIk: number | null = null;
 let interpEdits = 0;
 let handleEdits = 0;
 let seenGraph = false;
+// skins: how many times the shown skin changed, and the skin that was shown at the last look
+let skinSwitches = 0;
+let lastSkin = uiStore.get().skinId;
 
 function snapshot(): LessonState {
   const ui = uiStore.get();
@@ -104,6 +108,7 @@ function snapshot(): LessonState {
     const roots = new Set(doc.skeleton.bones.filter((b) => !b.parent).map((b) => b.id));
     ownSlotTotal = doc.skeleton.slots.filter((sl) => !roots.has(sl.bone)).length;
     ikTotal = doc.skeleton.constraints.filter((c) => c.type === 'ik').length;
+    eventKeyTotal = doc.skeleton.animations.reduce((n, a) => n + a.events.length, 0);
     meshTotal = 0;
     weightedTotal = 0;
     for (const skin of doc.skeleton.skins)
@@ -133,6 +138,10 @@ function snapshot(): LessonState {
     interpEdits,
     handleEdits,
     seenGraph,
+    skins: doc.skeleton.skins.length,
+    events: doc.skeleton.events.length,
+    eventKeys: eventKeyTotal,
+    skinSwitches,
     playing: ui.playing,
     seenPlaying,
     seenExport,
@@ -152,6 +161,10 @@ function refresh() {
   if (ui.exportOpen) seenExport = true;
   if (ui.tool === 'weights') seenWeightsTool = true;
   if (ui.timelineView === 'graph') seenGraph = true;
+  if (ui.skinId !== lastSkin) {
+    lastSkin = ui.skinId;
+    skinSwitches++;
+  }
   const progress = progressOf(lesson, snapshot(), s.base, s.skipped, s.kept);
   const fresh = lesson.steps.filter((st, i) => progress.marks[i] === 'done' && !s.kept.includes(st.id)).map((st) => st.id);
   if (fresh.length) learnStore.patch({ kept: [...s.kept, ...fresh] });
@@ -189,6 +202,8 @@ export function startLesson(id: string) {
   interpEdits = 0;
   handleEdits = 0;
   seenGraph = false;
+  skinSwitches = 0;
+  lastSkin = uiStore.get().skinId;
   baseIk = null;
   editsAtIk = null;
   const base = snapshot();

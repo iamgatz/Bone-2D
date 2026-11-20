@@ -1,7 +1,7 @@
 {
   "name": "bone-2d",
   "private": true,
-  "version": "0.86.0",
+  "version": "0.87.0",
   "description": "Open-source browser-based 2D skeletal animation editor with Spine 4.3 compatible export",
   "license": "MIT",
   "keywords": [

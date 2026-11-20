@@ -12,6 +12,16 @@ export interface Release {
 
 export const CHANGELOG: Release[] = [
   {
+    version: '0.87',
+    date: '2026-11-21',
+    en: [
+      'Lesson 6, "Another look and a signal": add a skin, switch between skins, add an event, switch to Animate, fire the event on the timeline with the diamond and play. Nothing is hidden behind a menu: both plus buttons and the diamond are in the tree on the left, and the card frames it. It works on the demo fox, which already has two skins and events, and counts only what you add. The fifth lesson now offers it when it is over.',
+    ],
+    ru: [
+      'Урок 6 «Другой облик и сигнал»: добавьте скин, переключайтесь между скинами, добавьте событие, перейдите в «Анимацию», выстрелите событием ромбиком на таймлайне и проиграйте. Ничего не спрятано в меню: оба плюса и ромбик лежат в списке слева, и карточка обводит его рамкой. Урок идёт на демо-лисе, где скины и события уже есть, и считает только то, что добавили вы. Пятый урок теперь предлагает его, когда закончен.',
+    ],
+  },
+  {
     version: '0.86',
     date: '2026-11-20',
     en: [

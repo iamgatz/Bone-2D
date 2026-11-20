@@ -1,7 +1,7 @@
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test } from '@playwright/test';
 import type { Page } from '@playwright/test';
-import { CURVES_LESSON, FOX_LESSON, IK_LESSON, LESSONS, MESH_LESSON, RIG_LESSON } from '../src/core/lessons';
+import { CURVES_LESSON, FOX_LESSON, IK_LESSON, LESSONS, MESH_LESSON, RIG_LESSON, SKINS_LESSON } from '../src/core/lessons';
 
 type BoneActions = typeof import('../src/store/boneActions');
 type DocModule = typeof import('../src/store/doc');
@@ -558,6 +558,72 @@ for (const locale of ['en-US', 'ru-RU'] as const) {
       for (let i = 0; i < IK_LESSON.steps.length; i++) await card.locator('.btn.ghost').click();
       await card.getByRole('button', { name: CURVES_LESSON.title[lang] }).click();
       await expect(card.locator('.learn-title')).toHaveText(CURVES_LESSON.title[lang]);
+    });
+  });
+}
+
+for (const locale of ['en-US', 'ru-RU'] as const) {
+  const lang = locale === 'ru-RU' ? 'ru' : 'en';
+  const name = (en: string, ru: string) => (lang === 'ru' ? ru : en);
+  test.describe(`the skins lesson (${locale})`, () => {
+    test.use({ locale });
+
+    test('is passed on the demo: a skin, a switch, an event, Tab, the diamond, Space', async ({ page }) => {
+      await openDemoWithLesson(page);
+      await page.evaluate(async (url) => {
+        const { uiStore } = (await import(url)) as UiModule;
+        uiStore.patch({ helpOpen: true });
+      }, UI);
+      await page.locator('.dialog .hstack.wrap .btn').nth(5).click();
+      const card = page.locator('.learn');
+      const step = (i: number) => SKINS_LESSON.steps[i];
+      await expect(card.locator('.learn-title')).toHaveText(SKINS_LESSON.title[lang]);
+      await expect(card.locator('.learn-step-title')).toHaveText(step(0).title[lang]);
+      await expect(page.locator('[data-learn="tree"]')).toHaveAttribute('data-learn-hl', '');
+
+      // 1. the plus of the Skins section (a new skin is shown at once)
+      await page.getByRole('button', { name: name('New skin', 'Новый скин'), exact: true }).click();
+      await expect(card.locator('.learn-step-title')).toHaveText(step(1).title[lang]);
+
+      // 2. back to another skin by a click on its row
+      await page.locator('.row', { hasText: /^arctic$/ }).click();
+      await expect(card.locator('.learn-step-title')).toHaveText(step(2).title[lang]);
+
+      // 3. the plus of the Events section
+      await page.getByRole('button', { name: name('New event', 'Новое событие'), exact: true }).click();
+      await expect(card.locator('.learn-step-title')).toHaveText(step(3).title[lang]);
+
+      // 4. Tab (the plus button was clicked and holds the focus, so it goes back to the page first)
+      await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur());
+      await page.keyboard.press('Tab');
+      await expect(card.locator('.learn-step-title')).toHaveText(step(4).title[lang]);
+
+      // 5. the diamond of the new event (the last one in the list)
+      await page
+        .getByRole('button', { name: name('Fire this event at the playhead', 'Вызвать это событие в текущем кадре'), exact: true })
+        .last()
+        .click();
+      await expect(card.locator('.learn-step-title')).toHaveText(step(5).title[lang]);
+
+      // 6. Space (a focused button would take it as a click, so the focus goes back to the page first)
+      await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur());
+      await page.keyboard.press('Space');
+      await expect(card.locator('.learn-count')).toHaveText('6/6');
+      await expect(card.locator('.learn-text')).toHaveText(SKINS_LESSON.outro[lang]);
+      await page.keyboard.press('Space');
+    });
+
+    test('the fifth lesson leads to the sixth when it is over', async ({ page }) => {
+      await openDemoWithLesson(page);
+      await page.evaluate(async (url) => {
+        const { uiStore } = (await import(url)) as UiModule;
+        uiStore.patch({ helpOpen: true });
+      }, UI);
+      await page.locator('.dialog .hstack.wrap .btn').nth(4).click();
+      const card = page.locator('.learn');
+      for (let i = 0; i < CURVES_LESSON.steps.length; i++) await card.locator('.btn.ghost').click();
+      await card.getByRole('button', { name: SKINS_LESSON.title[lang] }).click();
+      await expect(card.locator('.learn-title')).toHaveText(SKINS_LESSON.title[lang]);
     });
   });
 }

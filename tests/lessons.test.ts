@@ -1,13 +1,25 @@
 /** The lessons: the data is complete in both languages, every step condition says what it should, and the store follows the editor. */
 import { beforeEach, describe, expect, it } from 'vitest';
-import { CURVES_LESSON, FOX_LESSON, IK_LESSON, LESSONS, MESH_LESSON, RIG_LESSON, lessonById, progressOf } from '../src/core/lessons';
+import {
+  CURVES_LESSON,
+  FOX_LESSON,
+  IK_LESSON,
+  LESSONS,
+  MESH_LESSON,
+  RIG_LESSON,
+  SKINS_LESSON,
+  lessonById,
+  progressOf,
+} from '../src/core/lessons';
 import type { LessonState } from '../src/core/lessons';
 import { meshFromRegion } from '../src/core/mesh';
 import { emptyProject, newAnimation, newBone, newSlot } from '../src/core/model';
 import type { RegionAttachment } from '../src/core/model';
 import { selectBone, selectSlot, setMode } from '../src/store/actions';
 import { setBonePose } from '../src/store/boneActions';
+import { createEvent, keyEvent } from '../src/store/eventActions';
 import { createIkFromDrag } from '../src/store/ikActions';
+import { createSkin, setActiveSkin } from '../src/store/skinActions';
 import { setKeyCurveHandle, setKeysCurve } from '../src/store/keyframeActions';
 import { encodeKey } from '../src/core/keyrefs';
 import type { KeyRef } from '../src/core/keyrefs';
@@ -33,6 +45,10 @@ const state = (over: Partial<LessonState> = {}): LessonState => ({
   interpEdits: 0,
   handleEdits: 0,
   seenGraph: false,
+  skins: 1,
+  events: 0,
+  eventKeys: 0,
+  skinSwitches: 0,
   seenWeightsTool: false,
   seenPlaying: false,
   seenExport: false,
@@ -484,8 +500,8 @@ describe('the steps of the curves lesson', () => {
     expect(done('handle', state({ interpEdits: 3 }))).toBe(false);
     expect(done('handle', state({ handleEdits: 1 }))).toBe(true);
   });
-  it('is the last lesson for now', () => {
-    expect(CURVES_LESSON.next).toBeUndefined();
+  it('is found by its id and offers the skins lesson', () => {
+    expect(CURVES_LESSON.next).toBe('skins');
     expect(lessonById('curves')).toBe(CURVES_LESSON);
   });
 });
@@ -544,5 +560,90 @@ describe('the curves lesson in the store', () => {
     uiStore.patch({ playing: true });
     expect(learnStore.get().progress?.current).toBe(-1);
     expect(learnStore.get().finished).toEqual(['curves']);
+  });
+});
+
+describe('the steps of the skins lesson', () => {
+  const done = (id: string, s: LessonState, base = state()) => SKINS_LESSON.steps.find((x) => x.id === id)!.done(s, base);
+
+  it('skin: more skins than when the lesson began (the demo already has two)', () => {
+    expect(done('skin', state({ skins: 2 }), state({ skins: 2 }))).toBe(false);
+    expect(done('skin', state({ skins: 3 }), state({ skins: 2 }))).toBe(true);
+  });
+  it('switch: the shown skin changed twice (a new skin is shown at once, so one change is not enough)', () => {
+    expect(done('switch', state({ skinSwitches: 1 }))).toBe(false);
+    expect(done('switch', state({ skinSwitches: 2 }))).toBe(true);
+  });
+  it('event: more events than at the start', () => {
+    expect(done('event', state({ events: 3 }), state({ events: 3 }))).toBe(false);
+    expect(done('event', state({ events: 4 }), state({ events: 3 }))).toBe(true);
+  });
+  it('fire: more event keys than at the start (an event that exists but is not on a timeline does not count)', () => {
+    expect(done('fire', state({ events: 5, eventKeys: 2 }), state({ eventKeys: 2 }))).toBe(false);
+    expect(done('fire', state({ eventKeys: 3 }), state({ eventKeys: 2 }))).toBe(true);
+  });
+  it('animate and play work as in the other lessons, and it is the last lesson for now', () => {
+    expect(done('animate', state({ mode: 'animate' }))).toBe(true);
+    expect(done('play', state({ seenPlaying: true }))).toBe(true);
+    expect(SKINS_LESSON.next).toBeUndefined();
+    expect(lessonById('skins')).toBe(SKINS_LESSON);
+  });
+});
+
+describe('the skins lesson in the store', () => {
+  beforeEach(() => {
+    stopLesson();
+    learnStore.patch({ finished: [], offered: false });
+    const p = emptyProject('skins');
+    const bone = newBone({ name: 'arm', parent: p.skeleton.bones[0].id, length: 40 });
+    p.skeleton.bones.push(bone);
+    p.skeleton.slots.push(newSlot({ name: 'arm', bone: bone.id }));
+    p.skeleton.animations.push(newAnimation('walk', 1));
+    docStore.replace(p);
+    uiStore.patch({
+      mode: 'setup',
+      tool: 'select',
+      selection: emptySelection,
+      playing: false,
+      animationId: p.skeleton.animations[0].id,
+      skinId: null,
+      skinMix: [],
+      time: 0.25,
+      overrides: {},
+    });
+  });
+
+  it('counts the skins, the shown skin changes, the events and their keys, and is passed with the real actions', () => {
+    startLesson('skins');
+    expect(learnStore.get().progress?.doneCount).toBe(0);
+
+    const skin = createSkin(); // a new skin is shown at once
+    expect(learnStore.get().progress?.marks[0]).toBe('done');
+    expect(learnStore.get().progress?.marks[1]).toBe('todo');
+    setActiveSkin(null);
+    expect(learnStore.get().progress?.marks[1]).toBe('done');
+    setActiveSkin(skin);
+
+    const event = createEvent();
+    expect(learnStore.get().progress?.marks[2]).toBe('done');
+    expect(learnStore.get().progress?.marks[4]).toBe('todo');
+
+    keyEvent(event); // puts the event on the playhead and switches to Animate
+    expect(uiStore.get().mode).toBe('animate');
+    expect(learnStore.get().progress?.marks[3]).toBe('done');
+    expect(learnStore.get().progress?.marks[4]).toBe('done');
+    expect(docStore.get().skeleton.animations[0].events).toHaveLength(1);
+
+    uiStore.patch({ playing: true });
+    expect(learnStore.get().progress?.current).toBe(-1);
+    expect(learnStore.get().finished).toEqual(['skins']);
+  });
+
+  it('does not count a skin change made before the lesson began', () => {
+    const skin = createSkin();
+    setActiveSkin(null);
+    setActiveSkin(skin);
+    startLesson('skins');
+    expect(learnStore.get().progress?.marks[1]).toBe('todo');
   });
 });

@@ -37,6 +37,11 @@ export interface LessonState {
   /** Changes of the interpolation of keys (a menu choice, a preset) and drags of a curve handle, made since the lesson began. */
   interpEdits: number;
   handleEdits: number;
+  /** Skins and events in the skeleton, the event keys in all its animations, and how many times the shown skin changed since the lesson began. */
+  skins: number;
+  events: number;
+  eventKeys: number;
+  skinSwitches: number;
   /** The curve graph has been the timeline view at some moment since the lesson began. */
   seenGraph: boolean;
   /** The weights brush has been the tool at some moment since the lesson began. */
@@ -395,6 +400,7 @@ export const CURVES_LESSON: Lesson = {
     en: 'Now you can tell a stiff motion from a lively one. Ease in-out for most things, stepped for blinks, overshoot for bounce.',
     ru: 'Теперь вы отличите деревянное движение от живого. Мягкий вход и выход для большинства вещей, ступенька для моргания, перелёт для отскока.',
   },
+  next: 'skins',
   steps: [
     {
       id: 'animate',
@@ -459,7 +465,83 @@ export const CURVES_LESSON: Lesson = {
   ],
 };
 
-export const LESSONS: readonly Lesson[] = [FOX_LESSON, RIG_LESSON, MESH_LESSON, IK_LESSON, CURVES_LESSON];
+/** Lesson 6: another look and a signal. A skin is a look of the same skeleton; an event is a signal the game hears at a moment of an animation. */
+export const SKINS_LESSON: Lesson = {
+  id: 'skins',
+  title: { en: 'Another look and a signal', ru: 'Другой облик и сигнал' },
+  intro: {
+    en: 'A skin is another look for the same skeleton, an event is a signal the game catches at a moment of the animation (a step, a shot, a sound). Both live in the tree on the left.',
+    ru: 'Скин это другой облик того же скелета, событие это сигнал, который игра ловит в нужный момент анимации (шаг, выстрел, звук). И то и другое живёт в списке слева.',
+  },
+  outro: {
+    en: 'One skeleton, many looks, and the game hears the signals you put on the timeline. Next: take it all out to a game.',
+    ru: 'Один скелет и много обликов, а игра слышит сигналы, которые вы поставили на таймлайне. Дальше: вынести всё в игру.',
+  },
+  steps: [
+    {
+      id: 'skin',
+      target: 'tree',
+      title: { en: 'Add a skin', ru: 'Добавьте скин' },
+      text: {
+        en: 'Press the plus in the Skins section of the tree. The new skin is empty and becomes the one on the screen.',
+        ru: 'Нажмите плюс в разделе «Скины» списка. Новый скин пуст и сразу становится показанным.',
+      },
+      done: (s, base) => s.skins > base.skins,
+    },
+    {
+      id: 'switch',
+      target: 'tree',
+      title: { en: 'Switch between skins', ru: 'Переключите скины' },
+      text: {
+        en: 'Click another skin in the list, then click back: the picture on the screen changes with the skin. This is how the looks are compared.',
+        ru: 'Нажмите на другой скин в списке и вернитесь обратно: картинка на экране меняется вместе со скином. Так сравнивают облики.',
+      },
+      done: (s) => s.skinSwitches >= 2,
+    },
+    {
+      id: 'event',
+      target: 'tree',
+      title: { en: 'Add an event', ru: 'Добавьте событие' },
+      text: {
+        en: 'Press the plus in the Events section. The event has a name and can carry a number or a text for the game.',
+        ru: 'Нажмите плюс в разделе «События». У события есть имя, и оно может нести число или текст для игры.',
+      },
+      done: (s, base) => s.events > base.events,
+    },
+    {
+      id: 'animate',
+      target: 'mode',
+      title: { en: 'Switch to Animate', ru: 'Перейдите в «Анимацию»' },
+      text: {
+        en: 'Press Tab or click Animate: the signals are put on the timeline of an animation.',
+        ru: 'Нажмите Tab или кнопку «Анимация»: сигналы ставятся на таймлайн анимации.',
+      },
+      done: (s) => s.mode === 'animate',
+    },
+    {
+      id: 'fire',
+      target: 'tree',
+      title: { en: 'Fire the event', ru: 'Выстрелите событием' },
+      text: {
+        en: 'Move the playhead to a moment, then press the diamond next to the event: its signal is put there.',
+        ru: 'Поставьте маркер времени на нужный момент и нажмите ромбик у события: сигнал встанет в эту точку.',
+      },
+      done: (s, base) => s.eventKeys > base.eventKeys,
+    },
+    {
+      id: 'play',
+      target: 'play',
+      title: { en: 'Play it', ru: 'Проиграйте' },
+      text: {
+        en: 'Press Space: when the playhead passes the signal, the event fires. Press Space again to stop.',
+        ru: 'Нажмите Пробел: когда маркер пройдёт сигнал, событие сработает. Ещё раз Пробел остановит проигрывание.',
+      },
+      done: (s) => s.seenPlaying,
+    },
+  ],
+};
+
+export const LESSONS: readonly Lesson[] = [FOX_LESSON, RIG_LESSON, MESH_LESSON, IK_LESSON, CURVES_LESSON, SKINS_LESSON];
 
 export const lessonById = (id: string): Lesson | undefined => LESSONS.find((l) => l.id === id);
 
