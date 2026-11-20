@@ -20,7 +20,7 @@ export interface BackupMeta {
 
 /** At most this many copies are kept, and at most this many characters of text altogether. */
 export const MAX_BACKUPS = 20;
-export const MAX_BACKUP_CHARS = 150_000_000;
+const MAX_BACKUP_CHARS = 150_000_000;
 /** An automatic copy is taken when the project changed and the last copy is older than this. */
 export const BACKUP_INTERVAL_MS = 5 * 60 * 1000;
 

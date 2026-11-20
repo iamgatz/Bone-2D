@@ -22,13 +22,13 @@ import { COLORS } from './overlay';
 import type { OverlayInput } from './overlay';
 import { alpha, token } from '../ui/tokens';
 
-export interface ActivePath {
+interface ActivePath {
   slotId: Id;
   name: string;
 }
 
 /** The selected attachment when it is a path. */
-export function activePath(): ActivePath | null {
+function activePath(): ActivePath | null {
   const sel = uiStore.get().selection;
   if (!sel.slot || !sel.attachment) return null;
   return getPath(sel.slot, sel.attachment) ? { slotId: sel.slot, name: sel.attachment } : null;

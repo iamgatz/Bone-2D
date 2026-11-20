@@ -1002,5 +1002,3 @@ export function InspectorPanel() {
     </div>
   );
 }
-
-export { IconButton, Toggle };

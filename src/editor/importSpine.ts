@@ -44,7 +44,7 @@ function pictureBlob(pic: Picture): Promise<Blob> {
 }
 
 /** Opens a skeleton .json / .skel (+ .atlas + page images selected together) as a new project, or as one more skeleton of the open project. */
-export async function importSpineFiles(files: File[], add = false): Promise<void> {
+async function importSpineFiles(files: File[], add = false): Promise<void> {
   const json = files.find((f) => /\.(json|skel)$/i.test(f.name));
   if (!json) throw new Error('Select a Spine skeleton (.json or .skel) — optionally together with its .atlas and image files');
   const atlasFile = files.find((f) => /\.atlas$/i.test(f.name));
@@ -133,7 +133,7 @@ export async function importSpineFiles(files: File[], add = false): Promise<void
 }
 
 /** Cuts the pictures out of an .atlas and its pages and adds them to the project's images (with their folders). */
-export async function unpackAtlasFiles(files: File[]): Promise<void> {
+async function unpackAtlasFiles(files: File[]): Promise<void> {
   const atlasFile = files.find((f) => /\.atlas$/i.test(f.name));
   if (!atlasFile) throw new Error('Select an .atlas file together with its page images');
   const text = await atlasFile.text();

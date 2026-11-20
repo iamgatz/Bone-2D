@@ -1,7 +1,7 @@
 /** The shape of a sound for the timeline: the loudest sample in every slice of it. Pure; decoding the file is the browser's job. */
 
 /** Slices per second of sound that are kept (200 is enough to draw a bar every few pixels at any timeline zoom). */
-export const PEAKS_PER_SECOND = 200;
+const PEAKS_PER_SECOND = 200;
 
 export interface Peaks {
   /** Loudness 0..1 of each slice. */

@@ -39,7 +39,7 @@ export function planClipping(skeleton: Skeleton, skip?: (slot: Slot) => boolean)
 }
 
 /** True when all turns of the polygon (x,y pairs, `n` vertices) go the same way. */
-export function isConvexPolygon(v: ArrayLike<number>, n: number): boolean {
+function isConvexPolygon(v: ArrayLike<number>, n: number): boolean {
   if (n < 3) return true;
   let noCW = true;
   let noCCW = true;
@@ -63,7 +63,7 @@ export function isConvexPolygon(v: ArrayLike<number>, n: number): boolean {
 }
 
 /** Convex hull (Andrew's monotone chain) of x,y pairs; counter-clockwise, no repeated first point. */
-export function convexHull(v: ArrayLike<number>, n: number): number[] {
+function convexHull(v: ArrayLike<number>, n: number): number[] {
   const idx = Array.from({ length: n }, (_, i) => i).sort((a, b) => v[a * 2] - v[b * 2] || v[a * 2 + 1] - v[b * 2 + 1]);
   const cross = (o: number, a: number, b: number) =>
     (v[a * 2] - v[o * 2]) * (v[b * 2 + 1] - v[o * 2 + 1]) - (v[a * 2 + 1] - v[o * 2 + 1]) * (v[b * 2] - v[o * 2]);

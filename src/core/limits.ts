@@ -73,7 +73,7 @@ export function limitRefusal(doc: SkeletonDoc, bone: Id): string | null {
 }
 
 /** The rotation clamped to the sector. */
-export function clampToSector(r: number, min: number, max: number): number {
+function clampToSector(r: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, r));
 }
 

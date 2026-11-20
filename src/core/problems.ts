@@ -14,10 +14,10 @@ import { MAX_INFLUENCES } from './stats';
 import type { Warning, WarningKind } from './stats';
 
 /** Warnings that have a fix at all. */
-export const FIXABLE: readonly WarningKind[] = ['unusedImage', 'tooManyInfluences', 'ignoredDeform', 'emptyAnimation', 'emptySlot'];
+const FIXABLE: readonly WarningKind[] = ['unusedImage', 'tooManyInfluences', 'ignoredDeform', 'emptyAnimation', 'emptySlot'];
 
 /** The fixes that lose nothing: "Fix all" does these and no others. */
-export const SAFE_FIXES: readonly WarningKind[] = ['unusedImage', 'tooManyInfluences', 'ignoredDeform'];
+const SAFE_FIXES: readonly WarningKind[] = ['unusedImage', 'tooManyInfluences', 'ignoredDeform'];
 
 export const canFix = (w: Warning) => FIXABLE.includes(w.kind);
 export const isSafeFix = (w: Warning) => SAFE_FIXES.includes(w.kind);

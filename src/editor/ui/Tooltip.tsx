@@ -25,7 +25,7 @@ const GAP = 8;
 const MARGIN = 8;
 
 /** Where a tooltip of this size goes next to the element, kept inside the window. */
-export function placeTip(
+function placeTip(
   rect: { left: number; top: number; right: number; bottom: number },
   size: { width: number; height: number },
   place: Place,

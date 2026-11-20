@@ -27,7 +27,7 @@ export interface Checkpoint {
 export const MAX_CHECKPOINTS = 20;
 
 export type ChangeArea = 'bone' | 'slot' | 'skin' | 'constraint' | 'event' | 'animation' | 'skeleton';
-export type ChangeKind = 'added' | 'removed' | 'changed';
+type ChangeKind = 'added' | 'removed' | 'changed';
 
 export interface Change {
   area: ChangeArea;
@@ -136,7 +136,7 @@ function tally(a: unknown, b: unknown, t: Tally) {
 }
 
 /** The keys of an animation that differ, or null when nothing but maybe the identity does. Names are not counted (they are listed on their own). */
-export function animationKeyChanges(a: Animation, b: Animation): Tally | null {
+function animationKeyChanges(a: Animation, b: Animation): Tally | null {
   const t: Tally = { added: 0, removed: 0, changed: 0 };
   tally({ ...a, name: undefined }, { ...b, name: undefined }, t);
   return t.added || t.removed || t.changed ? t : null;

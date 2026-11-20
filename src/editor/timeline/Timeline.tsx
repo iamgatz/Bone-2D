@@ -30,7 +30,6 @@ import { CURVE_PRESETS } from '@/core/curve';
 import { keyGrid } from '@/core/edit';
 import { setKeysAutoCurve } from '@/store/curveActions';
 import { decodeKey, encodeKey } from '@/core/keyrefs';
-import type { KeyRef } from '@/core/keyrefs';
 import { axisGroupOf } from '@/core/model';
 import { playOf } from '@/core/playback';
 import type { AxisGroup } from '@/core/model';
@@ -41,7 +40,6 @@ import {
   cleanUpKeys,
   copyKeys,
   createAnimation,
-  currentAnimation,
   deleteAnimation,
   deleteKeys,
   deleteTimeAtPlayhead,
@@ -601,6 +599,3 @@ function LengthField({ value, onChange }: { value: number; onChange: (v: number)
     </div>
   );
 }
-
-export { currentAnimation, decodeKey };
-export type { KeyRef };

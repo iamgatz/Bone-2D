@@ -23,14 +23,14 @@ import { COLORS } from './overlay';
 import type { OverlayInput } from './overlay';
 import { alpha, token } from '../ui/tokens';
 
-export interface ActivePolygon {
+interface ActivePolygon {
   slotId: Id;
   name: string;
   att: PolygonAttachment;
 }
 
 /** The selected attachment when it is a clipping polygon or a bounding box. */
-export function activePolygon(): ActivePolygon | null {
+function activePolygon(): ActivePolygon | null {
   const sel = uiStore.get().selection;
   if (!sel.slot || !sel.attachment) return null;
   const att = getPolygon(sel.slot, sel.attachment);

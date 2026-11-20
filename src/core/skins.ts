@@ -12,7 +12,7 @@ export type ScopeKind = 'bone' | 'constraint';
 const clone = <T>(v: T): T => JSON.parse(JSON.stringify(v)) as T;
 
 /** The default skin is the first one; it is never a scope or an override. */
-export const isDefaultSkin = (doc: SkeletonDoc, skinId: Id): boolean => doc.skins[0]?.id === skinId;
+const isDefaultSkin = (doc: SkeletonDoc, skinId: Id): boolean => doc.skins[0]?.id === skinId;
 
 /**
  * Copies a skin: every attachment, the scope and the deform timelines of every animation. The copy goes right after the original
@@ -85,7 +85,7 @@ export function repointSkinPictures(doc: SkeletonDoc, skinId: Id, find: string, 
 }
 
 /** True when the bone, or a bone above it, is "skin required": a bone below a required one is required too (the runtime has no matrix for it otherwise). */
-export function boneRequiresSkin(doc: SkeletonDoc, boneId: Id): boolean {
+function boneRequiresSkin(doc: SkeletonDoc, boneId: Id): boolean {
   const byId = new Map(doc.bones.map((b) => [b.id, b] as const));
   let cur = byId.get(boneId);
   for (let steps = 0; cur && steps <= doc.bones.length; steps++) {

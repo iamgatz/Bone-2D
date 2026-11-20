@@ -8,7 +8,7 @@ import { createStore, useStore } from './store';
 import { toast, uiStore } from './ui';
 
 /** The marker whose dialog is open (none: closed). */
-export const markerDialogStore = createStore<{ id: Id | null }>({ id: null });
+const markerDialogStore = createStore<{ id: Id | null }>({ id: null });
 export const useMarkerDialog = (): Id | null => useStore(markerDialogStore, (s) => s.id);
 export const openMarkerDialog = (id: Id) => markerDialogStore.set({ id });
 export const closeMarkerDialog = () => markerDialogStore.set({ id: null });

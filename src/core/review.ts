@@ -8,15 +8,15 @@
  */
 import type { Id, Marker, SkeletonDoc } from './model';
 
-export const REVIEW_VERSION = 1;
+const REVIEW_VERSION = 1;
 export const MAX_COMMENTS = 500;
 export const MAX_TEXT = 2000;
-export const MAX_AUTHOR = 60;
-export const MAX_NAME = 200;
+const MAX_AUTHOR = 60;
+const MAX_NAME = 200;
 /** The most characters of a review file that are read (a file is a few kilobytes; more is not one). */
-export const MAX_FILE = 2_000_000;
+const MAX_FILE = 2_000_000;
 /** The marker colour of a comment that came from a review. */
-export const REVIEW_COLOR = 3;
+const REVIEW_COLOR = 3;
 
 export interface ReviewComment {
   /** Made by the player page; stays the same when the file is imported again. */
@@ -33,7 +33,7 @@ export interface ReviewComment {
   at: number;
 }
 
-export interface ReviewFile {
+interface ReviewFile {
   bone2dReview: typeof REVIEW_VERSION;
   /** The skeleton the comments are about. */
   title: string;

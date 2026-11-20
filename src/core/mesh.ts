@@ -44,7 +44,7 @@ export function meshFromRegion(r: RegionAttachment): MeshAttachment {
 }
 
 /** Maps image pixel coordinates (y down) to slot-bone space through the region transform. */
-export function imageToBoneSpace(r: RegionAttachment, imgW: number, imgH: number): (px: number, py: number) => [number, number] {
+function imageToBoneSpace(r: RegionAttachment, imgW: number, imgH: number): (px: number, py: number) => [number, number] {
   const c = Math.cos(r.rotation * DEG2RAD);
   const s = Math.sin(r.rotation * DEG2RAD);
   const sx = (r.width / imgW) * r.scaleX;
@@ -92,7 +92,7 @@ function dp(points: [number, number][], tol: number): [number, number][] {
 }
 
 /** Douglas-Peucker for closed polygons. */
-export function simplifyClosed(points: [number, number][], tol: number): [number, number][] {
+function simplifyClosed(points: [number, number][], tol: number): [number, number][] {
   if (points.length <= 4) return points.slice();
   // split at the two most distant points to keep both halves well conditioned
   let i0 = 0;
@@ -110,7 +110,7 @@ export function simplifyClosed(points: [number, number][], tol: number): [number
 }
 
 /** Moves every vertex along its outward normal. */
-export function offsetPolygon(points: [number, number][], dist: number): [number, number][] {
+function offsetPolygon(points: [number, number][], dist: number): [number, number][] {
   const n = points.length;
   const sign = polygonArea(points) >= 0 ? 1 : -1;
   const out: [number, number][] = [];
@@ -295,7 +295,7 @@ export function remapEdges(edges: readonly number[], from: ArrayLike<number>): n
 }
 
 /** Is `a`-`b` a hull edge (neighbours on the outline)? */
-export function isHullEdge(hull: number, a: number, b: number): boolean {
+function isHullEdge(hull: number, a: number, b: number): boolean {
   return hull >= 3 && a < hull && b < hull && ((a + 1) % hull === b || (b + 1) % hull === a);
 }
 

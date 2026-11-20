@@ -165,10 +165,6 @@ export function bakeSkips(doc: SkeletonDoc, anim: Animation): string[] {
   return out;
 }
 
-export function hasConstraints(doc: SkeletonDoc): boolean {
-  return doc.constraints.length > 0;
-}
-
 const norm360 = (v: number) => ((v % 360) + 360) % 360;
 
 /** `v` shifted by whole turns so that it is the closest equivalent of `near`. */
@@ -189,7 +185,7 @@ export function frameTimes(duration: number, fps: number): number[] {
  * Poses `skeleton` for every time of `times` the way the viewport and the renderer do: from the setup pose, with the physics
  * simulation carried from one frame to the next (the first frame resets it). `each` runs after every solve.
  */
-export function walkFrames(skeleton: Skeleton, anim: Animation, times: number[], each: (time: number, frame: number) => void) {
+function walkFrames(skeleton: Skeleton, anim: Animation, times: number[], each: (time: number, frame: number) => void) {
   const hasPhysics = skeleton.data.constraints.some((c) => c.kind === 'physics');
   let last = -1;
   times.forEach((t, frame) => {
@@ -289,7 +285,7 @@ export function bakeAnimation(doc: SkeletonDoc, anim: Animation, options: Partia
 }
 
 /** Keys that switch every constraint off (mix 0) from the first moment. */
-export function muteConstraints(anim: Animation, data: SkeletonData) {
+function muteConstraints(anim: Animation, data: SkeletonData) {
   const off = (value: number[]): Timeline => [{ time: 0, value }];
   let physics = false;
   for (const c of data.constraints) {

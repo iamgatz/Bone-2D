@@ -17,10 +17,6 @@ export function clamp(v: number, min: number, max: number): number {
   return v < min ? min : v > max ? max : v;
 }
 
-export function lerp(a: number, b: number, t: number): number {
-  return a + (b - a) * t;
-}
-
 export function atan2Deg(y: number, x: number): number {
   return Math.atan2(y, x) * RAD2DEG;
 }
@@ -35,15 +31,6 @@ export function wrapAngle(deg: number): number {
   if (deg > 180) deg -= 360;
   else if (deg <= -180) deg += 360;
   return deg;
-}
-
-export function round(v: number, digits = 3): number {
-  const f = Math.pow(10, digits);
-  return Math.round(v * f) / f;
-}
-
-export function dist(ax: number, ay: number, bx: number, by: number): number {
-  return Math.hypot(bx - ax, by - ay);
 }
 
 /** Squared distance from point p to segment ab. */

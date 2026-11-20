@@ -13,7 +13,7 @@ export interface SavedCurve {
 
 /** The most curves kept: the oldest one goes when a new one comes. */
 export const MAX_SAVED_CURVES = 12;
-export const MAX_CURVE_NAME = 24;
+const MAX_CURVE_NAME = 24;
 
 const finite = (v: unknown): v is number => typeof v === 'number' && Number.isFinite(v);
 

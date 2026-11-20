@@ -12,7 +12,7 @@ import type { Animation, AttachmentKey, Id, Key, Project, Slot } from './model';
 
 type SkeletonDoc = Project['skeleton'];
 
-export const MAX_FADE = 5;
+const MAX_FADE = 5;
 
 /** One change of picture, with how long its fade lasts (0 = a hard cut stays). */
 export interface FadeStep {

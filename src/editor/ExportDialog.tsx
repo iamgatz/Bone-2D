@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Copy, Download, FileCode, FolderOpen, Package, Save } from 'lucide-react';
 import { exportSettingsFromText, exportSettingsToText, loadExportSettings, rememberExportSettings } from '@/core/export/settings';
 import type { ExportSettings } from '@/core/export/settings';
-import { docStore, useProject } from '@/store/doc';
+import { useProject } from '@/store/doc';
 import { downloadBlob } from '@/store/project';
 import { toast, uiStore } from '@/store/ui';
 import { skeletonCount, skeletonList } from '@/core/skeletons';
@@ -431,5 +431,3 @@ export function ExportDialog() {
     </Dialog>
   );
 }
-
-export { docStore };

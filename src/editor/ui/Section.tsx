@@ -20,7 +20,7 @@ const folded = load();
 const listeners = new Set<() => void>();
 let version = 0;
 
-export function setSectionOpen(id: string, open: boolean) {
+function setSectionOpen(id: string, open: boolean) {
   if (open === !folded.has(id)) return;
   if (open) folded.delete(id);
   else folded.add(id);
@@ -38,7 +38,7 @@ const subscribe = (l: () => void) => {
   return () => void listeners.delete(l);
 };
 
-export function useSectionOpen(id: string): boolean {
+function useSectionOpen(id: string): boolean {
   useSyncExternalStore(subscribe, () => version);
   return !folded.has(id);
 }

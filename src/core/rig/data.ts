@@ -76,7 +76,7 @@ export interface VertexData {
   deformLength: number;
 }
 
-export interface MeshData extends VertexData {
+interface MeshData extends VertexData {
   kind: 'mesh';
   src: MeshAttachment;
   name: string;
@@ -89,7 +89,7 @@ export interface MeshData extends VertexData {
   hull: number;
 }
 
-export interface BoundingBoxData extends VertexData {
+interface BoundingBoxData extends VertexData {
   kind: 'boundingbox';
   src: BoundingBoxAttachment;
   name: string;
@@ -129,9 +129,6 @@ export interface PathAttachmentData extends VertexData {
   lengths: number[];
 }
 
-/** Attachments that are drawn as images. */
-export type ImageData = RegionData | MeshData;
-
 export type AttachmentData = RegionData | MeshData | BoundingBoxData | ClippingData | PointData | PathAttachmentData;
 
 export interface SkinData {
@@ -158,13 +155,13 @@ export interface IkData {
   scaleY: 'none' | 'uniform' | 'volume';
   skinRequired: boolean;
 }
-export interface TransformToData {
+interface TransformToData {
   prop: TransformProp;
   offset: number;
   max: number;
   scale: number;
 }
-export interface TransformFromData {
+interface TransformFromData {
   prop: TransformProp;
   offset: number;
   to: TransformToData[];

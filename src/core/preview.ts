@@ -15,7 +15,7 @@ export interface MixTable {
   pairs: { from: Id; to: Id; time: number }[];
 }
 
-export const MAX_MIX = 10;
+const MAX_MIX = 10;
 
 /** The crossfade time from one animation to another. */
 export function mixTime(m: MixTable | undefined, from: Id, to: Id): number {

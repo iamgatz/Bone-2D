@@ -63,7 +63,7 @@ export interface Settings {
 /** The range of the bone size slider, in percent. */
 export const BONE_SCALE_RANGE = { min: 25, max: 300, step: 5 } as const;
 
-export const COMBO = /^(Ctrl\+)?(Alt\+)?(Shift\+)?(F\d{1,2}|Tab|Space|[^\s+])$/;
+const COMBO = /^(Ctrl\+)?(Alt\+)?(Shift\+)?(F\d{1,2}|Tab|Space|[^\s+])$/;
 
 export const DEFAULT_SETTINGS: Settings = {
   autosave: true,

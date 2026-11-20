@@ -3,7 +3,7 @@ import { deformProgress, findKeyIndex, sampleKeys } from './curve';
 import { completeFolderOrder } from './folders';
 import { BONE_PROPS, GLOBAL_PHYSICS, PHYSICS_PARAMS } from './model';
 import { sequenceIndexAt } from './sequence';
-import type { Animation, Id, Key, Timeline } from './model';
+import type { Animation, Id, Timeline } from './model';
 import type { AttachmentData, PhysicsConstraintRT, Skeleton, Slot } from './skeleton';
 
 const tmp: number[] = [0, 0, 0, 0, 0, 0, 0];
@@ -451,7 +451,7 @@ export function applyAnimationOnto(skeleton: Skeleton, anim: Animation, time: nu
 }
 
 /** Interpolates per vertex deform deltas. Returns null before the first key. */
-export function sampleDeform(keys: Timeline, time: number): number[] | null {
+function sampleDeform(keys: Timeline, time: number): number[] | null {
   const i = findKeyIndex(keys, time);
   if (i < 0) return null;
   const k = keys[i];
@@ -474,11 +474,3 @@ export function sampleDeform(keys: Timeline, time: number): number[] | null {
 export function eventsBetween(anim: Animation, from: number, to: number) {
   return anim.events.filter((e) => e.time > from && e.time <= to);
 }
-
-/** Pose helper: setup/animation + world transforms in one call. */
-export function poseSkeleton(skeleton: Skeleton, anim: Animation | null, time: number) {
-  applyAnimation(skeleton, anim, time);
-  skeleton.updateWorldTransform();
-}
-
-export type { Id, Key };

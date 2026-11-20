@@ -114,7 +114,7 @@ export function drawMotionArrows(
 }
 
 /** The grid of single units: a line at every whole number, once a unit is wide enough on the screen (6 pixels) to tell the lines apart. */
-export function drawPixelGrid(o: OverlayInput) {
+function drawPixelGrid(o: OverlayInput) {
   const { ctx, w, h, cam } = o;
   if (cam.zoom < 6) return;
   const [wx0, wy1] = [cam.x - w / 2 / cam.zoom, cam.y + h / 2 / cam.zoom];
@@ -136,7 +136,7 @@ export function drawPixelGrid(o: OverlayInput) {
 }
 
 /** The frame counter, in the bottom left corner. */
-export function drawFps(o: OverlayInput) {
+function drawFps(o: OverlayInput) {
   const { ctx, h } = o;
   const { fps, ms } = fpsMeter.read(performance.now());
   ctx.font = '11px ui-monospace, monospace';
@@ -145,7 +145,7 @@ export function drawFps(o: OverlayInput) {
   ctx.fillText(`${fps} fps · ${ms.toFixed(1)} ms`, 10, h - 10);
 }
 
-export function drawGrid(o: OverlayInput) {
+function drawGrid(o: OverlayInput) {
   const { ctx, w, h, cam } = o;
   const step = gridStep(cam.zoom);
   const [wx0, wy1] = [cam.x - w / 2 / cam.zoom, cam.y + h / 2 / cam.zoom];
@@ -193,7 +193,7 @@ function boneColor(bone: Bone, o: OverlayInput, selected: boolean, hovered: bool
   };
 }
 
-export function drawBone(o: OverlayInput, bone: Bone, selected: boolean, hovered: boolean) {
+function drawBone(o: OverlayInput, bone: Bone, selected: boolean, hovered: boolean) {
   const { ctx, w, h, cam } = o;
   const [ox, oy] = worldToScreen(cam, w, h, bone.worldX, bone.worldY);
   const tipWX = bone.worldX + bone.a * bone.data.length;
@@ -250,7 +250,7 @@ export function drawBone(o: OverlayInput, bone: Bone, selected: boolean, hovered
   ctx.stroke();
 }
 
-export function drawBones(o: OverlayInput) {
+function drawBones(o: OverlayInput) {
   const { scene, ui } = o;
   const sel = new Set(ui.selection.bones);
   const targets = new Set(scene.data.constraints.flatMap((c) => (c.kind === 'ik' ? [scene.data.bones[c.target].id] : [])));
@@ -329,7 +329,7 @@ function drawLimitSector(o: OverlayInput, c: TransformConstraintRT) {
   ctx.restore();
 }
 
-export function drawConstraints(o: OverlayInput) {
+function drawConstraints(o: OverlayInput) {
   const { ctx, w, h, cam, scene } = o;
   for (const c of scene.skeleton.constraints) {
     if (!c.active) continue;
@@ -426,7 +426,7 @@ export function drawConstraints(o: OverlayInput) {
   }
 }
 
-export function drawAttachmentOutline(o: OverlayInput) {
+function drawAttachmentOutline(o: OverlayInput) {
   const { ctx, w, h, cam, scene, ui } = o;
   const slotId = ui.selection.slot;
   if (!slotId) return;
@@ -458,7 +458,7 @@ export function drawAttachmentOutline(o: OverlayInput) {
   ctx.setLineDash([]);
 }
 
-export function drawOriginCross(o: OverlayInput) {
+function drawOriginCross(o: OverlayInput) {
   const { ctx, w, h, cam } = o;
   const [x, y] = worldToScreen(cam, w, h, 0, 0);
   ctx.strokeStyle = 'rgba(255,255,255,0.35)';
@@ -469,7 +469,7 @@ export function drawOriginCross(o: OverlayInput) {
 }
 
 /** Tool gizmo at the origin of the first selected bone. */
-export function drawGizmo(o: OverlayInput) {
+function drawGizmo(o: OverlayInput) {
   const { ctx, w, h, cam, scene, ui } = o;
   const id = ui.selection.bones[0];
   if (!id || ui.tool === 'select' || ui.tool === 'create') return;
@@ -548,7 +548,7 @@ export function drawGizmo(o: OverlayInput) {
 }
 
 /** The guide lines of the project, and the one being dragged; then the rulers over them. */
-export function drawGuidesAndRulers(o: OverlayInput) {
+function drawGuidesAndRulers(o: OverlayInput) {
   const { ctx, w, h, cam, ui, interaction } = o;
   if (!ui.view.rulers) return;
   const guides = docStore.get().guides;
@@ -624,7 +624,7 @@ export function drawGuidesAndRulers(o: OverlayInput) {
   ctx.restore();
 }
 
-export function drawInteraction(o: OverlayInput) {
+function drawInteraction(o: OverlayInput) {
   const { ctx, w, h, cam, interaction } = o;
   if (!interaction || interaction.kind === 'none' || interaction.kind === 'guide') return;
   const [x0, y0] = worldToScreen(cam, w, h, interaction.x0, interaction.y0);
@@ -680,7 +680,7 @@ export function drawInteraction(o: OverlayInput) {
 }
 
 /** Constraint debug: an arrow from what drives each constraint to every bone it moves, labelled with the name and strength. */
-export function drawConstraintInfo(o: OverlayInput) {
+function drawConstraintInfo(o: OverlayInput) {
   const { ctx, w, h, cam, scene, ui } = o;
   const links = constraintLinks(scene.skeleton);
   const focus = focusLinks(links, ui.selection.constraint, ui.selection.bones);
@@ -753,7 +753,7 @@ export function drawConstraintInfo(o: OverlayInput) {
 }
 
 /** The pivot of the rotate tool: a ring with a cross, while the rotate tool is chosen. */
-export function drawPivot(o: OverlayInput) {
+function drawPivot(o: OverlayInput) {
   const { ctx, w, h, cam, ui } = o;
   if (ui.tool !== 'rotate' || !ui.pivot) return;
   const [x, y] = worldToScreen(cam, w, h, ui.pivot.x, ui.pivot.y);

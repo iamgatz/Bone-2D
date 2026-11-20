@@ -6,7 +6,7 @@ import type { Id } from './model';
 import { Bone as BoneRT } from './skeleton';
 import type { Bone, PhysicsMode, Skeleton } from './skeleton';
 
-export type LinkKind = 'ik' | 'transform' | 'path' | 'slider' | 'physics';
+type LinkKind = 'ik' | 'transform' | 'path' | 'slider' | 'physics';
 
 export interface ConstraintLink {
   id: Id;
@@ -51,7 +51,7 @@ export interface PoseNumbers {
 }
 
 /** What one constraint did to a bone: the local transform just before it ran and just after. */
-export interface ConstraintStage {
+interface ConstraintStage {
   id: Id;
   name: string;
   kind: LinkKind;

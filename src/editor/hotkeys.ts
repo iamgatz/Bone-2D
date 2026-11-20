@@ -81,7 +81,7 @@ export const BINDINGS: Binding[] = [
 const BIND = Object.fromEntries(BINDINGS.map((b) => [b.id, b])) as Record<KeyId, Binding>;
 
 /** What the person has set for a command, else the default. */
-export const bindingOf = (id: KeyId): string => {
+const bindingOf = (id: KeyId): string => {
   const b = BIND[id];
   return b.fixed ? b.combo : (settingsStore.get().keyMap[id] ?? b.combo);
 };
@@ -156,7 +156,7 @@ const RESERVED = new Set([
 ]);
 
 /** What already has a combination (a command, a tool, or the browser), for the message when it is taken. */
-export function whoHas(combo: string, except?: KeyId): string | null {
+function whoHas(combo: string, except?: KeyId): string | null {
   if (RESERVED.has(combo)) return 'the browser';
   for (const b of BINDINGS) if (b.id !== except && (bindingOf(b.id) === combo || b.aliases?.includes(combo))) return b.label;
   return TOOLS.find((t) => hotkeyOf(t.tool) === combo)?.title ?? null;

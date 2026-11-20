@@ -268,10 +268,9 @@ export function partBox(part: string) {
 }
 
 /** Every picture of the demo with its size: art.ts draws them, `loadSample` registers them, `buildDemoRig` refers to them. */
-export const SKINS = ['fox', 'arctic'] as const;
+const SKINS = ['fox', 'arctic'] as const;
 export type SkinName = (typeof SKINS)[number];
-export const imageName = (part: string, skin: SkinName) =>
-  PARTS[part].shared ? part.replace(' ', '-') : `${skin}-${part.replace(' ', '-')}`;
+const imageName = (part: string, skin: SkinName) => (PARTS[part].shared ? part.replace(' ', '-') : `${skin}-${part.replace(' ', '-')}`);
 
 export const DEMO_IMAGES: { name: string; part: string; skin: SkinName | null; width: number; height: number }[] = [];
 for (const part of Object.keys(PARTS)) {

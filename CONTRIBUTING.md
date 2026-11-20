@@ -21,6 +21,9 @@ Node 22 is what CI uses.
 
 ```bash
 npm run typecheck
+npm run lint        # ESLint: types, React hooks, layers, import cycles
+npm run format      # Prettier (CI runs `format:check`)
+npm run knip        # unused files, exports and dependencies
 npm test           # unit tests, differential tests against the official spine-core, short random sessions
 npm run build
 ```
