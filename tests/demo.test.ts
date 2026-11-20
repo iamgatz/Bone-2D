@@ -26,6 +26,28 @@ describe('demo rig Kit', () => {
     expect(doc.events.length).toBeGreaterThanOrEqual(3);
   });
 
+  it('the tail is between the two arms: in front of the far arm, behind the body and the near arm', () => {
+    const doc = rig().skeleton;
+    const at = (name: string) => doc.slots.findIndex((s) => s.name === name);
+    expect(at('tail')).toBeGreaterThan(at('arm far'));
+    expect(at('tail')).toBeGreaterThan(at('hand far'));
+    expect(at('tail')).toBeLessThan(at('body'));
+    expect(at('tail')).toBeLessThan(at('arm near'));
+  });
+
+  it('each ear has a picture of its own that stands along its bone, so the two ears do not lean the same way', () => {
+    const doc = rig().skeleton;
+    const pictureOf = (slot: string) => {
+      const id = doc.slots.find((s) => s.name === slot)!.id;
+      const att = Object.values(doc.skins[0].attachments[id] ?? {})[0];
+      return att && 'path' in att ? att.path : '';
+    };
+    expect(pictureOf('ear far')).not.toBe(pictureOf('ear near'));
+    const near = doc.bones.find((b) => b.name === 'ear near')!;
+    const far = doc.bones.find((b) => b.name === 'ear far')!;
+    expect(far.rotation).toBeGreaterThan(near.rotation); // the far ear leans back, the near one forward
+  });
+
   it('weighted meshes have normalised weights', () => {
     const p = rig();
     let meshes = 0;

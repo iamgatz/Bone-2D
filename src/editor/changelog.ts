@@ -12,6 +12,18 @@ export interface Release {
 
 export const CHANGELOG: Release[] = [
   {
+    version: '0.70',
+    date: '2026-11-20',
+    en: [
+      "The demo rig Kit looks better: the far ear has a picture of its own that stands along its bone (before, it was a copy of the near ear and leaned the same way), and the tail is drawn between the two arms (in front of the far arm, behind the body and the near arm) instead of behind everything.",
+      "The repository is tidied up for newcomers: a README with a picture and highlights, CONTRIBUTING, a code of conduct, issue and pull request templates, a CI check, docs/ARCHITECTURE.md, and the old working notes moved to docs/history.",
+    ],
+    ru: [
+      "Демо-риг Kit выглядит лучше: у дальнего уха теперь своя картинка, которая стоит вдоль своей кости (раньше это была копия ближнего уха, и оба наклонялись одинаково), а хвост нарисован между двумя руками (перед дальней рукой, за телом и ближней рукой), а не позади всего.",
+      "Репозиторий приведён в порядок для новичков: README с картинкой и краткими возможностями, CONTRIBUTING, кодекс поведения, шаблоны issue и pull request, проверка CI, docs/ARCHITECTURE.md, а старые рабочие заметки перенесены в docs/history.",
+    ],
+  },
+  {
     version: '0.69',
     date: '2026-11-20',
     en: [

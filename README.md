@@ -2,11 +2,27 @@
 
 **English** · [Русский](README.ru.md)
 
-An open-source 2D skeletal animation editor that runs entirely in the browser — in the spirit of Spine.
-It exports the **Spine 4.3** format (`.json` + `.atlas` + `.png`), and the export is checked in the test suite against the official `spine-core` 4.3 runtime.
+<p align="center"><img src="docs/media/kit-walk.gif" alt="The demo fox Kit walking: IK legs, a physics tail, ears and scarf" width="280"></p>
 
-**[Open the editor →](https://iamgatz.github.io/Bone-2D/)** — nothing to install, everything runs locally in your browser.
-The interface is available in **English and Russian** (switch it in the top bar; the choice is remembered, the first visit follows your browser language).
+**A 2D skeletal animation editor that runs in your browser.** Open a link, rig and animate, export. Nothing to install, and your files never leave your machine.
+Open source (MIT), in the spirit of Spine. It writes the **Spine 4.3** format (`.json` or binary `.skel`, `.atlas`, `.png`) and the result is checked against the official `spine-core` runtime.
+
+**[Open the editor →](https://iamgatz.github.io/Bone-2D/)** — the demo rig "Kit" is one click away. The interface is in **English and Russian**.
+
+![License: MIT](https://img.shields.io/badge/license-MIT-blue) ![CI](https://github.com/iamgatz/Bone-2D/actions/workflows/ci.yml/badge.svg)
+
+## Highlights
+
+- **Rig:** bones, slots, weighted meshes (auto-trace, weight brush), skins, clipping, bounding boxes, paths, Photoshop import.
+- **Constraints:** IK, transform, path, physics and the Spine 4.3 sliders.
+- **Animate:** a dopesheet and a graph editor with Bézier curves, onion skins, events, draw-order and sequence keys, a pose library, key tools.
+- **Export:** Spine 4.3 JSON or binary, an atlas packer, a GIF, a PNG sequence or a video of an animation; Spine import (JSON 4.0 – 4.3, binary 4.3).
+- **Trust:** a test suite and a random-session fuzzer compare our solver with the official runtime (see below).
+- **Review:** send a reviewer one HTML page with the animation; they click a bone and leave a comment that you import back.
+- **Safe to experiment:** deep undo (300 steps), checkpoints you can compare with and take parts from, automatic backups.
+- **Runs everywhere a browser does:** no account, no server; also usable from the command line (`npm run cli`).
+
+## Run it locally
 
 ```bash
 npm install
@@ -27,6 +43,8 @@ $env:FUZZ_SEEDS='300'; $env:FUZZ_STEPS='100'; npx vitest run tests/fuzz.test.ts
 ```
 
 ## What it can do
+
+The complete list. Press `Ctrl+K` in the editor for the command palette.
 
 **Rigging (Setup mode)**
 - Bones: create by dragging (chains start at the tip of the selected bone), hierarchy with drag-and-drop, inherit modes (`normal`, `onlyTranslation`, `noRotationOrReflection`, `noScale`, `noScaleOrReflection`).
@@ -124,52 +142,51 @@ Clipping, bounding boxes and points are checked the same way, including the real
 The second level of trust is **random sessions** (`tests/fuzz.test.ts`): hundreds of sequences of real editor actions (bones, meshes, weights, IK, transform constraints,
 sliders, keys, undo / redo, …). After **every** step the document must not need repair, the export must load in the official runtime and the matrices must be finite;
 at the end our solver is compared with the official one, "undo everything" returns the initial document and "redo everything" the final one. This is how update-order bugs
-(the 4.3 model with lazy `world` / `local`), Spine's float32 π, loss of deform keys on mesh edits and others were found and fixed (see `docs/ROUND2.md`, in Russian).
+(the 4.3 model with lazy `world` / `local`), Spine's float32 π, loss of deform keys on mesh edits and others were found and fixed (see `docs/history/ROUND2.md`, in Russian).
 
-## Layout
+## Project layout
+
+The code is split so that everything that decides how a skeleton looks (`src/core`) has no DOM and runs in the browser, in the tests and in the command line alike.
+[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) is the map; the short version:
 
 ```
-src/core      pure logic, no DOM: model, curves (the same 10-segment approximation as the runtime),
-              skeleton.ts (pose, inherit modes, IK, transform constraints, sliders, skinning), animate.ts, mesh.ts,
-              clip.ts (clipping plan), validate.ts (document check / repair), export/ (spineJson, atlas, zip), import/ (spineJson, atlas)
-src/store     document store on immer patches (undo / redo), UI store, actions
-src/render    WebGL2 renderer (batches, blend modes, tint, stencil clipping)
-src/editor    React panels, viewport (Canvas2D overlay + tools), dopesheet, graph editor
-tests         vitest: core, meshes / weights, differential tests against the official runtime, random sessions
-docs          design notes and plans (in Russian)
+src/core      pure logic: model, curves, solver (pose, IK, constraints, skinning), animation, meshes, validation, export / import
+src/store     the document on immer patches (undo / redo), the UI store, the actions the UI calls
+src/render    WebGL2 renderer (batches, blend modes, two-color tint, stencil clipping)
+src/editor    React panels, the viewport, the dopesheet and the graph editor, hotkeys
+src/player    the page a reviewer opens
+tests         vitest: unit, differential tests against the official runtime, random sessions
+docs          architecture, the Spine feature comparison, ideas and the history of the work (the dev notes are in Russian)
 ```
 
-Stack: TypeScript (strict), Vite, React 19, immer, delaunator, own WebGL2 renderer.
-Rationale for the choices is in [docs/PROMPT.md](docs/PROMPT.md); notes on the 4.3 format are in [docs/RESEARCH.md](docs/RESEARCH.md) (both in Russian).
+Stack: TypeScript (strict), Vite, React 19, immer, delaunator, an own WebGL2 renderer.
 
 ## Hotkeys
 
 `V` select / pose · `B` bone · `T` `R` `S` translate / rotate / scale · `M` mesh / path nodes · `W` weights · `I` IK · `C` clipping · `X` bounding box · `P` point · `N` path · `Tab` Setup ⇄ Animate ·
 `H` shear · `Space` play · `←` / `→` frame · `K` key · `Ctrl+Z` / `Ctrl+Y` undo / redo · `Del` delete · `F` frame the skeleton · `Ctrl+S` / `Ctrl+O` / `Ctrl+E` save / open / export · `Ctrl+D` / `Ctrl+Shift+D` duplicate / mirror bones · `F9` hide windows · `F12` settings.
+Shortcuts work on non-Latin keyboard layouts too, and every one can be moved in Settings.
 
 ## Not done yet
 
-Weights and deformation for clipping / bounding boxes (only moving vertices is supported),
-sequence atlases, draw-order folders, binary files of Spine 4.0 – 4.2,
-collaboration.
+- Weights and deformation for clipping / bounding boxes (only moving their vertices is supported).
+- Binary files of Spine 4.0 – 4.2 are not read yet (JSON of those versions is). Reading them is written but not verified on real files yet: see `tests/fixtures/record-legacy42.mjs`.
+- Real-time collaboration (sharing is by project file and the review page).
+- Not planned: polygon atlas packing, ninepatch, JPG atlas pages, `.spine` import, plugins for external editors, MSAA.
 
 Spine quirks we reproduce on purpose: angles go through float32 π (`180 / 3.1415927`), and reading a world rotation at the 0 / 360° boundary (the source of a transform
 constraint or a slider driver) gives 0 or 360 depending on ~1e-6° noise, so different runtimes can disagree on such an edge.
 
+The full comparison with Spine's feature list is in [docs/SPINE_PARITY.md](docs/SPINE_PARITY.md) (in Russian).
+
 ## Contributing
 
-Issues and pull requests are welcome. The safety net is the test suite — please run it before sending a change:
+Issues and pull requests are welcome, and a bug report with a project file is the most useful thing you can send. Read [CONTRIBUTING.md](CONTRIBUTING.md): how to run the tests, what "done" means for a feature, how interface texts are translated.
 
-```bash
-npm test
-npm run build
-```
+## Notes
 
-A new editor feature counts as done when it goes through the whole chain: model → validator → solver / runtime → export → import → differential test against the official
-runtime → UI → an operation in the random-session kit (`tests/fuzzkit.ts`). The reasoning is in `docs/ROUND3.md` (in Russian).
-
-Interface texts stay English in the components and are translated while rendering (`src/i18n`): add the Russian text of any new UI string to `src/i18n/ru.ts`
-(`{}` in a key matches any text, `{#}` a number). `npm test` fails when a static UI string has no translation. To add another language, add a dictionary like `ru.ts` and extend `Lang`.
+Bone 2D is an independent project. It is not affiliated with Esoteric Software; "Spine" is their product and trademark, named here only to say which file format Bone 2D reads and writes.
+Using the official Spine runtimes in a game is covered by their own license.
 
 ## License
 
