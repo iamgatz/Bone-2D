@@ -86,7 +86,7 @@ export function tube(centre: Pt[], radius: (t: number) => number, capSteps = 6):
 
 export const translate = (poly: Pt[], dx: number, dy: number): Pt[] => poly.map(([x, y]) => [x + dx, y + dy]);
 
-export function boundsOf(polys: Pt[][]): Box {
+function boundsOf(polys: Pt[][]): Box {
   let x0 = Infinity;
   let y0 = Infinity;
   let x1 = -Infinity;

@@ -21,7 +21,7 @@ export const hasKey = (keys: readonly { time: number }[] | undefined, time: numb
 export type CurveKindName = 'linear' | 'bezier' | 'stepped';
 
 /** Default normalized bezier used for newly created keys (a gentle ease in/out). */
-export const DEFAULT_BEZIER: [number, number, number, number] = [0.35, 0, 0.65, 1];
+const DEFAULT_BEZIER: [number, number, number, number] = [0.35, 0, 0.65, 1];
 
 export function makeCurve(kind: CurveKindName, channels: number): Curve | undefined {
   if (kind === 'linear') return undefined;
@@ -324,7 +324,7 @@ export function findAnimation(doc: SkeletonDoc, id: Id | null): Animation | unde
   return id ? doc.animations.find((a) => a.id === id) : undefined;
 }
 
-export function names(list: { name: string }[]): Set<string> {
+function names(list: { name: string }[]): Set<string> {
   return new Set(list.map((x) => x.name));
 }
 
@@ -369,5 +369,3 @@ export function setSlotDarkColor(doc: SkeletonDoc, slotId: Id, dark: RGB | null)
     delete tl.rgba2;
   }
 }
-
-export type { Key };

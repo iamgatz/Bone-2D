@@ -25,7 +25,7 @@ export interface LayerOptions {
 }
 
 export const DEFAULT_LAYER: LayerOptions = { weight: 1, loop: true, step: 1, simplify: scaleTolerance(DEFAULT_TOLERANCE, 1) };
-export const MAX_LAYER_WEIGHT = 2;
+const MAX_LAYER_WEIGHT = 2;
 
 /** What a bone's timelines ask for at one moment, relative to the setup pose (a scale is a multiplier). The split axes win over the combined ones. */
 interface Local {

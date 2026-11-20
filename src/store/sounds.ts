@@ -18,7 +18,7 @@ export const soundStore = createStore<{ version: number }>({ version: 0 });
 const changed = () => soundStore.set({ version: soundStore.get().version + 1 });
 let context: AudioContext | null = null;
 
-export function addSounds(files: readonly File[]): number {
+function addSounds(files: readonly File[]): number {
   let n = 0;
   for (const f of files) {
     if (!/^audio\//.test(f.type) && !/\.(wav|ogg|mp3|m4a|flac|aac)$/i.test(f.name)) continue;
@@ -67,7 +67,7 @@ export function soundShape(path: string): Peaks | null {
 export const hasSound = (path: string) => urls.has(soundKey(path));
 
 /** Plays the sound of an event; false when none was loaded for that path. */
-export function playSound(path: string, volume = 1, balance = 0): boolean {
+function playSound(path: string, volume = 1, balance = 0): boolean {
   const url = urls.get(soundKey(path));
   if (!url) return false;
   try {

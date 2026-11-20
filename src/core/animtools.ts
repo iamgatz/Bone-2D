@@ -10,7 +10,7 @@ import { BONE_PROPS } from './model';
 import type { Animation, Id, Key, SkeletonDoc, Timeline } from './model';
 
 /** A small deterministic random generator (mulberry32): the same seed always gives the same shake. */
-export function seeded(seed: number): () => number {
+function seeded(seed: number): () => number {
   let a = seed >>> 0 || 1;
   return () => {
     a = (a + 0x6d2b79f5) >>> 0;

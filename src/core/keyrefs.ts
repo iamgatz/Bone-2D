@@ -137,7 +137,7 @@ export function moveKeys(anim: Animation, refs: KeyRef[], dt: number, ripple = f
 }
 
 /** Removes empty timelines so the dopesheet and export stay clean. */
-export function pruneEmpty(anim: Animation) {
+function pruneEmpty(anim: Animation) {
   for (const id in anim.bones) {
     const t = anim.bones[id] as Record<string, AnyKeys | undefined>;
     for (const p of Object.keys(t)) if (!t[p] || t[p].length === 0) delete t[p];

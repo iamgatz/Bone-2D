@@ -4,13 +4,13 @@
  */
 import type { Curve, Key } from './model';
 
-export const BEZIER_SEGMENTS = 10;
+const BEZIER_SEGMENTS = 10;
 
 /** Cached polylines: curve array -> per channel Float64Array(2 * (BEZIER_SEGMENTS + 1)) of (x,y) pairs in 0..1. */
 const polyCache = new WeakMap<number[], Float64Array[]>();
 
 /** Builds the polyline for one normalized bezier (x1,y1,x2,y2) the way Spine's CurveTimeline.setBezier does. */
-export function buildBezierPolyline(cx1: number, cy1: number, cx2: number, cy2: number): Float64Array {
+function buildBezierPolyline(cx1: number, cy1: number, cx2: number, cy2: number): Float64Array {
   const out = new Float64Array((BEZIER_SEGMENTS + 1) * 2);
   // Key 1 is (0,0), key 2 is (1,1) in normalized space.
   const tmpx = (-cx1 * 2 + cx2) * 0.03;
@@ -56,7 +56,7 @@ function polylineFor(curve: number[], channel: number): Float64Array {
 }
 
 /** Evaluates a normalized polyline: returns y for the given x in 0..1. */
-export function evalPolyline(poly: Float64Array, x: number): number {
+function evalPolyline(poly: Float64Array, x: number): number {
   const n = poly.length;
   for (let i = 2; i < n; i += 2) {
     if (poly[i] >= x) {
@@ -70,7 +70,7 @@ export function evalPolyline(poly: Float64Array, x: number): number {
 }
 
 /** y (0..1 progress) for a normalized bezier channel at time progress u. */
-export function evalBezierChannel(curve: number[], channel: number, u: number): number {
+function evalBezierChannel(curve: number[], channel: number, u: number): number {
   return evalPolyline(polylineFor(curve, channel), u);
 }
 

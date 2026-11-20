@@ -58,7 +58,7 @@ import { newProject, openProjectFile, packageProject, restoreAutosave, saveProje
 import { openAtlasUnpack, openSpineImport } from './importSpine';
 import { deleteConstraint } from '@/store/ikActions';
 import { loadSample } from '@/store/sample';
-import { toast, uiStore, useUi } from '@/store/ui';
+import { uiStore, useUi } from '@/store/ui';
 import { setLang, useLang } from '@/i18n';
 import { startPlaybackLoop } from './playback';
 import { AssetsPanel } from './panels/AssetsPanel';
@@ -845,5 +845,3 @@ export function App() {
     </div>
   );
 }
-
-export { toast };

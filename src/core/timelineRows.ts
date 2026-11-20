@@ -7,12 +7,12 @@ import type { Animation, Id, SequenceDef, SequenceKey, SkeletonDoc } from '@/cor
 import { nameMatcher } from '@/core/rename';
 import { sequenceOf } from '@/core/sequence';
 
-export interface RowKeyInfo {
+interface RowKeyInfo {
   time: number;
   refs: KeyRef[];
 }
 
-export type RowType = 'group' | 'entity' | 'prop';
+type RowType = 'group' | 'entity' | 'prop';
 
 export interface Row {
   id: string;

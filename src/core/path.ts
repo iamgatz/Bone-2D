@@ -440,7 +440,7 @@ export function samplePath(points: ArrayLike<number>, nodeCount: number, closed:
 }
 
 /** Size of the path that Reset makes. */
-export const DEFAULT_PATH_SIZE = 100;
+const DEFAULT_PATH_SIZE = 100;
 
 /**
  * Reset (Spine's button on a path): the vertices of a plain open path of two nodes along the x axis of its bone, centred on the origin;

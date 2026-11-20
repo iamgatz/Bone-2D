@@ -243,7 +243,7 @@ export type TransformProp = 'rotate' | 'x' | 'y' | 'scaleX' | 'scaleY' | 'shearY
 export const TRANSFORM_PROPS: TransformProp[] = ['rotate', 'x', 'y', 'scaleX', 'scaleY', 'shearY'];
 
 /** One constrained property: value = offset + (source - from.offset) * scale, optionally clamped to offset..max. */
-export interface TransformTo {
+interface TransformTo {
   prop: TransformProp;
   offset: number;
   max: number;
@@ -434,7 +434,7 @@ export interface DrawOrderFolder {
   slots: Id[];
 }
 
-export interface DrawOrderKey {
+interface DrawOrderKey {
   time: number;
   /** Complete slot id order (bottom to top). */
   order: Id[];
@@ -452,7 +452,7 @@ export interface EventKey {
 }
 
 /** Slider timelines. value = [seconds] / [mix]. */
-export interface SliderTimelines {
+interface SliderTimelines {
   time?: Timeline;
   mix?: Timeline;
 }
@@ -526,7 +526,7 @@ export function axisGroupOf(prop: string): AxisGroup | null {
   return null;
 }
 
-export interface SlotTimelines {
+interface SlotTimelines {
   attachment?: AttachmentKey[];
   /** value = [r, g, b, a] absolute (the light color) */
   rgba?: Timeline;

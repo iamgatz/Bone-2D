@@ -119,7 +119,7 @@ export function setupPicture(a: Attachment): string | null {
   return a.sequence ? sequenceFramePath(a.path, a.sequence, resolveSequenceIndex(a.sequence, -1)) : a.path;
 }
 
-export const isSequenceMode = (v: unknown): v is SequenceMode => (SEQUENCE_MODES as readonly unknown[]).includes(v);
+const isSequenceMode = (v: unknown): v is SequenceMode => (SEQUENCE_MODES as readonly unknown[]).includes(v);
 
 /** A sequence key from anything: a mode that is not known is hold, a negative or fractional index is made whole, a delay is never negative. */
 export function cleanSequenceKey(k: Partial<SequenceKey>): SequenceKey {

@@ -105,14 +105,14 @@ function mulberry32(seed: number) {
   };
 }
 
-export interface Ctx {
+interface Ctx {
   r: () => number;
   pick<T>(list: readonly T[]): T | undefined;
   num(min: number, max: number): number;
   chance(p: number): boolean;
 }
 
-export function makeCtx(seed: number): Ctx {
+function makeCtx(seed: number): Ctx {
   const r = mulberry32(seed);
   return {
     r,
@@ -214,9 +214,9 @@ function allKeyRefs(a: Animation): KeyRef[] {
 
 // ------------------------------------------------------------------ the operations
 
-export type Op = { name: string; run: (c: Ctx) => void };
+type Op = { name: string; run: (c: Ctx) => void };
 
-export const ops: Op[] = [
+const ops: Op[] = [
   // ---- bones
   {
     name: 'createBone',
@@ -2619,7 +2619,7 @@ function attachmentMismatch(
  * Baking an animation turns the constraints into bone keys: the baked animation (constraints off) has to pose every bone the way the
  * original does on every frame, whatever the document contains.
  */
-export function bakeMismatch(p: Project): string | null {
+function bakeMismatch(p: Project): string | null {
   const doc = p.skeleton;
   for (const anim of doc.animations.slice(0, 2)) {
     if (!(anim.duration > 0)) continue;
@@ -2704,7 +2704,7 @@ function checkSelection(label: string) {
     throw new Error(`${label}: the selection refers to a missing constraint`);
 }
 
-export function check(label: string) {
+function check(label: string) {
   const p = project();
   const issues = validateProject(p);
   if (issues.length) throw new Error(`${label}: the document needs repair:\n  - ${issues.join('\n  - ')}`);
@@ -2740,7 +2740,7 @@ function findNonFinite(value: unknown, path: string): string | null {
 
 let sanitizerInstalled = false;
 
-export function freshSession() {
+function freshSession() {
   if (!sanitizerInstalled) {
     docStore.subscribe(A.sanitizeSelection); // the app does the same (App.tsx)
     sanitizerInstalled = true;

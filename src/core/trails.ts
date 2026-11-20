@@ -7,7 +7,7 @@ import type { Animation, Id } from './model';
 import { createSkeleton } from './skeleton';
 import type { SkeletonData } from './skeleton';
 
-export interface TrailPoint {
+interface TrailPoint {
   time: number;
   x: number;
   y: number;

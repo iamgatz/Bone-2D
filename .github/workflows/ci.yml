@@ -1,4 +1,4 @@
-# Type check, tests (without the long random sessions) and a production build on every push and pull request.
+# Type check, lint, formatting, unused code, tests (without the long random sessions) and a production build on every push and pull request.
 name: CI
 
 on:
@@ -20,5 +20,8 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run typecheck
+      - run: npm run lint
+      - run: npm run format:check
+      - run: npm run knip
       - run: npm test
       - run: npm run build

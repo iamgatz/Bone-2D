@@ -2,7 +2,7 @@
 import { uid, uniqueName } from './ids';
 import type { BonePose, PoseEntry } from './model';
 
-export const POSE_FIELDS: (keyof BonePose)[] = ['x', 'y', 'rotation', 'scaleX', 'scaleY', 'shearX', 'shearY'];
+const POSE_FIELDS: (keyof BonePose)[] = ['x', 'y', 'rotation', 'scaleX', 'scaleY', 'shearX', 'shearY'];
 
 const finite = (v: unknown): v is number => typeof v === 'number' && Number.isFinite(v);
 

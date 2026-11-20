@@ -9,8 +9,8 @@ import { compileSkeleton, createSkeleton } from '@/core/skeleton';
 import type { Skeleton, SkeletonData } from '@/core/skeleton';
 import type { Scene } from '@/store/scene';
 
-export type OnionStyle = 'image' | 'silhouette' | 'xray';
-export type OnionMode = 'frames' | 'keys';
+type OnionStyle = 'image' | 'silhouette' | 'xray';
+type OnionMode = 'frames' | 'keys';
 
 export interface OnionConfig {
   before: number;

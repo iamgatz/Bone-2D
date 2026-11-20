@@ -603,5 +603,3 @@ export function TreePanel() {
     </div>
   );
 }
-
-export { Plus };

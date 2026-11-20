@@ -10,7 +10,7 @@ export interface Ask {
   resolve: (value: string | null) => void;
 }
 
-export const askStore = createStore<{ ask: Ask | null }>({ ask: null });
+const askStore = createStore<{ ask: Ask | null }>({ ask: null });
 export const useAsk = (): Ask | null => useStore(askStore, (s) => s.ask);
 
 /** Asks for a text (a name). Resolves with the trimmed text, or null when the person cancels or leaves it empty. A new question cancels the open one. */

@@ -33,9 +33,9 @@ export interface ExportSettings {
   atlasPerSkin: boolean;
 }
 
-export const EXPORT_SCALES = [0.25, 0.5, 0.75, 1, 2] as const;
-export const EXPORT_PAGE_SIZES = [1024, 2048, 4096] as const;
-export const EXPORT_PADDINGS = [0, 1, 2, 4] as const;
+const EXPORT_SCALES = [0.25, 0.5, 0.75, 1, 2] as const;
+const EXPORT_PAGE_SIZES = [1024, 2048, 4096] as const;
+const EXPORT_PADDINGS = [0, 1, 2, 4] as const;
 
 export const DEFAULT_EXPORT_SETTINGS: ExportSettings = {
   format: 'json',

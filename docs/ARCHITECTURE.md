@@ -26,11 +26,11 @@ Everything that decides how a skeleton looks lives in `src/core` and has no DOM,
 | `src/i18n` | English / Russian. UI texts stay English in the components and are translated while rendering. |
 | `src/player` | The standalone page a reviewer opens to look at an animation and leave comments. |
 | `cli` | `npm run cli`: export and check a project without the editor. |
-| `tests` | Vitest: unit tests, differential tests against the official runtime, the random editor sessions (fuzzer), and `architecture.test.ts` (the layers below). |
+| `tests` | Vitest: unit tests, differential tests against the official runtime, and the random editor sessions (fuzzer). |
 
 ## Layers
 
-`core` does not import `store`, `editor`, `render` or `player`; `store` does not import `editor` or `player`; nothing imports in a circle. `tests/architecture.test.ts` fails when that is broken.
+`core` does not import `store`, `editor`, `render` or `player`; `store` does not import `editor` or `player`; nothing imports in a circle. ESLint (`import-x/no-restricted-paths`, `import-x/no-cycle`) fails when that is broken.
 
 ## Three rules that keep it correct
 
@@ -56,8 +56,11 @@ Add it to the table in `src/editor/hotkeys.ts` and its action to `src/editor/key
 
 ## Tooling decisions
 
-- **TypeScript strict with `noUnusedLocals`** and the architecture test do the job a linter would do for imports and layering. A linter (ESLint with the React hooks rule) is the next thing to add when more people contribute; it is not there yet because it would add a toolchain without finding anything the compiler and the tests do not.
+- **TypeScript 6.0, strict, `noUnusedLocals`.** TypeScript 7 has no JavaScript API, which `typescript-eslint` needs, so the project stays on 6.0 until the linter supports 7.
+- **ESLint 9** (`typescript-eslint` with type-aware rules, `react-hooks`, `import-x` for the layers and cycles) is the one linter; `eslint.config.js` says where untyped Spine JSON is allowed to be dynamic. The React Compiler rules of the hooks plugin are off: the compiler is not used.
+- **Prettier** formats everything (`.prettierrc.json`); the one formatting commit is listed in `.git-blame-ignore-revs`.
+- **knip** finds unused files, exports and dependencies (`npm run knip`).
 - **No state library**: the stores are about forty lines on top of immer, and the document needs patches for undo, which a general store would not give.
 - **No validation library**: `validate.ts` repairs a document rather than rejecting it, which a schema library does not do.
-- **No formatter pass over the repository**: `.editorconfig` and `.gitattributes` keep line endings and whitespace the same; adding Prettier would reformat 44 thousand lines for no gain in behaviour.
+- **`.editorconfig` and `.gitattributes`** keep line endings and whitespace the same for editors that do not run Prettier.
 - **Dependencies stay few**: React, immer, delaunator (meshes), ag-psd (Photoshop import), lucide icons and the Inter font. Anything else needs a reason in the pull request.

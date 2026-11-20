@@ -23,7 +23,7 @@ function mapping(from: TransformProp, to: TransformProp, scale = 1): TransformFr
   return { prop: from, offset: 0, to: [{ prop: to, offset: 0, max: 1, scale }] };
 }
 
-export function presetProperties(p: TransformPreset): TransformFrom[] {
+function presetProperties(p: TransformPreset): TransformFrom[] {
   switch (p) {
     case 'rotation':
       return [mapping('rotate', 'rotate')];

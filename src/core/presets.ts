@@ -7,10 +7,10 @@ import type { Constraint, PhysicsParam } from './model';
 import { PHYSICS_PARAMS } from './model';
 import { uid, uniqueName } from './ids';
 
-export type ConstraintKind = Constraint['type'];
+type ConstraintKind = Constraint['type'];
 
 /** The fields each kind of constraint keeps in a preset. */
-export const PRESET_FIELDS: Record<ConstraintKind, string[]> = {
+const PRESET_FIELDS: Record<ConstraintKind, string[]> = {
   ik: ['mix', 'softness', 'bendPositive', 'compress', 'stretch', 'scaleY'],
   transform: ['localSource', 'localTarget', 'additive', 'clamp', 'properties', 'offsets', 'mix'],
   slider: ['additive', 'loop', 'mix', 'time', 'property', 'from', 'to', 'scale', 'max', 'local'],
@@ -85,7 +85,7 @@ export function applyPresetSettings(
   return changed;
 }
 
-export function presetName(list: readonly ConstraintPreset[], type: ConstraintKind, wanted: string): string {
+function presetName(list: readonly ConstraintPreset[], type: ConstraintKind, wanted: string): string {
   return uniqueName(
     wanted.trim() || 'Preset',
     list.filter((p) => p.type === type).map((p) => p.name),

@@ -79,7 +79,7 @@ export function createPoint(wx: number, wy: number): { slotId: Id; name: string 
 }
 
 /** The side of the square a polygon is reset to, in the units of the bone it sits on. */
-export const DEFAULT_POLYGON_SIZE = 100;
+const DEFAULT_POLYGON_SIZE = 100;
 
 /**
  * Reset (Spine's button on clipping and bounding box attachments): the polygon goes back to a square around the origin of its bone, without

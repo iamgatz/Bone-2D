@@ -234,14 +234,14 @@ export function SelectField<T extends string>(props: {
   );
 }
 
-export function rgbaToHex(c: ArrayLike<number>): string {
+function rgbaToHex(c: ArrayLike<number>): string {
   const h = (v: number) =>
     Math.max(0, Math.min(255, Math.round(v * 255)))
       .toString(16)
       .padStart(2, '0');
   return `#${h(c[0])}${h(c[1])}${h(c[2])}`;
 }
-export function hexToRgb(hex: string): [number, number, number] {
+function hexToRgb(hex: string): [number, number, number] {
   const m = /^#?([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i.exec(hex);
   if (!m) return [1, 1, 1];
   return [parseInt(m[1], 16) / 255, parseInt(m[2], 16) / 255, parseInt(m[3], 16) / 255];

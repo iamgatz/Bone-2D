@@ -17,7 +17,7 @@ export function hasUnseenUpdate(): boolean {
   }
 }
 
-export function markUpdatesSeen() {
+function markUpdatesSeen() {
   try {
     localStorage.setItem(SEEN_KEY, LATEST);
   } catch {

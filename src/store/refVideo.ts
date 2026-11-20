@@ -20,7 +20,7 @@ const EMPTY: RefVideoState = { url: null, name: '', width: 0, height: 0, duratio
 export const refVideoStore = createStore<RefVideoState>(EMPTY);
 export const useRefVideo = (): RefVideoState => useStore(refVideoStore, (s) => s);
 
-export const isVideoFile = (f: { type: string; name: string }): boolean =>
+const isVideoFile = (f: { type: string; name: string }): boolean =>
   /^video\//.test(f.type) || /\.(mp4|webm|mov|m4v|ogv|mkv)$/i.test(f.name);
 
 /** Puts a video file under the scene. The video itself stays in this browser tab: it is not part of the project. */

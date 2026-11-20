@@ -1,5 +1,4 @@
 /** The Comments window: the review comments of the whole project, a jump to where one is, and "resolved" marks. */
-import { reviewCounts } from '@/core/review';
 import { selectAnimation, selectBone, setMode, setTime } from './actions';
 import { docStore } from './doc';
 import { toast, uiStore } from './ui';
@@ -44,5 +43,3 @@ export function resolveAllComments(): number {
   if (n) toast(`Resolved ${n} comment${n === 1 ? '' : 's'}`, 'ok');
   return n;
 }
-
-export { reviewCounts };
