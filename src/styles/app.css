@@ -130,6 +130,15 @@ textarea {
     display: none;
   }
 }
+/* the Learn button keeps only its icon, and the project name is shorter, so the top bar fits in a window up to 1340 px wide */
+@media (max-width: 1340px) {
+  .tb-label {
+    display: none;
+  }
+  .topbar .project-name {
+    width: 100px;
+  }
+}
 @media (max-width: 1130px) {
   .tb-opt2 {
     display: none;

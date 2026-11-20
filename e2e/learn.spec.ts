@@ -1,7 +1,7 @@
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test } from '@playwright/test';
 import type { Page } from '@playwright/test';
-import { FOX_LESSON, MESH_LESSON, RIG_LESSON } from '../src/core/lessons';
+import { FOX_LESSON, LESSONS, MESH_LESSON, RIG_LESSON } from '../src/core/lessons';
 
 type BoneActions = typeof import('../src/store/boneActions');
 type DocModule = typeof import('../src/store/doc');
@@ -330,6 +330,55 @@ for (const locale of ['en-US', 'ru-RU'] as const) {
       for (let i = 0; i < RIG_LESSON.steps.length; i++) await card.locator('.btn.ghost').click();
       await card.getByRole('button', { name: MESH_LESSON.title[lang] }).click();
       await expect(card.locator('.learn-title')).toHaveText(MESH_LESSON.title[lang]);
+    });
+  });
+}
+
+for (const locale of ['en-US', 'ru-RU'] as const) {
+  const lang = locale === 'ru-RU' ? 'ru' : 'en';
+  for (const width of [1100, 1440]) {
+    test.describe(`the Lessons button (${locale}, ${width}px)`, () => {
+      test.use({ locale, viewport: { width, height: 720 } });
+
+      test('sits in the top bar with a dot until a lesson is finished, lists every lesson and starts the one that is picked', async ({
+        page,
+      }) => {
+        await openFresh(page);
+        await page.locator('.overlay .choice').nth(1).click(); // New project
+        const button = page
+          .locator('.topbar .menu')
+          .filter({ has: page.locator('.tb-label') })
+          .locator('button')
+          .first();
+        await expect(button).toBeVisible();
+        await expect(page.locator('.topbar .lessons-dot')).toHaveCount(1);
+        // the words are shown when there is room, only the icon in a narrow window
+        await expect(page.locator('.topbar .tb-label')).toBeVisible({ visible: width > 1340 });
+        // nothing spills past the window, and the button is not pushed out
+        const room = await page.evaluate(() => ({
+          wide: document.documentElement.scrollWidth - document.documentElement.clientWidth,
+          right: document.querySelector('.topbar .btn.primary')!.getBoundingClientRect().right,
+        }));
+        expect(room.wide).toBeLessThanOrEqual(0);
+        expect(room.right).toBeLessThanOrEqual(width);
+
+        await button.click();
+        const items = page.locator('.topbar .menu-item');
+        await expect(items).toHaveCount(LESSONS.length);
+        await items.nth(1).click();
+        await expect(page.locator('.learn .learn-title')).toHaveText(RIG_LESSON.title[lang]);
+      });
+    });
+  }
+
+  test.describe(`the tutorial button of an empty project (${locale})`, () => {
+    test.use({ locale });
+    test('loads the demo and starts the first lesson', async ({ page }) => {
+      await openFresh(page);
+      await page.locator('.overlay .choice').nth(1).click();
+      await page.locator('.vp-empty-card .btn').nth(1).click();
+      await expect(page.locator('.learn .learn-title')).toHaveText(FOX_LESSON.title[lang]);
+      await expect.poll(() => page.locator('.row .label').count()).toBeGreaterThan(5);
     });
   });
 }

@@ -12,6 +12,16 @@ export interface Release {
 
 export const CHANGELOG: Release[] = [
   {
+    version: '0.84',
+    date: '2026-11-20',
+    en: [
+      'A "Learn" button in the top bar, next to Export: a menu with every lesson (a tick on the ones you finished) and a dot on it until you finish the first one. In a narrow window it keeps only its icon. An empty project also offers "Take the 2-minute tutorial" next to the demo button.',
+    ],
+    ru: [
+      'Кнопка «Обучение» в верхней панели, рядом с «Экспортом»: меню со всеми уроками (у пройденных галочка) и точка на кнопке, пока не пройден первый урок. В узком окне остаётся только значок. В пустом проекте рядом с кнопкой демо также есть «Пройти мини-обучение за 2 минуты».',
+    ],
+  },
+  {
     version: '0.83',
     date: '2026-11-20',
     en: [

@@ -89,6 +89,7 @@ import { KEY_ACTIONS } from './keyActions';
 import { HINTS, TOOLS, hotkeyOf, toolForKey } from './tools';
 import { SettingsDialog } from './Settings';
 import { LearnCard } from './LearnCard';
+import { LessonsMenu } from './LessonsMenu';
 import { WelcomeDialog } from './Welcome';
 import { Palette } from './Palette';
 import { settingsStore } from '@/store/settings';
@@ -455,6 +456,7 @@ function TopBar() {
         <IconButton icon={MessageSquareText} title="Send feedback to the author" onClick={() => uiStore.patch({ feedbackOpen: true })} />
         <IconButton icon={CircleHelp} title="Shortcuts & help" hotkey={KEYS.help} onClick={() => uiStore.patch({ helpOpen: true })} />
       </span>
+      <LessonsMenu />
       <Button primary icon={Download} learn="export" onClick={() => uiStore.patch({ exportOpen: true })}>
         Export
       </Button>
@@ -547,6 +549,11 @@ function ViewportHud() {
               </Button>
             </div>
             <span className="hint-text">a finished character with IK legs and a walk cycle</span>
+            <div style={{ margin: '12px 0 0' }}>
+              <Button icon={GraduationCap} onClick={() => void openLesson('fox')}>
+                Take the 2-minute tutorial
+              </Button>
+            </div>
           </div>
         </div>
       )}
