@@ -24,6 +24,7 @@ npm run typecheck
 npm run lint        # ESLint: types, React hooks, layers, import cycles
 npm run format      # Prettier (CI runs `format:check`)
 npm run knip        # unused files, exports and dependencies
+npm run e2e         # a few smoke tests in a real browser (Playwright; needs Chrome, or `npx playwright install chromium`)
 npm test           # unit tests, differential tests against the official spine-core, short random sessions
 npm run build
 ```
