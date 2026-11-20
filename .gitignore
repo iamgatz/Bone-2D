@@ -9,3 +9,6 @@ coverage
 .env.*
 .vite
 dist-cli
+
+# launch kit (video, post drafts): local only
+docs/promo

@@ -148,6 +148,7 @@ export const PARTS: Record<string, PartDef> = {
   hand: { kind: 'hand', shape: ellipse(ARM_X, 80, 11, 12, 20), extra: [], shared: false },
   foot: { kind: 'foot', shape: translate(spline([[-8, -4], [-9, 10], [2, 15], [18, 14], [30, 8], [35, 0], [32, -4]], true, 4), 6, 4), extra: [], shared: false },
   'ear near': { kind: 'ear', shape: earShape('ear near'), extra: [earInner('ear near')], shared: false },
+  'ear far': { kind: 'ear', shape: earShape('ear far'), extra: [earInner('ear far')], shared: false },
   'scarf tail': { kind: 'scarfTail', shape: tube(centreLine(scarfJoints(), 8), (t) => 11 - 3 * t, 0), extra: [], shared: true },
   'scarf ring': { kind: 'scarfRing', shape: ellipse(0, 198, 35, 15, 28), extra: [], shared: true },
   'eye open': { kind: 'eyeOpen', shape: ellipse(36, 246, 7, 9.5, 18), extra: [], shared: true },
@@ -190,10 +191,11 @@ interface SlotSpec {
 const SHADE: RGBA = [0.8, 0.8, 0.88, 1];
 
 const SLOTS: SlotSpec[] = [
-  { name: 'tail', bone: 'tail 1', part: 'tail', chain: ['tail 1', 'tail 2', 'tail 3'], spacing: 20, blend: 16 },
-  { name: 'ear far', bone: 'ear far', part: 'ear near', offset: [-24, 0], color: SHADE },
+  { name: 'ear far', bone: 'ear far', part: 'ear far', color: SHADE },
   { name: 'arm far', bone: 'arm far 1', part: 'arm', offset: [FAR_DX, 0], chain: ['arm far 1', 'arm far 2'], spacing: 12, blend: 10, color: SHADE },
   { name: 'hand far', bone: 'hand far', part: 'hand', offset: [FAR_DX, 0], color: SHADE },
+  // the tail is between the two arms: in front of the far one, behind the body and the near one
+  { name: 'tail', bone: 'tail 1', part: 'tail', chain: ['tail 1', 'tail 2', 'tail 3'], spacing: 20, blend: 16 },
   { name: 'leg far', bone: 'leg far 1', part: 'leg', offset: [LEG_DX, 0], chain: ['leg far 1', 'leg far 2'], spacing: 12, blend: 12, color: SHADE },
   { name: 'foot far', bone: 'foot far', part: 'foot', offset: [LEG_DX, 0], color: SHADE },
   { name: 'leg near', bone: 'leg near 1', part: 'leg', chain: ['leg near 1', 'leg near 2'], spacing: 12, blend: 12 },
@@ -207,10 +209,6 @@ const SLOTS: SlotSpec[] = [
   { name: 'arm near', bone: 'arm near 1', part: 'arm', chain: ['arm near 1', 'arm near 2'], spacing: 12, blend: 10 },
   { name: 'hand near', bone: 'hand near', part: 'hand' },
 ];
-
-/** Moves the whole far ear by a fixed offset, so one picture serves both ears. */
-const EAR_FAR_OFFSET: Pt = [-24, 0];
-void EAR_FAR_OFFSET;
 
 // ---------------------------------------------------------------- weights along a chain of bones
 
