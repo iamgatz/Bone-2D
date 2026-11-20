@@ -26,6 +26,16 @@ describe('demo rig Kit', () => {
     expect(doc.events.length).toBeGreaterThanOrEqual(3);
   });
 
+  it('the far arm never comes in front of the body: no draw-order change, and it only lifts a little in the wave', () => {
+    const doc = rig().skeleton;
+    const wave = doc.animations.find((x) => x.name === 'wave')!;
+    expect(wave.drawOrder).toEqual([]);
+    for (const name of ['arm far 1', 'arm far 2']) {
+      const keys = wave.bones[doc.bones.find((x) => x.name === name)!.id]?.rotate ?? [];
+      for (const k of keys) expect(Math.abs(k.value[0])).toBeLessThanOrEqual(20);
+    }
+  });
+
   it('the tail is between the two arms: in front of the far arm, behind the body and the near arm', () => {
     const doc = rig().skeleton;
     const at = (name: string) => doc.slots.findIndex((s) => s.name === name);

@@ -12,6 +12,16 @@ export interface Release {
 
 export const CHANGELOG: Release[] = [
   {
+    version: '0.75',
+    date: '2026-11-20',
+    en: [
+      'Demo fox: in the wave the far (left) arm no longer comes out in front of the body and sticks forward. It stays behind the body and only lifts a little, as it must for an arm on the other side of the fox.',
+    ],
+    ru: [
+      'Демо-лиса: в анимации «wave» дальняя (левая) рука больше не выходит поверх тела и не торчит вперёд. Она остаётся за телом и лишь слегка приподнимается, как и должна рука с другой стороны лисы.',
+    ],
+  },
+  {
     version: '0.73',
     date: '2026-11-20',
     en: [

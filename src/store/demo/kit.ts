@@ -2,7 +2,7 @@
  * The demo character "Kit": a fox with a fluffy tail, a scarf and ears, in two skins (a red fox and an arctic one).
  *
  * `buildDemoRig` makes the whole project from data: bones, slots, weighted meshes, two IK legs, seven physics constraints (tail, ears,
- * scarf), two skins, four animations (idle, walk, wave, jump) with blinking, a draw-order change and events. It does not touch the DOM:
+ * scarf), two skins, four animations (idle, walk, wave, jump) with blinking and events. It does not touch the DOM:
  * the pictures are drawn by art.ts from the same outlines (DEMO_PARTS), and tests/demo.test.ts validates, exports, loads the rig into the official
  * runtime and plays it.
  */
@@ -593,8 +593,6 @@ export function buildDemoRig(images: Record<string, ImageRef>): Project {
   const move = (a: Animation, boneName: string, rows: KeyIn[]) => ((a.bones[id(boneName)] ??= {}).translate = line(rows, 2));
   const eye = (a: Animation, rows: [number, 'open' | 'closed'][]) =>
     ((a.slots[slotId('eye')] ??= {}).attachment = rows.map(([time, name]) => ({ time, name })));
-  const defaultOrder = doc.slots.map((s) => s.id);
-
   // ---- idle: breathing, a nod, an ear flick, two blinks
   const idle = newAnimation('idle', 2.4);
   move(idle, 'hip', [
@@ -722,7 +720,7 @@ export function buildDemoRig(images: Record<string, ImageRef>): Project {
     { time: 0.45, event: stepEvent, int: 2 },
   ];
 
-  // ---- wave: the near arm waves, the far hand goes to the belly (in front of the body), the eyes smile
+  // ---- wave: the near arm waves, the far arm stays behind the body and only lifts a little, the eyes smile
   const wave = newAnimation('wave', 2);
   rot(wave, 'arm near 1', [
     [0, [0], true],
@@ -761,14 +759,14 @@ export function buildDemoRig(images: Record<string, ImageRef>): Project {
   ]);
   rot(wave, 'arm far 1', [
     [0, [0], true],
-    [0.3, [58], true],
-    [1.7, [58], true],
+    [0.3, [12], true],
+    [1.7, [12], true],
     [2, [0]],
   ]);
   rot(wave, 'arm far 2', [
     [0, [0], true],
-    [0.3, [48], true],
-    [1.7, [48], true],
+    [0.3, [8], true],
+    [1.7, [8], true],
     [2, [0]],
   ]);
   eye(wave, [
@@ -776,14 +774,6 @@ export function buildDemoRig(images: Record<string, ImageRef>): Project {
     [0.5, 'closed'],
     [1.45, 'open'],
   ]);
-  // the far arm and its hand move above the body while the hand is on the belly
-  const inFront = defaultOrder.filter((s) => s !== slotId('arm far') && s !== slotId('hand far'));
-  const at = inFront.indexOf(slotId('body')) + 1;
-  inFront.splice(at, 0, slotId('arm far'), slotId('hand far'));
-  wave.drawOrder = [
-    { time: 0.3, order: inFront },
-    { time: 1.7, order: defaultOrder },
-  ];
   wave.events = [{ time: 0.45, event: waveEvent, string: 'hello' }];
 
   // ---- jump: crouch, spring, tuck, land; the tail, the ears and the scarf follow by physics
