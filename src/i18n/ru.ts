@@ -1478,6 +1478,19 @@ export const RU: Record<string, string> = {
   'Longest animation': 'Самая длинная анимация',
   'Before export': 'Перед экспортом',
   'Nothing looks forgotten': 'Ничего не забыто',
+  'Animation check': 'Проверка анимации',
+  'The animations and the names look fine': 'С анимациями и именами всё в порядке',
+  'The end of this cycle is not the same as its start: it jumps when it repeats':
+    'Конец цикла не совпадает с началом: при повторе будет скачок',
+  'A bone turns more than half a circle between two keys: check that it goes the way you want':
+    'Кость поворачивается больше чем на пол-оборота между двумя ключами: проверьте, что она крутится туда, куда нужно',
+  'Keys after the end of the animation: they are never reached': 'Ключи за концом анимации: до них проигрывание не доходит',
+  'Two keys of one timeline sit at the same time': 'Два ключа одной дорожки стоят в одно время',
+  'Names with a side but no pair: Swap sides and Mirror skip these bones':
+    'Имена со стороной, но без пары: «Поменять стороны» и зеркало пропускают эти кости',
+  'The sides are written in different ways in one skeleton': 'Стороны записаны по-разному в одном скелете',
+  'Keys on nearly every frame: Simplify keys makes the file smaller': 'Ключи почти на каждом кадре: «Упрощение ключей» уменьшит файл',
+  'Make the end of the cycle the same as its start': 'Сделать конец цикла таким же, как начало',
   'Image is not used by any attachment': 'Картинка не используется ни одним вложением',
   'Animation has no keys': 'В анимации нет ключей',
   'Deform keys on a linked mesh that shares the deform of its source: the keys are not exported, move the source instead':

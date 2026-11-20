@@ -1,10 +1,12 @@
 import { useMemo } from 'react';
 import { AlertTriangle, CheckCircle2, Wrench } from 'lucide-react';
 import { estimatePages, poseMetrics } from '@/core/drawstats';
+import { lintProject } from '@/core/lint';
+import type { Finding } from '@/core/lint';
 import { canFix, isSafeFix } from '@/core/problems';
 import { MAX_INFLUENCES, projectStats, projectWarnings } from '@/core/stats';
 import type { Warning } from '@/core/stats';
-import { fixAllSafeWarnings, fixWarning, revealWarning } from '@/store/problemActions';
+import { fixAllSafeWarnings, fixFinding, fixWarning, revealFinding, revealWarning } from '@/store/problemActions';
 import { useProject } from '@/store/doc';
 import { useUi } from '@/store/ui';
 import { getScene } from '@/store/scene';
@@ -17,6 +19,16 @@ const WARNING_TEXT: Record<Warning['kind'], string> = {
   duplicatePath: 'Two attachments use the same image',
   missingFrame: 'A picture of the sequence is missing: the export cannot be read by an engine',
   ignoredDeform: 'Deform keys on a linked mesh that shares the deform of its source: the keys are not exported, move the source instead',
+};
+
+const FINDING_TEXT: Record<Finding['kind'], string> = {
+  loopSeam: 'The end of this cycle is not the same as its start: it jumps when it repeats',
+  longSpin: 'A bone turns more than half a circle between two keys: check that it goes the way you want',
+  keyAfterEnd: 'Keys after the end of the animation: they are never reached',
+  duplicateKey: 'Two keys of one timeline sit at the same time',
+  unpairedSide: 'Names with a side but no pair: Swap sides and Mirror skip these bones',
+  mixedSides: 'The sides are written in different ways in one skeleton',
+  denseKeys: 'Keys on nearly every frame: Simplify keys makes the file smaller',
 };
 
 /** What the fix button of each warning does, shown as its tooltip. */
@@ -33,6 +45,7 @@ export function MetricsPanel() {
   const project = useProject();
   const stats = useMemo(() => projectStats(project), [project]);
   const warnings = useMemo(() => projectWarnings(project), [project]);
+  const findings = useMemo(() => lintProject(project), [project]);
   // the pose on screen: the numbers follow the playhead (the scene is the one the viewport draws)
   const time = useUi((s) => s.time);
   const mode = useUi((s) => s.mode);
@@ -130,6 +143,27 @@ export function MetricsPanel() {
               </b>
               {canFix(w) && (
                 <button className="btn sm" title={FIX_TEXT[w.kind]} onClick={() => fixWarning(w)}>
+                  <Wrench size={12} /> Fix
+                </button>
+              )}
+            </div>
+          ))
+        )}
+        <div className="section-label">Animation check</div>
+        {findings.length === 0 ? (
+          <div className="warn ok">
+            <CheckCircle2 size={14} /> The animations and the names look fine
+          </div>
+        ) : (
+          findings.slice(0, 40).map((f, i) => (
+            <div key={i} className="warn">
+              <AlertTriangle size={14} />
+              <span className="warn-text">{FINDING_TEXT[f.kind]}</span>
+              <b style={f.animation || f.bone ? { cursor: 'pointer' } : undefined} onClick={() => revealFinding(f)}>
+                {f.subject}
+              </b>
+              {f.kind === 'loopSeam' && (
+                <button className="btn sm" title="Make the end of the cycle the same as its start" onClick={() => fixFinding(f)}>
                   <Wrench size={12} /> Fix
                 </button>
               )}

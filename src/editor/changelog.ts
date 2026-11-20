@@ -12,6 +12,16 @@ export interface Release {
 
 export const CHANGELOG: Release[] = [
   {
+    version: '0.90',
+    date: '2026-11-21',
+    en: [
+      'The Metrics window got an "Animation check": it finds a cycle whose end does not match its start (a jump when it repeats), a bone that turns more than half a circle between two keys, keys after the end of the animation, two keys at one time, and animations that have a key on nearly every frame. It also finds names with a side but no pair (Swap sides and Mirror skip those bones) and sides written in different ways. A click goes to the animation, the moment and the bone; a broken cycle has a Fix button. These are hints, never errors: nothing blocks an export, and the demo fox gets none.',
+    ],
+    ru: [
+      'В окне «Метрики» появилась «Проверка анимации»: она находит цикл, у которого конец не совпадает с началом (скачок при повторе), кость, которая поворачивается больше чем на пол-оборота между двумя ключами, ключи за концом анимации, два ключа в одно время и анимации с ключом почти на каждом кадре. А ещё имена со стороной, но без пары («Поменять стороны» и зеркало такие кости пропускают), и стороны, записанные по-разному. Щелчок ведёт к анимации, моменту и кости; у сломанного цикла есть кнопка «Исправить». Это подсказки, а не ошибки: экспорт ничто не блокирует, а у демо-лисы замечаний нет.',
+    ],
+  },
+  {
     version: '0.89',
     date: '2026-11-21',
     en: [

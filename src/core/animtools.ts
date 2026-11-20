@@ -103,6 +103,26 @@ export function counterpartName(name: string): string | null {
   return null;
 }
 
+/** How a name writes its side: left/right words, single letters, short forms, near/far or front/back; null when it shows none. */
+export type SideStyle = 'near-far' | 'left-right' | 'l-r' | 'lft-rgt' | 'front-back';
+const STYLES: SideStyle[] = ['near-far', 'left-right', 'l-r', 'lft-rgt', 'front-back'];
+
+export function sideStyle(name: string): SideStyle | null {
+  const word = (w: string): SideStyle | null => {
+    const lower = w.toLowerCase();
+    const at = PAIRS.findIndex(([a, b]) => lower === a || lower === b);
+    return at < 0 ? null : STYLES[at];
+  };
+  for (const part of name.split(/[ _\-.]+/)) {
+    const s = word(part);
+    if (s) return s;
+  }
+  const tail = /^(.*[a-z0-9])(Left|Right|L|R)$/.exec(name);
+  if (tail) return word(tail[2]);
+  const head = /^(Left|Right|L|R)([A-Z].*)$/.exec(name);
+  return head ? word(head[1]) : null;
+}
+
 /** For each item the id of the one on the other side (items without a side, or whose other side does not exist, are left out). */
 export function sidePairs(items: { id: Id; name: string }[]): Map<Id, Id> {
   const byName = new Map(items.map((i) => [i.name, i.id] as const));

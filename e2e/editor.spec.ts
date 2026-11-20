@@ -222,3 +222,35 @@ test('a link with ?demo=wave opens the fox playing the wave, without the welcome
     )
     .toBe('animate:wave:true');
 });
+
+type ViewActions = typeof import('../src/store/viewActions');
+const VIEWS = '/src/store/viewActions.ts';
+
+test('the Metrics window checks the animations: a broken cycle is listed and one click puts it right', async ({ page }) => {
+  await openDemo(page);
+  await page.evaluate(async (url) => {
+    const { toggleView } = (await import(url)) as ViewActions;
+    toggleView('metrics');
+  }, VIEWS);
+  const metrics = page.locator('.metrics');
+  await expect(metrics.getByText('The animations and the names look fine')).toBeVisible();
+
+  // the seam of the walk cycle is broken: the last key of a rotation is turned 30 degrees
+  await page.evaluate(async (url) => {
+    const { docStore } = (await import(url)) as DocModule;
+    docStore.update('Break the loop', (d) => {
+      const walk = d.skeleton.animations.find((a) => a.name === 'walk')!;
+      for (const bone of Object.values(walk.bones)) {
+        const keys = bone.rotate;
+        if (keys && keys.length > 1) {
+          keys[keys.length - 1].value = [keys[keys.length - 1].value[0] + 30];
+          return;
+        }
+      }
+    });
+  }, DOC);
+  const row = metrics.locator('.warn', { hasText: 'The end of this cycle is not the same as its start' });
+  await expect(row).toBeVisible();
+  await row.getByRole('button', { name: 'Fix' }).click();
+  await expect(metrics.getByText('The animations and the names look fine')).toBeVisible();
+});

@@ -49,6 +49,22 @@ export function closeLoop(anim: Animation, options: CloseLoopOptions = {}): numb
   return changed;
 }
 
+/** How far the end may be from the start before a seam shows (degrees, pixels, a multiplier: a tenth of any is hard to see). */
+export const SEAM_TOLERANCE = 0.1;
+
+/** How many timelines of a cycle end on another value than they start on (a jump when it repeats). Changes nothing. */
+export function openSeams(anim: Animation, tolerance = SEAM_TOLERANCE): number {
+  const scope = [anim.bones, anim.slots, anim.deform, anim.transform, anim.slider, anim.path, anim.physics];
+  let open = 0;
+  for (const list of keyListsIn(scope)) {
+    if (list.length < 2 || !list.every(isNumberKey)) continue;
+    const first = list[0].value;
+    const last = list[list.length - 1].value;
+    if (first.length !== last.length || first.some((v, i) => Math.abs(v - last[i]) > tolerance)) open++;
+  }
+  return open;
+}
+
 /** The most copies of one key the Dopesheet draws on each side (zoomed far out a short animation would otherwise repeat thousands of times). */
 export const MAX_LOOP_GHOSTS = 6;
 
