@@ -33,7 +33,7 @@ export function favorSelectedKeys(mode: FavorMode, amount: number): number {
       if (ref.kind === 'deform' || ref.kind === 'sequence' || ref.prop === 'reset' || ref.prop === 'attachment') continue;
       // a block moved as a whole can leave the range a value has (a colour channel under 0, a mix over 1): only bone values are free
       if ((mode === 'shiftPrevious' || mode === 'shiftNext') && ref.kind !== 'bone') continue;
-      const keys = resolveKeys(a, ref) as TimeKey[] | undefined;
+      const keys = resolveKeys(a, ref);
       const i = keys?.findIndex((k) => Math.abs(k.time - ref.time) <= KEY_EPS) ?? -1;
       if (!keys || i < 0) continue;
       const g = groups.get(keys) ?? { ref, at: [] };
@@ -67,7 +67,7 @@ export function scaleSelectedKeyTimes(factor: number): number {
     if (!a) return;
     const groups = new Map<TimeKey[], { ref: KeyRef; at: number[] }>();
     for (const ref of refs) {
-      const keys = resolveKeys(a, ref) as TimeKey[] | undefined;
+      const keys = resolveKeys(a, ref);
       const i = keys?.findIndex((k) => Math.abs(k.time - ref.time) <= KEY_EPS) ?? -1;
       if (!keys || i < 0) continue;
       const g = groups.get(keys) ?? { ref, at: [] };
@@ -117,7 +117,7 @@ export function storeSelectedKeys(): number {
   const items: StoredKey[] = [];
   for (const ref of refs) {
     if (ref.kind === 'deform' || ref.kind === 'sequence' || ref.prop === 'reset' || ref.prop === 'attachment') continue;
-    const keys = resolveKeys(anim, ref) as TimeKey[] | undefined;
+    const keys = resolveKeys(anim, ref);
     const key = keys?.find((k) => Math.abs(k.time - ref.time) <= KEY_EPS);
     if (key?.value) items.push({ ref, value: key.value.slice() });
   }
@@ -144,7 +144,7 @@ export function swapStoredKeys(): number {
     const a = d.skeleton.animations.find((x) => x.id === anim.id);
     if (!a) return;
     for (const item of stash.items) {
-      const keys = resolveKeys(a, item.ref) as TimeKey[] | undefined;
+      const keys = resolveKeys(a, item.ref);
       const key = keys?.find((k) => Math.abs(k.time - item.ref.time) <= KEY_EPS);
       if (!key?.value || key.value.length !== item.value.length) {
         kept.push(item);

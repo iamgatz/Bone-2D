@@ -19,7 +19,7 @@ export function setKeysAutoCurve(refs: KeyRef[]): number {
     for (const ref of refs) {
       // a deform key has one shared curve for all its offsets, and the other kinds have no values to smooth
       if (ref.kind === 'deform' || ref.kind === 'sequence' || ref.kind === 'drawOrder' || ref.kind === 'drawOrderFolder' || ref.kind === 'event' || ref.prop === 'attachment') continue;
-      const keys = resolveKeys(a, ref) as AutoKey[] | undefined;
+      const keys = resolveKeys(a, ref);
       if (!keys) continue;
       const i = keys.findIndex((k) => Math.abs(k.time - ref.time) <= KEY_EPS);
       if (i >= 0) groups.set(keys, [...(groups.get(keys) ?? []), i]);

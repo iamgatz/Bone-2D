@@ -86,7 +86,7 @@ describe('simplifyAnimation', () => {
     const anim = structuredClone(doc.animations.find((a) => a.name === 'walk')!);
     const boneId = Object.keys(anim.bones)[0];
     anim.bones[boneId].rotate = Array.from({ length: 31 }, (_, i) => key(i / 30, i * 0.5));
-    const before = anim.bones[boneId].rotate!.length;
+    const before = anim.bones[boneId].rotate.length;
     const tolerance = DEFAULT_TOLERANCE;
     expect(countSimplifiable(anim, tolerance, doc.fps)).toBeGreaterThanOrEqual(before - 2);
     // counting does not touch the animation
@@ -158,7 +158,7 @@ describe('bakeAnimation', () => {
 
   it('keys every N-th frame when asked, and always ends on the last frame', () => {
     const baked = bakeAnimation(doc, walk, { simplify: null, step: 4 });
-    const id = Object.keys(baked.bones).find((b) => baked.bones[b].rotate && baked.bones[b].rotate!.length > 3)!;
+    const id = Object.keys(baked.bones).find((b) => baked.bones[b].rotate && baked.bones[b].rotate.length > 3)!;
     const times = baked.bones[id].rotate!.map((k) => k.time);
     expect(times[0]).toBe(0);
     expect(times.at(-1)).toBeCloseTo(walk.duration, 6);

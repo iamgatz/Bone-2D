@@ -24,7 +24,7 @@ export function addPhysicsRig(project: Project): Record<string, Id> {
   bone('sw3', ids.sw2, { x: 40, length: 30 });
   bone('swSide', parent, { x: 10, y: -30, rotation: -90 });
   const add = (bone: string, partial: Parameters<typeof newPhysicsConstraint>[0] extends infer T ? Partial<T> : never) => {
-    const c = newPhysicsConstraint({ name: `${bone} physics`, bone: ids[bone], ...partial } as never);
+    const c = newPhysicsConstraint({ name: `${bone} physics`, bone: ids[bone], ...partial });
     doc.constraints.push(c);
     ids[c.name] = c.id;
   };

@@ -17,7 +17,7 @@ import { POLYGON_SQUARE, addAttachmentRig, buildFixture } from './fixture';
 import type { AttachmentRig } from './fixture';
 import { S, exportAndLoad } from './official';
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
+ 
 
 const close = (a: number, b: number, what: string, eps = 2e-3) => {
   if (!(Math.abs(a - b) <= eps * Math.max(1, Math.abs(a), Math.abs(b)))) throw new Error(`${what}: ours=${a} official=${b}`);

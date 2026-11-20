@@ -73,7 +73,10 @@ export function isolation(doc: SkeletonDoc, bones: readonly Id[], slot: Id | nul
   const keep = new Set<Id>(picked);
   for (let grew = true; grew; ) {
     grew = false;
-    for (const b of doc.bones) if (b.parent && keep.has(b.parent) && !keep.has(b.id)) (keep.add(b.id), (grew = true));
+    for (const b of doc.bones) if (b.parent && keep.has(b.parent) && !keep.has(b.id)) {
+        keep.add(b.id);
+        grew = true;
+      }
   }
   return { bones: new Set(doc.bones.filter((b) => !keep.has(b.id)).map((b) => b.id)), slots: new Set(doc.slots.filter((s) => !keep.has(s.bone)).map((s) => s.id)) };
 }

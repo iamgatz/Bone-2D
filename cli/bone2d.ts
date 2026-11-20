@@ -17,7 +17,7 @@ import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { basename, dirname, extname, join, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { composePage, packAtlas, premultiplyAlpha, writeAtlas } from '@/core/export/atlas';
-import type { AtlasFilter, PackInput } from '@/core/export/atlas';
+import type { PackInput } from '@/core/export/atlas';
 import { findAliases, makeRegion, scaledSize, usedImages } from '@/core/export/atlasBuild';
 import { scaleSpineJson } from '@/core/export/scale';
 import { jsonToBinary } from '@/core/export/spineBinary';
@@ -239,7 +239,7 @@ function atlasStep(p: Parsed, file: ProjectFile, doc: Project['skeleton'], base:
   const pma = p.flags.has('pma');
   const pages = packAtlas(inputs, { maxSize, padding, pot: !p.flags.has('no-pot'), rotate: p.flags.has('rotate'), square: p.flags.has('square'), multipleOf4: p.flags.has('multiple-of-4') });
   const pageFile = (i: number) => (pages.length === 1 ? `${base}.png` : `${base}-${i + 1}.png`);
-  const text = writeAtlas(pages, pageFile, { pma, filter: (filter === 'nearest' ? 'Nearest' : 'Linear') as AtlasFilter });
+  const text = writeAtlas(pages, pageFile, { pma, filter: (filter === 'nearest' ? 'Nearest' : 'Linear') });
   writeFileSync(join(outDir, `${base}.atlas`), text);
   for (const page of pages) {
     const data = composePage(page, (n) => (pixels.has(n) ? { data: pixels.get(n)! } : undefined), padding);

@@ -25,7 +25,7 @@ export function KeyDialogHost() {
 function KeyDialog({ refKey }: { refKey: KeyRef }) {
   const fps = useProject().skeleton.fps; // also follows every edit of the document
   const anim = currentAnimation();
-  const keys = anim ? (resolveKeys(anim, refKey) as AnyKey[] | undefined) : undefined;
+  const keys = anim ? (resolveKeys(anim, refKey)) : undefined;
   const key = keyAtTime(keys, refKey.time);
   const index = key && keys ? keys.indexOf(key) : -1;
   if (!anim || !keys || !key) return <Dialog title="Edit key" onClose={closeKeyDialog}><p className="hint-text">This key no longer exists.</p></Dialog>;

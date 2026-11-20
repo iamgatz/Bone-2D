@@ -307,7 +307,7 @@ export function compileSkeleton(doc: SkeletonDoc): SkeletonData {
   const skinById = new Map<Id, SkinData>();
   const pathEntries: { att: PathAttachmentData; slot: number }[] = [];
   const skins: SkinData[] = doc.skins.map((s) => {
-    const perSlot: Map<string, AttachmentData>[] = slots.map(() => new Map());
+    const perSlot: Map<string, AttachmentData>[] = slots.map(() => new Map<string, AttachmentData>());
     for (const slotId in s.attachments) {
       const si = slotIndex.get(slotId);
       if (si === undefined) continue;
@@ -332,7 +332,7 @@ export function compileSkeleton(doc: SkeletonDoc): SkeletonData {
     skinById.set(s.id, skin);
     return skin;
   });
-  const defaultSkin = skins[0] ?? { id: '', name: 'default', attachments: slots.map(() => new Map()), bones: [], constraints: [] };
+  const defaultSkin = skins[0] ?? { id: '', name: 'default', attachments: slots.map(() => new Map<string, AttachmentData>()), bones: [], constraints: [] };
 
   const data: SkeletonData = {
     name: doc.name,

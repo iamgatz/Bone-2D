@@ -19,7 +19,7 @@ function tidyKeys(d: Project) {
 }
 
 /** Puts a slot into a folder (`'new'` makes one for it), or takes it out of its folder (`null`). A slot is in one folder at most. */
-export function setSlotFolder(slotId: Id, folder: Id | 'new' | null) {
+export function setSlotFolder(slotId: Id, folder: Id | null) {
   const before = docStore.get().skeleton.drawOrderFolders?.find((f) => f.slots.includes(slotId))?.id ?? null;
   if (folder === before) return;
   docStore.update(folder === null ? 'Take slot out of its folder' : 'Put slot in a folder', (d) => {

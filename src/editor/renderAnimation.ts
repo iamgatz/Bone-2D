@@ -8,6 +8,7 @@ import { compileSkeleton, createSkeleton } from '@/core/skeleton';
 import type { Skeleton } from '@/core/skeleton';
 import { GLRenderer } from '@/render/gl';
 import { assets } from '@/store/assets';
+import { canvasToBlob } from './ui/canvas';
 
 export interface RenderOptions {
   doc: SkeletonDoc;
@@ -121,15 +122,15 @@ export function prepareRender(opts: RenderOptions): Prepared {
   };
 }
 
+const blobBytes = async (blob: Blob) => new Uint8Array(await blob.arrayBuffer());
+
 /** A PNG of one frame. */
 export function frameToPng(image: ImageData): Promise<Uint8Array> {
   const c = document.createElement('canvas');
   c.width = image.width;
   c.height = image.height;
   c.getContext('2d')!.putImageData(image, 0, 0);
-  return new Promise((resolve, reject) =>
-    c.toBlob(async (b) => (b ? resolve(new Uint8Array(await b.arrayBuffer())) : reject(new Error('PNG encode failed'))), 'image/png'),
-  );
+  return canvasToBlob(c).then(blobBytes);
 }
 
 /** A JPEG of one frame (it has no transparency: the frame has to be drawn on a solid background). */
@@ -138,9 +139,7 @@ export function frameToJpeg(image: ImageData, quality = 0.92): Promise<Uint8Arra
   c.width = image.width;
   c.height = image.height;
   c.getContext('2d')!.putImageData(image, 0, 0);
-  return new Promise((resolve, reject) =>
-    c.toBlob(async (b) => (b ? resolve(new Uint8Array(await b.arrayBuffer())) : reject(new Error('JPEG encode failed'))), 'image/jpeg', quality),
-  );
+  return canvasToBlob(c, 'image/jpeg', quality).then(blobBytes);
 }
 
 /** A WebM video of the frames, recorded in real time from a canvas (the browser's encoder). */

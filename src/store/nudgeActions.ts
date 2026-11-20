@@ -53,7 +53,7 @@ export function nudgeKeyValues(steps: number): number {
     const a = d.skeleton.animations.find((x) => x.id === anim.id);
     if (!a) return;
     for (const ref of refs) {
-      const keys = resolveKeys(a, ref) as { time: number; value?: number[] }[] | undefined;
+      const keys = resolveKeys(a, ref);
       const k = keys?.find((x) => Math.abs(x.time - ref.time) < 1e-4);
       if (k?.value) {
         k.value = nudgeValue(ref.prop, k.value, steps);

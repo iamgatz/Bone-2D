@@ -290,7 +290,7 @@ export function Timeline() {
             )}
           </div>
           <div className="tl-scroll" id="tl-label-scroll" style={{ scrollbarWidth: 'none' }} onScroll={(e) => {
-            const host = document.querySelector('.tl-canvas-host') as HTMLElement | null;
+            const host = document.querySelector<HTMLElement>('.tl-canvas-host');
             if (host && host.scrollTop !== e.currentTarget.scrollTop) host.scrollTop = e.currentTarget.scrollTop;
           }}>
             {rows.map((r) => (

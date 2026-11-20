@@ -12,7 +12,7 @@ import type { Id, PhysicsConstraint, Project } from '../src/core/model';
 import { compileSkeleton, createSkeleton } from '../src/core/skeleton';
 import { S, exportAndLoad } from './official';
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
+ 
 
 interface Rig {
   project: Project;

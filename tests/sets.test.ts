@@ -112,7 +112,7 @@ describe('selection sets', () => {
     ];
     const notes = repairProject(p);
     expect(notes.length).toBeGreaterThan(0);
-    const sets = p.skeleton.selectionSets!;
+    const sets = p.skeleton.selectionSets;
     expect(sets).toHaveLength(2);
     expect(sets[0].bones).toEqual([armL.id]);
     expect(new Set(sets.map((s) => s.id)).size).toBe(2);
@@ -315,7 +315,7 @@ describe('micro-move', () => {
     const ref = (prop: string, time: number) => JSON.stringify(['bone', armL.id, prop, time]);
     uiStore.patch({ selectedKeys: [ref('rotate', 1), ref('translate', 1)] });
     expect(nudgeKeyValues(2)).toBe(2);
-    const anim = () => docStore.get().skeleton.animations[0].bones[armL.id]!;
+    const anim = () => docStore.get().skeleton.animations[0].bones[armL.id];
     expect(anim().rotate![1].value).toEqual([42]);
     expect(anim().translate![1].value).toEqual([5, 7]);
     expect(nudgeKeysTime(-3)).toBe(2);

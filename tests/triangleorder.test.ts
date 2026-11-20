@@ -2,7 +2,6 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { exportSpineJson } from '../src/core/export/spineJson';
 import { moveTriangle, trianglesAt } from '../src/core/mesh';
-import type { MeshAttachment } from '../src/core/model';
 import { setSelection } from '../src/store/actions';
 import { docStore } from '../src/store/doc';
 import { getMesh, moveMeshTriangle, retriangulateMesh } from '../src/store/meshActions';
@@ -58,7 +57,7 @@ describe('moving the triangles of a mesh', () => {
     const doc = docStore.get().skeleton;
     for (const slot of doc.slots) {
       const a = doc.skins[0].attachments[slot.id]?.head;
-      if (a?.type === 'mesh' && !a.link) return { slotId: slot.id, mesh: a as MeshAttachment };
+      if (a?.type === 'mesh' && !a.link) return { slotId: slot.id, mesh: a };
     }
     throw new Error('no mesh');
   };

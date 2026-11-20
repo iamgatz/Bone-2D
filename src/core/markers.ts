@@ -78,11 +78,11 @@ type AnyKey = { time: number; value?: number[]; curve?: unknown };
  */
 function cutKeys<T extends AnyKey>(keys: T[], t0: number, t1: number, kind: 'number' | 'colour' | 'state' | 'event', lastPiece: boolean): T[] {
   const inside = keys.filter((k) => k.time >= t0 - SAME_EPS && (kind === 'event' && !lastPiece ? k.time < t1 - SAME_EPS : k.time <= t1 + SAME_EPS));
-  const shifted = inside.map((k) => ({ ...structuredClone(k), time: Math.max(0, k.time - t0) }) as T);
+  const shifted = inside.map((k) => ({ ...structuredClone(k), time: Math.max(0, k.time - t0) }));
   if (kind === 'event' || !keys.length) return shifted;
   const active = [...keys].reverse().find((k) => k.time <= t0 + SAME_EPS);
   if (kind === 'state') {
-    if (active && !inside.some((k) => Math.abs(k.time - t0) < SAME_EPS)) shifted.unshift({ ...structuredClone(active), time: 0 } as T);
+    if (active && !inside.some((k) => Math.abs(k.time - t0) < SAME_EPS)) shifted.unshift({ ...structuredClone(active), time: 0 });
     return shifted;
   }
   // numbers: sampled keys at both edges
@@ -126,20 +126,20 @@ export function cutAnimation(anim: Animation, t0: number, t1: number, name: stri
 
   for (const [id, tl] of Object.entries(anim.bones)) {
     const piece: Record<string, AnyKey[]> = {};
-    for (const [prop, keys] of Object.entries(tl) as [string, AnyKey[] | undefined][]) {
+    for (const [prop, keys] of Object.entries(tl as Record<string, AnyKey[] | undefined>)) {
       const cut = nums(keys);
       if (cut.length) piece[prop] = cut;
     }
-    if (Object.keys(piece).length) out.bones[id] = piece as never;
+    if (Object.keys(piece).length) out.bones[id] = piece;
   }
   for (const [id, tl] of Object.entries(anim.slots)) {
     const piece: Record<string, AnyKey[]> = {};
-    if (tl.attachment) piece.attachment = states(tl.attachment as AnyKey[]);
+    if (tl.attachment) piece.attachment = states(tl.attachment);
     const colours = (k: AnyKey[] | undefined) => (k?.length ? cutKeys(k, t0, t1, 'colour', lastPiece) : []);
     if (tl.rgba) piece.rgba = colours(tl.rgba);
     if (tl.rgba2) piece.rgba2 = colours(tl.rgba2);
     for (const p of Object.keys(piece)) if (!piece[p].length) delete piece[p];
-    if (Object.keys(piece).length) out.slots[id] = piece as never;
+    if (Object.keys(piece).length) out.slots[id] = piece;
   }
   for (const [id, keys] of Object.entries(anim.ik)) {
     const cut = nums(keys);
@@ -153,7 +153,7 @@ export function cutAnimation(anim: Animation, t0: number, t1: number, name: stri
   for (const g of groups) {
     for (const [id, tl] of Object.entries(anim[g] ?? {})) {
       const piece: Record<string, AnyKey[]> = {};
-      for (const [prop, keys] of Object.entries(tl) as [string, AnyKey[] | undefined][]) {
+      for (const [prop, keys] of Object.entries(tl as Record<string, AnyKey[] | undefined>)) {
         const cut = prop === 'reset' ? (keys ? cutKeys(keys, t0, t1, 'event', lastPiece) : []) : nums(keys);
         if (cut.length) piece[prop] = cut;
       }
@@ -171,14 +171,14 @@ export function cutAnimation(anim: Animation, t0: number, t1: number, name: stri
   for (const [skin, perSlot] of Object.entries(anim.sequence ?? {})) {
     for (const [slot, perAtt] of Object.entries(perSlot)) {
       for (const [att, keys] of Object.entries(perAtt)) {
-        const cut = states(keys as unknown as AnyKey[]);
+        const cut = states(keys);
         if (cut.length) ((((out.sequence ??= {})[skin] ??= {})[slot] ??= {})[att] = cut as never);
       }
     }
   }
   out.drawOrder = (keep(states(anim.drawOrder as unknown as AnyKey[])) ?? []) as never;
   for (const [id, keys] of Object.entries(anim.drawOrderFolder ?? {})) {
-    const cut = states(keys as unknown as AnyKey[]);
+    const cut = states(keys);
     if (cut.length) ((out.drawOrderFolder ??= {})[id] = cut as never);
   }
   out.events = cutKeys(anim.events as unknown as AnyKey[], t0, t1, 'event', lastPiece) as never;

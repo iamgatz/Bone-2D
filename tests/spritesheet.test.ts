@@ -86,7 +86,7 @@ describe('the names', () => {
   });
 });
 
-const fake = (name: string): ImageAsset => ({ name, width: 16, height: 16, blob: new Blob([]), bitmap: { close() {}, width: 16, height: 16 } as unknown as ImageBitmap, version: 1 });
+const fake = (name: string): ImageAsset => ({ name, width: 16, height: 16, blob: new Blob([]), bitmap: { close() {}, width: 16, height: 16 }, version: 1 });
 
 describe('adding frames', () => {
   beforeEach(() => {

@@ -167,7 +167,7 @@ export class PhysicsConstraintRT {
         let m = 0;
         let e = 0;
         let qx = d.limit * delta;
-        let qy = qx * Math.abs(skeleton.scaleY);
+        const qy = qx * Math.abs(skeleton.scaleY);
         qx *= Math.abs(skeleton.scaleX);
         if (x || y) {
           if (x) {

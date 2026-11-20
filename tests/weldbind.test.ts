@@ -178,7 +178,7 @@ describe('Update bindings and Weld (store)', () => {
   it('Weld refuses a mesh that shares fewer than two bones', () => {
     docStore.update('only A', (d) => {
       const m = d.skeleton.skins[0].attachments[s1].big as never as { weights: Influence[][] };
-      m.weights = m.weights.map((l) => [[a, 0, 0, 1] as Influence]);
+      m.weights = m.weights.map(() => [[a, 0, 0, 1] as Influence]);
     });
     expect(weldMeshWeights(s2, 'small', s1, 'big', 'all')).toBe(0);
   });

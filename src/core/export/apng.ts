@@ -32,7 +32,7 @@ function chunk(type: string, data: ArrayLike<number>): Uint8Array {
   const out = new Uint8Array(12 + data.length);
   out.set(be32(data.length), 0);
   for (let i = 0; i < 4; i++) out[4 + i] = type.charCodeAt(i);
-  out.set(data as ArrayLike<number>, 8);
+  out.set(data, 8);
   out.set(be32(crc32(out.subarray(4, 8 + data.length))), 8 + data.length);
   return out;
 }

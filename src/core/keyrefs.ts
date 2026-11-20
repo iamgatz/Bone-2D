@@ -1,6 +1,6 @@
 /** Addressing keyframes inside an animation (used by timeline selection, copy/paste, move, delete). */
 import { KEY_EPS, sortKeys } from './edit';
-import type { Animation, Id } from './model';
+import type { Animation, Curve, Id } from './model';
 
 export type KeyKind = 'bone' | 'slot' | 'ik' | 'deform' | 'sequence' | 'drawOrder' | 'drawOrderFolder' | 'event' | 'slider' | 'transform' | 'path' | 'physics';
 
@@ -22,7 +22,7 @@ export function decodeKey(s: string): KeyRef {
   return { kind, target, prop, time };
 }
 
-type AnyKeys = { time: number }[];
+type AnyKeys = { time: number; value?: number[]; curve?: Curve }[];
 
 /** The live key array a ref points to (creating nothing). */
 export function resolveKeys(anim: Animation, ref: Pick<KeyRef, 'kind' | 'target' | 'prop'>): AnyKeys | undefined {
@@ -139,29 +139,29 @@ export function moveKeys(anim: Animation, refs: KeyRef[], dt: number, ripple = f
 export function pruneEmpty(anim: Animation) {
   for (const id in anim.bones) {
     const t = anim.bones[id] as Record<string, AnyKeys | undefined>;
-    for (const p of Object.keys(t)) if (!t[p] || t[p]!.length === 0) delete t[p];
+    for (const p of Object.keys(t)) if (!t[p] || t[p].length === 0) delete t[p];
     if (Object.keys(t).length === 0) delete anim.bones[id];
   }
   for (const id in anim.slots) {
     const t = anim.slots[id] as Record<string, AnyKeys | undefined>;
-    for (const p of Object.keys(t)) if (!t[p] || t[p]!.length === 0) delete t[p];
+    for (const p of Object.keys(t)) if (!t[p] || t[p].length === 0) delete t[p];
     if (Object.keys(t).length === 0) delete anim.slots[id];
   }
   for (const id in anim.ik) if (anim.ik[id].length === 0) delete anim.ik[id];
   for (const id in anim.transform ?? {}) if (anim.transform[id].length === 0) delete anim.transform[id];
   for (const id in anim.slider ?? {}) {
     const t = anim.slider[id] as Record<string, AnyKeys | undefined>;
-    for (const p of Object.keys(t)) if (!t[p] || t[p]!.length === 0) delete t[p];
+    for (const p of Object.keys(t)) if (!t[p] || t[p].length === 0) delete t[p];
     if (Object.keys(t).length === 0) delete anim.slider[id];
   }
   for (const id in anim.path ?? {}) {
     const t = anim.path[id] as Record<string, AnyKeys | undefined>;
-    for (const p of Object.keys(t)) if (!t[p] || t[p]!.length === 0) delete t[p];
+    for (const p of Object.keys(t)) if (!t[p] || t[p].length === 0) delete t[p];
     if (Object.keys(t).length === 0) delete anim.path[id];
   }
   for (const id in anim.physics ?? {}) {
     const t = anim.physics[id] as Record<string, AnyKeys | undefined>;
-    for (const p of Object.keys(t)) if (!t[p] || t[p]!.length === 0) delete t[p];
+    for (const p of Object.keys(t)) if (!t[p] || t[p].length === 0) delete t[p];
     if (Object.keys(t).length === 0) delete anim.physics[id];
   }
   for (const skin in anim.sequence ?? {}) {

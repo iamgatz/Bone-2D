@@ -22,7 +22,7 @@ import { docStore } from '../src/store/doc';
 import { buildFixture } from './fixture';
 import { loadOfficial, loadOfficialBinary, startLikeOfficial } from './official';
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
+ 
 
 interface Rig {
   project: Project;
@@ -72,12 +72,12 @@ function rig(weighted: boolean): Rig {
   const length = (data.defaultSkin.attachments[data.slotIndex.get(slotId)!].get(name) as { deformLength: number }).deformLength;
   const animation = newAnimation('wobble', 1);
   const wave = (k: number) => Array.from({ length }, (_, i) => Math.sin(i * 1.3 + k) * 9);
-  animation.deform = { [skin.id]: { [slotId]: { [name]: [{ time: 0, value: wave(0) }, { time: 0.5, value: wave(1) }, { time: 1, value: wave(2) }] } } } as any;
+  animation.deform = { [skin.id]: { [slotId]: { [name]: [{ time: 0, value: wave(0) }, { time: 0.5, value: wave(1) }, { time: 1, value: wave(2) }] } } };
   doc.animations.push(animation);
   // the same, and the slot switches to `still` (a name that only the linked skin has: the official runtime cannot pose the default skin with it)
   const swap = newAnimation('swap', 1);
   swap.deform = structuredClone(animation.deform);
-  swap.slots = { [slotId]: { attachment: [{ time: 0, name }, { time: 0.7, name: 'still' }] } } as any;
+  swap.slots = { [slotId]: { attachment: [{ time: 0, name }, { time: 0.7, name: 'still' }] } };
   doc.animations.push(swap);
   syncLinkedMeshes(doc);
   return { project, slotId, slotName: slot.name, name, ghostId: ghost.id, skinId: alt.id, animation };
@@ -267,7 +267,7 @@ for (const weighted of [false, true]) {
     it('does not write the deform keys of a mesh that follows its source', () => {
       const own = structuredClone(r.project);
       const ownDoc = own.skeleton;
-      ownDoc.animations[0].deform = { [r.skinId]: { [r.slotId]: { [r.name]: ownDoc.animations[0].deform[ownDoc.skins[0].id][r.slotId][r.name] } } } as any;
+      ownDoc.animations[0].deform = { [r.skinId]: { [r.slotId]: { [r.name]: ownDoc.animations[0].deform[ownDoc.skins[0].id][r.slotId][r.name] } } };
       const out: any = exportSpineJson(ownDoc);
       expect(out.animations.wobble.attachments?.alt).toBeUndefined();
     });

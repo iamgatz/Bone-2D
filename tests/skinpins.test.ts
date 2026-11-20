@@ -1,6 +1,5 @@
 /** Skin pins (a pinned skin stays shown when another is chosen) and the options of duplicating a skin. */
 import { beforeEach, describe, expect, it } from 'vitest';
-import type { Project } from '../src/core/model';
 import { duplicateSkin } from '../src/core/skins';
 import { deleteSkin, duplicateSkinAction, setActiveSkin, toggleSkinPin } from '../src/store/actions';
 import { docStore } from '../src/store/doc';
@@ -11,7 +10,7 @@ function open() {
   const { project } = buildFixture();
   const doc = project.skeleton;
   doc.skins.push({ id: 'hat', name: 'hat', attachments: {}, bones: [doc.bones[1].id], constraints: [] }, { id: 'cape', name: 'cape', attachments: {}, bones: [], constraints: [] });
-  docStore.replace(project as Project);
+  docStore.replace(project);
   uiStore.patch({ skinId: null, skinMix: [], skinPins: [] });
   return doc;
 }
@@ -62,7 +61,7 @@ describe('skin pins', () => {
 describe('duplicating a skin with options', () => {
   it('takes a name, and leaves out the scope or the animation keys', () => {
     const doc = open();
-    doc.animations.push({ ...doc.animations[0], id: 'a1', name: 'a1', deform: { hat: { s: { att: [{ time: 0, value: [1, 2] }] } } } } as never);
+    doc.animations.push({ ...doc.animations[0], id: 'a1', name: 'a1', deform: { hat: { s: { att: [{ time: 0, value: [1, 2] }] } } } });
     const full = duplicateSkin(structuredClone(doc), 'hat', { name: 'beret' })!;
     expect(full.name).toBe('beret');
     expect(full.bones).toEqual(doc.skins.find((s) => s.id === 'hat')!.bones);

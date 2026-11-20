@@ -205,7 +205,7 @@ export class ViewportController {
       const sel = ui.selection.bones[0];
       let ox = wx;
       let oy = wy;
-      let parent: Id | null = sel ?? null;
+      const parent: Id | null = sel ?? null;
       if (sel) {
         const b = scene.skeleton.boneById(sel);
         if (b) {

@@ -84,7 +84,7 @@ export function readPresets(raw: string | null): ConstraintPreset[] {
     for (const p of list as Partial<ConstraintPreset>[]) {
       if (!p || typeof p !== 'object' || typeof p.name !== 'string' || !p.name.trim() || typeof p.id !== 'string') continue;
       if (!p.type || !(p.type in PRESET_FIELDS) || !p.settings || typeof p.settings !== 'object' || Array.isArray(p.settings)) continue;
-      out.push({ id: p.id, name: presetName(out, p.type, p.name), type: p.type, settings: p.settings as Record<string, unknown> });
+      out.push({ id: p.id, name: presetName(out, p.type, p.name), type: p.type, settings: p.settings });
     }
     return out;
   } catch {

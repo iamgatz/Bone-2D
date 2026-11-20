@@ -24,7 +24,7 @@ export interface SpineImportResult {
 const num = (v: unknown, d: number): number => (typeof v === 'number' && Number.isFinite(v) ? v : d);
 const bool = (v: unknown, d: boolean): boolean => (typeof v === 'boolean' ? v : d);
 const str = (v: unknown, d: string): string => (typeof v === 'string' ? v : d);
-const obj = (v: unknown): J => (v && typeof v === 'object' && !Array.isArray(v) ? (v as J) : {});
+const obj = (v: unknown): J => (v && typeof v === 'object' && !Array.isArray(v) ? (v) : {});
 const arr = (v: unknown): any[] => (Array.isArray(v) ? v : []);
 /** An enum value as the official loader reads it (first letter case does not matter), or the default. */
 const oneOf = <T extends string>(v: unknown, list: readonly T[], def: T): T => {
@@ -413,7 +413,7 @@ export function importSpineJson(input: unknown, name = 'imported'): SpineImportR
       // a link to a linked mesh is a link to its source (the loader needs a source that is not linked)
       const base = parent.link
         ? { source: parent.link.source, slot: parent.link.slot ?? sourceSlot, skin: parent.link.skin ?? defaultSkinDoc.id }
-        : { source: sourceName, slot: sourceSlot, skin: inSkin!.id };
+        : { source: sourceName, slot: sourceSlot, skin: inSkin.id };
       copy.link = {
         source: base.source,
         slot: base.slot === l.slot ? null : base.slot,
@@ -615,7 +615,7 @@ export function importSpineJson(input: unknown, name = 'imported'): SpineImportR
             });
             return out;
           };
-          (((a.deform[skin.id] ??= {})[sid] ??= {})[attName] = timeline(keys, 1, valueOf, true)) as Timeline;
+          (((a.deform[skin.id] ??= {})[sid] ??= {})[attName] = timeline(keys, 1, valueOf, true));
         }
       }
     }

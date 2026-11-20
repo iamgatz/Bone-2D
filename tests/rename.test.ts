@@ -2,7 +2,6 @@
 import { describe, expect, it } from 'vitest';
 import { applyImageRename, applyRename, nameMatcher, planRename } from '../src/core/rename';
 import type { FindReplaceOptions } from '../src/core/rename';
-import type { Project } from '../src/core/model';
 import { filterTree } from '../src/core/treeFilter';
 import { docStore } from '../src/store/doc';
 import { findReplaceNames, renameScope } from '../src/store/renameActions';
@@ -208,7 +207,7 @@ describe('Find and replace: pictures and where', () => {
 describe('the scope the editor builds', () => {
   it('"selection" is the selected bones, slot and constraint, and what the slot shows; "skin" is the chosen skin and its pictures', () => {
     const { project } = buildFixture();
-    docStore.replace(project as Project);
+    docStore.replace(project);
     const doc = project.skeleton;
     const flag = doc.slots.find((s) => s.name === 'flag')!;
     const head = doc.bones.find((b) => b.name === 'head')!;
@@ -229,7 +228,7 @@ describe('the scope the editor builds', () => {
 
   it('Find and replace through the store renames names and pictures in one step', () => {
     const { project } = buildFixture();
-    docStore.replace(project as Project);
+    docStore.replace(project);
     const n = findReplaceNames({ find: 'flag', replace: 'banner', regex: false, matchCase: false, firstOnly: false, kinds: ['slot', 'image'] });
     expect(n).toBeGreaterThanOrEqual(3);
     expect(docStore.undoLabel).toBe('Find and replace');

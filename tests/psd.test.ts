@@ -9,7 +9,7 @@ initializeCanvas(
   () => {
     throw new Error('no canvas in tests');
   },
-  (width, height) => ({ width, height, data: new Uint8ClampedArray(width * height * 4), colorSpace: 'srgb' }) as ImageData,
+  (width, height) => ({ width, height, data: new Uint8ClampedArray(width * height * 4), colorSpace: 'srgb' }),
 );
 
 function solid(width: number, height: number, rgba: [number, number, number, number]) {

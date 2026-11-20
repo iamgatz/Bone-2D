@@ -57,7 +57,7 @@ describe('the list', () => {
 
   it('the pose library and the mix table travel with their skeleton', () => {
     let p = project();
-    p.poses = [{ id: 'p1', name: 'pose a', bones: {} } as never];
+    p.poses = [{ id: 'p1', name: 'pose a', bones: {} }];
     p.mixes = { default: 0.3, pairs: [] };
     p = apply(p, (d) => void addSkeleton(d, blankSkeleton('b')));
     expect(p.poses).toBeUndefined();

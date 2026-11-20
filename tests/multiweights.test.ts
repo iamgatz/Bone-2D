@@ -53,7 +53,7 @@ describe('the group of meshes', () => {
     uiStore.patch({ selection: { ...uiStore.get().selection, extraSlots: [plain, twinSlot] } });
     expect(M.weightGroup().map((m) => m.slotId)).toEqual([armSlot, twinSlot]);
     docStore.update('link', (d) => {
-      (d.skeleton.skins[0].attachments[twinSlot].twin as MeshAttachment).link = { source: 'arm', slot: armSlot, skin: null, deform: false } as never;
+      (d.skeleton.skins[0].attachments[twinSlot].twin as MeshAttachment).link = { source: 'arm', slot: armSlot, skin: null, deform: false };
     });
     expect(M.weightGroup().map((m) => m.slotId)).toEqual([armSlot]);
   });

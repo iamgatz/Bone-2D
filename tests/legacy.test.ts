@@ -10,7 +10,7 @@ import { isLegacySpineJson, parseSpineVersion, upgradeLegacySpineJson } from '..
 import { compileSkeleton, createSkeleton } from '../src/core/skeleton';
 import { parityMismatch } from './fuzzkit';
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
+ 
 const fixtureUrl = new URL('./fixtures/legacy42.json', import.meta.url);
 const goldenUrl = new URL('./fixtures/legacy42.golden.json', import.meta.url);
 const load = (): any => JSON.parse(readFileSync(fixtureUrl, 'utf8'));
@@ -20,7 +20,11 @@ const golden: any | null = existsSync(goldenUrl) ? JSON.parse(readFileSync(golde
 function as41(doc: any): any {
   const out = structuredClone(doc);
   out.skeleton.spine = '4.1.24';
-  for (const b of out.bones) if (b.inherit !== undefined) b.transform = b.inherit, delete b.inherit;
+  for (const b of out.bones) {
+    if (b.inherit === undefined) continue;
+    b.transform = b.inherit;
+    delete b.inherit;
+  }
   return out;
 }
 

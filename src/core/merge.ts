@@ -89,7 +89,10 @@ function ensureSlot(cur: SkeletonDoc, file: SkeletonDoc, id: Id, res: MergeResul
 function strings(v: unknown, out: Set<string> = new Set()): Set<string> {
   if (typeof v === 'string') out.add(v);
   else if (Array.isArray(v)) for (const x of v) strings(x, out);
-  else if (v && typeof v === 'object') for (const [k, x] of Object.entries(v)) (out.add(k), strings(x, out));
+  else if (v && typeof v === 'object') for (const [k, x] of Object.entries(v)) {
+    out.add(k);
+    strings(x, out);
+  }
   return out;
 }
 

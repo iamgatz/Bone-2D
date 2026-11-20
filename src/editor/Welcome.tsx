@@ -41,9 +41,9 @@ export function WelcomeDialog() {
   useEffect(() => {
     if (canKeepHandles()) void listRecent().then(setRecent);
   }, []);
-  const go = (fn: () => void) => () => {
+  const go = (fn: () => unknown) => () => {
     close();
-    fn();
+    void fn();
   };
   return (
     <Dialog title="Welcome to Bone 2D" width={680} onClose={close}>

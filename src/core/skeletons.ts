@@ -5,7 +5,7 @@
  * and the mix table) travels with it in `doc.aside` while it waits. All functions edit the project they are given (an Immer draft in the store).
  */
 import { uniqueName } from './ids';
-import type { PoseEntry, Project, SkeletonDoc } from './model';
+import type { Project, SkeletonDoc } from './model';
 import { newBone, newSkin } from './model';
 
 /** Every skeleton in the order the person sees them; the edited one is `project.skeleton`. */
@@ -42,7 +42,7 @@ function carry(p: Project, leaving: SkeletonDoc, arriving: SkeletonDoc) {
   if (aside.poses || aside.mixes) leaving.aside = aside;
   else delete leaving.aside;
   const from = arriving.aside;
-  if (from?.poses) p.poses = from.poses as PoseEntry[];
+  if (from?.poses) p.poses = from.poses;
   else delete p.poses;
   if (from?.mixes) p.mixes = from.mixes;
   else delete p.mixes;
@@ -119,7 +119,7 @@ export function removeSkeleton(p: Project, index: number): boolean {
   delete p.poses;
   delete p.mixes;
   const from = arriving.aside;
-  if (from?.poses) p.poses = from.poses as PoseEntry[];
+  if (from?.poses) p.poses = from.poses;
   if (from?.mixes) p.mixes = from.mixes;
   delete arriving.aside;
   p.skeleton = arriving;

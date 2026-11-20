@@ -7,7 +7,7 @@ import { decompose, freshName, normalizeBoneOrder } from './edit';
 import { uid } from './ids';
 import { matInvert, matMul } from './math';
 import type { Mat } from './math';
-import type { Attachment, Bone, Constraint, Id, Inherit, SkeletonDoc, Slot } from './model';
+import type { Attachment, Bone, Constraint, Id, SkeletonDoc, Slot } from './model';
 
 const IDENTITY: Mat = { a: 1, b: 0, c: 0, d: 1, x: 0, y: 0 };
 
@@ -67,7 +67,7 @@ export function duplicateBones(doc: SkeletonDoc, mats: Map<Id, Mat>, ids: Id[], 
       const parentWorld = parentCopy ? newWorld.get(src.parent!)! : (src.parent && mats.get(src.parent)) || IDENTITY;
       const local = matMul(matInvert(parentWorld), w2);
       const dec = decompose(local.a, local.b, local.c, local.d);
-      Object.assign(clone, { x: local.x, y: local.y, rotation: dec.rotation, scaleX: dec.scaleX, scaleY: dec.scaleY, shearX: dec.shearX, shearY: dec.shearY, inherit: 'normal' as Inherit });
+      Object.assign(clone, { x: local.x, y: local.y, rotation: dec.rotation, scaleX: dec.scaleX, scaleY: dec.scaleY, shearX: dec.shearX, shearY: dec.shearY, inherit: 'normal' });
     }
     clones.set(src.id, clone);
     newWorld.set(src.id, w2);

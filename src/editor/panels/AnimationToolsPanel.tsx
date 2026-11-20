@@ -17,6 +17,7 @@ import { uiStore, useUi } from '@/store/ui';
 import { Field } from '../ui/Field';
 import { MARKER_TOKENS } from '../ui/tokens';
 import { Button, IconButton, NumberField, SelectField, Toggle } from '../ui/controls';
+import { keyListsIn } from '@/core/keylists';
 
 /** The reference video (rotoscoping): load a video, place it under the pose, and set where it starts. Nothing is saved or exported. */
 function RefVideoControls() {
@@ -194,7 +195,7 @@ function LayerControls() {
 /** Keys in the bone timelines of an animation. */
 function boneKeyCount(anim: Animation): number {
   let n = 0;
-  for (const id in anim.bones) for (const keys of Object.values(anim.bones[id])) n += keys?.length ?? 0;
+  for (const list of keyListsIn(anim.bones)) n += list.length;
   return n;
 }
 

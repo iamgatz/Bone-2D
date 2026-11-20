@@ -77,7 +77,7 @@ export function layeredLocal(base: BoneTimelines | undefined, layer: BoneTimelin
 
 /** The bones a layer moves (timelines with keys) that exist in the skeleton. */
 export function layerBones(layer: Animation, boneIds: ReadonlySet<Id>): Id[] {
-  return Object.keys(layer.bones).filter((id) => boneIds.has(id) && Object.values(layer.bones[id]).some((t) => has(t)));
+  return Object.keys(layer.bones).filter((id) => boneIds.has(id) && Object.values(layer.bones[id] as Record<string, Timeline | undefined>).some((t) => has(t)));
 }
 
 const FLAT = { rotate: 0, translate: 0, scale: 1, shear: 0 } as const;

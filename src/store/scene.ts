@@ -47,7 +47,7 @@ export function getScene(): Scene {
 
   const data = compileSkeleton(doc);
   const reuse = !!c && c.scene.data === data && c.skinId === ui.skinId && c.skinMix === ui.skinMix;
-  const skeleton = reuse ? c!.scene.skeleton : createSkeleton(data, ui.skinId && doc.skins.some((s) => s.id === ui.skinId) ? ui.skinId : null, ui.skinMix);
+  const skeleton = reuse ? c.scene.skeleton : createSkeleton(data, ui.skinId && doc.skins.some((s) => s.id === ui.skinId) ? ui.skinId : null, ui.skinMix);
   poseSkeleton(skeleton, anim, time, overrides, ui.muted);
   // Physics only simulates while an animation plays: a step forward advances it, the same frame again keeps what it has
   // computed (pause, a bone dragged), any other time starts it again from rest. In Setup mode it does not run at all.
@@ -55,18 +55,18 @@ export function getScene(): Scene {
   if (anim && data.constraints.some((x) => x.kind === 'physics')) {
     physics = 'reset';
     let dt = 0;
-    if (reuse && c!.anim === anim) {
-      if (time === c!.time) physics = 'pose';
+    if (reuse && c.anim === anim) {
+      if (time === c.time) physics = 'pose';
       else if (ui.playing) {
-        let d = time - c!.time;
+        let d = time - c.time;
         if (d < 0 && ui.loop) d += anim.duration;
         if (d > 0 && d <= MAX_PHYSICS_STEP) {
           physics = 'update';
           dt = d;
-          if (time < c!.time) {
-            applyPhysicsResets(skeleton, anim, c!.time, anim.duration);
+          if (time < c.time) {
+            applyPhysicsResets(skeleton, anim, c.time, anim.duration);
             applyPhysicsResets(skeleton, anim, -1, time);
-          } else applyPhysicsResets(skeleton, anim, c!.time, time);
+          } else applyPhysicsResets(skeleton, anim, c.time, time);
         }
       }
     }

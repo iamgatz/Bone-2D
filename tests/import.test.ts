@@ -17,7 +17,7 @@ import { exportAndLoad } from './official';
 function firstDiff(a: unknown, b: unknown, path: string): string | null {
   if (typeof a !== typeof b || Array.isArray(a) !== Array.isArray(b)) return `${path}: ${JSON.stringify(a)} vs ${JSON.stringify(b)}`;
   if (a && b && typeof a === 'object') {
-    const keys = new Set([...Object.keys(a as object), ...Object.keys(b as object)]);
+    const keys = new Set([...Object.keys(a), ...Object.keys(b)]);
     for (const k of keys) {
       const d = firstDiff((a as Record<string, unknown>)[k], (b as Record<string, unknown>)[k], `${path}.${k}`);
       if (d) return d;

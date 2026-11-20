@@ -12,7 +12,7 @@ function posed() {
   addPhysicsRig(project);
   const data = compileSkeleton(project.skeleton);
   const sk = createSkeleton(data, null);
-  sk.updateWorldTransform('pose' as never);
+  sk.updateWorldTransform('pose');
   return { project, sk };
 }
 

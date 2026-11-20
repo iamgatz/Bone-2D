@@ -13,7 +13,7 @@ import { compileSkeleton, createSkeleton } from '../src/core/skeleton';
 import { buildFixture } from './fixture';
 import { S, exportAndLoad, loadOfficialBinary } from './official';
 
-type J = Record<string, any>; // eslint-disable-line @typescript-eslint/no-explicit-any
+type J = Record<string, any>;  
 
 const SETUP: [number, number, number, number] = [0.5, 0.6, 0.7, 0.8];
 

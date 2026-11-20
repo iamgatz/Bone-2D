@@ -34,7 +34,10 @@ export function setCommentResolved(animationId: string, markerId: string, resolv
 export function resolveAllComments(): number {
   let n = 0;
   docStore.update('Resolve all comments', (d) => {
-    for (const a of d.skeleton.animations) for (const m of a.markers ?? []) if (m.review && !m.resolved) (m.resolved = true), n++;
+    for (const a of d.skeleton.animations) for (const m of a.markers ?? []) if (m.review && !m.resolved) {
+          m.resolved = true;
+          n++;
+        }
   });
   if (n) toast(`Resolved ${n} comment${n === 1 ? '' : 's'}`, 'ok');
   return n;

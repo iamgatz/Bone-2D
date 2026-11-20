@@ -5,7 +5,7 @@ import type { PackInput } from '../src/core/export/atlas';
 import { findAliases } from '../src/core/export/atlasBuild';
 import { S } from './official';
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
+ 
 
 const input = (name: string, width: number, height: number, extra: Partial<PackInput> = {}): PackInput => ({ name, width, height, ...extra });
 const inside = (pages: ReturnType<typeof packAtlas>) => {

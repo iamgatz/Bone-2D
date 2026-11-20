@@ -48,7 +48,7 @@ export function readFloats(raw: string | null): FloatState {
       if (isPos(p)) out.pos[id] = { x: p.x, y: p.y };
     }
     if (Array.isArray(data.order)) {
-      const seen = data.order.filter((id, i, a): id is FloatId => IDS.includes(id as FloatId) && a.indexOf(id) === i);
+      const seen = data.order.filter((id, i, a): id is FloatId => IDS.includes(id) && a.indexOf(id) === i);
       out.order = [...seen, ...IDS.filter((id) => !seen.includes(id))];
     }
   } catch {

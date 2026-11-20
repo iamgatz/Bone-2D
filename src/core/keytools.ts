@@ -52,7 +52,7 @@ export function favorKeys(keys: ValueKey[], indices: readonly number[], mode: Fa
     else if (mode === 'average') target = prev && next ? prev.map((v, c) => (v + next[c]) / 2) : (prev ?? next);
     else target = neutral ? [...neutral] : undefined;
     if (!target || target.length !== was[i].length) continue;
-    const value = was[i].map((v, c) => v + (target![c] - v) * a);
+    const value = was[i].map((v, c) => v + (target[c] - v) * a);
     if (value.some((v, c) => Math.abs(v - was[i][c]) > 1e-12)) {
       keys[i].value = value;
       changed++;
@@ -64,8 +64,8 @@ export function favorKeys(keys: ValueKey[], indices: readonly number[], mode: Fa
 /** The value a timeline rests on in the setup pose (its keys are relative to the setup): 1 for a scale, 0 for the rest, nothing for what has no such value. */
 export function neutralOf(kind: string, prop: string, channels: number): number[] | undefined {
   if (kind !== 'bone') return undefined;
-  if (prop === 'rotate' || prop === 'translate' || prop === 'shear' || /^(translate|shear)[xy]$/.test(prop)) return new Array(channels).fill(0);
-  if (prop === 'scale' || prop === 'scalex' || prop === 'scaley') return new Array(channels).fill(1);
+  if (prop === 'rotate' || prop === 'translate' || prop === 'shear' || /^(translate|shear)[xy]$/.test(prop)) return new Array<number>(channels).fill(0);
+  if (prop === 'scale' || prop === 'scalex' || prop === 'scaley') return new Array<number>(channels).fill(1);
   return undefined;
 }
 

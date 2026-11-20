@@ -4,14 +4,13 @@ import { autoCurve, autoSlope } from '../src/core/autocurve';
 import type { AutoKey } from '../src/core/autocurve';
 import { sampleKeys } from '../src/core/curve';
 import { newAnimation } from '../src/core/model';
-import type { Project } from '../src/core/model';
 import { setKeysAutoCurve } from '../src/store/curveActions';
 import { docStore } from '../src/store/doc';
 import { uiStore } from '../src/store/ui';
 import { buildFixture } from './fixture';
 import { S, exportAndLoad } from './official';
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
+ 
 
 const keys = (...pairs: [number, number][]): AutoKey[] => pairs.map(([time, v]) => ({ time, value: [v] }));
 const at = (list: AutoKey[], t: number) => {
@@ -108,7 +107,7 @@ describe('the action and the official runtime', () => {
     const anim = newAnimation('swing', 2);
     anim.bones[bone.id] = { rotate: [{ time: 0, value: [0] }, { time: 0.5, value: [30] }, { time: 1, value: [10] }, { time: 1.5, value: [70] }, { time: 2, value: [70] }] };
     doc.animations.push(anim);
-    docStore.replace(project as Project);
+    docStore.replace(project);
     uiStore.patch({ animationId: anim.id, time: 0, playing: false, selectedKeys: [] });
     return { project, bone, anim };
   }
@@ -120,7 +119,7 @@ describe('the action and the official runtime', () => {
     expect(docStore.undoLabel).toBe('Automatic curve');
     const saved = docStore.get();
     const mine = saved.skeleton.animations.find((a) => a.id === anim.id)!.bones[bone.id].rotate!;
-    const { skeletonData } = exportAndLoad(saved as Project);
+    const { skeletonData } = exportAndLoad(saved);
     const index = skeletonData.bones.findIndex((b: any) => b.name === bone.name);
     const sk = new S.Skeleton(skeletonData);
     sk.setupPose();
@@ -134,7 +133,7 @@ describe('the action and the official runtime', () => {
       t = target;
       state.apply(sk);
       const out: number[] = [];
-      sampleKeys(mine as any, target, out);
+      sampleKeys(mine, target, out);
       expect(sk.bones[index].pose.rotation, `t=${target}`).toBeCloseTo(setup + out[0], 2);
     }
     docStore.undo();

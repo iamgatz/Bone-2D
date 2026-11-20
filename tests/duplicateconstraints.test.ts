@@ -13,7 +13,7 @@ function mats(doc: ReturnType<typeof buildFixture>['project']['skeleton']): Map<
   const sk = createSkeleton(compileSkeleton(doc));
   sk.setToSetupPose();
   sk.updateWorldTransform('none');
-  return new Map(sk.bones.map((b) => [b.data.id, { a: b.a, b: b.c, c: b.b, d: b.d, x: b.worldX, y: b.worldY } as Mat]));
+  return new Map(sk.bones.map((b) => [b.data.id, { a: b.a, b: b.c, c: b.b, d: b.d, x: b.worldX, y: b.worldY }]));
 }
 
 const byName = (doc: { bones: { id: string; name: string }[] }, name: string) => doc.bones.find((b) => b.name === name)!;

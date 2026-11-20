@@ -457,7 +457,7 @@ export function binaryToJson(data: Uint8Array): J {
         if (!source) throw new Error('A linked mesh has no source');
         linked.push({ mesh: out, skin: skinIndex, slot: slotIndex, sourceSlot, source, inherit, placeholder });
         // (the skin of the source is a number here; it becomes a name once every skin is read)
-        (out as J).__skin = skin;
+        (out).__skin = skin;
         return out;
       }
       case 4: {

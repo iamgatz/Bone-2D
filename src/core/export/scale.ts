@@ -45,7 +45,7 @@ function scaleVertices(vertices: number[], vertexCount: number, s: number): numb
 const isLength = (prop: string) => prop === 'x' || prop === 'y';
 
 /** Returns a copy of the exported skeleton JSON scaled by `s` (1 returns the same content). */
-export function scaleSpineJson(json: J, s: number): J {
+export function scaleSpineJson<T>(json: T, s: number): T {
   const out: J = structuredClone(json);
   if (s === 1) return out;
 

@@ -2,7 +2,6 @@
 import { describe, expect, it } from 'vitest';
 import { applyAnimation } from '../src/core/animate';
 import { newAnimation } from '../src/core/model';
-import type { Project } from '../src/core/model';
 import { steppedTime } from '../src/core/playback';
 import { compileSkeleton, createSkeleton } from '../src/core/skeleton';
 import { getScene } from '../src/store/scene';
@@ -29,7 +28,7 @@ describe('the scene', () => {
     anim.bones[bone.id] = { rotate: [{ time: 0, value: [0] }, { time: 1, value: [90] }] };
     doc.animations.push(anim);
     doc.fps = 10;
-    docStore.replace(project as Project);
+    docStore.replace(project);
     const rotation = () => getScene().skeleton.boneById(bone.id)!.rotation - bone.rotation;
     uiStore.patch({ mode: 'animate', animationId: anim.id, time: 0.37, stepped: false });
     expect(rotation()).toBeCloseTo(33.3, 1);

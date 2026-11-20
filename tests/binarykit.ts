@@ -6,7 +6,7 @@ import { exportSpineJson } from '../src/core/export/spineJson';
 import type { Project } from '../src/core/model';
 import { loadOfficial, loadOfficialBinary, usedImages } from './official';
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
+ 
 
 const IGNORED = new Set(['hash', 'name', 'version', 'imagesPath', 'audioPath', 'visible', 'id']);
 
@@ -33,7 +33,7 @@ export function diffGraphs(a: any, b: any, path = '', diffs: string[] = [], seen
   }
   if (Array.isArray(a) || ArrayBuffer.isView(a)) {
     const x = a as any;
-    const y = b as any;
+    const y = b;
     if (x.length !== y.length) {
       diffs.push(`${path}: length ${x.length} vs ${y.length}`);
       return diffs;
@@ -69,7 +69,7 @@ const ESSENTIAL_ONLY = /\.color\.|\.(width|height): |\.max: /;
  * slots. Nothing can be looked up in either, so it is not a difference that matters.
  */
 function emptyDefaultSkin(fromJson: any) {
-  const empty = !!fromJson.defaultSkin && fromJson.defaultSkin.attachments.every((a: unknown) => !a || Object.keys(a as object).length === 0);
+  const empty = !!fromJson.defaultSkin && fromJson.defaultSkin.attachments.every((a: unknown) => !a || Object.keys(a).length === 0);
   return (d: string) => {
     if (!empty) return false;
     const m = /^skeleton\.skins: length (\d+) vs (\d+)$/.exec(d);

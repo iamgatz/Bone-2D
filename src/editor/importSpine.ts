@@ -16,6 +16,7 @@ import { assets } from '@/store/assets';
 import type { ImageAsset } from '@/store/assets';
 import { docStore } from '@/store/doc';
 import { emptySelection, toast, uiStore } from '@/store/ui';
+import { canvasToBlob } from './ui/canvas';
 
 const baseName = (file: string) => file.replace(/^.*[\\/]/, '');
 const stem = (file: string) => baseName(file).replace(/\.[^.]+$/, '');
@@ -39,7 +40,7 @@ function pictureBlob(pic: Picture): Promise<Blob> {
   canvas.width = pic.width;
   canvas.height = pic.height;
   canvas.getContext('2d')!.putImageData(new ImageData(new Uint8ClampedArray(pic.data), pic.width, pic.height), 0, 0);
-  return new Promise((resolve, reject) => canvas.toBlob((b) => (b ? resolve(b) : reject(new Error('PNG encode failed'))), 'image/png'));
+  return canvasToBlob(canvas);
 }
 
 /** Opens a skeleton .json / .skel (+ .atlas + page images selected together) as a new project, or as one more skeleton of the open project. */
