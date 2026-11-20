@@ -7,7 +7,7 @@
 **A 2D skeletal animation editor that runs in your browser.** Open a link, rig and animate, export. Nothing to install, and your files never leave your machine.
 Open source (MIT), in the spirit of Spine. It writes the **Spine 4.3** format (`.json` or binary `.skel`, `.atlas`, `.png`) and the result is checked against the official `spine-core` runtime.
 
-**[Open the editor →](https://iamgatz.github.io/Bone-2D/)** — the demo rig "Kit" is one click away. The interface is in **English and Russian**.
+**[Open the editor →](https://iamgatz.github.io/Bone-2D/)** — the demo rig "Kit" is one click away. Direct links: [`?demo`](https://iamgatz.github.io/Bone-2D/?demo) opens the fox, [`?demo=wave`](https://iamgatz.github.io/Bone-2D/?demo=wave) opens it playing the `wave` animation (also `walk`, `jump`, `idle`). The interface is in **English and Russian**.
 
 ![License: MIT](https://img.shields.io/badge/license-MIT-blue) ![CI](https://github.com/iamgatz/Bone-2D/actions/workflows/ci.yml/badge.svg)
 
@@ -17,7 +17,7 @@ Open source (MIT), in the spirit of Spine. It writes the **Spine 4.3** format (`
 - **Constraints:** IK, transform, path, physics and the Spine 4.3 sliders.
 - **Animate:** a dopesheet and a graph editor with Bézier curves, onion skins, events, draw-order and sequence keys, a pose library, key tools.
 - **Export:** Spine 4.3 JSON or binary, an atlas packer, a GIF, a PNG sequence or a video of an animation; Spine import (JSON 4.0 – 4.3, binary 4.3).
-- **Trust:** a test suite and a random-session fuzzer compare our solver with the official runtime (see below).
+- **Trust:** a test suite and a random-session fuzzer compare our solver with the official runtime on every push (see below).
 - **Review:** send a reviewer one HTML page with the animation; they click a bone and leave a comment that you import back.
 - **Safe to experiment:** deep undo (300 steps), checkpoints you can compare with and take parts from, automatic backups.
 - **Runs everywhere a browser does:** no account, no server; also usable from the command line (`npm run cli`).

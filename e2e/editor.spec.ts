@@ -72,3 +72,23 @@ test('the Export window groups its settings', async ({ page }) => {
   await expect(labels.getByText('Atlas', { exact: true })).toBeVisible();
   await expect(page.getByRole('button', { name: /Download ZIP/ })).toBeVisible();
 });
+
+test('a link with ?demo=wave opens the fox playing the wave, without the welcome window', async ({ page }) => {
+  await page.addInitScript(() => localStorage.clear());
+  await page.goto('/?demo=wave');
+  await expect(page.locator('.overlay .choice.primary')).toHaveCount(0);
+  await expect
+    .poll(() =>
+      page.evaluate(
+        async (urls) => {
+          const { uiStore } = (await import(urls[0])) as UiModule;
+          const { docStore } = (await import(urls[1])) as DocModule;
+          const ui = uiStore.get();
+          const anim = docStore.get().skeleton.animations.find((a) => a.id === ui.animationId);
+          return `${ui.mode}:${anim?.name}:${ui.playing}`;
+        },
+        [UI, DOC],
+      ),
+    )
+    .toBe('animate:wave:true');
+});
