@@ -2662,6 +2662,13 @@ function bakeMismatch(p: Project): string | null {
         // a flat world matrix (a scale of 0 on one axis, determinant 0) has no local pose that the applied-transform read-back finds: the rotation of a
         // matrix whose first column is 0 is undefined, the baked pose comes out as all zeros
         if (Math.abs(want[f][i][0] * want[f][i][3] - want[f][i][1] * want[f][i][2]) < 1e-9) continue;
+        // a flat PARENT (a scale that passes through 0 on a frame) has no inverse: a child that does not take the whole parent matrix (onlyTranslation,
+        // noScale...) keeps a world pose of its own, but where it sits relative to that parent cannot be read back, so the baked local position is 0
+        const parentOf = probe.bones[i].parent;
+        if (parentOf) {
+          const pm = want[f][parentOf.data.index];
+          if (Math.abs(pm[0] * pm[3] - pm[1] * pm[2]) < 1e-6) continue;
+        }
         if (unexplained.has(i)) {
           // allowed to differ only because the parent differs: a child that differs under a parent that matches is a real bake error
           const p = probe.bones[i].parent!.data.index;

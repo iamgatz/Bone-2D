@@ -22,6 +22,7 @@ import {
 } from 'lucide-react';
 import type { Id, MeshAttachment, Project } from '@/core/model';
 import { linkSource } from '@/core/links';
+import { meshWorldPositions } from '@/core/mesh';
 import { linkMeshTo, setAttachmentProps, setLinkDeform, setTool, unlinkMesh } from '@/store/actions';
 import {
   autoWeightMeshes,
@@ -46,7 +47,9 @@ import {
   weightGroup,
   traceGroup,
   convertImagesToMeshes,
+  moveMeshVertices,
   regenerateMeshes,
+  setupMats,
 } from '@/store/meshActions';
 import { useProject } from '@/store/doc';
 import { useFloats } from '@/store/floats';
@@ -56,6 +59,38 @@ import { Button, ColorSwatch, Hint, IconButton, NumberField, SelectField, Toggle
 import { Field } from '../ui/Field';
 import { SoftControls } from './SoftControls';
 import { Section } from '../ui/Section';
+
+/** The place of one selected vertex as two numbers (world, setup pose): for the exact placing that a mouse cannot do. */
+function VertexPosition({ slotId, att, index }: { slotId: Id; att: MeshAttachment; index: number }) {
+  const { mats, slotMat } = setupMats();
+  const world = meshWorldPositions(att, slotMat(slotId), mats);
+  const [x, y] = [world[index * 2], world[index * 2 + 1]];
+  if (!Number.isFinite(x) || !Number.isFinite(y)) return null;
+  return (
+    <>
+      <Field label="Vertex X">
+        <NumberField
+          label="px"
+          value={x}
+          step={1}
+          precision={2}
+          onChange={(v) => moveMeshVertices(slotId, att.name, [{ index, x: v, y }])}
+          title="The place of the selected vertex in the world, in the setup pose"
+        />
+      </Field>
+      <Field label="Vertex Y">
+        <NumberField
+          label="px"
+          value={y}
+          step={1}
+          precision={2}
+          onChange={(v) => moveMeshVertices(slotId, att.name, [{ index, x, y: v }])}
+          title="The place of the selected vertex in the world, in the setup pose"
+        />
+      </Field>
+    </>
+  );
+}
 
 export function ConvertToMeshGroup({ slotId, name }: { slotId: Id; name: string }) {
   const [spacing, setSpacing] = useState(34);
@@ -242,6 +277,7 @@ export function MeshGroup({ slotId, att, part }: { slotId: Id; att: MeshAttachme
             <span className="chip">{`${att.triangles.length / 3} triangles`}</span>
             <span className={`chip${weighted ? ' accent' : ''}`}>{weighted ? `weighted · ${influencing.length} bones` : 'unweighted'}</span>
           </div>
+          {pickedVertices === 1 && setup && !linked && <VertexPosition slotId={slotId} att={att} index={pickedList[0]} />}
           <div className="hstack mb">
             <Button
               primary={tool === 'mesh'}

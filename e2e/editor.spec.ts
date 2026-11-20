@@ -254,3 +254,90 @@ test('the Metrics window checks the animations: a broken cycle is listed and one
   await row.getByRole('button', { name: 'Fix' }).click();
   await expect(metrics.getByText('The animations and the names look fine')).toBeVisible();
 });
+
+type SetActions = typeof import('../src/store/selectionSetActions');
+type SessionActions = typeof import('../src/store/sessionActions');
+const SET_ACTIONS = '/src/store/selectionSetActions.ts';
+const SESSION = '/src/store/sessionActions.ts';
+
+test('the track filter can keep only the bones of a selection set', async ({ page }) => {
+  await openDemo(page);
+  await page.keyboard.press('Tab'); // Animate: the timeline lists the tracks of the animation
+  // a set of the first two animated bones
+  const names = await page.evaluate(
+    async ([docUrl, uiUrl, setUrl, sessionUrl]) => {
+      const { docStore } = (await import(docUrl)) as DocModule;
+      const { uiStore } = (await import(uiUrl)) as UiModule;
+      const { saveSelectionSet } = (await import(setUrl)) as SetActions;
+      const { selectBone } = (await import(sessionUrl)) as SessionActions;
+      const doc = docStore.get().skeleton;
+      const anim = doc.animations.find((a) => a.id === uiStore.get().animationId)!;
+      const animated = Object.keys(anim.bones).filter((id) => Object.keys(anim.bones[id]).length > 0);
+      selectBone(animated[0]);
+      selectBone(animated[1], true);
+      saveSelectionSet('pair');
+      const nameOf = (id: string) => doc.bones.find((b) => b.id === id)!.name;
+      return { inSet: [nameOf(animated[0]), nameOf(animated[1])], outside: nameOf(animated[2]) };
+    },
+    [DOC, UI, SET_ACTIONS, SESSION] as const,
+  );
+  const labels = page.locator('.tl-label');
+  await expect(labels.filter({ hasText: names.outside }).first()).toBeVisible();
+  await page.getByRole('button', { name: 'Filter the tracks: kinds, names, selected only' }).click();
+  await page.getByLabel('Only the bones of a set').selectOption({ label: 'pair' });
+  await expect(labels.filter({ hasText: names.inSet[0] }).first()).toBeVisible();
+  await expect(labels.filter({ hasText: names.inSet[1] }).first()).toBeVisible();
+  await expect(labels.filter({ hasText: new RegExp(`^${names.outside}$`) })).toHaveCount(0);
+  // and "Show all" brings everything back
+  await page.getByRole('button', { name: 'Show all' }).click();
+  await expect(labels.filter({ hasText: new RegExp(`^${names.outside}$`) }).first()).toBeVisible();
+});
+
+type MeshActions = typeof import('../src/store/meshActions');
+const MESH_ACTIONS = '/src/store/meshActions.ts';
+
+test('a selected mesh vertex has two number fields that place it exactly', async ({ page }) => {
+  await openDemo(page);
+  // a mesh that is not a link, with its first vertex picked (a click on the vertex does the same)
+  const found = await page.evaluate(
+    async ([docUrl, actionsUrl]) => {
+      const { docStore } = (await import(docUrl)) as DocModule;
+      const { setSelection } = (await import(actionsUrl)) as ActionsModule;
+      const skin = docStore.get().skeleton.skins[0];
+      for (const [slot, by] of Object.entries(skin.attachments))
+        for (const att of Object.values(by))
+          if (att.type === 'mesh' && !att.link) {
+            setSelection({ slot, attachment: att.name, bones: [], vertices: [0] });
+            return { slot, name: att.name };
+          }
+      return null;
+    },
+    [DOC, ACTIONS] as const,
+  );
+  expect(found).not.toBeNull();
+  const worldOf = () =>
+    page.evaluate(
+      async ([meshUrl, slot, name]) => {
+        const { getMesh, setupMats } = (await import(meshUrl)) as MeshActions;
+        const mesh = getMesh(slot, name)!;
+        const { mats, slotMat } = setupMats();
+        const m = slotMat(slot);
+        if (mesh.weights) {
+          const [bone, x, y] = mesh.weights[0][0];
+          const bm = mats.get(bone)!;
+          return [bm.a * x + bm.b * y + bm.x, bm.c * x + bm.d * y + bm.y];
+        }
+        return [m.a * mesh.vertices[0] + m.b * mesh.vertices[1] + m.x, m.c * mesh.vertices[0] + m.d * mesh.vertices[1] + m.y];
+      },
+      [MESH_ACTIONS, found!.slot, found!.name] as const,
+    );
+  const x = page.locator('.frow', { hasText: 'Vertex X' }).locator('input');
+  await expect(x).toBeVisible();
+  await x.fill('12.5');
+  await x.press('Enter');
+  await expect.poll(async () => (await worldOf())[0]).toBeCloseTo(12.5, 1);
+  const y = page.locator('.frow', { hasText: 'Vertex Y' }).locator('input');
+  await y.fill('-7');
+  await y.press('Enter');
+  await expect.poll(async () => (await worldOf())[1]).toBeCloseTo(-7, 1);
+});

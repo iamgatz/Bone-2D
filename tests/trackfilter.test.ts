@@ -71,6 +71,23 @@ describe('filterRows', () => {
     expect(groups(out).filter(other)).toEqual(groups(built).filter(other));
   });
 
+  it('keeps only the bones of a selection set, and the other groups as they are', () => {
+    const { built, doc } = rows();
+    const boneRows = built.filter((r) => r.id.startsWith('bone:') && r.type === 'entity');
+    expect(boneRows.length).toBeGreaterThan(2);
+    const wanted = new Set(boneRows.slice(0, 2).map((r) => r.target!.id));
+    const out = filterRows(built, { ...NO_TRACK_FILTER, set: 'set1' }, wanted);
+    const kept = out.filter((r) => r.id.startsWith('bone:') && r.type === 'entity');
+    expect(kept.map((r) => r.target!.id).sort()).toEqual([...wanted].sort());
+    // the property rows of a kept bone come with it, the slots and the rest are not touched
+    const slots = built.filter((r) => r.id.startsWith('slot:'));
+    expect(out.filter((r) => r.id.startsWith('slot:'))).toHaveLength(slots.length);
+    expect(isTrackFilter({ ...NO_TRACK_FILTER, set: 'set1' })).toBe(true);
+    // a set that does not exist any more filters nothing
+    expect(filterRows(built, { ...NO_TRACK_FILTER, set: 'gone' }, null).length).toBe(built.length);
+    expect(doc.bones.length).toBeGreaterThan(0);
+  });
+
   it('hands out the very rows it was given, so the keys are the same ones', () => {
     const { built } = rows();
     const out = filterRows(built, { ...NO_TRACK_FILTER, hidden: ['g:deform'] });

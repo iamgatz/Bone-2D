@@ -392,11 +392,13 @@ export interface TrackFilter {
   text: string;
   /** Only the bones and slots that are selected. */
   selectedOnly: boolean;
+  /** A selection set (core/selsets.ts): of the bones, only the ones in it. Null = every bone. The bones themselves are handed to `filterRows`. */
+  set: string | null;
   /** The groups that are left out, by row id (`g:bones`, `g:slots`, `g:ik`, `g:deform`, `g:sequence`, `g:other`). */
   hidden: string[];
 }
 
-export const NO_TRACK_FILTER: TrackFilter = { text: '', selectedOnly: false, hidden: [] };
+export const NO_TRACK_FILTER: TrackFilter = { text: '', selectedOnly: false, set: null, hidden: [] };
 
 export const TRACK_GROUPS: readonly { id: string; label: string }[] = [
   { id: 'g:bones', label: 'Bones' },
@@ -407,13 +409,13 @@ export const TRACK_GROUPS: readonly { id: string; label: string }[] = [
   { id: 'g:other', label: 'Draw order & events' },
 ];
 
-export const isTrackFilter = (f: TrackFilter): boolean => !!f.text.trim() || f.selectedOnly || f.hidden.length > 0;
+export const isTrackFilter = (f: TrackFilter): boolean => !!f.text.trim() || f.selectedOnly || f.set !== null || f.hidden.length > 0;
 
 /**
  * The rows that pass the filter. A track row (a bone, a slot, a constraint ...) stays when its name matches; its property rows stay with it, or on
  * their own when only they match. A group with no row left is dropped. The keys of the rows are not touched, so the diamonds are the same ones.
  */
-export function filterRows(rows: Row[], filter: TrackFilter): Row[] {
+export function filterRows(rows: Row[], filter: TrackFilter, setBones?: ReadonlySet<string> | null): Row[] {
   if (!isTrackFilter(filter)) return rows;
   const match = nameMatcher(filter.text);
   const out: Row[] = [];
@@ -444,7 +446,8 @@ export function filterRows(rows: Row[], filter: TrackFilter): Row[] {
     if (row.type === 'entity') {
       flushEntity();
       const selectable = group.id === 'g:bones' || group.id === 'g:slots';
-      const chosen = !(filter.selectedOnly && selectable && !row.selected);
+      const inSet = !(filter.set !== null && setBones && group.id === 'g:bones' && row.target && !setBones.has(row.target.id));
+      const chosen = inSet && !(filter.selectedOnly && selectable && !row.selected);
       entity = chosen ? row : null;
       entityKept = chosen && (!match || match(row.label));
       pendingProps = [];

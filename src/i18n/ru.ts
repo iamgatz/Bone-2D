@@ -1989,6 +1989,13 @@ export const RU: Record<string, string> = {
   'Track filter': 'Фильтр дорожек',
   'Track name': 'Имя дорожки',
   'Selected bones and slots only': 'Только выбранные кости и слоты',
+  Set: 'Набор',
+  'All bones': 'Все кости',
+  'Vertex X': 'Вершина X',
+  'Vertex Y': 'Вершина Y',
+  'The place of the selected vertex in the world, in the setup pose': 'Положение выбранной вершины в мире, в позе установки',
+  'Only the bones of a set': 'Только кости набора',
+  'Of the bones, only the ones in a selection set': 'Из костей только те, что входят в набор выделения',
   'Of the bones and slots, only the selected ones': 'Из костей и слотов — только выбранные',
   'Warm up': 'Прогрев',
   'The first frame that is rendered (the animation has frames 0 to the last one)':

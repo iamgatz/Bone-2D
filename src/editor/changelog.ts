@@ -12,6 +12,18 @@ export interface Release {
 
 export const CHANGELOG: Release[] = [
   {
+    version: '0.91',
+    date: '2026-11-21',
+    en: [
+      'The track filter of the timeline can keep only the bones of a selection set: pick a set in the filter window (it shows when the project has any), and a big rig lists just the tail or just the left arm. Deleting the set stops the filtering by itself.',
+      'A single selected mesh vertex has two number fields in the inspector, Vertex X and Vertex Y (world, setup pose), for the exact placing that a mouse cannot do. A weighted mesh is moved the same way.',
+    ],
+    ru: [
+      'Фильтр дорожек таймлайна умеет оставлять только кости набора выделения: выберите набор в окне фильтра (он показывается, когда в проекте есть наборы), и большой риг покажет только хвост или только левую руку. Если набор удалить, фильтр по нему отключается сам.',
+      'У одной выбранной вершины меша в инспекторе два числовых поля, «Вершина X» и «Вершина Y» (мир, поза установки): для точной расстановки, которую мышью не сделать. Меш с весами двигается так же.',
+    ],
+  },
+  {
     version: '0.90',
     date: '2026-11-21',
     en: [

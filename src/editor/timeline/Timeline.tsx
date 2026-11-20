@@ -69,6 +69,8 @@ import { Dopesheet, ROW_H } from './Dopesheet';
 import type { TimelineMenuRequest } from './Dopesheet';
 import { TRACK_GROUPS, buildRows, filterRows, isTrackFilter } from '@/core/timelineRows';
 import type { Row, TrackFilter } from '@/core/timelineRows';
+import { setBones } from '@/core/selsets';
+import type { SelectionSet } from '@/core/model';
 
 function FrameField({ fps, time }: { fps: number; time: number }) {
   const [text, setText] = useState<string | null>(null);
@@ -100,7 +102,17 @@ function FrameField({ fps, time }: { fps: number; time: number }) {
 }
 
 /** The window of the track filter: the kinds of tracks that show, a name to look for (words, `*`, `?` or `/regular expression/`), selected bones and slots only. */
-function TrackFilterMenu({ at, filter, onClose }: { at: { x: number; y: number }; filter: TrackFilter; onClose: () => void }) {
+function TrackFilterMenu({
+  at,
+  filter,
+  sets,
+  onClose,
+}: {
+  at: { x: number; y: number };
+  filter: TrackFilter;
+  sets: readonly SelectionSet[];
+  onClose: () => void;
+}) {
   const ref = useOutsideClose(true, onClose);
   useFitInWindow(ref);
   const set = (p: Partial<TrackFilter>) => uiStore.patch({ trackFilter: { ...uiStore.get().trackFilter, ...p } });
@@ -142,7 +154,25 @@ function TrackFilterMenu({ at, filter, onClose }: { at: { x: number; y: number }
         <input type="checkbox" checked={filter.selectedOnly} onChange={(e) => set({ selectedOnly: e.target.checked })} />
         <span>Selected bones and slots only</span>
       </label>
-      <Button small disabled={!isTrackFilter(filter)} onClick={() => set({ text: '', selectedOnly: false, hidden: [] })}>
+      {sets.length > 0 && (
+        <label className="hstack" style={{ gap: 6, padding: '3px 0' }} title="Of the bones, only the ones in a selection set">
+          <span>Set</span>
+          <select
+            aria-label="Only the bones of a set"
+            value={filter.set ?? ''}
+            style={{ flex: 1, minWidth: 0 }}
+            onChange={(e) => set({ set: e.target.value || null })}
+          >
+            <option value="">All bones</option>
+            {sets.map((x) => (
+              <option key={x.id} value={x.id}>
+                {x.name}
+              </option>
+            ))}
+          </select>
+        </label>
+      )}
+      <Button small disabled={!isTrackFilter(filter)} onClick={() => set({ text: '', selectedOnly: false, set: null, hidden: [] })}>
         Show all
       </Button>
     </div>
@@ -251,9 +281,16 @@ export function Timeline() {
 
   const trackFilter = useUi((s) => s.trackFilter);
   const [filterAt, setFilterAt] = useState<{ x: number; y: number } | null>(null);
+  // a set that was deleted stops filtering by itself
+  const filterSet = doc.selectionSets?.find((x) => x.id === trackFilter.set) ?? null;
   const rows = useMemo(
-    () => filterRows(buildRows(doc, anim, selection.bones, selection.slot, expanded), trackFilter),
-    [doc, anim, selection.bones, selection.slot, expanded, trackFilter],
+    () =>
+      filterRows(
+        buildRows(doc, anim, selection.bones, selection.slot, expanded),
+        filterSet ? trackFilter : { ...trackFilter, set: null },
+        filterSet ? new Set(setBones(doc, filterSet)) : null,
+      ),
+    [doc, anim, selection.bones, selection.slot, expanded, trackFilter, filterSet],
   );
   const onMenu = useCallback((m: TimelineMenuRequest) => setMenu(m), []);
 
@@ -529,7 +566,7 @@ export function Timeline() {
         )}
       </div>
       {menu && <TimelineMenu menu={menu} onClose={() => setMenu(null)} />}
-      {filterAt && <TrackFilterMenu at={filterAt} filter={trackFilter} onClose={() => setFilterAt(null)} />}
+      {filterAt && <TrackFilterMenu at={filterAt} filter={trackFilter} sets={doc.selectionSets ?? []} onClose={() => setFilterAt(null)} />}
     </div>
   );
 }
