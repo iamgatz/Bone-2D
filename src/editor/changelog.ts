@@ -12,6 +12,20 @@ export interface Release {
 
 export const CHANGELOG: Release[] = [
   {
+    version: '0.71',
+    date: '2026-11-20',
+    en: [
+      "Layout fixes: the icons of the buttons are in the middle of their buttons now (every icon button had the browser's default padding and the icon sat 1 to 3 pixels to the right), the fields and buttons of the timeline bar have one height, the bars of the Constraints, Skins and Events sections and the zoom chip are centred.",
+      "A narrower window no longer cuts things off: the timeline bar gives up its least needed controls in order (the labels of Insert time and Delete time, then that group, the options, the tail) instead of hiding the buttons on its right, and the top bar drops the feedback, help, updates and search buttons so Export stays in view down to 1100 pixels.",
+      "The buttons of a long dialog (Export) stay at the bottom while the form scrolls, and the tip of the chosen tool fades out after a few seconds instead of covering the picture for good.",
+    ],
+    ru: [
+      "Исправления вёрстки: иконки на кнопках теперь стоят по центру (у каждой иконочной кнопки был отступ браузера по умолчанию, и иконка сидела на 1–3 пикселя правее), поля и кнопки панели таймлайна одной высоты, заголовки разделов «Констрейнты», «Скины», «События» и плашка масштаба выровнены по центру.",
+      "Узкое окно больше ничего не обрезает: панель таймлайна по очереди отказывается от наименее нужного (подписей «Вставить время» и «Удалить время», затем всей этой группы, настроек, хвоста) вместо того, чтобы прятать кнопки справа, а верхняя панель убирает кнопки обратной связи, справки, обновлений и поиска, так что «Экспорт» остаётся на виду до ширины 1100 пикселей.",
+      "Кнопки длинного окна (Экспорт) остаются внизу, пока форма прокручивается, а подсказка выбранного инструмента через несколько секунд гаснет, а не закрывает картинку навсегда.",
+    ],
+  },
+  {
     version: '0.70',
     date: '2026-11-20',
     en: [

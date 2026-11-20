@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useRef, useState } from 'react';
-import { ChevronDown, ChevronRight, Copy, Diamond, Eraser, Filter, Film, KeyRound, Link2, Maximize, Pause, Pencil, Play, Plus, Repeat, SkipBack, SkipForward, Spline, Trash2, Volume2, VolumeX, ZoomIn } from 'lucide-react';
+import { ArrowLeftToLine, ArrowRightFromLine, ChevronDown, ChevronRight, Copy, Diamond, Eraser, Filter, Film, KeyRound, Link2, Maximize, Pause, Pencil, Play, Plus, Repeat, SkipBack, SkipForward, Spline, Trash2, Volume2, VolumeX, ZoomIn } from 'lucide-react';
 import { GraphEditor } from './GraphEditor';
 import { CURVE_PRESETS } from '@/core/curve';
 import { keyGrid } from '@/core/edit';
@@ -360,7 +360,7 @@ export function Timeline() {
 function TimeGapControls() {
   const gap = useUi((s) => s.timeGap ?? 6);
   return (
-    <div className="tl-opt" style={{ display: 'flex', alignItems: 'center', gap: 4 }} title="Cut time at the playhead: Insert pushes every key from the playhead later (a pause), Delete removes the frames after the playhead and closes the gap">
+    <div className="tl-opt tl-gap-group" style={{ display: 'flex', alignItems: 'center', gap: 4 }} title="Cut time at the playhead: Insert pushes every key from the playhead later (a pause), Delete removes the frames after the playhead and closes the gap">
       <input
         className="tl-gap"
         type="number"
@@ -372,11 +372,13 @@ function TimeGapControls() {
         style={{ width: 46 }}
         onChange={(e) => uiStore.patch({ timeGap: Math.max(1, Math.min(999, Math.round(Number(e.target.value)) || 1)) })}
       />
-      <button className="btn sm" title="Insert the frames at the playhead: every key from there on moves later" onClick={() => insertTimeAtPlayhead(gap)}>
-        Insert time
+      <button className="btn sm" title="Insert the frames at the playhead: every key from there on moves later" aria-label="Insert time" onClick={() => insertTimeAtPlayhead(gap)}>
+        <ArrowRightFromLine size={13} />
+        <span className="tl-gap-text">Insert time</span>
       </button>
-      <button className="btn sm" title="Delete the frames after the playhead: the keys inside go, the later keys move earlier" onClick={() => deleteTimeAtPlayhead(gap)}>
-        Delete time
+      <button className="btn sm" title="Delete the frames after the playhead: the keys inside go, the later keys move earlier" aria-label="Delete time" onClick={() => deleteTimeAtPlayhead(gap)}>
+        <ArrowLeftToLine size={13} />
+        <span className="tl-gap-text">Delete time</span>
       </button>
     </div>
   );

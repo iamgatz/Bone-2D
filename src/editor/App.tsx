@@ -231,14 +231,20 @@ function TopBar() {
       <IconButton icon={Redo2} title="Redo" hotkey={KEYS.redo} disabled={!docStore.canRedo} onClick={() => docStore.redo()} />
       <span className="sep" />
       <LangToggle />
-      <IconButton icon={Search} title="Command palette: find any command or tool by name" hotkey={KEYS.palette} onClick={() => uiStore.patch({ paletteOpen: true })} />
-      <span className="badge-wrap">
-        <IconButton icon={Bell} title="Updates: what is new and the project activity" onClick={() => uiStore.patch({ updatesOpen: true })} />
-        {hasUnseenUpdate() && !updatesOpen && <span className="notify-dot" role="status" aria-label="New updates" />}
+      <span className="tb-opt2">
+        <IconButton icon={Search} title="Command palette: find any command or tool by name" hotkey={KEYS.palette} onClick={() => uiStore.patch({ paletteOpen: true })} />
+      </span>
+      <span className="tb-opt">
+        <span className="badge-wrap">
+          <IconButton icon={Bell} title="Updates: what is new and the project activity" onClick={() => uiStore.patch({ updatesOpen: true })} />
+          {hasUnseenUpdate() && !updatesOpen && <span className="notify-dot" role="status" aria-label="New updates" />}
+        </span>
       </span>
       <IconButton icon={SlidersHorizontal} title="Settings" hotkey={KEYS.settings} onClick={() => uiStore.patch({ settingsOpen: true })} />
-      <IconButton icon={MessageSquareText} title="Send feedback to the author" onClick={() => uiStore.patch({ feedbackOpen: true })} />
-      <IconButton icon={CircleHelp} title="Shortcuts & help" hotkey={KEYS.help} onClick={() => uiStore.patch({ helpOpen: true })} />
+      <span className="tb-opt">
+        <IconButton icon={MessageSquareText} title="Send feedback to the author" onClick={() => uiStore.patch({ feedbackOpen: true })} />
+        <IconButton icon={CircleHelp} title="Shortcuts & help" hotkey={KEYS.help} onClick={() => uiStore.patch({ helpOpen: true })} />
+      </span>
       <Button primary icon={Download} onClick={() => uiStore.patch({ exportOpen: true })}>Export</Button>
     </div>
   );
@@ -293,7 +299,7 @@ function ViewportHud() {
           </div>
         </div>
       )}
-      {pickParent ? <div className="vp-hint">Click the new parent bone in the viewport or the tree · Esc cancels</div> : HINTS[tool] && <div className="vp-hint">{HINTS[tool]}</div>}
+      {pickParent ? <div className="vp-hint">Click the new parent bone in the viewport or the tree · Esc cancels</div> : HINTS[tool] && <div key={tool} className="vp-hint">{HINTS[tool]}</div>}
     </>
   );
 }
