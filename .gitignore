@@ -12,3 +12,7 @@ dist-cli
 
 # launch kit (video, post drafts): local only
 docs/promo
+
+# Playwright output
+test-results
+playwright-report

@@ -60,6 +60,7 @@ Add it to the table in `src/editor/hotkeys.ts` and its action to `src/editor/key
 - **ESLint 9** (`typescript-eslint` with type-aware rules, `react-hooks`, `import-x` for the layers and cycles) is the one linter; `eslint.config.js` says where untyped Spine JSON is allowed to be dynamic. The React Compiler rules of the hooks plugin are off: the compiler is not used.
 - **Prettier** formats everything (`.prettierrc.json`); the one formatting commit is listed in `.git-blame-ignore-revs`.
 - **knip** finds unused files, exports and dependencies (`npm run knip`).
+- **Playwright** runs a handful of smoke tests of the real editor in a browser (`e2e/`, `npm run e2e`): the demo loads, Ctrl+Z works on a Russian layout, icons sit in the middle of their buttons, nothing spills sideways at 1100, 1440 and 1920 px, the Export window is grouped. They cover what unit tests cannot see (layout, keyboard layouts); everything else stays in Vitest.
 - **No state library**: the stores are about forty lines on top of immer, and the document needs patches for undo, which a general store would not give.
 - **No validation library**: `validate.ts` repairs a document rather than rejecting it, which a schema library does not do.
 - **`.editorconfig` and `.gitattributes`** keep line endings and whitespace the same for editors that do not run Prettier.

@@ -13,7 +13,7 @@ const layer = (from, ...banned) => ({
 });
 
 export default tseslint.config(
-  { ignores: ['dist', 'dist-cli', 'node_modules', 'docs', 'tests/fixtures'] },
+  { ignores: ['dist', 'dist-cli', 'node_modules', 'docs', 'tests/fixtures', 'test-results', 'playwright-report'] },
   js.configs.recommended,
   ...tseslint.configs.recommendedTypeChecked,
   importX.flatConfigs.typescript,
