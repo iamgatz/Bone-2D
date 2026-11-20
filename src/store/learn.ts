@@ -90,6 +90,10 @@ let ikTotal = 0;
 // IK: the number of constraints when the lesson began, and the count of document edits when a new one first appeared
 let baseIk: number | null = null;
 let editsAtIk: number | null = null;
+// the kind of change the last step of the history was (counted from its label): a lesson about curves needs the kind, not just "an edit"
+let interpEdits = 0;
+let handleEdits = 0;
+let seenGraph = false;
 
 function snapshot(): LessonState {
   const ui = uiStore.get();
@@ -125,6 +129,10 @@ function snapshot(): LessonState {
     ikConstraints: ikTotal,
     editsSinceIk: editsAtIk === null ? 0 : edits - editsAtIk,
     seenWeightsTool,
+    selectedKeys: ui.selectedKeys.length,
+    interpEdits,
+    handleEdits,
+    seenGraph,
     playing: ui.playing,
     seenPlaying,
     seenExport,
@@ -143,6 +151,7 @@ function refresh() {
   if (ui.playing) seenPlaying = true;
   if (ui.exportOpen) seenExport = true;
   if (ui.tool === 'weights') seenWeightsTool = true;
+  if (ui.timelineView === 'graph') seenGraph = true;
   const progress = progressOf(lesson, snapshot(), s.base, s.skipped, s.kept);
   const fresh = lesson.steps.filter((st, i) => progress.marks[i] === 'done' && !s.kept.includes(st.id)).map((st) => st.id);
   if (fresh.length) learnStore.patch({ kept: [...s.kept, ...fresh] });
@@ -158,7 +167,12 @@ docStore.subscribe(() => {
   const doc = docStore.get();
   if (doc !== lastDoc) {
     lastDoc = doc;
-    if (learnStore.get().active) edits++;
+    if (learnStore.get().active) {
+      edits++;
+      const label = docStore.undoLabel;
+      if (label === 'Set interpolation' || label === 'Automatic curve') interpEdits++;
+      else if (label === 'Edit curve') handleEdits++;
+    }
   }
   refresh();
 });
@@ -172,6 +186,9 @@ export function startLesson(id: string) {
   seenPlaying = false;
   seenExport = false;
   seenWeightsTool = false;
+  interpEdits = 0;
+  handleEdits = 0;
+  seenGraph = false;
   baseIk = null;
   editsAtIk = null;
   const base = snapshot();

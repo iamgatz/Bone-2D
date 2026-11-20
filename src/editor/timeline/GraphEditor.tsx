@@ -547,7 +547,7 @@ export function GraphEditor({
           {!curves.length && <div className="empty">Select keys in the dopesheet, or a bone that has keys.</div>}
         </div>
       </div>
-      <div className="tl-canvas-wrap">
+      <div className="tl-canvas-wrap" data-learn="timeline">
         <div className="tl-ruler" style={{ cursor: 'default' }}>
           <GraphRuler />
         </div>

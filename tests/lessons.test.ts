@@ -1,6 +1,6 @@
 /** The lessons: the data is complete in both languages, every step condition says what it should, and the store follows the editor. */
 import { beforeEach, describe, expect, it } from 'vitest';
-import { FOX_LESSON, IK_LESSON, LESSONS, MESH_LESSON, RIG_LESSON, lessonById, progressOf } from '../src/core/lessons';
+import { CURVES_LESSON, FOX_LESSON, IK_LESSON, LESSONS, MESH_LESSON, RIG_LESSON, lessonById, progressOf } from '../src/core/lessons';
 import type { LessonState } from '../src/core/lessons';
 import { meshFromRegion } from '../src/core/mesh';
 import { emptyProject, newAnimation, newBone, newSlot } from '../src/core/model';
@@ -8,6 +8,9 @@ import type { RegionAttachment } from '../src/core/model';
 import { selectBone, selectSlot, setMode } from '../src/store/actions';
 import { setBonePose } from '../src/store/boneActions';
 import { createIkFromDrag } from '../src/store/ikActions';
+import { setKeyCurveHandle, setKeysCurve } from '../src/store/keyframeActions';
+import { encodeKey } from '../src/core/keyrefs';
+import type { KeyRef } from '../src/core/keyrefs';
 import { docStore } from '../src/store/doc';
 import { learnStore, offerLesson, readLearn, skipStep, startLesson, stopLesson } from '../src/store/learn';
 import { emptySelection, uiStore } from '../src/store/ui';
@@ -26,13 +29,17 @@ const state = (over: Partial<LessonState> = {}): LessonState => ({
   weightedMeshes: 0,
   ikConstraints: 0,
   editsSinceIk: 0,
+  selectedKeys: 0,
+  interpEdits: 0,
+  handleEdits: 0,
+  seenGraph: false,
   seenWeightsTool: false,
   seenPlaying: false,
   seenExport: false,
   ...over,
 });
 
-const TARGETS = ['tree', 'viewport', 'inspector', 'mode', 'play', 'export', 'images', 'toolIk'];
+const TARGETS = ['tree', 'viewport', 'inspector', 'mode', 'play', 'export', 'images', 'toolIk', 'timeline', 'graph'];
 const russian = (s: string) => /[а-яё]/i.test(s);
 
 describe('lesson data', () => {
@@ -408,10 +415,10 @@ describe('the steps of the IK lesson', () => {
     expect(done('pull', state({ editsSinceIk: 0 }))).toBe(false);
     expect(done('pull', state({ editsSinceIk: 1 }))).toBe(true);
   });
-  it('key and play work as in the other lessons, and the lesson is the last one for now', () => {
+  it('key and play work as in the other lessons, and the lesson offers the curves lesson', () => {
     expect(done('key', state({ keys: 6 }))).toBe(true);
     expect(done('play', state({ seenPlaying: true }))).toBe(true);
-    expect(IK_LESSON.next).toBeUndefined();
+    expect(IK_LESSON.next).toBe('curves');
     expect(lessonById('ik')).toBe(IK_LESSON);
   });
 });
@@ -455,5 +462,87 @@ describe('the IK lesson in the store', () => {
     uiStore.patch({ playing: true });
     expect(learnStore.get().progress?.current).toBe(-1);
     expect(learnStore.get().finished).toEqual(['ik']);
+  });
+});
+
+describe('the steps of the curves lesson', () => {
+  const done = (id: string, s: LessonState) => CURVES_LESSON.steps.find((x) => x.id === id)!.done(s, state());
+
+  it('select: at least one key is selected', () => {
+    expect(done('select', state())).toBe(false);
+    expect(done('select', state({ selectedKeys: 2 }))).toBe(true);
+  });
+  it('interp: an interpolation was changed; a handle drag alone is not that', () => {
+    expect(done('interp', state({ handleEdits: 3 }))).toBe(false);
+    expect(done('interp', state({ interpEdits: 1 }))).toBe(true);
+  });
+  it('graph: the graph was open at some moment', () => {
+    expect(done('graph', state())).toBe(false);
+    expect(done('graph', state({ seenGraph: true }))).toBe(true);
+  });
+  it('handle: a handle was dragged; a menu choice alone is not that', () => {
+    expect(done('handle', state({ interpEdits: 3 }))).toBe(false);
+    expect(done('handle', state({ handleEdits: 1 }))).toBe(true);
+  });
+  it('is the last lesson for now', () => {
+    expect(CURVES_LESSON.next).toBeUndefined();
+    expect(lessonById('curves')).toBe(CURVES_LESSON);
+  });
+});
+
+describe('the curves lesson in the store', () => {
+  beforeEach(() => {
+    stopLesson();
+    learnStore.patch({ finished: [], offered: false });
+    const p = emptyProject('curves');
+    const arm = newBone({ name: 'arm', parent: p.skeleton.bones[0].id, length: 40 });
+    p.skeleton.bones.push(arm);
+    const walk = newAnimation('walk', 1);
+    walk.bones[arm.id] = {
+      rotate: [
+        { time: 0, value: [0] },
+        { time: 0.5, value: [30] },
+      ],
+    };
+    p.skeleton.animations.push(walk);
+    docStore.replace(p);
+    uiStore.patch({
+      mode: 'setup',
+      tool: 'select',
+      selection: emptySelection,
+      playing: false,
+      animationId: walk.id,
+      time: 0,
+      overrides: {},
+      selectedKeys: [],
+      timelineView: 'dopesheet',
+    });
+  });
+
+  it('counts the kind of the change from the history, and the graph and the keys from the editor', () => {
+    const doc = docStore.get().skeleton;
+    const arm = doc.bones[1].id;
+    const ref: KeyRef = { kind: 'bone', target: arm, prop: 'rotate', time: 0 };
+    startLesson('curves');
+    setMode('animate');
+    expect(learnStore.get().progress?.marks[0]).toBe('done');
+
+    uiStore.patch({ selectedKeys: [encodeKey(ref)] });
+    expect(learnStore.get().progress?.marks[1]).toBe('done');
+    expect(learnStore.get().progress?.marks[2]).toBe('todo');
+
+    setKeysCurve([ref], 'stepped');
+    expect(learnStore.get().progress?.marks[2]).toBe('done');
+    expect(learnStore.get().progress?.marks[4]).toBe('todo'); // a menu choice is not a handle drag
+
+    uiStore.patch({ timelineView: 'graph' });
+    uiStore.patch({ timelineView: 'dopesheet' });
+    expect(learnStore.get().progress?.marks[3]).toBe('done'); // it stays done after the view changed
+
+    setKeyCurveHandle(ref, 0, 1, 0.4, 0.1);
+    expect(learnStore.get().progress?.marks[4]).toBe('done');
+    uiStore.patch({ playing: true });
+    expect(learnStore.get().progress?.current).toBe(-1);
+    expect(learnStore.get().finished).toEqual(['curves']);
   });
 });

@@ -1,7 +1,7 @@
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test } from '@playwright/test';
 import type { Page } from '@playwright/test';
-import { FOX_LESSON, IK_LESSON, LESSONS, MESH_LESSON, RIG_LESSON } from '../src/core/lessons';
+import { CURVES_LESSON, FOX_LESSON, IK_LESSON, LESSONS, MESH_LESSON, RIG_LESSON } from '../src/core/lessons';
 
 type BoneActions = typeof import('../src/store/boneActions');
 type DocModule = typeof import('../src/store/doc');
@@ -468,6 +468,96 @@ for (const locale of ['en-US', 'ru-RU'] as const) {
       for (let i = 0; i < MESH_LESSON.steps.length; i++) await card.locator('.btn.ghost').click();
       await card.getByRole('button', { name: IK_LESSON.title[lang] }).click();
       await expect(card.locator('.learn-title')).toHaveText(IK_LESSON.title[lang]);
+    });
+  });
+}
+
+type KeyframeActions = typeof import('../src/store/keyframeActions');
+type KeyRefs = typeof import('../src/core/keyrefs');
+const KEYFRAMES = '/src/store/keyframeActions.ts';
+const KEYREFS = '/src/core/keyrefs.ts';
+
+for (const locale of ['en-US', 'ru-RU'] as const) {
+  const lang = locale === 'ru-RU' ? 'ru' : 'en';
+  test.describe(`the curves lesson (${locale})`, () => {
+    test.use({ locale });
+
+    test('is passed on the demo: Tab, a key selected, an interpolation, the real graph button, a handle, Space', async ({ page }) => {
+      await openDemoWithLesson(page);
+      await page.evaluate(async (url) => {
+        const { uiStore } = (await import(url)) as UiModule;
+        uiStore.patch({ helpOpen: true });
+      }, UI);
+      await page.locator('.dialog .hstack.wrap .btn').nth(4).click();
+      const card = page.locator('.learn');
+      const step = (i: number) => CURVES_LESSON.steps[i];
+      await expect(card.locator('.learn-title')).toHaveText(CURVES_LESSON.title[lang]);
+
+      // 1. Tab
+      await page.keyboard.press('Tab');
+      await expect(card.locator('.learn-step-title')).toHaveText(step(1).title[lang]);
+      await expect(page.locator('[data-learn="timeline"]')).toHaveAttribute('data-learn-hl', '');
+
+      // 2. a key of the animation on the timeline (selected like a click on its diamond does)
+      const ref = await page.evaluate(
+        async ([docUrl, uiUrl, refsUrl]) => {
+          const { docStore } = (await import(docUrl)) as DocModule;
+          const { uiStore } = (await import(uiUrl)) as UiModule;
+          const { encodeKey } = (await import(refsUrl)) as KeyRefs;
+          const anim = docStore.get().skeleton.animations.find((a) => a.id === uiStore.get().animationId)!;
+          const bone = Object.keys(anim.bones).find((id) => (anim.bones[id].rotate?.length ?? 0) > 1)!;
+          const key = { kind: 'bone' as const, target: bone, prop: 'rotate', time: anim.bones[bone].rotate![0].time };
+          uiStore.patch({ selectedKeys: [encodeKey(key)] });
+          return key;
+        },
+        [DOC, UI, KEYREFS] as const,
+      );
+      await expect(card.locator('.learn-step-title')).toHaveText(step(2).title[lang]);
+
+      // 3. the interpolation of the key (what the right-click menu does)
+      await page.evaluate(
+        async ([url, key]) => {
+          const { setKeysCurve } = (await import(url)) as KeyframeActions;
+          setKeysCurve([key], 'stepped');
+        },
+        [KEYFRAMES, ref] as const,
+      );
+      await expect(card.locator('.learn-step-title')).toHaveText(step(3).title[lang]);
+
+      // 4. the real button of the graph
+      await page.locator('[data-learn="graph"]').click();
+      await expect(card.locator('.learn-step-title')).toHaveText(step(4).title[lang]);
+      await expect(page.locator('[data-learn="timeline"]')).toHaveAttribute('data-learn-hl', '');
+
+      // 5. a handle of the curve
+      await page.evaluate(
+        async ([url, key]) => {
+          const { setKeyCurveHandle } = (await import(url)) as KeyframeActions;
+          setKeyCurveHandle(key, 0, 1, 0.45, 0.2);
+        },
+        [KEYFRAMES, ref] as const,
+      );
+      await expect(card.locator('.learn-step-title')).toHaveText(step(5).title[lang]);
+
+      // 6. Space (a focused button would take it as a click, so the focus goes back to the page first)
+      await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur());
+      await page.keyboard.press('Space');
+      await expect(card.locator('.learn-count')).toHaveText('6/6');
+      await expect(card.locator('.learn-text')).toHaveText(CURVES_LESSON.outro[lang]);
+      await page.keyboard.press('Space');
+    });
+
+    test('the fourth lesson leads to the fifth when it is over', async ({ page }) => {
+      await openDemoWithLesson(page);
+      await page.evaluate(async (url) => {
+        const { uiStore } = (await import(url)) as UiModule;
+        uiStore.patch({ helpOpen: true });
+      }, UI);
+      await page.locator('.dialog .hstack.wrap .btn').nth(3).click();
+      const card = page.locator('.learn');
+      for (let i = 0; i < IK_LESSON.steps.length; i++) await card.locator('.btn.ghost').click();
+      await card.getByRole('button', { name: CURVES_LESSON.title[lang] }).click();
+      await expect(card.locator('.learn-title')).toHaveText(CURVES_LESSON.title[lang]);
     });
   });
 }

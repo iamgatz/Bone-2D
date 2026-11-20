@@ -12,6 +12,16 @@ export interface Release {
 
 export const CHANGELOG: Release[] = [
   {
+    version: '0.86',
+    date: '2026-11-20',
+    en: [
+      'Lesson 5, "The feel of a motion": switch to Animate, select a key, change its interpolation, open the curve graph, pull a curve handle and play. The lesson tells a change of interpolation from a drag of a handle, so each step asks for the right thing. The fourth lesson offers it when it is over.',
+    ],
+    ru: [
+      'Урок 5 «Характер движения»: перейдите в «Анимацию», выберите ключ, смените его интерполяцию, откройте график кривых, потяните ручку кривой и проиграйте. Урок отличает смену интерполяции от перетаскивания ручки, поэтому каждый шаг просит именно своё. Четвёртый урок предлагает этот в конце.',
+    ],
+  },
+  {
     version: '0.85',
     date: '2026-11-20',
     en: [

@@ -6,7 +6,7 @@
  */
 
 /** The part of the editor a step points at (a soft frame is drawn around it). */
-export type LearnTarget = 'tree' | 'viewport' | 'inspector' | 'mode' | 'play' | 'export' | 'images' | 'toolIk';
+export type LearnTarget = 'tree' | 'viewport' | 'inspector' | 'mode' | 'play' | 'export' | 'images' | 'toolIk' | 'timeline' | 'graph';
 
 /** Something the card can do for the person at a step (the store knows how): a button under the text. */
 export type LessonHelper = 'samplePictures';
@@ -32,6 +32,13 @@ export interface LessonState {
   /** IK constraints in the skeleton, and the edits of the document made since a new one appeared (0 while none has). */
   ikConstraints: number;
   editsSinceIk: number;
+  /** Keys selected on the timeline. */
+  selectedKeys: number;
+  /** Changes of the interpolation of keys (a menu choice, a preset) and drags of a curve handle, made since the lesson began. */
+  interpEdits: number;
+  handleEdits: number;
+  /** The curve graph has been the timeline view at some moment since the lesson began. */
+  seenGraph: boolean;
   /** The weights brush has been the tool at some moment since the lesson began. */
   seenWeightsTool: boolean;
   /** Playback has been on at some moment since the lesson began (it can be off again now). */
@@ -311,6 +318,7 @@ export const IK_LESSON: Lesson = {
     en: 'That is how legs stay on the ground and hands reach things: animate the target, not every bone.',
     ru: 'Так ноги стоят на земле, а руки достают до предметов: анимируйте цель, а не каждую кость.',
   },
+  next: 'curves',
   steps: [
     {
       id: 'bone',
@@ -375,7 +383,83 @@ export const IK_LESSON: Lesson = {
   ],
 };
 
-export const LESSONS: readonly Lesson[] = [FOX_LESSON, RIG_LESSON, MESH_LESSON, IK_LESSON];
+/** Lesson 5: the feel of a motion. The same two poses move differently with another curve between them. */
+export const CURVES_LESSON: Lesson = {
+  id: 'curves',
+  title: { en: 'The feel of a motion', ru: 'Характер движения' },
+  intro: {
+    en: 'The curve between two keys decides how the motion feels: even, snappy, soft or with a hold. Needs an animation with keys.',
+    ru: 'Кривая между двумя ключами решает, каким будет движение: ровным, резким, мягким или с задержкой. Нужна анимация с ключами.',
+  },
+  outro: {
+    en: 'Now you can tell a stiff motion from a lively one. Ease in-out for most things, stepped for blinks, overshoot for bounce.',
+    ru: 'Теперь вы отличите деревянное движение от живого. Мягкий вход и выход для большинства вещей, ступенька для моргания, перелёт для отскока.',
+  },
+  steps: [
+    {
+      id: 'animate',
+      target: 'mode',
+      title: { en: 'Switch to Animate', ru: 'Перейдите в «Анимацию»' },
+      text: {
+        en: 'Press Tab or click Animate: the timeline with the keys of the animation opens.',
+        ru: 'Нажмите Tab или кнопку «Анимация»: откроется таймлайн с ключами анимации.',
+      },
+      done: (s) => s.mode === 'animate',
+    },
+    {
+      id: 'select',
+      target: 'timeline',
+      title: { en: 'Select a key', ru: 'Выберите ключ' },
+      text: {
+        en: 'Click a key (a diamond) on the timeline, or drag a frame around several.',
+        ru: 'Нажмите на ключ (ромбик) на таймлайне или обведите рамкой несколько.',
+      },
+      done: (s) => s.selectedKeys > 0,
+    },
+    {
+      id: 'interp',
+      target: 'timeline',
+      title: { en: 'Change the interpolation', ru: 'Смените интерполяцию' },
+      text: {
+        en: 'Right-click the selected key and pick Stepped, Ease in-out or another: the motion after this key changes.',
+        ru: 'Нажмите правой кнопкой на выбранный ключ и выберите «Stepped», «Ease in-out» или другое: движение после этого ключа изменится.',
+      },
+      done: (s) => s.interpEdits >= 1,
+    },
+    {
+      id: 'graph',
+      target: 'graph',
+      title: { en: 'Open the curve graph', ru: 'Откройте график кривых' },
+      text: {
+        en: 'Press the curve button of the timeline: the graph shows the value over time and the handles of the curves.',
+        ru: 'Нажмите кнопку кривой на таймлайне: график покажет значение во времени и ручки кривых.',
+      },
+      done: (s) => s.seenGraph,
+    },
+    {
+      id: 'handle',
+      target: 'timeline',
+      title: { en: 'Pull a handle', ru: 'Потяните ручку' },
+      text: {
+        en: 'Drag a round handle of a curve: pull it out for a slow start, pull it flat for a hold.',
+        ru: 'Потяните круглую ручку кривой: вытяните для медленного старта, уложите ровно для задержки.',
+      },
+      done: (s) => s.handleEdits >= 1,
+    },
+    {
+      id: 'play',
+      target: 'play',
+      title: { en: 'Play it', ru: 'Проиграйте' },
+      text: {
+        en: 'Press Space and feel the difference. Press Space again to stop.',
+        ru: 'Нажмите Пробел и почувствуйте разницу. Ещё раз Пробел остановит проигрывание.',
+      },
+      done: (s) => s.seenPlaying,
+    },
+  ],
+};
+
+export const LESSONS: readonly Lesson[] = [FOX_LESSON, RIG_LESSON, MESH_LESSON, IK_LESSON, CURVES_LESSON];
 
 export const lessonById = (id: string): Lesson | undefined => LESSONS.find((l) => l.id === id);
 

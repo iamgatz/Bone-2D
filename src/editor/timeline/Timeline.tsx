@@ -403,7 +403,13 @@ export function Timeline() {
           active={view === 'dopesheet'}
           onClick={() => uiStore.patch({ timelineView: 'dopesheet' })}
         />
-        <IconButton icon={Spline} title="Curve graph" active={view === 'graph'} onClick={() => uiStore.patch({ timelineView: 'graph' })} />
+        <IconButton
+          icon={Spline}
+          title="Curve graph"
+          learn="graph"
+          active={view === 'graph'}
+          onClick={() => uiStore.patch({ timelineView: 'graph' })}
+        />
         {view === 'graph' && (
           <IconButton
             icon={Link2}

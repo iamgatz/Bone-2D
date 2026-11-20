@@ -589,7 +589,7 @@ export function Dopesheet({ rows, duration, fps, onMenu }: Props) {
   });
 
   return (
-    <div className="tl-canvas-wrap">
+    <div className="tl-canvas-wrap" data-learn="timeline">
       <div className="tl-ruler">
         <canvas ref={rulerRef} />
       </div>
