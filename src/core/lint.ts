@@ -9,7 +9,7 @@ import { counterpartName, sideStyle } from './animtools';
 import { openSeams } from './loops';
 import type { Animation, BoneTimelines, Id, Key, Project } from './model';
 
-export type LintKind = 'loopSeam' | 'longSpin' | 'keyAfterEnd' | 'duplicateKey' | 'unpairedSide' | 'mixedSides' | 'denseKeys';
+type LintKind = 'loopSeam' | 'longSpin' | 'keyAfterEnd' | 'duplicateKey' | 'unpairedSide' | 'mixedSides' | 'denseKeys';
 
 export interface Finding {
   kind: LintKind;

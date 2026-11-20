@@ -50,7 +50,7 @@ export function closeLoop(anim: Animation, options: CloseLoopOptions = {}): numb
 }
 
 /** How far the end may be from the start before a seam shows (degrees, pixels, a multiplier: a tenth of any is hard to see). */
-export const SEAM_TOLERANCE = 0.1;
+const SEAM_TOLERANCE = 0.1;
 
 /** How many timelines of a cycle end on another value than they start on (a jump when it repeats). Changes nothing. */
 export function openSeams(anim: Animation, tolerance = SEAM_TOLERANCE): number {
