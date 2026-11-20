@@ -8,6 +8,7 @@ import {
   MESH_LESSON,
   RIG_LESSON,
   SKINS_LESSON,
+  EXPORT_LESSON,
   lessonById,
   progressOf,
 } from '../src/core/lessons';
@@ -24,7 +25,7 @@ import { setKeyCurveHandle, setKeysCurve } from '../src/store/keyframeActions';
 import { encodeKey } from '../src/core/keyrefs';
 import type { KeyRef } from '../src/core/keyrefs';
 import { docStore } from '../src/store/doc';
-import { learnStore, offerLesson, readLearn, skipStep, startLesson, stopLesson } from '../src/store/learn';
+import { learnStore, noteExport, offerLesson, readLearn, skipStep, startLesson, stopLesson } from '../src/store/learn';
 import { emptySelection, uiStore } from '../src/store/ui';
 
 const state = (over: Partial<LessonState> = {}): LessonState => ({
@@ -49,6 +50,8 @@ const state = (over: Partial<LessonState> = {}): LessonState => ({
   events: 0,
   eventKeys: 0,
   skinSwitches: 0,
+  zips: 0,
+  players: 0,
   seenWeightsTool: false,
   seenPlaying: false,
   seenExport: false,
@@ -582,10 +585,10 @@ describe('the steps of the skins lesson', () => {
     expect(done('fire', state({ events: 5, eventKeys: 2 }), state({ eventKeys: 2 }))).toBe(false);
     expect(done('fire', state({ eventKeys: 3 }), state({ eventKeys: 2 }))).toBe(true);
   });
-  it('animate and play work as in the other lessons, and it is the last lesson for now', () => {
+  it('animate and play work as in the other lessons, and it offers the export lesson', () => {
     expect(done('animate', state({ mode: 'animate' }))).toBe(true);
     expect(done('play', state({ seenPlaying: true }))).toBe(true);
-    expect(SKINS_LESSON.next).toBeUndefined();
+    expect(SKINS_LESSON.next).toBe('export');
     expect(lessonById('skins')).toBe(SKINS_LESSON);
   });
 });
@@ -645,5 +648,39 @@ describe('the skins lesson in the store', () => {
     setActiveSkin(skin);
     startLesson('skins');
     expect(learnStore.get().progress?.marks[1]).toBe('todo');
+  });
+});
+
+describe('the export lesson', () => {
+  const done = (id: string, s: LessonState) => EXPORT_LESSON.steps.find((x) => x.id === id)!.done(s, state());
+
+  it('open: the Export window was open at some moment', () => {
+    expect(done('open', state())).toBe(false);
+    expect(done('open', state({ seenExport: true }))).toBe(true);
+  });
+  it('zip and player: each asks for its own file, the other one does not count', () => {
+    expect(done('zip', state({ players: 2 }))).toBe(false);
+    expect(done('zip', state({ zips: 1 }))).toBe(true);
+    expect(done('player', state({ zips: 2 }))).toBe(false);
+    expect(done('player', state({ players: 1 }))).toBe(true);
+  });
+  it('is the last lesson: nothing comes after it', () => {
+    expect(EXPORT_LESSON.next).toBeUndefined();
+    expect(lessonById('export')).toBe(EXPORT_LESSON);
+  });
+
+  it('follows the window and the files given out in the store, and finishes', () => {
+    stopLesson();
+    learnStore.patch({ finished: [], offered: false });
+    uiStore.patch({ exportOpen: false });
+    startLesson('export');
+    noteExport('zip'); // a file given out without the window cannot happen in the editor, but the order does not matter
+    expect(learnStore.get().progress?.marks).toEqual(['todo', 'done', 'todo']);
+    uiStore.patch({ exportOpen: true });
+    uiStore.patch({ exportOpen: false });
+    expect(learnStore.get().progress?.marks[0]).toBe('done');
+    noteExport('player');
+    expect(learnStore.get().progress?.current).toBe(-1);
+    expect(learnStore.get().finished).toEqual(['export']);
   });
 });

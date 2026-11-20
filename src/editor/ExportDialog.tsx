@@ -3,6 +3,7 @@ import { Copy, Download, FileCode, FolderOpen, Package, Save } from 'lucide-reac
 import { exportSettingsFromText, exportSettingsToText, loadExportSettings, rememberExportSettings } from '@/core/export/settings';
 import type { ExportSettings } from '@/core/export/settings';
 import { useProject } from '@/store/doc';
+import { noteExport } from '@/store/learn';
 import { downloadBlob } from '@/store/project';
 import { toast, uiStore } from '@/store/ui';
 import { skeletonCount, skeletonList } from '@/core/skeletons';
@@ -119,6 +120,7 @@ export function ExportDialog() {
       const { buildPlayerPage } = await import('./exportPlayer');
       const page = buildPlayerPage(doc, { smooth: filter !== 'Nearest' });
       downloadBlob(new Blob([page.html], { type: 'text/html' }), `${base}-player.html`);
+      noteExport('player');
       toast(
         page.missing.length
           ? `Player page saved, but these pictures are missing: ${page.missing.join(', ')}`
@@ -185,6 +187,7 @@ export function ExportDialog() {
               onClick={() => {
                 if (!result) return;
                 downloadBlob(new Blob([result.zip as BlobPart], { type: 'application/zip' }), `${base}-spine-4.3.zip`);
+                noteExport('zip');
                 toast('Export downloaded', 'ok');
               }}
             >

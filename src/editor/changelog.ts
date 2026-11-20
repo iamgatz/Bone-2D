@@ -12,6 +12,16 @@ export interface Release {
 
 export const CHANGELOG: Release[] = [
   {
+    version: '0.88',
+    date: '2026-11-21',
+    en: [
+      'Lesson 7, "Out to the game": open Export, download the Spine 4.3 ZIP and save the one-file player page. The lesson counts the files the window really gives out, so a closed window or a cancelled build is not a step. It is the last of the seven lessons: the sixth one offers it when it is over, and the Learn menu lists all seven.',
+    ],
+    ru: [
+      'Урок 7 «В игру»: откройте «Экспорт», скачайте ZIP Spine 4.3 и сохраните страницу-плеер одним файлом. Урок считает файлы, которые окно действительно выдало, так что закрытое окно или недоделанная сборка не засчитываются. Это последний из семи уроков: шестой предлагает его в конце, а меню «Обучение» показывает все семь.',
+    ],
+  },
+  {
     version: '0.87',
     date: '2026-11-21',
     en: [

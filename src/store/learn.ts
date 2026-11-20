@@ -97,6 +97,9 @@ let handleEdits = 0;
 let seenGraph = false;
 // skins: how many times the shown skin changed, and the skin that was shown at the last look
 let skinSwitches = 0;
+// the files the Export window gave out
+let zips = 0;
+let players = 0;
 let lastSkin = uiStore.get().skinId;
 
 function snapshot(): LessonState {
@@ -142,6 +145,8 @@ function snapshot(): LessonState {
     events: doc.skeleton.events.length,
     eventKeys: eventKeyTotal,
     skinSwitches,
+    zips,
+    players,
     playing: ui.playing,
     seenPlaying,
     seenExport,
@@ -191,6 +196,13 @@ docStore.subscribe(() => {
 });
 uiStore.subscribe(refresh);
 
+/** The Export window gave a file out: the lesson about the way to the game counts it. */
+export function noteExport(kind: 'zip' | 'player') {
+  if (kind === 'zip') zips++;
+  else players++;
+  refresh();
+}
+
 /** Starts a lesson on what is open now. */
 export function startLesson(id: string) {
   if (!lessonById(id)) return;
@@ -203,6 +215,8 @@ export function startLesson(id: string) {
   handleEdits = 0;
   seenGraph = false;
   skinSwitches = 0;
+  zips = 0;
+  players = 0;
   lastSkin = uiStore.get().skinId;
   baseIk = null;
   editsAtIk = null;

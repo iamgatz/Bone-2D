@@ -11,7 +11,7 @@ Open source (MIT), in the spirit of Spine. It writes the **Spine 4.3** format (`
 
 **[Open the editor →](https://iamgatz.github.io/Bone-2D/)** The demo rig "Kit" is one click away.
 Direct links: [`?demo`](https://iamgatz.github.io/Bone-2D/?demo) opens the fox, [`?demo=wave`](https://iamgatz.github.io/Bone-2D/?demo=wave) opens it playing the `wave` animation (also `walk`, `jump`, `idle`). The interface is in English and Russian.
-The first time you open the demo, a two-minute interactive lesson ("Bring the fox to life") leads you through the main loop; Help brings it back.
+The first time you open the demo, a two-minute interactive lesson ("Bring the fox to life") leads you through the main loop; Help brings it back, and the Learn menu holds seven lessons in all (rigging, meshes, IK, curves, skins and events, export).
 
 ## Features
 

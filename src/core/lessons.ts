@@ -42,6 +42,9 @@ export interface LessonState {
   events: number;
   eventKeys: number;
   skinSwitches: number;
+  /** Files given out by the Export window since the lesson began: the Spine ZIP and the one-file player page. */
+  zips: number;
+  players: number;
   /** The curve graph has been the timeline view at some moment since the lesson began. */
   seenGraph: boolean;
   /** The weights brush has been the tool at some moment since the lesson began. */
@@ -477,6 +480,7 @@ export const SKINS_LESSON: Lesson = {
     en: 'One skeleton, many looks, and the game hears the signals you put on the timeline. Next: take it all out to a game.',
     ru: 'Один скелет и много обликов, а игра слышит сигналы, которые вы поставили на таймлайне. Дальше: вынести всё в игру.',
   },
+  next: 'export',
   steps: [
     {
       id: 'skin',
@@ -541,7 +545,53 @@ export const SKINS_LESSON: Lesson = {
   ],
 };
 
-export const LESSONS: readonly Lesson[] = [FOX_LESSON, RIG_LESSON, MESH_LESSON, IK_LESSON, CURVES_LESSON, SKINS_LESSON];
+/** Lesson 7: to the game. The result of the work is a file that a game engine loads, or one page that plays it. */
+export const EXPORT_LESSON: Lesson = {
+  id: 'export',
+  title: { en: 'Out to the game', ru: 'В игру' },
+  intro: {
+    en: 'The last step of the work: take the animation out as files that a game engine loads. Spine 4.3 data works in Unity, Godot, Pixi, Phaser and others.',
+    ru: 'Последний шаг работы: вынести анимацию файлами, которые читает игровой движок. Данные Spine 4.3 работают в Unity, Godot, Pixi, Phaser и других.',
+  },
+  outro: {
+    en: 'That is the whole way: a picture, a bone, a mesh, a motion, a look, a signal and a file for the game. Draw your own character now.',
+    ru: 'Это весь путь: картинка, кость, сетка, движение, облик, сигнал и файл для игры. Теперь рисуйте своего персонажа.',
+  },
+  steps: [
+    {
+      id: 'open',
+      target: 'export',
+      title: { en: 'Open Export', ru: 'Откройте «Экспорт»' },
+      text: {
+        en: 'Press the Export button in the top bar: the window shows what will be taken out and how.',
+        ru: 'Нажмите кнопку «Экспорт» в верхней панели: окно покажет, что и как будет вынесено.',
+      },
+      done: (s) => s.seenExport,
+    },
+    {
+      id: 'zip',
+      target: 'export',
+      title: { en: 'Download the Spine data', ru: 'Скачайте данные Spine' },
+      text: {
+        en: 'On the first tab press Download ZIP: a skeleton file, an atlas and the pictures, ready for the engine of your game.',
+        ru: 'На первой вкладке нажмите «Скачать ZIP»: файл скелета, атлас и картинки, готовые для движка вашей игры.',
+      },
+      done: (s) => s.zips >= 1,
+    },
+    {
+      id: 'player',
+      target: 'export',
+      title: { en: 'Save a player page', ru: 'Сохраните страницу-плеер' },
+      text: {
+        en: 'Press Save player page: one HTML file with the animation inside. It opens offline, good for showing a client.',
+        ru: 'Нажмите «Сохранить страницу-плеер»: один HTML-файл с анимацией внутри. Открывается без интернета, удобно показать заказчику.',
+      },
+      done: (s) => s.players >= 1,
+    },
+  ],
+};
+
+export const LESSONS: readonly Lesson[] = [FOX_LESSON, RIG_LESSON, MESH_LESSON, IK_LESSON, CURVES_LESSON, SKINS_LESSON, EXPORT_LESSON];
 
 export const lessonById = (id: string): Lesson | undefined => LESSONS.find((l) => l.id === id);
 

@@ -1,7 +1,7 @@
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test } from '@playwright/test';
 import type { Page } from '@playwright/test';
-import { CURVES_LESSON, FOX_LESSON, IK_LESSON, LESSONS, MESH_LESSON, RIG_LESSON, SKINS_LESSON } from '../src/core/lessons';
+import { CURVES_LESSON, FOX_LESSON, IK_LESSON, LESSONS, MESH_LESSON, RIG_LESSON, SKINS_LESSON, EXPORT_LESSON } from '../src/core/lessons';
 
 type BoneActions = typeof import('../src/store/boneActions');
 type DocModule = typeof import('../src/store/doc');
@@ -624,6 +624,60 @@ for (const locale of ['en-US', 'ru-RU'] as const) {
       for (let i = 0; i < CURVES_LESSON.steps.length; i++) await card.locator('.btn.ghost').click();
       await card.getByRole('button', { name: SKINS_LESSON.title[lang] }).click();
       await expect(card.locator('.learn-title')).toHaveText(SKINS_LESSON.title[lang]);
+    });
+  });
+}
+
+for (const locale of ['en-US', 'ru-RU'] as const) {
+  const lang = locale === 'ru-RU' ? 'ru' : 'en';
+  const name = (en: string, ru: string) => (lang === 'ru' ? ru : en);
+  test.describe(`the export lesson (${locale})`, () => {
+    test.use({ locale });
+
+    test('is passed on the demo: the Export button, the real ZIP download, the real player page download', async ({ page }) => {
+      await openDemoWithLesson(page);
+      await page.evaluate(async (url) => {
+        const { uiStore } = (await import(url)) as UiModule;
+        uiStore.patch({ helpOpen: true });
+      }, UI);
+      await page.locator('.dialog .hstack.wrap .btn').nth(6).click();
+      const card = page.locator('.learn');
+      const step = (i: number) => EXPORT_LESSON.steps[i];
+      await expect(card.locator('.learn-title')).toHaveText(EXPORT_LESSON.title[lang]);
+      await expect(card.locator('.learn-step-title')).toHaveText(step(0).title[lang]);
+      await expect(page.locator('[data-learn="export"]')).toHaveAttribute('data-learn-hl', '');
+
+      // 1. the real button of the top bar
+      await page.locator('[data-learn="export"]').click();
+      await expect(card.locator('.learn-step-title')).toHaveText(step(1).title[lang]);
+
+      // 2. the ZIP (the button is enabled when the export is built)
+      const zipButton = page.getByRole('button', { name: name('Download ZIP', 'Скачать ZIP'), exact: true });
+      await expect(zipButton).toBeEnabled();
+      const zip = page.waitForEvent('download');
+      await zipButton.click();
+      expect((await zip).suggestedFilename()).toMatch(/spine-4\.3\.zip$/);
+      await expect(card.locator('.learn-step-title')).toHaveText(step(2).title[lang]);
+
+      // 3. the player page
+      const player = page.waitForEvent('download');
+      await page.getByRole('button', { name: name('Save player page', 'Сохранить страницу-плеер'), exact: true }).click();
+      expect((await player).suggestedFilename()).toMatch(/-player\.html$/);
+      await expect(card.locator('.learn-count')).toHaveText('3/3');
+      await expect(card.locator('.learn-text')).toHaveText(EXPORT_LESSON.outro[lang]);
+    });
+
+    test('the sixth lesson leads to the seventh when it is over', async ({ page }) => {
+      await openDemoWithLesson(page);
+      await page.evaluate(async (url) => {
+        const { uiStore } = (await import(url)) as UiModule;
+        uiStore.patch({ helpOpen: true });
+      }, UI);
+      await page.locator('.dialog .hstack.wrap .btn').nth(5).click();
+      const card = page.locator('.learn');
+      for (let i = 0; i < SKINS_LESSON.steps.length; i++) await card.locator('.btn.ghost').click();
+      await card.getByRole('button', { name: EXPORT_LESSON.title[lang] }).click();
+      await expect(card.locator('.learn-title')).toHaveText(EXPORT_LESSON.title[lang]);
     });
   });
 }
