@@ -1,9 +1,36 @@
-import { useEffect, useRef, useState } from 'react';
+import { useLayoutEffect, useEffect, useRef, useState } from 'react';
 import type { CSSProperties, ReactNode } from 'react';
 import type { LucideIcon } from 'lucide-react';
 import { Check, X } from 'lucide-react';
 import { clamp, parseNumberExpr } from '@/core/math';
 import { docStore } from '@/store/doc';
+
+/** A paragraph of explanation under a heading: two lines, and the rest opens on a click (when there is more). */
+export function Hint({ children, flush }: { children: ReactNode; flush?: boolean }) {
+  const ref = useRef<HTMLParagraphElement>(null);
+  const [open, setOpen] = useState(false);
+  const [long, setLong] = useState(false);
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (!el || open) return;
+    const measure = () => setLong(el.scrollHeight > el.clientHeight + 1);
+    measure();
+    const watch = new ResizeObserver(measure);
+    watch.observe(el);
+    return () => watch.disconnect();
+  }, [open, children]);
+  const toggle = long || open;
+  return (
+    <p
+      ref={ref}
+      className={`hint-text hint-clamp${flush ? ' flush' : ' mb'}${toggle ? ' hint-more' : ''}${open ? ' open' : ''}`}
+      title={toggle ? (open ? 'Click to fold' : 'Click to read all') : undefined}
+      onClick={toggle ? () => setOpen(!open) : undefined}
+    >
+      {children}
+    </p>
+  );
+}
 
 /** An icon-only button: its title is its accessible name and its tooltip, with the hotkey as a key cap. */
 export function IconButton(props: {
@@ -310,7 +337,7 @@ export function useFocusFirstItem(ref: React.RefObject<HTMLElement | null>, acti
   }, [ref, active]);
 }
 
-export function Menu(props: { label: ReactNode; children: (close: () => void) => ReactNode; icon?: LucideIcon }) {
+export function Menu(props: { label: ReactNode; children: (close: () => void) => ReactNode; icon?: LucideIcon; title?: string }) {
   const [open, setOpen] = useState(false);
   const ref = useOutsideClose(open, () => setOpen(false));
   const trigger = useRef<HTMLButtonElement>(null);
@@ -323,6 +350,8 @@ export function Menu(props: { label: ReactNode; children: (close: () => void) =>
         ref={trigger}
         type="button"
         className={`btn ghost${open ? ' on' : ''}`}
+        title={props.title}
+        aria-label={props.title}
         aria-haspopup="menu"
         aria-expanded={open}
         onClick={() => setOpen(!open)}
@@ -360,6 +389,7 @@ export function MenuItem(props: {
   hotkey?: string;
   disabled?: boolean;
   checked?: boolean;
+  title?: string;
   close: () => void;
 }) {
   const Icon = props.icon;
@@ -370,6 +400,7 @@ export function MenuItem(props: {
       role={checkable ? 'menuitemcheckbox' : 'menuitem'}
       aria-checked={checkable ? props.checked : undefined}
       className="menu-item"
+      title={props.title}
       disabled={props.disabled}
       onClick={() => {
         props.close();

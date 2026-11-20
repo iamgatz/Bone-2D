@@ -2190,4 +2190,22 @@ export const RU: Record<string, string> = {
   'Nothing could be taken': 'Взять не удалось ничего',
   'Took {#} from {} ({#} could not be)': 'Взято: {1} из «{2}» (не удалось: {3})',
   'Took {#} from {}': 'Взято: {1} из «{2}»',
+  'Skeleton data': 'Данные скелета',
+  Atlas: 'Атлас',
+  'Advanced atlas options': 'Дополнительные настройки атласа',
+  'Page shape and how pictures are packed: the defaults suit most games':
+    'Форма страниц и способ упаковки картинок: значения по умолчанию подходят большинству игр',
+  'Import a folder': 'Импорт папки',
+  'Import an animated GIF': 'Импорт анимированного GIF',
+  'More ways to bring pictures in, and cleaning up': 'Другие способы добавить картинки и уборка',
+  'Layers with the name of a picture give it new pixels, new layers become slots':
+    'Слои с именем картинки дают ей новые пиксели, новые слои становятся слотами',
+  'Click to read all': 'Нажмите, чтобы прочитать целиком',
+  'Click to fold': 'Нажмите, чтобы свернуть',
+  'Bones: {#}': 'Кости: {}',
+  'Slots: {#}': 'Слоты: {}',
+  'Animations: {#}': 'Анимации: {}',
+  'Skins: {#}': 'Скины: {}',
+  'Pictures: {#}': 'Картинки: {}',
+  'Warnings: {#}': 'Предупреждения: {}',
 };

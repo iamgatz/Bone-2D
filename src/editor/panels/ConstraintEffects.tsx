@@ -6,6 +6,7 @@ import { useProject } from '@/store/doc';
 import { useUi } from '@/store/ui';
 import { getProbeSkeleton } from '@/store/scene';
 import { Section } from '../ui/Section';
+import { Hint } from '../ui/controls';
 
 const signed = (v: number, digits: number): string => {
   const s = Math.abs(v).toFixed(digits);
@@ -31,9 +32,9 @@ export function ConstraintEffects({ id }: { id: Id }) {
   if (!result || !result.stages.length) return null;
   return (
     <Section id="bone.effects" title="Constraint effects" icon={Route}>
-      <p className="hint-text mb">
+      <Hint>
         What the constraints do to this bone, in the order they run: its pose from the animation, the change each one makes, and the result.
-      </p>
+      </Hint>
       <div className="effects">
         <div className="effect-row">
           <span className="effect-name dim">From the animation</span>

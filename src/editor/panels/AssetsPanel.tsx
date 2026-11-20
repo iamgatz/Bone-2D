@@ -8,6 +8,7 @@ import {
   FolderUp,
   Grid3x3,
   ImagePlus,
+  MoreHorizontal,
   Pencil,
   RefreshCw,
   Trash2,
@@ -31,7 +32,7 @@ import { docStore, useProject } from '@/store/doc';
 import { canReadGif, importGif } from '@/store/frameImport';
 import { openSliceDialog } from '@/store/sliceDialog';
 import { toast, uiStore } from '@/store/ui';
-import { IconButton } from '../ui/controls';
+import { IconButton, Menu, MenuItem } from '../ui/controls';
 
 function Thumb({ name }: { name: string }) {
   const [url, setUrl] = useState<string | null>(null);
@@ -160,25 +161,59 @@ export function AssetsPanel() {
     <div className="panel" style={{ height: 260 }}>
       <div className="panel-head">
         <span className="title">Images</span>
-        <IconButton
-          icon={Eraser}
-          title="Remove the images no attachment shows"
-          small
-          disabled={unused === 0}
-          onClick={() => removeUnusedImages()}
-        />
+
         <IconButton
           icon={ImagePlus}
           title="Import images (or a PSD file: every layer becomes a picture and a slot)"
           small
           onClick={() => fileRef.current?.click()}
         />
-        <IconButton
-          icon={FolderUp}
-          title="Import a folder of images (its folders become folders of pictures)"
-          small
-          onClick={() => folderRef.current?.click()}
-        />
+        <Menu icon={MoreHorizontal} label="" title="More ways to bring pictures in, and cleaning up">
+          {(close) => (
+            <>
+              <MenuItem
+                icon={FolderUp}
+                close={close}
+                onClick={() => folderRef.current?.click()}
+                title="Import a folder of images (its folders become folders of pictures)"
+              >
+                Import a folder
+              </MenuItem>
+              <MenuItem
+                icon={Film}
+                close={close}
+                disabled={!canReadGif()}
+                onClick={() => gifRef.current?.click()}
+                title={
+                  canReadGif()
+                    ? 'Import an animated GIF: every frame becomes a picture, played as a sequence'
+                    : 'This browser cannot take a GIF apart: cut a sprite sheet instead'
+                }
+              >
+                Import an animated GIF
+              </MenuItem>
+              <MenuItem
+                icon={RefreshCw}
+                close={close}
+                disabled={project.images.length === 0}
+                onClick={() => psdRef.current?.click()}
+                title="Layers with the name of a picture give it new pixels, new layers become slots"
+              >
+                Update from PSD
+              </MenuItem>
+              <MenuItem
+                icon={Eraser}
+                close={close}
+                disabled={unused === 0}
+                onClick={() => removeUnusedImages()}
+                title="Remove the images no attachment shows"
+              >
+                Remove unused images
+              </MenuItem>
+            </>
+          )}
+        </Menu>
+
         <input
           ref={folderRef}
           type="file"
@@ -192,17 +227,7 @@ export function AssetsPanel() {
             await importFolderFiles(list);
           }}
         />
-        <IconButton
-          icon={Film}
-          title={
-            canReadGif()
-              ? 'Import an animated GIF: every frame becomes a picture, played as a sequence'
-              : 'This browser cannot take a GIF apart: cut a sprite sheet instead'
-          }
-          small
-          disabled={!canReadGif()}
-          onClick={() => gifRef.current?.click()}
-        />
+
         <input
           ref={gifRef}
           type="file"
@@ -214,13 +239,7 @@ export function AssetsPanel() {
             if (file) await importGif(file, { scene: true });
           }}
         />
-        <IconButton
-          icon={RefreshCw}
-          title="Update from PSD: layers with the name of a picture give it new pixels, new layers become slots"
-          small
-          disabled={project.images.length === 0}
-          onClick={() => psdRef.current?.click()}
-        />
+
         <input
           ref={psdRef}
           type="file"

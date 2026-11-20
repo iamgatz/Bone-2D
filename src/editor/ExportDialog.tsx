@@ -216,6 +216,7 @@ export function ExportDialog() {
             Produces <b>{format === 'binary' ? '.skel' : '.json'} + .atlas + .png</b> that load in the official Spine 4.3 runtimes
             (spine-ts, Unity, Godot, Pixi, Phaser…).
           </p>
+          <div className="section-label">Skeleton data</div>
           <div className="kv">
             {many && (
               <>
@@ -252,39 +253,6 @@ export function ExportDialog() {
               ]}
               onChange={(v) => change({ scale: +v })}
             />
-            <label>Atlas page size</label>
-            <SelectField
-              value={String(maxSize)}
-              options={['1024', '2048', '4096'].map((v) => ({ value: v, label: `${v} px` }))}
-              onChange={(v) => change({ maxSize: +v })}
-            />
-            <label>Padding</label>
-            <SelectField
-              value={String(padding)}
-              options={['0', '1', '2', '4'].map((v) => ({ value: v, label: `${v} px` }))}
-              onChange={(v) => change({ padding: +v })}
-            />
-            <label>Texture filter</label>
-            <SelectField
-              value={filter}
-              options={[
-                { value: 'Linear', label: 'Smooth (Linear)' },
-                { value: 'Nearest', label: 'Sharp pixels (Nearest)' },
-              ]}
-              onChange={(v) => change({ filter: v })}
-            />
-            <label>Strip whitespace</label>
-            <Toggle
-              on={trim}
-              onChange={(v) => change({ trim: v })}
-              title="Cut the empty border off every picture so the atlas is smaller. Pictures a mesh uses are left whole."
-            />
-            <label>Rotate pictures</label>
-            <Toggle
-              on={rotate}
-              onChange={(v) => change({ rotate: v })}
-              title="Turn a picture a quarter turn on the page when that saves room"
-            />
             <label>Editor data</label>
             <Toggle on={nonessential} onChange={(v) => change({ nonessential: v })} title="Bone colors, fps, image path" />
             {format === 'json' && (
@@ -293,38 +261,6 @@ export function ExportDialog() {
                 <Toggle on={pretty} onChange={(v) => change({ pretty: v })} />
               </>
             )}
-            <label>Power-of-two pages</label>
-            <Toggle on={pot} onChange={(v) => change({ pot: v })} title="Atlas page sizes are powers of two" />
-            {!pot && (
-              <>
-                <label>Multiples of four</label>
-                <Toggle
-                  on={multipleOf4}
-                  onChange={(v) => change({ multipleOf4: v })}
-                  title="Page sizes divisible by four, for compressed texture formats"
-                />
-              </>
-            )}
-            <label>Square pages</label>
-            <Toggle on={square} onChange={(v) => change({ square: v })} title="Every atlas page is as wide as it is tall" />
-            <label>Premultiplied alpha</label>
-            <Toggle
-              on={pma}
-              onChange={(v) => change({ pma: v })}
-              title="Write the pages with the colour multiplied by the alpha (the atlas says pma:true); the engine must blend that way"
-            />
-            <label>Alias identical pictures</label>
-            <Toggle
-              on={alias}
-              onChange={(v) => change({ alias: v })}
-              title="Pictures with exactly the same pixels take one place in the atlas"
-            />
-            <label>Atlas per skin</label>
-            <Toggle
-              on={atlasPerSkin}
-              onChange={(v) => change({ atlasPerSkin: v })}
-              title="One atlas for the default skin and one for each other skin (only the pictures the default skin does not use), so a game loads a skin's pictures when it needs them. Nothing changes for a skeleton with one skin"
-            />
             <label>Clean up animations</label>
             <Toggle
               on={cleanUp}
@@ -350,6 +286,96 @@ export function ExportDialog() {
               title="A page that plays the export with the official Spine player"
             />
           </div>
+          {doc.animations.length > 0 && (
+            <div className="anim-pick">
+              <span className="section-label flush">Animations to export</span>
+              {doc.animations.map((a) => (
+                <label key={a.id} className="check">
+                  <input
+                    type="checkbox"
+                    checked={!excluded.includes(a.id)}
+                    onChange={(e) => setExcluded(e.target.checked ? excluded.filter((x) => x !== a.id) : [...excluded, a.id])}
+                  />
+                  <span>{a.name}</span>
+                </label>
+              ))}
+            </div>
+          )}
+          <div className="section-label">Atlas</div>
+          <div className="kv">
+            <label>Atlas page size</label>
+            <SelectField
+              value={String(maxSize)}
+              options={['1024', '2048', '4096'].map((v) => ({ value: v, label: `${v} px` }))}
+              onChange={(v) => change({ maxSize: +v })}
+            />
+            <label>Padding</label>
+            <SelectField
+              value={String(padding)}
+              options={['0', '1', '2', '4'].map((v) => ({ value: v, label: `${v} px` }))}
+              onChange={(v) => change({ padding: +v })}
+            />
+            <label>Texture filter</label>
+            <SelectField
+              value={filter}
+              options={[
+                { value: 'Linear', label: 'Smooth (Linear)' },
+                { value: 'Nearest', label: 'Sharp pixels (Nearest)' },
+              ]}
+              onChange={(v) => change({ filter: v })}
+            />
+          </div>
+          <details className="engine-needs mb">
+            <summary title="Page shape and how pictures are packed: the defaults suit most games">
+              <span className="section-label flush">Advanced atlas options</span>
+            </summary>
+            <div className="kv">
+              <label>Strip whitespace</label>
+              <Toggle
+                on={trim}
+                onChange={(v) => change({ trim: v })}
+                title="Cut the empty border off every picture so the atlas is smaller. Pictures a mesh uses are left whole."
+              />
+              <label>Rotate pictures</label>
+              <Toggle
+                on={rotate}
+                onChange={(v) => change({ rotate: v })}
+                title="Turn a picture a quarter turn on the page when that saves room"
+              />
+              <label>Power-of-two pages</label>
+              <Toggle on={pot} onChange={(v) => change({ pot: v })} title="Atlas page sizes are powers of two" />
+              {!pot && (
+                <>
+                  <label>Multiples of four</label>
+                  <Toggle
+                    on={multipleOf4}
+                    onChange={(v) => change({ multipleOf4: v })}
+                    title="Page sizes divisible by four, for compressed texture formats"
+                  />
+                </>
+              )}
+              <label>Square pages</label>
+              <Toggle on={square} onChange={(v) => change({ square: v })} title="Every atlas page is as wide as it is tall" />
+              <label>Premultiplied alpha</label>
+              <Toggle
+                on={pma}
+                onChange={(v) => change({ pma: v })}
+                title="Write the pages with the colour multiplied by the alpha (the atlas says pma:true); the engine must blend that way"
+              />
+              <label>Alias identical pictures</label>
+              <Toggle
+                on={alias}
+                onChange={(v) => change({ alias: v })}
+                title="Pictures with exactly the same pixels take one place in the atlas"
+              />
+              <label>Atlas per skin</label>
+              <Toggle
+                on={atlasPerSkin}
+                onChange={(v) => change({ atlasPerSkin: v })}
+                title="One atlas for the default skin and one for each other skin (only the pictures the default skin does not use), so a game loads a skin's pictures when it needs them. Nothing changes for a skeleton with one skin"
+              />
+            </div>
+          </details>
           <div className="hstack mb">
             <Button ghost icon={Save} onClick={saveSettings} title="Save these settings to a file to share with a team">
               Save settings
@@ -390,21 +416,6 @@ export function ExportDialog() {
                 ))}
             </ul>
           </details>
-          {doc.animations.length > 0 && (
-            <div className="anim-pick">
-              <span className="section-label flush">Animations to export</span>
-              {doc.animations.map((a) => (
-                <label key={a.id} className="check">
-                  <input
-                    type="checkbox"
-                    checked={!excluded.includes(a.id)}
-                    onChange={(e) => setExcluded(e.target.checked ? excluded.filter((x) => x !== a.id) : [...excluded, a.id])}
-                  />
-                  <span>{a.name}</span>
-                </label>
-              ))}
-            </div>
-          )}
           <div className="card roomy">
             {busy && <span className="hint-text">Packing atlas…</span>}
             {error && <span className="danger-text">{error}</span>}

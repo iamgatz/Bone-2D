@@ -71,7 +71,7 @@ import { applyChainCurve } from '@/store/chainActions';
 import { addLimit, removeLimit, setLimit } from '@/store/limitActions';
 import { uiStore, useUi } from '@/store/ui';
 import { getScene } from '@/store/scene';
-import { Button, ColorSwatch, IconButton, NumberField, SelectField, TextField, Toggle } from '../ui/controls';
+import { Button, ColorSwatch, Hint, IconButton, NumberField, SelectField, TextField, Toggle } from '../ui/controls';
 import { Field, KeyButton } from '../ui/Field';
 import { Section } from '../ui/Section';
 import { activeIndex } from '@/core/skeletons';
@@ -80,6 +80,7 @@ import { useFloats } from '@/store/floats';
 import { ConvertToMeshGroup, LinkedMeshFields, MeshGroup } from './MeshInspector';
 import { SequenceSection } from './SequenceSection';
 import { ConstraintInspector } from './ConstraintInspector';
+import { projectStats, projectWarnings } from '@/core/stats';
 
 /** The short names of the three split switches. */
 const AXIS_SHORT: Record<AxisGroup, string> = { translate: 'Pos', scale: 'Scl', shear: 'Shr' };
@@ -318,11 +319,11 @@ function LimitSection({ id, animate }: { id: Id; animate: boolean }) {
     <Section id="bone.limit" title="Rotation limit" icon={Crosshair} kind="transform">
       {shown ? (
         <>
-          <p className="hint-text mb">
+          <Hint>
             {limit
               ? `Rotate "${nameOf(limit.control)}" (the control bone): "${nameOf(limit.bone)}" follows it inside the sector and stops at its ends.`
               : `This is the control bone of the limit on "${nameOf(shown.bone)}": it can turn all the way round, that bone stays in the sector.`}
-          </p>
+          </Hint>
           <Field label="Sector">
             <NumberField
               label="−"
@@ -352,10 +353,10 @@ function LimitSection({ id, animate }: { id: Id; animate: boolean }) {
         </>
       ) : (
         <>
-          <p className="hint-text mb">
+          <Hint>
             Keep this bone inside a sector of angles (a knee that does not bend backwards, a neck that does not spin). It is a transform
             constraint with a clamp, so it exports and plays in every Spine runtime.
-          </p>
+          </Hint>
           <Field label="Half width">
             <NumberField
               label="°"
@@ -433,7 +434,7 @@ function ChainSection({ id }: { id: Id }) {
   }).join(' ');
   return (
     <Section id="bone.chain" title="Chain curve" icon={Spline}>
-      <p className="hint-text mb">{`Spreads one physics value over ${chain.length} bones along a curve, so a tail or a spine gets its stiffness without typing it bone by bone.`}</p>
+      <Hint>{`Spreads one physics value over ${chain.length} bones along a curve, so a tail or a spine gets its stiffness without typing it bone by bone.`}</Hint>
       <Field label="Value">
         <SelectField<PhysicsParam>
           value={param}
@@ -504,7 +505,7 @@ function SplitSection({ id, rootBone }: { id: Id; rootBone: boolean }) {
   const [weights, setWeights] = useState<'keep' | 'split' | 'blend'>('blend');
   return (
     <Section id="bone.split" title="Split" icon={Scissors}>
-      <p className="hint-text mb">Cut this bone into shorter bones along its length: a chain for a tail, a spine or a tentacle.</p>
+      <Hint>Cut this bone into shorter bones along its length: a chain for a tail, a spine or a tentacle.</Hint>
       <Field label="Parts">
         <NumberField
           label="#"
@@ -559,7 +560,7 @@ function TransformCreate({ boneIds }: { boneIds: Id[] }) {
   const src = bones.some((b) => b.id === source) ? source : (bones[0]?.id ?? '');
   return (
     <Section id="bone.constraint" title="Transform constraint" icon={Link2} kind="transform">
-      <p className="hint-text mb">{`Make ${boneIds.length > 1 ? 'these bones' : 'this bone'} follow another bone's rotation, position or scale (Spine 4.3 mappings).`}</p>
+      <Hint>{`Make ${boneIds.length > 1 ? 'these bones' : 'this bone'} follow another bone's rotation, position or scale (Spine 4.3 mappings).`}</Hint>
       <Field label="Follow">
         <SelectField value={src} options={bones.map((b) => ({ value: b.id, label: b.name }))} onChange={setSource} />
       </Field>
@@ -805,7 +806,7 @@ function PolygonInspector({ slotId, att, disabled }: { slotId: Id; att: PolygonA
               title="Show everything outside the polygon instead of the inside"
             />
           </Field>
-          <p className="hint-text mb">{clipHint}</p>
+          <Hint>{clipHint}</Hint>
         </>
       )}
       <ColorRow label="Color" color={att.color} disabled={disabled} onChange={(c) => set({ color: c }, 'Attachment color')} />
@@ -949,6 +950,23 @@ function RegionInspector({ slotId, att, disabled }: { slotId: Id; att: RegionAtt
   );
 }
 
+/** What the skeleton holds, shown while nothing is selected: the counts and the number of things the project check would mention. */
+function SkeletonSummary() {
+  const project = useProject();
+  const stats = projectStats(project);
+  const warnings = projectWarnings(project).length;
+  return (
+    <div className="summary-chips">
+      <span className="chip">{`Bones: ${stats.bones}`}</span>
+      <span className="chip">{`Slots: ${stats.slots}`}</span>
+      <span className="chip">{`Animations: ${stats.animations}`}</span>
+      <span className="chip">{`Skins: ${stats.skins}`}</span>
+      <span className="chip">{`Pictures: ${stats.images}`}</span>
+      {warnings > 0 && <span className="chip warn">{`Warnings: ${warnings}`}</span>}
+    </div>
+  );
+}
+
 export function InspectorPanel() {
   const selection = useUi((s) => s.selection);
   const project = useProject();
@@ -991,6 +1009,7 @@ export function InspectorPanel() {
                 </Field>
               </Section>
             )}
+            <SkeletonSummary />
             <div className="empty">
               Select a bone or an image in the viewport
               <br />

@@ -412,6 +412,16 @@ export function Timeline() {
         )}
       </div>
 
+      {!animate && (
+        <div className="tl-mode-note">
+          <span>
+            <b>Setup</b> mode · switch to Animate to pose and key
+          </span>
+          <Button primary onClick={() => setMode('animate')}>
+            Animate
+          </Button>
+        </div>
+      )}
       <div className="tl-body" ref={bodyRef}>
         {view === 'graph' ? (
           <GraphEditor anim={anim} doc={doc} selection={selection} selectedKeys={selectedKeys} fps={doc.fps} />
@@ -481,37 +491,16 @@ export function Timeline() {
             <Dopesheet rows={rows} duration={anim?.duration ?? 1} fps={doc.fps} onMenu={onMenu} />
           </>
         )}
-        {view === 'dopesheet' && (!animate || !anim || rows.length === 0) && (
+        {view === 'dopesheet' && animate && (!anim || rows.length === 0) && (
           <div
             className="tl-empty"
             style={{
               left: 232,
               top: 28,
-              pointerEvents: !animate || !anim ? 'auto' : 'none',
-              ...(!animate ? { placeItems: 'start end', padding: 10 } : {}),
+              pointerEvents: !anim ? 'auto' : 'none',
             }}
           >
-            {!animate ? (
-              <div
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 10,
-                  background: 'rgba(20,23,29,0.94)',
-                  border: '1px solid var(--border-strong)',
-                  borderRadius: 10,
-                  padding: '6px 6px 6px 12px',
-                  boxShadow: 'var(--shadow)',
-                }}
-              >
-                <span>
-                  <b>Setup</b> mode · switch to Animate to pose and key
-                </span>
-                <Button primary onClick={() => setMode('animate')}>
-                  Animate
-                </Button>
-              </div>
-            ) : !anim ? (
+            {!anim ? (
               <Button primary onClick={() => createAnimation()}>
                 Create animation
               </Button>

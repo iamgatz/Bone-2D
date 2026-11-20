@@ -423,6 +423,12 @@ textarea {
   flex: 1;
   min-height: 0;
 }
+.summary-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 10px 12px 0;
+}
 .empty {
   padding: 18px 14px;
   color: var(--muted);
@@ -1379,6 +1385,21 @@ button.crumb:hover {
 .tl-canvas {
   display: block;
 }
+/* a strip under the toolbar: this mode edits the setup pose, the Animate button leaves it */
+.tl-mode-note {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 4px 8px 4px 12px;
+  border-bottom: 1px solid var(--border);
+  color: var(--muted);
+}
+.tl-mode-note .btn {
+  margin-left: auto;
+}
+.chip.warn {
+  color: var(--animate);
+}
 .tl-empty {
   position: absolute;
   inset: 0;
@@ -1528,6 +1549,17 @@ button.crumb:hover {
   color: var(--muted);
   font-size: var(--fs-sm);
   line-height: 1.5;
+}
+/* a hint of two lines; a click opens the rest */
+.hint-clamp:not(.open) {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: hidden;
+}
+.hint-more {
+  cursor: pointer;
 }
 
 /* the colour of each kind of constraint: icons and chips (the viewport draws the same colours, see tokens.css) */
