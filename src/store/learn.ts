@@ -73,83 +73,90 @@ function remember() {
   }
 }
 
-// What the editor did since the lesson started: counted here because the stores only hold the present.
-let edits = 0;
-let lastDoc = docStore.get();
-let seenPlaying = false;
-let seenExport = false;
-let seenWeightsTool = false;
+// What the editor did since the lesson started: counted here because the stores only hold the present. A lesson start begins a new tally.
+const newTally = () => ({
+  /** Steps made in the document. */
+  edits: 0,
+  /** The document that was current at the last look, to tell when it changed. */
+  lastDoc: docStore.get(),
+  /** Latches: true once the editor was in that state, even if it is not any more. */
+  seenPlaying: false,
+  seenExport: false,
+  seenWeightsTool: false,
+  seenGraph: false,
+  /** The kind of change the last step of the history was (read from its label): a lesson about curves needs the kind, not just "an edit". */
+  interpEdits: 0,
+  handleEdits: 0,
+  /** How many times the shown skin changed, and the skin shown at the last look. */
+  skinSwitches: 0,
+  lastSkin: uiStore.get().skinId,
+  /** The files the Export window gave out. */
+  zips: 0,
+  players: 0,
+  /** IK: the number of constraints when the lesson began, and the count of edits when a new one first appeared. */
+  baseIk: null as number | null,
+  editsAtIk: null as number | null,
+});
+let tally = newTally();
 
-// counting the keys of a big rig on every frame of a playback would be a waste: it is redone when the document is another one
-let countedDoc: ReturnType<typeof docStore.get> | null = null;
-let keyTotal = 0;
-let ownSlotTotal = 0;
-let meshTotal = 0;
-let weightedTotal = 0;
-let ikTotal = 0;
-let eventKeyTotal = 0;
-// IK: the number of constraints when the lesson began, and the count of document edits when a new one first appeared
-let baseIk: number | null = null;
-let editsAtIk: number | null = null;
-// the kind of change the last step of the history was (counted from its label): a lesson about curves needs the kind, not just "an edit"
-let interpEdits = 0;
-let handleEdits = 0;
-let seenGraph = false;
-// skins: how many times the shown skin changed, and the skin that was shown at the last look
-let skinSwitches = 0;
-// the files the Export window gave out
-let zips = 0;
-let players = 0;
-let lastSkin = uiStore.get().skinId;
+/** What is counted in a document. Walking a big rig on every frame of a playback would be a waste, so it is redone only for another document. */
+function countDoc(doc: ReturnType<typeof docStore.get>) {
+  const sk = doc.skeleton;
+  const roots = new Set(sk.bones.filter((b) => !b.parent).map((b) => b.id));
+  let meshes = 0;
+  let weighted = 0;
+  for (const skin of sk.skins)
+    for (const bySlot of Object.values(skin.attachments))
+      for (const att of Object.values(bySlot))
+        if (att.type === 'mesh') {
+          meshes++;
+          if (att.weights) weighted++;
+        }
+  return {
+    keys: sk.animations.reduce((n, a) => n + countKeys(a), 0),
+    eventKeys: sk.animations.reduce((n, a) => n + a.events.length, 0),
+    ownSlots: sk.slots.filter((sl) => !roots.has(sl.bone)).length,
+    ik: sk.constraints.filter((c) => c.type === 'ik').length,
+    meshes,
+    weighted,
+  };
+}
+let counted: { doc: ReturnType<typeof docStore.get>; n: ReturnType<typeof countDoc> } | null = null;
 
 function snapshot(): LessonState {
   const ui = uiStore.get();
   const doc = docStore.get();
-  if (doc !== countedDoc) {
-    countedDoc = doc;
-    keyTotal = doc.skeleton.animations.reduce((n, a) => n + countKeys(a), 0);
-    const roots = new Set(doc.skeleton.bones.filter((b) => !b.parent).map((b) => b.id));
-    ownSlotTotal = doc.skeleton.slots.filter((sl) => !roots.has(sl.bone)).length;
-    ikTotal = doc.skeleton.constraints.filter((c) => c.type === 'ik').length;
-    eventKeyTotal = doc.skeleton.animations.reduce((n, a) => n + a.events.length, 0);
-    meshTotal = 0;
-    weightedTotal = 0;
-    for (const skin of doc.skeleton.skins)
-      for (const bySlot of Object.values(skin.attachments))
-        for (const att of Object.values(bySlot))
-          if (att.type === 'mesh') {
-            meshTotal++;
-            if (att.weights) weightedTotal++;
-          }
-  }
-  if (baseIk !== null && editsAtIk === null && ikTotal > baseIk) editsAtIk = edits;
+  if (counted?.doc !== doc) counted = { doc, n: countDoc(doc) };
+  const n = counted.n;
+  const t = tally;
+  if (t.baseIk !== null && t.editsAtIk === null && n.ik > t.baseIk) t.editsAtIk = t.edits;
   return {
     mode: ui.mode,
     selectedBones: ui.selection.bones.length,
-    edits,
-    keys: keyTotal,
+    edits: t.edits,
+    keys: n.keys,
     images: doc.images.length,
     bones: doc.skeleton.bones.length,
-    ownSlots: ownSlotTotal,
+    ownSlots: n.ownSlots,
     slotSelected: ui.selection.slot !== null,
-    meshes: meshTotal,
-    weightedMeshes: weightedTotal,
-    ikConstraints: ikTotal,
-    editsSinceIk: editsAtIk === null ? 0 : edits - editsAtIk,
-    seenWeightsTool,
+    meshes: n.meshes,
+    weightedMeshes: n.weighted,
+    ikConstraints: n.ik,
+    editsSinceIk: t.editsAtIk === null ? 0 : t.edits - t.editsAtIk,
+    seenWeightsTool: t.seenWeightsTool,
     selectedKeys: ui.selectedKeys.length,
-    interpEdits,
-    handleEdits,
-    seenGraph,
+    interpEdits: t.interpEdits,
+    handleEdits: t.handleEdits,
+    seenGraph: t.seenGraph,
     skins: doc.skeleton.skins.length,
     events: doc.skeleton.events.length,
-    eventKeys: eventKeyTotal,
-    skinSwitches,
-    zips,
-    players,
+    eventKeys: n.eventKeys,
+    skinSwitches: t.skinSwitches,
+    zips: t.zips,
+    players: t.players,
     playing: ui.playing,
-    seenPlaying,
-    seenExport,
+    seenPlaying: t.seenPlaying,
+    seenExport: t.seenExport,
   };
 }
 
@@ -162,13 +169,13 @@ function refresh() {
   const lesson = s.active ? lessonById(s.active) : undefined;
   if (!lesson || !s.base) return;
   const ui = uiStore.get();
-  if (ui.playing) seenPlaying = true;
-  if (ui.exportOpen) seenExport = true;
-  if (ui.tool === 'weights') seenWeightsTool = true;
-  if (ui.timelineView === 'graph') seenGraph = true;
-  if (ui.skinId !== lastSkin) {
-    lastSkin = ui.skinId;
-    skinSwitches++;
+  if (ui.playing) tally.seenPlaying = true;
+  if (ui.exportOpen) tally.seenExport = true;
+  if (ui.tool === 'weights') tally.seenWeightsTool = true;
+  if (ui.timelineView === 'graph') tally.seenGraph = true;
+  if (ui.skinId !== tally.lastSkin) {
+    tally.lastSkin = ui.skinId;
+    tally.skinSwitches++;
   }
   const progress = progressOf(lesson, snapshot(), s.base, s.skipped, s.kept);
   const fresh = lesson.steps.filter((st, i) => progress.marks[i] === 'done' && !s.kept.includes(st.id)).map((st) => st.id);
@@ -183,13 +190,13 @@ function refresh() {
 
 docStore.subscribe(() => {
   const doc = docStore.get();
-  if (doc !== lastDoc) {
-    lastDoc = doc;
+  if (doc !== tally.lastDoc) {
+    tally.lastDoc = doc;
     if (learnStore.get().active) {
-      edits++;
+      tally.edits++;
       const label = docStore.undoLabel;
-      if (label === 'Set interpolation' || label === 'Automatic curve') interpEdits++;
-      else if (label === 'Edit curve') handleEdits++;
+      if (label === 'Set interpolation' || label === 'Automatic curve') tally.interpEdits++;
+      else if (label === 'Edit curve') tally.handleEdits++;
     }
   }
   refresh();
@@ -198,30 +205,17 @@ uiStore.subscribe(refresh);
 
 /** The Export window gave a file out: the lesson about the way to the game counts it. */
 export function noteExport(kind: 'zip' | 'player') {
-  if (kind === 'zip') zips++;
-  else players++;
+  if (kind === 'zip') tally.zips++;
+  else tally.players++;
   refresh();
 }
 
 /** Starts a lesson on what is open now. */
 export function startLesson(id: string) {
   if (!lessonById(id)) return;
-  edits = 0;
-  lastDoc = docStore.get();
-  seenPlaying = false;
-  seenExport = false;
-  seenWeightsTool = false;
-  interpEdits = 0;
-  handleEdits = 0;
-  seenGraph = false;
-  skinSwitches = 0;
-  zips = 0;
-  players = 0;
-  lastSkin = uiStore.get().skinId;
-  baseIk = null;
-  editsAtIk = null;
+  tally = newTally();
   const base = snapshot();
-  baseIk = base.ikConstraints;
+  tally.baseIk = base.ikConstraints;
   learnStore.patch({ active: id, base, skipped: [], kept: [], collapsed: false, progress: null });
   refresh();
 }

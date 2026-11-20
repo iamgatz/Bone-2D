@@ -600,6 +600,7 @@ function HelpDialog() {
           <Button
             key={lesson.id}
             icon={GraduationCap}
+            learn={`lesson-${lesson.id}`}
             onClick={() => {
               uiStore.patch({ helpOpen: false });
               void openLesson(lesson.id);

@@ -12,6 +12,16 @@ export interface Release {
 
 export const CHANGELOG: Release[] = [
   {
+    version: '0.89',
+    date: '2026-11-21',
+    en: [
+      'Under the hood, after a review of the project: the lesson counters live in one object that every lesson start renews, the lesson buttons of Help carry their own marks (the tests no longer count buttons by position), and the inspectors of clipping, bounding box, path, point and region attachments moved out of the big inspector file. Nothing changes on the screen.',
+    ],
+    ru: [
+      'Под капотом, после ревью проекта: счётчики уроков собраны в один объект, который обновляется при каждом старте урока, кнопки уроков в справке получили свои метки (тесты больше не считают кнопки по порядку), а инспекторы обрезки, области, пути, точки и региона вынесены из большого файла инспектора. На экране ничего не меняется.',
+    ],
+  },
+  {
     version: '0.88',
     date: '2026-11-21',
     en: [

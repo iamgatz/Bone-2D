@@ -20,6 +20,14 @@ async function openFresh(page: Page) {
   });
   await page.goto('/');
 }
+/** Starts a lesson the way a person does: opens Help and presses the button of the lesson. */
+async function startFromHelp(page: Page, id: string) {
+  await page.evaluate(async (url) => {
+    const { uiStore } = (await import(url)) as UiModule;
+    uiStore.patch({ helpOpen: true });
+  }, UI);
+  await page.locator(`[data-learn="lesson-${id}"]`).click();
+}
 async function openDemoWithLesson(page: Page) {
   await openFresh(page);
   await page.locator('.overlay .choice.primary').click();
@@ -176,11 +184,7 @@ for (const locale of ['en-US', 'ru-RU'] as const) {
       await openFresh(page);
       await page.locator('.overlay .choice').nth(1).click(); // New project: no lesson starts by itself
       await expect(page.locator('.learn')).toHaveCount(0);
-      await page.evaluate(async (url) => {
-        const { uiStore } = (await import(url)) as UiModule;
-        uiStore.patch({ helpOpen: true });
-      }, UI);
-      await page.locator('.dialog .hstack.wrap .btn').nth(1).click();
+      await startFromHelp(page, 'rig');
       const card = page.locator('.learn');
       const step = (i: number) => RIG_LESSON.steps[i];
       await expect(card.locator('.learn-title')).toHaveText(RIG_LESSON.title[lang]);
@@ -259,11 +263,7 @@ for (const locale of ['en-US', 'ru-RU'] as const) {
 
     test('is passed on a picture of the demo: Quad, Bind with the real buttons, the brush with W, a bend', async ({ page }) => {
       await openDemoWithLesson(page);
-      await page.evaluate(async (url) => {
-        const { uiStore } = (await import(url)) as UiModule;
-        uiStore.patch({ helpOpen: true });
-      }, UI);
-      await page.locator('.dialog .hstack.wrap .btn').nth(2).click();
+      await startFromHelp(page, 'mesh');
       const card = page.locator('.learn');
       const step = (i: number) => MESH_LESSON.steps[i];
       await expect(card.locator('.learn-title')).toHaveText(MESH_LESSON.title[lang]);
@@ -321,11 +321,7 @@ for (const locale of ['en-US', 'ru-RU'] as const) {
 
     test('the second lesson leads to the third when it is over', async ({ page }) => {
       await openDemoWithLesson(page);
-      await page.evaluate(async (url) => {
-        const { uiStore } = (await import(url)) as UiModule;
-        uiStore.patch({ helpOpen: true });
-      }, UI);
-      await page.locator('.dialog .hstack.wrap .btn').nth(1).click();
+      await startFromHelp(page, 'rig');
       const card = page.locator('.learn');
       for (let i = 0; i < RIG_LESSON.steps.length; i++) await card.locator('.btn.ghost').click();
       await card.getByRole('button', { name: MESH_LESSON.title[lang] }).click();
@@ -393,11 +389,7 @@ for (const locale of ['en-US', 'ru-RU'] as const) {
 
     test('is passed on the demo: a bone picked, I, an IK target, V, a pull, Tab, a key on the target, Space', async ({ page }) => {
       await openDemoWithLesson(page);
-      await page.evaluate(async (url) => {
-        const { uiStore } = (await import(url)) as UiModule;
-        uiStore.patch({ helpOpen: true });
-      }, UI);
-      await page.locator('.dialog .hstack.wrap .btn').nth(3).click();
+      await startFromHelp(page, 'ik');
       const card = page.locator('.learn');
       const step = (i: number) => IK_LESSON.steps[i];
       await expect(card.locator('.learn-title')).toHaveText(IK_LESSON.title[lang]);
@@ -459,11 +451,7 @@ for (const locale of ['en-US', 'ru-RU'] as const) {
 
     test('the third lesson leads to the fourth when it is over', async ({ page }) => {
       await openDemoWithLesson(page);
-      await page.evaluate(async (url) => {
-        const { uiStore } = (await import(url)) as UiModule;
-        uiStore.patch({ helpOpen: true });
-      }, UI);
-      await page.locator('.dialog .hstack.wrap .btn').nth(2).click();
+      await startFromHelp(page, 'mesh');
       const card = page.locator('.learn');
       for (let i = 0; i < MESH_LESSON.steps.length; i++) await card.locator('.btn.ghost').click();
       await card.getByRole('button', { name: IK_LESSON.title[lang] }).click();
@@ -484,11 +472,7 @@ for (const locale of ['en-US', 'ru-RU'] as const) {
 
     test('is passed on the demo: Tab, a key selected, an interpolation, the real graph button, a handle, Space', async ({ page }) => {
       await openDemoWithLesson(page);
-      await page.evaluate(async (url) => {
-        const { uiStore } = (await import(url)) as UiModule;
-        uiStore.patch({ helpOpen: true });
-      }, UI);
-      await page.locator('.dialog .hstack.wrap .btn').nth(4).click();
+      await startFromHelp(page, 'curves');
       const card = page.locator('.learn');
       const step = (i: number) => CURVES_LESSON.steps[i];
       await expect(card.locator('.learn-title')).toHaveText(CURVES_LESSON.title[lang]);
@@ -549,11 +533,7 @@ for (const locale of ['en-US', 'ru-RU'] as const) {
 
     test('the fourth lesson leads to the fifth when it is over', async ({ page }) => {
       await openDemoWithLesson(page);
-      await page.evaluate(async (url) => {
-        const { uiStore } = (await import(url)) as UiModule;
-        uiStore.patch({ helpOpen: true });
-      }, UI);
-      await page.locator('.dialog .hstack.wrap .btn').nth(3).click();
+      await startFromHelp(page, 'ik');
       const card = page.locator('.learn');
       for (let i = 0; i < IK_LESSON.steps.length; i++) await card.locator('.btn.ghost').click();
       await card.getByRole('button', { name: CURVES_LESSON.title[lang] }).click();
@@ -570,11 +550,7 @@ for (const locale of ['en-US', 'ru-RU'] as const) {
 
     test('is passed on the demo: a skin, a switch, an event, Tab, the diamond, Space', async ({ page }) => {
       await openDemoWithLesson(page);
-      await page.evaluate(async (url) => {
-        const { uiStore } = (await import(url)) as UiModule;
-        uiStore.patch({ helpOpen: true });
-      }, UI);
-      await page.locator('.dialog .hstack.wrap .btn').nth(5).click();
+      await startFromHelp(page, 'skins');
       const card = page.locator('.learn');
       const step = (i: number) => SKINS_LESSON.steps[i];
       await expect(card.locator('.learn-title')).toHaveText(SKINS_LESSON.title[lang]);
@@ -615,11 +591,7 @@ for (const locale of ['en-US', 'ru-RU'] as const) {
 
     test('the fifth lesson leads to the sixth when it is over', async ({ page }) => {
       await openDemoWithLesson(page);
-      await page.evaluate(async (url) => {
-        const { uiStore } = (await import(url)) as UiModule;
-        uiStore.patch({ helpOpen: true });
-      }, UI);
-      await page.locator('.dialog .hstack.wrap .btn').nth(4).click();
+      await startFromHelp(page, 'curves');
       const card = page.locator('.learn');
       for (let i = 0; i < CURVES_LESSON.steps.length; i++) await card.locator('.btn.ghost').click();
       await card.getByRole('button', { name: SKINS_LESSON.title[lang] }).click();
@@ -636,11 +608,7 @@ for (const locale of ['en-US', 'ru-RU'] as const) {
 
     test('is passed on the demo: the Export button, the real ZIP download, the real player page download', async ({ page }) => {
       await openDemoWithLesson(page);
-      await page.evaluate(async (url) => {
-        const { uiStore } = (await import(url)) as UiModule;
-        uiStore.patch({ helpOpen: true });
-      }, UI);
-      await page.locator('.dialog .hstack.wrap .btn').nth(6).click();
+      await startFromHelp(page, 'export');
       const card = page.locator('.learn');
       const step = (i: number) => EXPORT_LESSON.steps[i];
       await expect(card.locator('.learn-title')).toHaveText(EXPORT_LESSON.title[lang]);
@@ -669,11 +637,7 @@ for (const locale of ['en-US', 'ru-RU'] as const) {
 
     test('the sixth lesson leads to the seventh when it is over', async ({ page }) => {
       await openDemoWithLesson(page);
-      await page.evaluate(async (url) => {
-        const { uiStore } = (await import(url)) as UiModule;
-        uiStore.patch({ helpOpen: true });
-      }, UI);
-      await page.locator('.dialog .hstack.wrap .btn').nth(5).click();
+      await startFromHelp(page, 'skins');
       const card = page.locator('.learn');
       for (let i = 0; i < SKINS_LESSON.steps.length; i++) await card.locator('.btn.ghost').click();
       await card.getByRole('button', { name: EXPORT_LESSON.title[lang] }).click();
