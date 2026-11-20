@@ -2,6 +2,7 @@
 import { selectAnimation, setMode } from '@/store/actions';
 import { docStore } from '@/store/doc';
 import { backupCurrent, restoreAutosave } from '@/store/project';
+import { offerLesson } from '@/store/learn';
 import { loadSample } from '@/store/sample';
 import { toast, uiStore } from '@/store/ui';
 
@@ -24,5 +25,6 @@ export async function openDeepLink(search: string): Promise<boolean> {
     setMode('animate');
     uiStore.patch({ time: 0, playing: true });
   }
+  offerLesson('fox'); // a visitor from a link has not seen the editor yet: the lesson starts once, and can be closed
   return true;
 }

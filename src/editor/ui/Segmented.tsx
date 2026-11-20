@@ -21,6 +21,8 @@ export function Segmented<T extends string>(props: {
   onChange: (v: T) => void;
   label: string;
   className?: string;
+  /** Names this switch for the lessons (a frame is drawn around it when a step points at it). */
+  learn?: string;
 }) {
   const group = useRef<HTMLDivElement>(null);
   const move = (e: React.KeyboardEvent, i: number) => {
@@ -32,7 +34,13 @@ export function Segmented<T extends string>(props: {
     group.current?.querySelectorAll<HTMLElement>('[role=radio]')[next]?.focus();
   };
   return (
-    <div ref={group} className={`seg${props.className ? ` ${props.className}` : ''}`} role="radiogroup" aria-label={props.label}>
+    <div
+      ref={group}
+      className={`seg${props.className ? ` ${props.className}` : ''}`}
+      role="radiogroup"
+      aria-label={props.label}
+      data-learn={props.learn}
+    >
       {props.options.map((o, i) => {
         const Icon = o.icon;
         const active = o.value === props.value;

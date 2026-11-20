@@ -323,7 +323,7 @@ export function TreePanel() {
   const roots = childrenOf.get(null) ?? [];
 
   return (
-    <div className="panel grow" style={{ minHeight: 120 }}>
+    <div className="panel grow" style={{ minHeight: 120 }} data-learn="tree">
       <div className="panel-head">
         <span className="title">Hierarchy</span>
         <IconButton icon={Eye} title="Show everything hidden" small onClick={() => showAll()} />

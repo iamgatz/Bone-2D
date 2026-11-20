@@ -45,6 +45,8 @@ export function IconButton(props: {
   hotkey?: string;
   tipPlace?: 'top' | 'bottom' | 'left' | 'right';
   style?: CSSProperties;
+  /** Names this button for the lessons. */
+  learn?: string;
 }) {
   const Icon = props.icon;
   return (
@@ -53,6 +55,7 @@ export function IconButton(props: {
       className={`icon-btn${props.active ? ' on' : ''}${props.animate ? ' animate' : ''}${props.small ? ' sm' : ''}`}
       aria-label={props.title}
       aria-pressed={props.active}
+      data-learn={props.learn}
       data-tip={props.title}
       data-tip-key={props.hotkey}
       data-tip-place={props.tipPlace}
@@ -76,11 +79,14 @@ export function Button(props: {
   disabled?: boolean;
   title?: string;
   icon?: LucideIcon;
+  /** Names this button for the lessons. */
+  learn?: string;
 }) {
   const Icon = props.icon;
   return (
     <button
       type="button"
+      data-learn={props.learn}
       className={`btn${props.primary ? ' primary' : ''}${props.ghost ? ' ghost' : ''}${props.danger ? ' danger' : ''}${props.small ? ' sm' : ''}`}
       onClick={props.onClick}
       disabled={props.disabled}

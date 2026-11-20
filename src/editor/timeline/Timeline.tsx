@@ -338,6 +338,7 @@ export function Timeline() {
           hotkey={KEYS.play}
           active={playing}
           animate
+          learn="play"
           onClick={() => togglePlay()}
           disabled={!anim}
         />

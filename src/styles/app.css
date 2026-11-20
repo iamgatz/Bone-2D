@@ -2412,3 +2412,89 @@ a.btn {
   text-align: right;
   white-space: nowrap;
 }
+
+/* ---------------------------------------------------------------- lessons (editor/LearnCard.tsx) */
+.learn {
+  position: absolute;
+  right: 12px;
+  top: 54px; /* under the zoom chips; the corner the toolbox, the crumbs and the tool hint leave free */
+  z-index: var(--z-hud);
+  width: 272px;
+  max-width: calc(100% - 24px);
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+  padding: 8px 10px 10px;
+  background: var(--panel-2);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow);
+}
+.learn-head {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+}
+.learn-title {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 600;
+}
+.learn-count {
+  color: var(--text-dim);
+  font-variant-numeric: tabular-nums;
+}
+.learn-dots {
+  display: flex;
+  gap: 5px;
+}
+.learn-dot {
+  width: 9px;
+  height: 9px;
+  box-sizing: border-box;
+  border-radius: 50%;
+  border: 1.5px solid var(--border-strong);
+}
+.learn-dot.done {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+.learn-dot.skipped {
+  background: var(--border-strong);
+}
+.learn-dot.current {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent-soft);
+}
+.learn-step-title {
+  font-weight: 600;
+}
+.learn-text {
+  margin: 2px 0 0;
+  color: var(--text-dim);
+  line-height: 1.4;
+}
+.learn-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--sp-3);
+}
+/* the part of the editor a lesson step points at: a ring inside its edge, no change of layout, nothing dimmed */
+[data-learn-hl] {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+  animation: learn-pulse 1.6s ease-in-out infinite;
+}
+@keyframes learn-pulse {
+  50% {
+    outline-color: var(--accent-line);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  [data-learn-hl] {
+    animation: none;
+  }
+}

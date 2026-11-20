@@ -26,6 +26,7 @@ import { openKeyDialog } from '@/store/keyDialog';
 import { LAYOUTS, VIEW_LIST } from '@/store/layout';
 import { startSetParent } from '@/store/parentActions';
 import { copyPose, duplicateSelection, flipScale, moveBoneOrderAction, pastePose, resetPose, swapSides } from '@/store/poseActions';
+import { openLesson } from '@/store/learn';
 import { newProject, openProjectFile, packageProject, saveProjectFile } from '@/store/project';
 import { pickProjectToCompare } from '@/store/checkpoints';
 import { pickReviewFile } from '@/store/reviewActions';
@@ -241,6 +242,7 @@ export function buildCommands(): Command[] {
     { id: 'view.hide', group: 'Windows', title: 'Hide / show all windows', keys: KEYS.hideViews, run: () => toggleAllViews() },
     { id: 'app.settings', group: 'Help', title: 'Settings', keys: KEYS.settings, run: open('settingsOpen') },
     { id: 'app.shortcuts', group: 'Help', title: 'Shortcuts & help', keys: KEYS.help, run: open('helpOpen') },
+    { id: 'app.lesson', group: 'Help', title: 'Lesson: bring the fox to life', run: () => void openLesson('fox') },
     { id: 'app.updates', group: 'Help', title: 'Updates: what is new and the project activity', run: open('updatesOpen') },
     { id: 'app.feedback', group: 'Help', title: 'Send feedback to the author', run: open('feedbackOpen') },
   ];

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
-import { Bell, BookOpen, FilePlus2, FileText, FolderOpen, Keyboard, MessageSquareText, Sparkles, X } from 'lucide-react';
+import { Bell, BookOpen, FilePlus2, FileText, FolderOpen, GraduationCap, Keyboard, MessageSquareText, Sparkles, X } from 'lucide-react';
 import { loadSample } from '@/store/sample';
+import { offerLesson, openLesson } from '@/store/learn';
 import { newProject, openProjectFile, openRecentProject } from '@/store/project';
 import { canKeepHandles, forgetRecent, listRecent } from '@/store/recent';
 import type { RecentEntry } from '@/store/recent';
@@ -61,7 +62,10 @@ export function WelcomeDialog() {
           icon={Sparkles}
           title="Try the demo rig"
           text="A fox with IK legs, a physics tail, two skins and four animations"
-          onClick={go(loadSample)}
+          onClick={go(async () => {
+            await loadSample();
+            offerLesson('fox'); // the first time only: a lesson that starts by itself must not come back
+          })}
         />
         <Choice icon={FilePlus2} title="New project" text="An empty skeleton: drop PNGs, draw bones" onClick={go(() => newProject())} />
         <Choice icon={FolderOpen} title="Open a project" text="A .bone2d file from your computer" onClick={go(openProjectFile)} />
@@ -111,6 +115,9 @@ export function WelcomeDialog() {
         <a href={`https://github.com/${REPO}#readme`} target="_blank" rel="noreferrer">
           <BookOpen size={15} /> Documentation
         </a>
+        <button type="button" onClick={go(() => openLesson('fox'))}>
+          <GraduationCap size={15} /> Take the lesson
+        </button>
         <button type="button" onClick={go(() => uiStore.patch({ updatesOpen: true }))}>
           <Bell size={15} /> What's new
         </button>

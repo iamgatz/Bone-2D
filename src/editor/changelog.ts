@@ -12,6 +12,16 @@ export interface Release {
 
 export const CHANGELOG: Release[] = [
   {
+    version: '0.81',
+    date: '2026-11-20',
+    en: [
+      'An interactive lesson: "Bring the fox to life". A small card in the corner of the viewport leads you through six steps on the demo rig: pick a bone, change it, switch to Animate, play, make your own key, open Export. The editor itself checks each step (it is done when the editor is in the state the step asks for), so you can do the steps in any order and skip what you know. A soft frame shows where to look. It starts by itself the first time you open the demo (also from a demo link) and never again on its own; Help, the welcome window and the command palette start it whenever you want.',
+    ],
+    ru: [
+      'Интерактивный урок «Оживите лису». Небольшая карточка в углу вьюпорта ведёт по шести шагам на демо-риге: выбрать кость, изменить её, перейти в «Анимацию», проиграть, поставить свой ключ, открыть «Экспорт». Редактор сам проверяет каждый шаг (шаг выполнен, когда редактор в том состоянии, которого он просит), поэтому шаги можно делать в любом порядке и пропускать знакомые. Мягкая рамка показывает, куда смотреть. Урок сам запускается при первом открытии демо (в том числе по ссылке на демо) и больше не навязывается; из справки, приветственного окна и палитры команд его можно запустить когда угодно.',
+    ],
+  },
+  {
     version: '0.80',
     date: '2026-11-20',
     en: [

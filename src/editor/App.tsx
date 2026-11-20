@@ -23,6 +23,7 @@ import {
   SlidersHorizontal,
   Image as ImageIcon,
   CircleHelp,
+  GraduationCap,
   MessageSquareText,
   Link2,
   Map as MapIcon,
@@ -54,6 +55,7 @@ import {
 } from '@/store/actions';
 import { docStore, useProject } from '@/store/doc';
 import { pickReviewFile } from '@/store/reviewActions';
+import { openLesson } from '@/store/learn';
 import { newProject, openProjectFile, packageProject, restoreAutosave, saveProjectFile, startAutosave } from '@/store/project';
 import { openAtlasUnpack, openSpineImport } from './importSpine';
 import { deleteConstraint } from '@/store/ikActions';
@@ -85,6 +87,7 @@ import { comboOf, hotkeyGroups, keyIdOf, KEYS, latinKey } from './hotkeys';
 import { KEY_ACTIONS } from './keyActions';
 import { HINTS, TOOLS, hotkeyOf, toolForKey } from './tools';
 import { SettingsDialog } from './Settings';
+import { LearnCard } from './LearnCard';
 import { WelcomeDialog } from './Welcome';
 import { Palette } from './Palette';
 import { settingsStore } from '@/store/settings';
@@ -409,6 +412,7 @@ function TopBar() {
       <span className="spacer" />
       <Segmented
         label="Mode"
+        learn="mode"
         value={mode}
         onChange={setMode}
         options={[
@@ -450,7 +454,7 @@ function TopBar() {
         <IconButton icon={MessageSquareText} title="Send feedback to the author" onClick={() => uiStore.patch({ feedbackOpen: true })} />
         <IconButton icon={CircleHelp} title="Shortcuts & help" hotkey={KEYS.help} onClick={() => uiStore.patch({ helpOpen: true })} />
       </span>
-      <Button primary icon={Download} onClick={() => uiStore.patch({ exportOpen: true })}>
+      <Button primary icon={Download} learn="export" onClick={() => uiStore.patch({ exportOpen: true })}>
         Export
       </Button>
     </header>
@@ -579,6 +583,17 @@ function HelpDialog() {
       <p className="hint-text flush mb">
         Bone 2D is a browser-based 2D skeletal animation editor. Build a rig in <b>Setup</b>, pose and key it in <b>Animate</b>, then export
         a Spine 4.3 compatible skeleton + atlas.
+      </p>
+      <p className="mb">
+        <Button
+          icon={GraduationCap}
+          onClick={() => {
+            uiStore.patch({ helpOpen: false });
+            void openLesson('fox');
+          }}
+        >
+          Take the lesson: bring the fox to life
+        </Button>
       </p>
       <div className="hotkeys">
         {hotkeyGroups().map((g) => (
@@ -809,6 +824,7 @@ export function App() {
           <div className="viewport-wrap" onPointerDownCapture={() => setFocusArea('viewport')}>
             <Viewport />
             <ViewportHud />
+            <LearnCard />
           </div>
           {views.timeline && (
             <>
