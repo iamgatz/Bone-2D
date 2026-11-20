@@ -21,19 +21,38 @@ export function SelectionSets() {
   };
   return (
     <div className="sel-sets">
-      <IconButton icon={Plus} title={selected.length ? 'Keep the selected bones as a set: one click selects them again' : 'Select some bones first, then keep them as a set'} small onClick={() => void keep()} />
+      <IconButton
+        icon={Plus}
+        title={
+          selected.length
+            ? 'Keep the selected bones as a set: one click selects them again'
+            : 'Select some bones first, then keep them as a set'
+        }
+        small
+        onClick={() => void keep()}
+      />
       {sets.length === 0 && <span className="hint-text">Selection sets</span>}
       {sets.map((s) => {
         const on = selected.length > 0 && selectionIs(doc, s, selected);
         return (
           <span key={s.id} className={`sel-set${on ? ' on' : ''}`}>
-            <button type="button" className="sel-set-name" title="Click: select these bones. Shift+click: add them to the selection" onClick={(e) => selectSet(s.id, e.shiftKey)}>
+            <button
+              type="button"
+              className="sel-set-name"
+              title="Click: select these bones. Shift+click: add them to the selection"
+              onClick={(e) => selectSet(s.id, e.shiftKey)}
+            >
               {s.name}
               <span className="dim">{` ${s.bones.length}`}</span>
             </button>
             {on && (
               <>
-                <IconButton icon={RefreshCw} title="Replace the bones of this set with the selected ones" small onClick={() => updateSelectionSet(s.id)} />
+                <IconButton
+                  icon={RefreshCw}
+                  title="Replace the bones of this set with the selected ones"
+                  small
+                  onClick={() => updateSelectionSet(s.id)}
+                />
                 <IconButton
                   icon={Pencil}
                   title="Rename this set"

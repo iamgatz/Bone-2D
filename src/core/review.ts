@@ -41,12 +41,28 @@ export interface ReviewFile {
 }
 
 const ID = /^[\w.:-]{1,64}$/;
-// eslint-disable-next-line no-control-regex -- strips control characters
-const clip = (v: unknown, max: number): string => (typeof v === 'string' ? v.replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f]/g, '').slice(0, max) : '');
+const clip = (v: unknown, max: number): string =>
+  // eslint-disable-next-line no-control-regex -- strips control characters
+  typeof v === 'string' ? v.replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f]/g, '').slice(0, max) : '';
 
 /** A new comment, as the player page makes it. `id` is anything unique (the page uses a random one). */
-export function makeComment(id: string, animation: string, time: number, text: string, author: string, bone?: string, at = Date.now()): ReviewComment {
-  const c: ReviewComment = { id, animation: clip(animation, MAX_NAME), time: Number.isFinite(time) ? Math.max(0, time) : 0, text: clip(text, MAX_TEXT).trim(), author: clip(author, MAX_AUTHOR).trim(), at };
+export function makeComment(
+  id: string,
+  animation: string,
+  time: number,
+  text: string,
+  author: string,
+  bone?: string,
+  at = Date.now(),
+): ReviewComment {
+  const c: ReviewComment = {
+    id,
+    animation: clip(animation, MAX_NAME),
+    time: Number.isFinite(time) ? Math.max(0, time) : 0,
+    text: clip(text, MAX_TEXT).trim(),
+    author: clip(author, MAX_AUTHOR).trim(),
+    at,
+  };
   const b = clip(bone, MAX_NAME);
   if (b) c.bone = b;
   return c;
@@ -82,7 +98,19 @@ export function parseReview(text: string): ParsedReview | null {
   let dropped = Math.max(0, raw.length - MAX_COMMENTS);
   for (const r of raw.slice(0, MAX_COMMENTS)) {
     const c = r as Partial<ReviewComment> | null;
-    if (!c || typeof c !== 'object' || typeof c.id !== 'string' || !ID.test(c.id) || seen.has(c.id) || typeof c.animation !== 'string' || !c.animation || typeof c.time !== 'number' || !Number.isFinite(c.time) || c.time < 0 || typeof c.text !== 'string') {
+    if (
+      !c ||
+      typeof c !== 'object' ||
+      typeof c.id !== 'string' ||
+      !ID.test(c.id) ||
+      seen.has(c.id) ||
+      typeof c.animation !== 'string' ||
+      !c.animation ||
+      typeof c.time !== 'number' ||
+      !Number.isFinite(c.time) ||
+      c.time < 0 ||
+      typeof c.text !== 'string'
+    ) {
       dropped++;
       continue;
     }
@@ -92,7 +120,14 @@ export function parseReview(text: string): ParsedReview | null {
       continue;
     }
     seen.add(c.id);
-    const comment: ReviewComment = { id: c.id, animation: clip(c.animation, MAX_NAME), time: c.time, text, author: clip(c.author, MAX_AUTHOR).trim(), at: typeof c.at === 'number' && Number.isFinite(c.at) ? c.at : 0 };
+    const comment: ReviewComment = {
+      id: c.id,
+      animation: clip(c.animation, MAX_NAME),
+      time: c.time,
+      text,
+      author: clip(c.author, MAX_AUTHOR).trim(),
+      at: typeof c.at === 'number' && Number.isFinite(c.at) ? c.at : 0,
+    };
     const bone = clip(c.bone, MAX_NAME);
     if (bone) comment.bone = bone;
     out.push(comment);
@@ -132,7 +167,16 @@ export function applyReview(doc: SkeletonDoc, comments: ReviewComment[]): Review
       if (c.bone) there.bone = c.bone;
       result.updated++;
     } else {
-      const m: Marker = { id, time, name: c.author || 'Review', color: REVIEW_COLOR, text: c.text, review: true, author: c.author, resolved: false };
+      const m: Marker = {
+        id,
+        time,
+        name: c.author || 'Review',
+        color: REVIEW_COLOR,
+        text: c.text,
+        review: true,
+        author: c.author,
+        resolved: false,
+      };
       if (c.bone) m.bone = c.bone;
       list.push(m);
       result.added++;
@@ -146,7 +190,7 @@ export function applyReview(doc: SkeletonDoc, comments: ReviewComment[]): Review
 export function reviewCounts(doc: Pick<SkeletonDoc, 'animations'>): { open: number; resolved: number } {
   let open = 0;
   let resolved = 0;
-  for (const a of doc.animations) for (const m of a.markers ?? []) if (m.review) (m.resolved ? resolved++ : open++);
+  for (const a of doc.animations) for (const m of a.markers ?? []) if (m.review) m.resolved ? resolved++ : open++;
   return { open, resolved };
 }
 
@@ -160,6 +204,8 @@ export interface ReviewItem {
 /** Every review comment of the skeleton: by animation in the order of the document, then by time. Comments that are dealt with come last when `openFirst`. */
 export function listReview(doc: Pick<SkeletonDoc, 'animations'>, openFirst = false): ReviewItem[] {
   const out: ReviewItem[] = [];
-  for (const a of doc.animations) for (const m of [...(a.markers ?? [])].sort((x, y) => x.time - y.time)) if (m.review) out.push({ animationId: a.id, animation: a.name, marker: m });
+  for (const a of doc.animations)
+    for (const m of [...(a.markers ?? [])].sort((x, y) => x.time - y.time))
+      if (m.review) out.push({ animationId: a.id, animation: a.name, marker: m });
   return openFirst ? [...out.filter((i) => !i.marker.resolved), ...out.filter((i) => i.marker.resolved)] : out;
 }

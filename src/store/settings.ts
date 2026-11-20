@@ -98,7 +98,8 @@ export const DEFAULT_SETTINGS: Settings = {
 
 const KEY = 'bone2d.settings';
 
-const isRgb = (v: unknown): v is [number, number, number] => Array.isArray(v) && v.length === 3 && v.every((n) => typeof n === 'number' && n >= 0 && n <= 1);
+const isRgb = (v: unknown): v is [number, number, number] =>
+  Array.isArray(v) && v.length === 3 && v.every((n) => typeof n === 'number' && n >= 0 && n <= 1);
 
 /** Takes stored text for what it is worth: what is not valid keeps its default. */
 export function readSettings(raw: string | null): Settings {
@@ -116,8 +117,10 @@ export function readSettings(raw: string | null): Settings {
     if (whole(data.onionAfter, 0, 6)) out.onionAfter = data.onionAfter;
     if (whole(data.onionGap, 1, 30)) out.onionGap = data.onionGap;
     if (data.onionMode === 'frames' || data.onionMode === 'keys') out.onionMode = data.onionMode;
-    if (typeof data.onionOffsetX === 'number' && Number.isFinite(data.onionOffsetX) && Math.abs(data.onionOffsetX) <= 10000) out.onionOffsetX = data.onionOffsetX;
-    if (typeof data.onionOffsetY === 'number' && Number.isFinite(data.onionOffsetY) && Math.abs(data.onionOffsetY) <= 10000) out.onionOffsetY = data.onionOffsetY;
+    if (typeof data.onionOffsetX === 'number' && Number.isFinite(data.onionOffsetX) && Math.abs(data.onionOffsetX) <= 10000)
+      out.onionOffsetX = data.onionOffsetX;
+    if (typeof data.onionOffsetY === 'number' && Number.isFinite(data.onionOffsetY) && Math.abs(data.onionOffsetY) <= 10000)
+      out.onionOffsetY = data.onionOffsetY;
     if (data.onionStyle === 'image' || data.onionStyle === 'silhouette' || data.onionStyle === 'xray') out.onionStyle = data.onionStyle;
     if (typeof data.onionTop === 'boolean') out.onionTop = data.onionTop;
     if (isRgb(data.onionColorBefore)) out.onionColorBefore = data.onionColorBefore;
@@ -127,11 +130,19 @@ export function readSettings(raw: string | null): Settings {
     if (typeof data.lastChosenCurve === 'boolean') out.lastChosenCurve = data.lastChosenCurve;
     if (typeof data.pixelGrid === 'boolean') out.pixelGrid = data.pixelGrid;
     if (typeof data.showFps === 'boolean') out.showFps = data.showFps;
-    if (typeof data.boneScale === 'number' && Number.isFinite(data.boneScale) && data.boneScale >= BONE_SCALE_RANGE.min && data.boneScale <= BONE_SCALE_RANGE.max) out.boneScale = data.boneScale;
-    if (Number.isInteger(data.breadcrumbParents) && (data.breadcrumbParents as number) >= 0 && (data.breadcrumbParents as number) <= 10) out.breadcrumbParents = data.breadcrumbParents as number;
+    if (
+      typeof data.boneScale === 'number' &&
+      Number.isFinite(data.boneScale) &&
+      data.boneScale >= BONE_SCALE_RANGE.min &&
+      data.boneScale <= BONE_SCALE_RANGE.max
+    )
+      out.boneScale = data.boneScale;
+    if (Number.isInteger(data.breadcrumbParents) && (data.breadcrumbParents as number) >= 0 && (data.breadcrumbParents as number) <= 10)
+      out.breadcrumbParents = data.breadcrumbParents as number;
     if (Array.isArray(data.savedCurves)) out.savedCurves = cleanSavedCurves(data.savedCurves);
     if (data.graphSync === 'dopesheet' || data.graphSync === 'selection') out.graphSync = data.graphSync;
-    if (typeof data.boneIconRotation === 'number' && Number.isFinite(data.boneIconRotation) && Math.abs(data.boneIconRotation) <= 180) out.boneIconRotation = data.boneIconRotation;
+    if (typeof data.boneIconRotation === 'number' && Number.isFinite(data.boneIconRotation) && Math.abs(data.boneIconRotation) <= 180)
+      out.boneIconRotation = data.boneIconRotation;
     if (typeof data.tooltips === 'boolean') out.tooltips = data.tooltips;
     if (data.toolKeys && typeof data.toolKeys === 'object') {
       const used = new Set<string>();

@@ -9,7 +9,8 @@ const oldFalloff = (d: number, radius: number, feather: number) => {
 
 describe('brushFalloff', () => {
   it('the soft shape is the brush as it was', () => {
-    for (const feather of [0, 30, 100]) for (let d = 0; d <= 100; d += 7) expect(brushFalloff(d, 100, feather, 'soft')).toBeCloseTo(oldFalloff(d, 100, feather), 12);
+    for (const feather of [0, 30, 100])
+      for (let d = 0; d <= 100; d += 7) expect(brushFalloff(d, 100, feather, 'soft')).toBeCloseTo(oldFalloff(d, 100, feather), 12);
     expect(brushFalloff(40, 100, 60)).toBe(brushFalloff(40, 100, 60, 'soft'));
   });
 

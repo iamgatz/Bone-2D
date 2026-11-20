@@ -64,7 +64,14 @@ describe('the list', () => {
 
 describe('the settings', () => {
   it('read the list strictly', () => {
-    const s = readSettings(JSON.stringify({ savedCurves: [{ name: 'A', curve: [0.2, 0, 0.8, 1] }, { name: 'B', curve: [5, 0, 0, 0] }] }));
+    const s = readSettings(
+      JSON.stringify({
+        savedCurves: [
+          { name: 'A', curve: [0.2, 0, 0.8, 1] },
+          { name: 'B', curve: [5, 0, 0, 0] },
+        ],
+      }),
+    );
     expect(s.savedCurves).toEqual([{ name: 'A', curve: [0.2, 0, 0.8, 1] }]);
     expect(readSettings(JSON.stringify({ savedCurves: 'x' })).savedCurves).toEqual([]);
   });
@@ -74,7 +81,13 @@ describe('the actions', () => {
   beforeEach(() => {
     const f = buildFixture();
     docStore.replace(f.project);
-    uiStore.patch({ mode: 'animate', animationId: f.project.skeleton.animations[0].id, selection: emptySelection, time: 0, selectedKeys: [] });
+    uiStore.patch({
+      mode: 'animate',
+      animationId: f.project.skeleton.animations[0].id,
+      selection: emptySelection,
+      time: 0,
+      selectedKeys: [],
+    });
     setSettings({ savedCurves: [] });
   });
 
@@ -111,7 +124,12 @@ describe('the actions', () => {
   });
 
   it('forgets a curve by its place and ignores a place that is not there', () => {
-    setSettings({ savedCurves: [{ name: 'A', curve: [0.2, 0, 0.8, 1] }, { name: 'B', curve: [0.4, 0, 0.6, 1] }] });
+    setSettings({
+      savedCurves: [
+        { name: 'A', curve: [0.2, 0, 0.8, 1] },
+        { name: 'B', curve: [0.4, 0, 0.6, 1] },
+      ],
+    });
     A.forgetSavedCurve(0);
     expect(settingsStore.get().savedCurves.map((c) => c.name)).toEqual(['B']);
     A.forgetSavedCurve(7);

@@ -45,7 +45,12 @@ export function OutlineMap({ host }: { host: React.RefObject<HTMLDivElement | nu
       const m = layout();
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       ctx.clearRect(0, 0, W, H);
-      const hidden = new Set(docStore.get().skeleton.bones.filter((b) => b.hidden).map((b) => b.id));
+      const hidden = new Set(
+        docStore
+          .get()
+          .skeleton.bones.filter((b) => b.hidden)
+          .map((b) => b.id),
+      );
       const imgs = sk.getBounds();
       if (imgs) {
         const [x0, y0] = toMap(m, imgs[0], imgs[1] + imgs[3]);

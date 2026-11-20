@@ -19,7 +19,8 @@ function trailsFor(o: OverlayInput): Trail[] {
   const ids = ui.selection.bones.slice(0, MAX_BONES);
   const fps = docStore.get().skeleton.fps;
   const key = ids.join(',');
-  if (cache && cache.data === scene.data && cache.anim === anim && cache.skin === ui.skinId && cache.ids === key && cache.fps === fps) return cache.trails;
+  if (cache && cache.data === scene.data && cache.anim === anim && cache.skin === ui.skinId && cache.ids === key && cache.fps === fps)
+    return cache.trails;
   const trails = ids.length ? sampleTrails(scene.data, anim, ids, fps, ui.skinId, 'origin') : [];
   cache = { data: scene.data, anim, skin: ui.skinId, ids: key, fps, trails };
   return trails;
@@ -53,7 +54,8 @@ export function drawTrails(o: OverlayInput) {
       const end = to < 0 ? pts.length : to + 1;
       if (end - from < 2) continue;
       ctx.beginPath();
-      for (let i = from; i < Math.min(end, pts.length); i++) (i === from ? ctx.moveTo(screen[i][0], screen[i][1]) : ctx.lineTo(screen[i][0], screen[i][1]));
+      for (let i = from; i < Math.min(end, pts.length); i++)
+        i === from ? ctx.moveTo(screen[i][0], screen[i][1]) : ctx.lineTo(screen[i][0], screen[i][1]);
       ctx.strokeStyle = color;
       ctx.lineWidth = width;
       ctx.stroke();

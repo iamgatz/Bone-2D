@@ -28,7 +28,11 @@ function targetBone(): Id {
 }
 
 /** Creates a slot (after the selected slot, else on top) holding the attachment, in one undo step. */
-function addSlotWith(kind: PolygonKind | 'point', attachment: (name: string) => PolygonAttachment | PointAttachment, boneId: Id): { slotId: Id; name: string } {
+function addSlotWith(
+  kind: PolygonKind | 'point',
+  attachment: (name: string) => PolygonAttachment | PointAttachment,
+  boneId: Id,
+): { slotId: Id; name: string } {
   const doc = docStore.get().skeleton;
   const name = freshName(LABEL[kind], doc.slots);
   const att = attachment(name);

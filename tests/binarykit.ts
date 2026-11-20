@@ -6,8 +6,6 @@ import { exportSpineJson } from '../src/core/export/spineJson';
 import type { Project } from '../src/core/model';
 import { loadOfficial, loadOfficialBinary, usedImages } from './official';
 
- 
-
 const IGNORED = new Set(['hash', 'name', 'version', 'imagesPath', 'audioPath', 'visible', 'id']);
 
 /** Walks two object graphs of the official runtime side by side and collects what differs. */
@@ -83,7 +81,10 @@ function idleScaleMode(fromJson: any) {
     const m = /^skeleton\.constraints\[(\d+)\]\._scaleYMode: \d vs 0$/.exec(d);
     if (m) return fromJson.constraints[Number(m[1])].scaleX === 0;
     // the same constraint seen through the list of a skin that needs it (which place it has in the skeleton's list is not in the message)
-    return /^skeleton\.skins\[\d+\]\.constraints\[\d+\]\._scaleYMode: \d vs 0$/.test(d) && fromJson.constraints.some((c: { scaleX?: number; _scaleYMode?: number }) => c.scaleX === 0 && c._scaleYMode);
+    return (
+      /^skeleton\.skins\[\d+\]\.constraints\[\d+\]\._scaleYMode: \d vs 0$/.test(d) &&
+      fromJson.constraints.some((c: { scaleX?: number; _scaleYMode?: number }) => c.scaleX === 0 && c._scaleYMode)
+    );
   };
 }
 
@@ -95,7 +96,9 @@ export function compare(project: Project, options: { nonessential?: boolean; spl
   const fromBinary = loadOfficialBinary(bytes, atlas);
   const idle = idleScaleMode(fromJson);
   const noSkin = emptyDefaultSkin(fromJson);
-  const diffs = diffGraphs(fromJson, fromBinary, 'skeleton').filter((d) => !KNOWN_DIFFS.test(d) && !idle(d) && !noSkin(d) && !(options.nonessential === false && ESSENTIAL_ONLY.test(d)));
+  const diffs = diffGraphs(fromJson, fromBinary, 'skeleton').filter(
+    (d) => !KNOWN_DIFFS.test(d) && !idle(d) && !noSkin(d) && !(options.nonessential === false && ESSENTIAL_ONLY.test(d)),
+  );
   return { diffs, bytes, json, fromJson, fromBinary };
 }
 

@@ -30,7 +30,18 @@ describe('readProjectFile', () => {
   });
 
   it('is null for anything that is not a project file', () => {
-    for (const t of ['', 'nope', '[]', '{}', '{"bone2d":2}', '{"bone2d":1}', '{"bone2d":1,"project":{}}', '{"bone2d":1,"project":{"skeleton":5}}', 'null']) expect(readProjectFile(t)).toBeNull();
+    for (const t of [
+      '',
+      'nope',
+      '[]',
+      '{}',
+      '{"bone2d":2}',
+      '{"bone2d":1}',
+      '{"bone2d":1,"project":{}}',
+      '{"bone2d":1,"project":{"skeleton":5}}',
+      'null',
+    ])
+      expect(readProjectFile(t)).toBeNull();
   });
 });
 
@@ -90,7 +101,12 @@ describe('changesToText', () => {
       { area: 'bone', kind: 'changed', name: 'leg', fields: ['position', 'rotation'] },
       { area: 'animation', kind: 'changed', name: 'walk', keys: { added: 2, removed: 0, changed: 10 } },
     ]);
-    expect(text.split('\n')).toEqual(['+ Bone arm', '- Slot hat', '~ Bone leg (position, rotation)', '~ Animation walk 12 keys: +2 -0 ~10']);
+    expect(text.split('\n')).toEqual([
+      '+ Bone arm',
+      '- Slot hat',
+      '~ Bone leg (position, rotation)',
+      '~ Animation walk 12 keys: +2 -0 ~10',
+    ]);
     expect(changesToText([])).toBe('');
   });
 });

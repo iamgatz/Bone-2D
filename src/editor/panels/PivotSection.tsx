@@ -17,7 +17,8 @@ export function PivotSection({ id }: { id: Id }) {
   useUi((s) => s.time);
   if (tool !== 'rotate') return null;
   const bone = getScene().skeleton.boneById(id);
-  const set = (x: number, y: number) => uiStore.patch({ pivot: { x: Math.round(x * 100) / 100, y: Math.round(y * 100) / 100 }, pivotPick: false });
+  const set = (x: number, y: number) =>
+    uiStore.patch({ pivot: { x: Math.round(x * 100) / 100, y: Math.round(y * 100) / 100 }, pivotPick: false });
   return (
     <Section id="bone.pivot" title="Pivot" icon={Crosshair}>
       <Field label="Rotate about" title="What the rotate tool turns the bone about">
@@ -41,7 +42,11 @@ export function PivotSection({ id }: { id: Id }) {
             <NumberField label="y" value={pivot.y} step={1} precision={2} onChange={(v) => set(pivot.x, v)} />
           </Field>
           <div className="hstack wrap mb">
-            <Button primary={pick} title="The next click in the viewport sets the pivot" onClick={() => uiStore.patch({ pivotPick: !pick })}>
+            <Button
+              primary={pick}
+              title="The next click in the viewport sets the pivot"
+              onClick={() => uiStore.patch({ pivotPick: !pick })}
+            >
               Pick in the viewport
             </Button>
             <Button disabled={!bone} title="Put the pivot at the origin of the bone" onClick={() => bone && set(bone.worldX, bone.worldY)}>

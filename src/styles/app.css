@@ -195,7 +195,10 @@ textarea {
   color: var(--text);
   cursor: pointer;
   white-space: nowrap;
-  transition: background var(--dur), border-color var(--dur), transform var(--dur-fast);
+  transition:
+    background var(--dur),
+    border-color var(--dur),
+    transform var(--dur-fast);
 }
 .btn:hover {
   background: var(--panel-4);
@@ -545,7 +548,9 @@ textarea {
     linear-gradient(45deg, var(--checker) 25%, transparent 25%, transparent 75%, var(--checker) 75%),
     linear-gradient(45deg, var(--checker) 25%, transparent 25%, transparent 75%, var(--checker) 75%);
   background-size: 12px 12px;
-  background-position: 0 0, 6px 6px;
+  background-position:
+    0 0,
+    6px 6px;
   border-radius: var(--radius-xs);
   image-rendering: auto;
 }
@@ -757,7 +762,9 @@ textarea {
   height: 11px;
   border-radius: 50%;
   background: var(--muted);
-  transition: transform var(--dur), background var(--dur);
+  transition:
+    transform var(--dur),
+    background var(--dur);
 }
 .toggle.on {
   background: var(--accent-soft);
@@ -1808,9 +1815,13 @@ a.btn {
 }
 .preview-frame.checker {
   background-color: var(--sunken-2);
-  background-image: linear-gradient(45deg, var(--panel-3) 25%, transparent 25%, transparent 75%, var(--panel-3) 75%), linear-gradient(45deg, var(--panel-3) 25%, transparent 25%, transparent 75%, var(--panel-3) 75%);
+  background-image:
+    linear-gradient(45deg, var(--panel-3) 25%, transparent 25%, transparent 75%, var(--panel-3) 75%),
+    linear-gradient(45deg, var(--panel-3) 25%, transparent 25%, transparent 75%, var(--panel-3) 75%);
   background-size: 16px 16px;
-  background-position: 0 0, 8px 8px;
+  background-position:
+    0 0,
+    8px 8px;
 }
 .export-anim input[type='range'] {
   width: 100%;

@@ -32,7 +32,10 @@ describe('PSD import', () => {
     const psd = await readPsdFile(
       file([
         layer('back', 0, 0, 100, 80),
-        { name: 'arm', children: [layer('upper', 10, 20, 20, 30, { opacity: 0.5, blendMode: 'multiply' }), layer('ghost', 0, 0, 4, 4, { hidden: true })] },
+        {
+          name: 'arm',
+          children: [layer('upper', 10, 20, 20, 30, { opacity: 0.5, blendMode: 'multiply' }), layer('ghost', 0, 0, 4, 4, { hidden: true })],
+        },
         { name: 'off', hidden: true, children: [layer('inside', 0, 0, 4, 4)] },
         layer('top', 40, 10, 8, 8),
       ]),
@@ -56,7 +59,16 @@ describe('PSD import', () => {
   });
 
   it('multiplies the opacity of the groups in, and leaves out empty layers', () => {
-    const out = flattenPsd(10, 10, [{ name: 'g', opacity: 0.5, children: [{ name: 'a', opacity: 0.5, left: 0, top: 0, imageData: solid(2, 2, [1, 2, 3, 4]) }, { name: 'empty', left: 0, top: 0 }] }]);
+    const out = flattenPsd(10, 10, [
+      {
+        name: 'g',
+        opacity: 0.5,
+        children: [
+          { name: 'a', opacity: 0.5, left: 0, top: 0, imageData: solid(2, 2, [1, 2, 3, 4]) },
+          { name: 'empty', left: 0, top: 0 },
+        ],
+      },
+    ]);
     expect(out.layers).toHaveLength(1);
     expect(out.layers[0].opacity).toBeCloseTo(0.25, 5);
     expect(out.skipped.empty).toBe(1);
@@ -76,9 +88,28 @@ describe('PSD import', () => {
 describe('the shift a bigger canvas gives every layer', () => {
   it('is what most layers agree on, and nothing for a few or scattered moves', async () => {
     const { commonShift } = await import('../src/core/import/psd');
-    expect(commonShift([[-50, 0], [-50.2, 0], [-49.9, 0.1], [12, 0]])).toEqual([expect.closeTo(-50.03, 1), expect.closeTo(0.03, 1)]);
-    expect(commonShift([[-50, 0], [-50, 0]])).toEqual([0, 0]); // two layers prove nothing
-    expect(commonShift([[1, 0], [2, 0], [3, 0], [4, 0]])).toEqual([0, 0]); // no majority
+    expect(
+      commonShift([
+        [-50, 0],
+        [-50.2, 0],
+        [-49.9, 0.1],
+        [12, 0],
+      ]),
+    ).toEqual([expect.closeTo(-50.03, 1), expect.closeTo(0.03, 1)]);
+    expect(
+      commonShift([
+        [-50, 0],
+        [-50, 0],
+      ]),
+    ).toEqual([0, 0]); // two layers prove nothing
+    expect(
+      commonShift([
+        [1, 0],
+        [2, 0],
+        [3, 0],
+        [4, 0],
+      ]),
+    ).toEqual([0, 0]); // no majority
     expect(commonShift([null, null, [0, 0.2]])).toEqual([0, 0]);
     expect(commonShift([[-50, 0], [-50, 0], [-50, 0], null])).toEqual([-50, 0]);
   });

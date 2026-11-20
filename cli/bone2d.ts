@@ -162,12 +162,22 @@ function exportCommand(p: Parsed, io: Io): number {
     let base = (doc.name || basename(input, extname(input))).replace(/[^\w-]+/g, '_') || 'skeleton';
     while (used.has(base)) base += '_';
     used.add(base);
-    const json = scaleSpineJson(exportSpineJson(p.flags.has('clean') ? withCleanAnimations(doc) : doc, { nonessential: !p.flags.has('no-nonessential'), imagesPath: './images/' }), scale);
+    const json = scaleSpineJson(
+      exportSpineJson(p.flags.has('clean') ? withCleanAnimations(doc) : doc, {
+        nonessential: !p.flags.has('no-nonessential'),
+        imagesPath: './images/',
+      }),
+      scale,
+    );
     const skeletonFile = `${base}.${format === 'binary' ? 'skel' : 'json'}`;
     const bytes = format === 'binary' ? jsonToBinary(json) : Buffer.from(JSON.stringify(json, null, p.flags.has('pretty') ? 2 : 0));
     writeFileSync(join(outDir, skeletonFile), bytes);
-    io.out(`${skeletonFile}  ${bytes.length} bytes  (Spine ${SPINE_VERSION}${format === 'binary' ? ', binary' : ''}${scale !== 1 ? `, scale ${scale}` : ''})\n`);
-    const mixText = p.flags.has('no-mixes') ? null : mixesToText(doc.animations, doc === project.skeleton ? project.mixes : doc.aside?.mixes);
+    io.out(
+      `${skeletonFile}  ${bytes.length} bytes  (Spine ${SPINE_VERSION}${format === 'binary' ? ', binary' : ''}${scale !== 1 ? `, scale ${scale}` : ''})\n`,
+    );
+    const mixText = p.flags.has('no-mixes')
+      ? null
+      : mixesToText(doc.animations, doc === project.skeleton ? project.mixes : doc.aside?.mixes);
     if (mixText) {
       writeFileSync(join(outDir, `${base}.mixes.json`), mixText);
       io.out(`${base}.mixes.json  crossfade times between animations\n`);
@@ -233,13 +243,28 @@ function atlasStep(p: Parsed, file: ProjectFile, doc: Project['skeleton'], base:
     return 1;
   }
   if (p.flags.has('alias')) {
-    const aliases = findAliases(inputs.map((i) => ({ name: i.name, width: i.width, height: i.height, data: pixels.get(i.name)!, extra: `${i.offsetX ?? 0},${i.offsetY ?? 0},${i.originalWidth ?? i.width},${i.originalHeight ?? i.height}` })));
+    const aliases = findAliases(
+      inputs.map((i) => ({
+        name: i.name,
+        width: i.width,
+        height: i.height,
+        data: pixels.get(i.name)!,
+        extra: `${i.offsetX ?? 0},${i.offsetY ?? 0},${i.originalWidth ?? i.width},${i.originalHeight ?? i.height}`,
+      })),
+    );
     for (const i of inputs) if (aliases.has(i.name)) i.aliasOf = aliases.get(i.name);
   }
   const pma = p.flags.has('pma');
-  const pages = packAtlas(inputs, { maxSize, padding, pot: !p.flags.has('no-pot'), rotate: p.flags.has('rotate'), square: p.flags.has('square'), multipleOf4: p.flags.has('multiple-of-4') });
+  const pages = packAtlas(inputs, {
+    maxSize,
+    padding,
+    pot: !p.flags.has('no-pot'),
+    rotate: p.flags.has('rotate'),
+    square: p.flags.has('square'),
+    multipleOf4: p.flags.has('multiple-of-4'),
+  });
   const pageFile = (i: number) => (pages.length === 1 ? `${base}.png` : `${base}-${i + 1}.png`);
-  const text = writeAtlas(pages, pageFile, { pma, filter: (filter === 'nearest' ? 'Nearest' : 'Linear') });
+  const text = writeAtlas(pages, pageFile, { pma, filter: filter === 'nearest' ? 'Nearest' : 'Linear' });
   writeFileSync(join(outDir, `${base}.atlas`), text);
   for (const page of pages) {
     const data = composePage(page, (n) => (pixels.has(n) ? { data: pixels.get(n)! } : undefined), padding);
@@ -259,7 +284,16 @@ function infoCommand(p: Parsed, io: Io): number {
   const d = file.project.skeleton;
   const rows: [string, string | number][] = [
     ['name', d.name],
-    ...(file.project.others?.length ? ([['skeletons', skeletonList(file.project).map((s) => s.name).join(', ')]] as [string, string][]) : []),
+    ...(file.project.others?.length
+      ? ([
+          [
+            'skeletons',
+            skeletonList(file.project)
+              .map((s) => s.name)
+              .join(', '),
+          ],
+        ] as [string, string][])
+      : []),
     ['fps', d.fps],
     ['bones', d.bones.length],
     ['slots', d.slots.length],
@@ -305,7 +339,9 @@ function unpackCommand(p: Parsed, io: Io): number {
     return 2;
   }
   const dir = dirname(resolve(atlasPath));
-  const { pictures, warnings } = unpackAtlas(readFileSync(atlasPath, 'utf8'), (file) => readPage(safePath(dir, file) ?? ''), { unpremultiply: !p.flags.has('keep-pma') });
+  const { pictures, warnings } = unpackAtlas(readFileSync(atlasPath, 'utf8'), (file) => readPage(safePath(dir, file) ?? ''), {
+    unpremultiply: !p.flags.has('keep-pma'),
+  });
   for (const w of warnings) io.err(`${w}\n`);
   let written = 0;
   for (const { name, picture } of pictures) {
@@ -332,7 +368,9 @@ function importCommand(p: Parsed, io: Io): number {
   const skeleton: unknown = /\.skel$/i.test(input) ? binaryToJson(new Uint8Array(bytes)) : JSON.parse(bytes.toString('utf8'));
   const result = importSpineJson(skeleton, basename(input, extname(input)));
   const warnings = [...result.warnings];
-  const atlasPath = p.flags.has('atlas-file') ? String(p.flags.get('atlas-file')) : join(dirname(input), `${basename(input, extname(input))}.atlas`);
+  const atlasPath = p.flags.has('atlas-file')
+    ? String(p.flags.get('atlas-file'))
+    : join(dirname(input), `${basename(input, extname(input))}.atlas`);
   const images: Record<string, string> = {};
   try {
     const text = readFileSync(atlasPath, 'utf8');
@@ -363,7 +401,9 @@ function importCommand(p: Parsed, io: Io): number {
   mkdirSync(dirname(resolve(output)), { recursive: true });
   writeFileSync(output, JSON.stringify({ bone2d: 1, project, images }));
   for (const w of [...warnings, ...repaired.map((r) => `repaired: ${r}`)]) io.err(`${w}\n`);
-  io.out(`${output}  ${project.skeleton.bones.length} bones, ${project.skeleton.animations.length} animations, ${Object.keys(images).length} pictures\n`);
+  io.out(
+    `${output}  ${project.skeleton.bones.length} bones, ${project.skeleton.animations.length} animations, ${Object.keys(images).length} pictures\n`,
+  );
   return 0;
 }
 

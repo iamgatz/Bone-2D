@@ -13,8 +13,6 @@ import { uiStore } from '../src/store/ui';
 import { buildFixture } from './fixture';
 import { S, exportAndLoad } from './official';
 
- 
-
 const key = (time: number, ...value: number[]): Key => ({ time, value });
 
 /** The fixture plus a base animation (rotate, translate with a split axis, scale) and a shorter breathing layer on other and shared bones. */
@@ -129,7 +127,9 @@ describe('against the official runtime', () => {
       for (const t of times) {
         const want = officialLayered(skeletonData, t, { base: 'base', layer: 'breath', weight }, null);
         const got = officialLayered(skeletonData, t, null, out.name);
-        want.forEach((row: number[], i: number) => row.forEach((v, k) => expect(got[i][k], `weight ${weight} t=${t} bone ${i} channel ${k}`).toBeCloseTo(v, 3)));
+        want.forEach((row: number[], i: number) =>
+          row.forEach((v, k) => expect(got[i][k], `weight ${weight} t=${t} bone ${i} channel ${k}`).toBeCloseTo(v, 3)),
+        );
       }
     }
   });

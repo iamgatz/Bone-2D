@@ -39,10 +39,41 @@ type Drag =
   | { kind: 'pan'; sx: number; sy: number; camX: number; camY: number }
   | { kind: 'create'; parent: Id | null; ox: number; oy: number }
   | { kind: 'guide'; axis: 'x' | 'y'; index: number }
-  | { kind: 'rotate'; ids: Id[]; cx: Record<Id, [number, number]>; a0: Record<Id, number>; r0: Record<Id, number>; sign: Record<Id, number>; pivot?: { x: number; y: number; frames: Record<Id, TurnFrame> } }
-  | { kind: 'translate'; ids: Id[]; p0: [number, number]; w0: [number, number]; start: Record<Id, { x: number; y: number }>; inv: Record<Id, Mat4>; axis: 'x' | 'y' | null }
-  | { kind: 'shear'; ids: Id[]; o: Record<Id, [number, number]>; ang: Record<Id, number>; p0: [number, number]; start: Record<Id, { shx: number; shy: number }>; mode: 'xy' | 'x' | 'y' }
-  | { kind: 'scale'; ids: Id[]; o: Record<Id, [number, number]>; d0: Record<Id, number>; start: Record<Id, { sx: number; sy: number }>; mode: 'xy' | 'x' | 'y' }
+  | {
+      kind: 'rotate';
+      ids: Id[];
+      cx: Record<Id, [number, number]>;
+      a0: Record<Id, number>;
+      r0: Record<Id, number>;
+      sign: Record<Id, number>;
+      pivot?: { x: number; y: number; frames: Record<Id, TurnFrame> };
+    }
+  | {
+      kind: 'translate';
+      ids: Id[];
+      p0: [number, number];
+      w0: [number, number];
+      start: Record<Id, { x: number; y: number }>;
+      inv: Record<Id, Mat4>;
+      axis: 'x' | 'y' | null;
+    }
+  | {
+      kind: 'shear';
+      ids: Id[];
+      o: Record<Id, [number, number]>;
+      ang: Record<Id, number>;
+      p0: [number, number];
+      start: Record<Id, { shx: number; shy: number }>;
+      mode: 'xy' | 'x' | 'y';
+    }
+  | {
+      kind: 'scale';
+      ids: Id[];
+      o: Record<Id, [number, number]>;
+      d0: Record<Id, number>;
+      start: Record<Id, { sx: number; sy: number }>;
+      mode: 'xy' | 'x' | 'y';
+    }
   | { kind: 'attachment'; slotId: Id; name: string; label: string; p0: [number, number]; start: { x: number; y: number }; inv: Mat4 };
 
 const GIZMO_LEN = 54;
@@ -79,7 +110,12 @@ export class ViewportController {
   private snapped(wx: number, wy: number): [number, number] {
     const ui = uiStore.get();
     if (!ui.view.snap && !ui.view.pixel) return [wx, wy];
-    const s = snapPoint(wx, wy, { zoom: ui.camera.zoom, grid: ui.view.snap, pixel: ui.view.pixel, guides: ui.view.snap ? docStore.get().guides : undefined });
+    const s = snapPoint(wx, wy, {
+      zoom: ui.camera.zoom,
+      grid: ui.view.snap,
+      pixel: ui.view.pixel,
+      guides: ui.view.snap ? docStore.get().guides : undefined,
+    });
     return [s.x, s.y];
   }
 
@@ -262,7 +298,10 @@ export class ViewportController {
     }
 
     // empty space: tools act on the current selection from anywhere (like Spine), select tool clears it
-    if ((ui.tool === 'translate' || ui.tool === 'rotate' || ui.tool === 'scale' || ui.tool === 'shear') && uiStore.get().selection.bones.length) {
+    if (
+      (ui.tool === 'translate' || ui.tool === 'rotate' || ui.tool === 'scale' || ui.tool === 'shear') &&
+      uiStore.get().selection.bones.length
+    ) {
       this.startBoneDrag(e, wx, wy, null);
       return;
     }
@@ -285,7 +324,16 @@ export class ViewportController {
     let ids = ui.selection.bones.filter((id) => scene.skeleton.boneById(id));
     if (!ids.length) return;
     const targets = new Set(scene.data.constraints.flatMap((c) => (c.kind === 'ik' ? [scene.data.bones[c.target].id] : [])));
-    let kind: 'rotate' | 'translate' | 'scale' | 'shear' = ui.tool === 'rotate' ? 'rotate' : ui.tool === 'scale' ? 'scale' : ui.tool === 'shear' ? 'shear' : ui.tool === 'translate' ? 'translate' : 'rotate';
+    let kind: 'rotate' | 'translate' | 'scale' | 'shear' =
+      ui.tool === 'rotate'
+        ? 'rotate'
+        : ui.tool === 'scale'
+          ? 'scale'
+          : ui.tool === 'shear'
+            ? 'shear'
+            : ui.tool === 'translate'
+              ? 'translate'
+              : 'rotate';
     // in the pose (select) tool, IK targets and bones without a parent are moved instead of rotated
     if (ui.tool === 'select') {
       const first = scene.skeleton.boneById(ids[0])!;
@@ -400,7 +448,15 @@ export class ViewportController {
     const det = b.a * b.d - b.b * b.c || 1e-9;
     const label = att.type === 'point' ? 'Move point' : 'Move image';
     docStore.beginGesture(label);
-    this.begin(e, { kind: 'attachment', slotId, name, label, p0: [wx, wy], start: { x: att.x, y: att.y }, inv: [b.d / det, -b.b / det, -b.c / det, b.a / det] });
+    this.begin(e, {
+      kind: 'attachment',
+      slotId,
+      name,
+      label,
+      p0: [wx, wy],
+      start: { x: att.x, y: att.y },
+      inv: [b.d / det, -b.b / det, -b.c / det, b.a / det],
+    });
   }
 
   onPointerMove = (e: PointerEvent) => {
@@ -457,7 +513,15 @@ export class ViewportController {
         break;
       case 'guide': {
         const v = this.snappedLine(d.axis === 'x' ? wx : wy, d.axis);
-        this.interaction = { kind: 'guide', axis: d.axis, index: d.index, x0: d.axis === 'x' ? v : 0, y0: d.axis === 'y' ? v : 0, x1: 0, y1: 0 };
+        this.interaction = {
+          kind: 'guide',
+          axis: d.axis,
+          index: d.index,
+          x0: d.axis === 'x' ? v : 0,
+          y0: d.axis === 'y' ? v : 0,
+          x1: 0,
+          y1: 0,
+        };
         this.invalidate();
         break;
       }
@@ -531,7 +595,12 @@ export class ViewportController {
       case 'attachment': {
         const dx = wx - d.p0[0];
         const dy = wy - d.p0[1];
-        setAttachmentProps(d.slotId, d.name, { x: d.start.x + d.inv[0] * dx + d.inv[1] * dy, y: d.start.y + d.inv[2] * dx + d.inv[3] * dy }, d.label);
+        setAttachmentProps(
+          d.slotId,
+          d.name,
+          { x: d.start.x + d.inv[0] * dx + d.inv[1] * dy, y: d.start.y + d.inv[2] * dx + d.inv[3] * dy },
+          d.label,
+        );
         break;
       }
     }

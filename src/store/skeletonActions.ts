@@ -1,12 +1,32 @@
 /** Several skeletons in one project: switch, add, copy, rename, delete. Each is one step of the history. */
-import { activeIndex, blankSkeleton, copyOfSkeleton, addSkeleton, duplicateSkeleton, newSkeletonName, removeSkeleton, renameSkeleton, skeletonList, switchSkeleton } from '@/core/skeletons';
+import {
+  activeIndex,
+  blankSkeleton,
+  copyOfSkeleton,
+  addSkeleton,
+  duplicateSkeleton,
+  newSkeletonName,
+  removeSkeleton,
+  renameSkeleton,
+  skeletonList,
+  switchSkeleton,
+} from '@/core/skeletons';
 import { docStore } from './doc';
 import { emptySelection, toast, uiStore } from './ui';
 
 /** What the editor shows is about the skeleton that was edited: after a change of skeleton it starts again from its first animation. */
 function resetView() {
   const doc = docStore.get().skeleton;
-  uiStore.patch({ mode: 'setup', selection: emptySelection, animationId: doc.animations[0]?.id ?? null, skinId: null, time: 0, playing: false, overrides: {}, selectedKeys: [] });
+  uiStore.patch({
+    mode: 'setup',
+    selection: emptySelection,
+    animationId: doc.animations[0]?.id ?? null,
+    skinId: null,
+    time: 0,
+    playing: false,
+    overrides: {},
+    selectedKeys: [],
+  });
 }
 
 export function switchToSkeleton(index: number) {

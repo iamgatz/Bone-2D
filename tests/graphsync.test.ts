@@ -13,8 +13,22 @@ function rig() {
   // two bones with a rotate and a translate timeline each
   const [a, b] = doc.bones.slice(1, 3);
   anim.bones = {
-    [a.id]: { rotate: [{ time: 0, value: [0] }, { time: 1, value: [10] }], translate: [{ time: 0, value: [0, 0] }, { time: 1, value: [5, 5] }] },
-    [b.id]: { rotate: [{ time: 0, value: [0] }, { time: 1, value: [20] }] },
+    [a.id]: {
+      rotate: [
+        { time: 0, value: [0] },
+        { time: 1, value: [10] },
+      ],
+      translate: [
+        { time: 0, value: [0, 0] },
+        { time: 1, value: [5, 5] },
+      ],
+    },
+    [b.id]: {
+      rotate: [
+        { time: 0, value: [0] },
+        { time: 1, value: [20] },
+      ],
+    },
   };
   return { doc, anim, a, b };
 }

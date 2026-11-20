@@ -28,7 +28,12 @@ export function addPhysicsRig(project: Project): Record<string, Id> {
     doc.constraints.push(c);
     ids[c.name] = c.id;
   };
-  add('sw1', { rotate: 1, gravity: 8, inertia: 0.7, global: { inertia: true, strength: false, damping: false, mass: false, wind: false, gravity: false, mix: false } });
+  add('sw1', {
+    rotate: 1,
+    gravity: 8,
+    inertia: 0.7,
+    global: { inertia: true, strength: false, damping: false, mass: false, wind: false, gravity: false, mix: false },
+  });
   add('sw2', { x: 0.5, y: 1, rotate: 0.5, limit: 60, fps: 30, strength: 70, damping: 0.8 });
   add('sw3', { scaleX: 1, shearX: 0.6, rotate: 0.3, scaleY: 'volume', wind: 4 });
   add('swSide', { rotate: 1, mass: 2, mix: 0.8 });
@@ -38,7 +43,10 @@ export function addPhysicsRig(project: Project): Record<string, Id> {
     const tl = (a.physics[ids['sw1 physics']] ??= {});
     tl.strength = [key(0, [90]), key(Math.min(a.duration, 0.9), [40], [0.3, 0, 0.7, 1])] as Timeline;
     tl.wind = [key(0.1, [0]), key(Math.min(a.duration, 1), [20])] as Timeline;
-    a.physics[ids['sw2 physics']] = { reset: [key(Math.min(a.duration, 0.4), [1])] as Timeline, mass: [key(0, [1]), key(Math.min(a.duration, 1), [3])] as Timeline };
+    a.physics[ids['sw2 physics']] = {
+      reset: [key(Math.min(a.duration, 0.4), [1])] as Timeline,
+      mass: [key(0, [1]), key(Math.min(a.duration, 1), [3])] as Timeline,
+    };
     a.physics[GLOBAL_PHYSICS] = { inertia: [key(0, [0.4]), key(Math.min(a.duration, 1.1), [0.9])] as Timeline };
   }
   return ids;

@@ -33,7 +33,12 @@ export function setMode(mode: 'setup' | 'animate') {
     let animId = ui.animationId;
     if (!animId || !doc.animations.some((a) => a.id === animId)) animId = doc.animations[0]?.id ?? null;
     if (!animId) animId = createAnimation('animation');
-    uiStore.patch({ mode, animationId: animId, overrides: {}, tool: ui.tool === 'create' || ui.tool === 'mesh' || ui.tool === 'weights' || ATTACHMENT_TOOLS.includes(ui.tool) ? 'select' : ui.tool });
+    uiStore.patch({
+      mode,
+      animationId: animId,
+      overrides: {},
+      tool: ui.tool === 'create' || ui.tool === 'mesh' || ui.tool === 'weights' || ATTACHMENT_TOOLS.includes(ui.tool) ? 'select' : ui.tool,
+    });
   } else {
     uiStore.patch({ mode, playing: false, overrides: {} });
   }
@@ -42,7 +47,13 @@ export function setMode(mode: 'setup' | 'animate') {
 export function setTool(tool: Tool) {
   const ui = uiStore.get();
   if (ui.mode === 'animate' && (tool === 'create' || tool === 'weights' || ATTACHMENT_TOOLS.includes(tool))) {
-    toast(tool === 'create' ? 'Switch to Setup mode to create bones' : tool === 'weights' ? 'Switch to Setup mode to edit weights' : 'Switch to Setup mode to create attachments');
+    toast(
+      tool === 'create'
+        ? 'Switch to Setup mode to create bones'
+        : tool === 'weights'
+          ? 'Switch to Setup mode to edit weights'
+          : 'Switch to Setup mode to create attachments',
+    );
     return;
   }
   uiStore.patch({ tool });
@@ -67,7 +78,8 @@ export function sanitizeSelection() {
   const slotOk = sel.slot === null || doc.slots.some((s) => s.id === sel.slot);
   const attOk = slotOk && (sel.attachment === null || (sel.slot !== null && !!doc.skins[0]?.attachments[sel.slot]?.[sel.attachment]));
   const constraintOk = sel.constraint === null || doc.constraints.some((c) => c.id === sel.constraint);
-  const extra = slotOk && sel.slot !== null ? (sel.extraSlots ?? []).filter((id) => id !== sel.slot && doc.slots.some((s) => s.id === id)) : [];
+  const extra =
+    slotOk && sel.slot !== null ? (sel.extraSlots ?? []).filter((id) => id !== sel.slot && doc.slots.some((s) => s.id === id)) : [];
   if (bones.length === sel.bones.length && slotOk && attOk && constraintOk && extra.length === (sel.extraSlots ?? []).length) return;
   uiStore.patch({
     selection: {
@@ -117,7 +129,11 @@ export function toggleExtraSlot(slotId: Id) {
 
 export function selectSlot(slotId: Id, attachment?: string | null) {
   const slot = slotById(slotId);
-  setSelection({ slot: slotId, attachment: attachment === undefined ? (slot?.attachment ?? null) : attachment, bones: slot ? [slot.bone] : [] });
+  setSelection({
+    slot: slotId,
+    attachment: attachment === undefined ? (slot?.attachment ?? null) : attachment,
+    bones: slot ? [slot.bone] : [],
+  });
 }
 
 export function setTime(t: number, snap = true) {

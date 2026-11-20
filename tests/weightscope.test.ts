@@ -67,7 +67,20 @@ describe('scope of the weight buttons (store)', () => {
     const slot = newSlot({ name: 's', bone: root.id });
     p.skeleton.slots.push(slot);
     p.skeleton.skins[0].attachments[slot.id] = {
-      img: meshFromRegion({ type: 'region', name: 'img', path: 'img', x: 100, y: 0, rotation: 0, scaleX: 1, scaleY: 1, width: 200, height: 60, color: [1, 1, 1, 1], sequence: null } as never),
+      img: meshFromRegion({
+        type: 'region',
+        name: 'img',
+        path: 'img',
+        x: 100,
+        y: 0,
+        rotation: 0,
+        scaleX: 1,
+        scaleY: 1,
+        width: 200,
+        height: 60,
+        color: [1, 1, 1, 1],
+        sequence: null,
+      } as never),
     };
     slot.attachment = 'img';
     docStore.replace(p);

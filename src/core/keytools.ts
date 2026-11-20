@@ -19,7 +19,13 @@ interface ValueKey {
  * pose of the timeline: 0, or 1 for a scale). Every key is measured against the values the keys had before the call, so keys next to each
  * other do not pull each other along. Returns how many keys changed.
  */
-export function favorKeys(keys: ValueKey[], indices: readonly number[], mode: FavorMode, amount: number, neutral?: readonly number[]): number {
+export function favorKeys(
+  keys: ValueKey[],
+  indices: readonly number[],
+  mode: FavorMode,
+  amount: number,
+  neutral?: readonly number[],
+): number {
   if (!keys.every((k) => Array.isArray(k.value))) return 0;
   const a = Math.min(1, Math.max(0, amount));
   if (a === 0) return 0;
@@ -64,7 +70,8 @@ export function favorKeys(keys: ValueKey[], indices: readonly number[], mode: Fa
 /** The value a timeline rests on in the setup pose (its keys are relative to the setup): 1 for a scale, 0 for the rest, nothing for what has no such value. */
 export function neutralOf(kind: string, prop: string, channels: number): number[] | undefined {
   if (kind !== 'bone') return undefined;
-  if (prop === 'rotate' || prop === 'translate' || prop === 'shear' || /^(translate|shear)[xy]$/.test(prop)) return new Array<number>(channels).fill(0);
+  if (prop === 'rotate' || prop === 'translate' || prop === 'shear' || /^(translate|shear)[xy]$/.test(prop))
+    return new Array<number>(channels).fill(0);
   if (prop === 'scale' || prop === 'scalex' || prop === 'scaley') return new Array<number>(channels).fill(1);
   return undefined;
 }
@@ -73,7 +80,13 @@ export function neutralOf(kind: string, prop: string, channels: number): number[
  * New times for the keys at `indices`: `pivot + (time - pivot) * factor`, on the frame grid. Returns the new times in the order of `indices`, or
  * null when the result would be wrong (a time below 0, two keys on one frame, or the keys crossing a key that is not selected). Nothing is changed.
  */
-export function scaledTimes(keys: readonly { time: number }[], indices: readonly number[], factor: number, pivot: number, fps: number): number[] | null {
+export function scaledTimes(
+  keys: readonly { time: number }[],
+  indices: readonly number[],
+  factor: number,
+  pivot: number,
+  fps: number,
+): number[] | null {
   if (!(factor > 0) || !Number.isFinite(factor)) return null;
   const picked = new Set(indices);
   const raw = indices.map((i) => pivot + (keys[i].time - pivot) * factor);

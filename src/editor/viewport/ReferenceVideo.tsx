@@ -32,7 +32,13 @@ export function ReferenceVideo() {
       }
       v.style.opacity = rv.show ? String(rv.view.opacity) : '0';
       if (!(v.duration > 0)) return;
-      const plan = syncPlan(v.currentTime, videoTimeFor(ui.time, rv.view.offset, v.duration), ui.playing && rv.show, v.duration, docStore.get().skeleton.fps);
+      const plan = syncPlan(
+        v.currentTime,
+        videoTimeFor(ui.time, rv.view.offset, v.duration),
+        ui.playing && rv.show,
+        v.duration,
+        docStore.get().skeleton.fps,
+      );
       if (plan.seek !== null) v.currentTime = plan.seek;
       v.playbackRate = Math.min(16, Math.max(0.0625, ui.speed));
       if (plan.play && v.paused) void v.play().catch(() => {});

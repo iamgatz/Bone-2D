@@ -1,8 +1,56 @@
 import { useMemo, useState } from 'react';
 import type { ReactElement } from 'react';
-import { Bone as BoneIcon, BoxSelect, ChevronDown, ChevronRight, Crosshair, Diamond, Eye, EyeOff, Folder, Image as ImageIcon, Layers, Link2, Lock, Plus, Replace, Scissors, Shirt, Search, Spline, Trash2, Unlock, Waves, X, Zap } from 'lucide-react';
+import {
+  Bone as BoneIcon,
+  BoxSelect,
+  ChevronDown,
+  ChevronRight,
+  Crosshair,
+  Diamond,
+  Eye,
+  EyeOff,
+  Folder,
+  Image as ImageIcon,
+  Layers,
+  Link2,
+  Lock,
+  Plus,
+  Replace,
+  Scissors,
+  Shirt,
+  Search,
+  Spline,
+  Trash2,
+  Unlock,
+  Waves,
+  X,
+  Zap,
+} from 'lucide-react';
 import type { Bone, Id, Slot } from '@/core/model';
-import { createEvent, createSkin, deleteBones, deleteEvent, deleteSkin, deleteSlots, keyEvent, moveSlot, renameBone, renameSkin, renameSlot, reparentBone, selectBone, selectMatches, selectSlot, setActiveSkin, toggleExtraSlot, setBoneProps, setSelection, setSlotBone, setSlotProps, updateEvent } from '@/store/actions';
+import {
+  createEvent,
+  createSkin,
+  deleteBones,
+  deleteEvent,
+  deleteSkin,
+  deleteSlots,
+  keyEvent,
+  moveSlot,
+  renameBone,
+  renameSkin,
+  renameSlot,
+  reparentBone,
+  selectBone,
+  selectMatches,
+  selectSlot,
+  setActiveSkin,
+  toggleExtraSlot,
+  setBoneProps,
+  setSelection,
+  setSlotBone,
+  setSlotProps,
+  updateEvent,
+} from '@/store/actions';
 import { folderOfSlot } from '@/core/folders';
 import { filterTree } from '@/core/treeFilter';
 import { useProject } from '@/store/doc';
@@ -46,7 +94,12 @@ export function TreePanel() {
   const skinId = useUi((s) => s.skinId);
   const mode = useUi((s) => s.mode);
   useUi((s) => (s.mode === 'animate' ? s.time : 0));
-  const orderedSlots: Slot[] = mode === 'animate' ? getScene().skeleton.drawOrder.map((s) => doc.slots.find((x) => x.id === s.data.id)).filter((s): s is Slot => !!s) : doc.slots;
+  const orderedSlots: Slot[] =
+    mode === 'animate'
+      ? getScene()
+          .skeleton.drawOrder.map((s) => doc.slots.find((x) => x.id === s.data.id))
+          .filter((s): s is Slot => !!s)
+      : doc.slots;
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
   const [editing, setEditing] = useState<string | null>(null);
   const [dropOn, setDropOn] = useState<string | null>(null);
@@ -59,7 +112,10 @@ export function TreePanel() {
   type OrderItem = { head: { key: string; name: string; count: number } } | { s: Slot; i: number; indent: boolean };
   const orderItems: OrderItem[] = [];
   {
-    const list = orderedSlots.map((s, i) => ({ s, i })).reverse().filter(({ s }) => !match.active || match.slots.has(s.id));
+    const list = orderedSlots
+      .map((s, i) => ({ s, i }))
+      .reverse()
+      .filter(({ s }) => !match.active || match.slots.has(s.id));
     let run: string | null = null;
     let folded = false;
     for (let k = 0; k < list.length; k++) {
@@ -112,7 +168,9 @@ export function TreePanel() {
             e.dataTransfer.setData('application/x-bone2d-slot', slot.id);
             e.dataTransfer.effectAllowed = 'move';
           }}
-          onClick={(e) => (e.ctrlKey || e.metaKey || e.shiftKey) && selection.slot ? toggleExtraSlot(slot.id) : selectSlot(slot.id, slot.attachment)}
+          onClick={(e) =>
+            (e.ctrlKey || e.metaKey || e.shiftKey) && selection.slot ? toggleExtraSlot(slot.id) : selectSlot(slot.id, slot.attachment)
+          }
           onDoubleClick={() => setEditing('s:' + slot.id)}
         >
           <span className={`chev${attNames.length ? '' : ' hidden'}`} onClick={(e) => (e.stopPropagation(), toggle('s:' + slot.id))}>
@@ -130,20 +188,45 @@ export function TreePanel() {
             }}
           />
           <span className="actions">
-            <IconButton icon={slot.hidden ? EyeOff : Eye} title={slot.hidden ? 'Show' : 'Hide'} small onClick={(e) => (e.stopPropagation(), setSlotProps(slot.id, { hidden: !slot.hidden }, 'Toggle slot'))} />
+            <IconButton
+              icon={slot.hidden ? EyeOff : Eye}
+              title={slot.hidden ? 'Show' : 'Hide'}
+              small
+              onClick={(e) => (e.stopPropagation(), setSlotProps(slot.id, { hidden: !slot.hidden }, 'Toggle slot'))}
+            />
             <IconButton icon={Trash2} title="Delete slot" small onClick={(e) => (e.stopPropagation(), deleteSlots([slot.id]))} />
           </span>
         </div>
         {open &&
           attNames.map((name) => (
-            <div key={name} className={`row${selected && selection.attachment === name ? ' selected' : ''}`} style={{ paddingLeft: 8 + (depth + 1) * 14 + 16 }} onClick={() => selectSlot(slot.id, name)}>
+            <div
+              key={name}
+              className={`row${selected && selection.attachment === name ? ' selected' : ''}`}
+              style={{ paddingLeft: 8 + (depth + 1) * 14 + 16 }}
+              onClick={() => selectSlot(slot.id, name)}
+            >
               <span className="ico">
-                {atts[name].type === 'clipping' ? <Scissors size={12} /> : atts[name].type === 'boundingbox' ? <BoxSelect size={12} /> : atts[name].type === 'point' ? <Crosshair size={12} /> : atts[name].type === 'path' ? <Spline size={12} /> : <ImageIcon size={12} />}
+                {atts[name].type === 'clipping' ? (
+                  <Scissors size={12} />
+                ) : atts[name].type === 'boundingbox' ? (
+                  <BoxSelect size={12} />
+                ) : atts[name].type === 'point' ? (
+                  <Crosshair size={12} />
+                ) : atts[name].type === 'path' ? (
+                  <Spline size={12} />
+                ) : (
+                  <ImageIcon size={12} />
+                )}
               </span>
               <span className="label">{name}</span>
               {slot.attachment === name && <span className="chip">setup</span>}
               <span className="actions">
-                <IconButton icon={Eye} title="Show this attachment in setup pose" small onClick={(e) => (e.stopPropagation(), setSlotProps(slot.id, { attachment: name }, 'Set attachment'))} />
+                <IconButton
+                  icon={Eye}
+                  title="Show this attachment in setup pose"
+                  small
+                  onClick={(e) => (e.stopPropagation(), setSlotProps(slot.id, { attachment: name }, 'Set attachment'))}
+                />
               </span>
             </div>
           ))}
@@ -201,8 +284,18 @@ export function TreePanel() {
             }}
           />
           <span className={`actions${bone.hidden || bone.locked ? ' pinned' : ''}`}>
-            <IconButton icon={bone.locked ? Lock : Unlock} title={bone.locked ? 'Unlock' : 'Lock (not selectable in viewport)'} small onClick={(e) => (e.stopPropagation(), setBoneProps(bone.id, { locked: !bone.locked }, 'Lock bone'))} />
-            <IconButton icon={bone.hidden ? EyeOff : Eye} title={bone.hidden ? 'Show' : 'Hide'} small onClick={(e) => (e.stopPropagation(), setBoneProps(bone.id, { hidden: !bone.hidden }, 'Hide bone'))} />
+            <IconButton
+              icon={bone.locked ? Lock : Unlock}
+              title={bone.locked ? 'Unlock' : 'Lock (not selectable in viewport)'}
+              small
+              onClick={(e) => (e.stopPropagation(), setBoneProps(bone.id, { locked: !bone.locked }, 'Lock bone'))}
+            />
+            <IconButton
+              icon={bone.hidden ? EyeOff : Eye}
+              title={bone.hidden ? 'Show' : 'Hide'}
+              small
+              onClick={(e) => (e.stopPropagation(), setBoneProps(bone.id, { hidden: !bone.hidden }, 'Hide bone'))}
+            />
           </span>
         </div>
         {open && (
@@ -222,7 +315,13 @@ export function TreePanel() {
       <div className="panel-head">
         <span className="title">Hierarchy</span>
         <IconButton icon={Eye} title="Show everything hidden" small onClick={() => showAll()} />
-        <IconButton icon={Trash2} title="Delete selected" small disabled={!selection.bones.length && !selection.slot} onClick={() => (selection.slot && !selection.bones.length ? deleteSlots([selection.slot]) : deleteBones(selection.bones))} />
+        <IconButton
+          icon={Trash2}
+          title="Delete selected"
+          small
+          disabled={!selection.bones.length && !selection.slot}
+          onClick={() => (selection.slot && !selection.bones.length ? deleteSlots([selection.slot]) : deleteBones(selection.bones))}
+        />
       </div>
       <SkeletonBar />
       <div className="tree-filter">
@@ -237,7 +336,11 @@ export function TreePanel() {
           }}
         />
         {match.active && match.matchedBones.length + match.matchedSlots.length > 0 && (
-          <button className="btn sm" title="Select every bone and slot that matches (several slots are selected together, so the weight tools work on all their meshes)" onClick={() => selectMatches(match)}>
+          <button
+            className="btn sm"
+            title="Select every bone and slot that matches (several slots are selected together, so the weight tools work on all their meshes)"
+            onClick={() => selectMatches(match)}
+          >
             {`Select ${match.matchedBones.length + match.matchedSlots.length}`}
           </button>
         )}
@@ -253,7 +356,9 @@ export function TreePanel() {
       >
         {roots.map((r) => renderBone(r, 0))}
 
-        {match.active && !match.bones.size && !match.constraints.size && !match.skins.size && !match.events.size && <div className="empty">Nothing matches</div>}
+        {match.active && !match.bones.size && !match.constraints.size && !match.skins.size && !match.events.size && (
+          <div className="empty">Nothing matches</div>
+        )}
 
         {doc.slots.length > 1 && (!match.active || match.slots.size > 0) && (
           <>
@@ -268,7 +373,9 @@ export function TreePanel() {
                       <Folder size={13} />
                     </span>
                     <span className="label">{it.head.name}</span>
-                    <span className="chip" title="Slots of this draw order folder next to each other">{it.head.count}</span>
+                    <span className="chip" title="Slots of this draw order folder next to each other">
+                      {it.head.count}
+                    </span>
                   </div>
                 );
               }
@@ -295,7 +402,9 @@ export function TreePanel() {
                     const id = e.dataTransfer.getData('application/x-bone2d-order');
                     if (id && id !== s.id) moveSlot(id, i);
                   }}
-                  onClick={(e) => ((e.ctrlKey || e.metaKey || e.shiftKey) && selection.slot ? toggleExtraSlot(s.id) : selectSlot(s.id, s.attachment))}
+                  onClick={(e) =>
+                    (e.ctrlKey || e.metaKey || e.shiftKey) && selection.slot ? toggleExtraSlot(s.id) : selectSlot(s.id, s.attachment)
+                  }
                 >
                   <span className="ico">
                     <Layers size={13} />
@@ -311,17 +420,43 @@ export function TreePanel() {
           <>
             <div className="section-label bar">
               <span className="grow">Constraints</span>
-              <IconButton icon={Spline} title="New path constraint (the selected bones follow a path)" small onClick={() => createPathConstraint()} />
-              <IconButton icon={Waves} title="New physics constraint (the selected bone swings while an animation plays)" small onClick={() => createPhysicsConstraint()} />
-              <IconButton icon={Plus} title="New slider (applies an animation by hand or driven by a bone)" small onClick={() => createSlider(selection.bones[0] ?? null)} />
+              <IconButton
+                icon={Spline}
+                title="New path constraint (the selected bones follow a path)"
+                small
+                onClick={() => createPathConstraint()}
+              />
+              <IconButton
+                icon={Waves}
+                title="New physics constraint (the selected bone swings while an animation plays)"
+                small
+                onClick={() => createPhysicsConstraint()}
+              />
+              <IconButton
+                icon={Plus}
+                title="New slider (applies an animation by hand or driven by a bone)"
+                small
+                onClick={() => createSlider(selection.bones[0] ?? null)}
+              />
             </div>
-            {doc.constraints.filter((c) => !match.active || match.constraints.has(c.id)).map((c) => (
-              <div key={c.id} className={`row${selection.constraint === c.id ? ' selected' : ''}`} style={{ paddingLeft: 14 }} onClick={() => setSelection({ constraint: c.id })}>
-                <span className="ico">{c.type === 'path' ? <Spline size={13} /> : c.type === 'physics' ? <Waves size={13} /> : <Link2 size={13} />}</span>
-                <span className="label">{c.name}</span>
-                <span className={`chip k-${c.type}`}>{c.type === 'ik' ? 'IK' : c.type === 'transform' ? 'TC' : c.type === 'path' ? 'PC' : c.type === 'physics' ? 'PH' : 'SL'}</span>
-              </div>
-            ))}
+            {doc.constraints
+              .filter((c) => !match.active || match.constraints.has(c.id))
+              .map((c) => (
+                <div
+                  key={c.id}
+                  className={`row${selection.constraint === c.id ? ' selected' : ''}`}
+                  style={{ paddingLeft: 14 }}
+                  onClick={() => setSelection({ constraint: c.id })}
+                >
+                  <span className="ico">
+                    {c.type === 'path' ? <Spline size={13} /> : c.type === 'physics' ? <Waves size={13} /> : <Link2 size={13} />}
+                  </span>
+                  <span className="label">{c.name}</span>
+                  <span className={`chip k-${c.type}`}>
+                    {c.type === 'ik' ? 'IK' : c.type === 'transform' ? 'TC' : c.type === 'path' ? 'PC' : c.type === 'physics' ? 'PH' : 'SL'}
+                  </span>
+                </div>
+              ))}
           </>
         )}
 
@@ -335,7 +470,13 @@ export function TreePanel() {
               if (match.active && !match.skins.has(s.id)) return null;
               const active = (skinId ?? doc.skins[0].id) === s.id;
               return (
-                <div key={s.id} className={`row${active ? ' selected' : ''}`} style={{ paddingLeft: 14 }} onClick={() => setActiveSkin(i === 0 ? null : s.id)} onDoubleClick={() => i > 0 && setEditing('k:' + s.id)}>
+                <div
+                  key={s.id}
+                  className={`row${active ? ' selected' : ''}`}
+                  style={{ paddingLeft: 14 }}
+                  onClick={() => setActiveSkin(i === 0 ? null : s.id)}
+                  onDoubleClick={() => i > 0 && setEditing('k:' + s.id)}
+                >
                   <span className="ico">
                     <Shirt size={13} />
                   </span>
@@ -364,53 +505,90 @@ export function TreePanel() {
               <span className="grow">Events</span>
               <IconButton icon={Plus} title="New event" small onClick={() => createEvent()} />
             </div>
-            {doc.events.filter((ev) => !match.active || match.events.has(ev.id)).map((ev) => (
-              <div key={ev.id}>
-              <div className={`row${openEvent === ev.id ? ' selected' : ''}`} style={{ paddingLeft: 14 }} onClick={() => setOpenEvent((o) => (o === ev.id ? null : ev.id))} onDoubleClick={() => setEditing('e:' + ev.id)}>
-                <span className="ico">
-                  <Zap size={13} />
-                </span>
-                <InlineName
-                  value={ev.name}
-                  editing={editing === 'e:' + ev.id}
-                  onDone={(v) => {
-                    setEditing(null);
-                    if (v !== null && v !== ev.name) updateEvent(ev.id, { name: v });
-                  }}
-                />
-                <span className="actions pinned">
-                  <IconButton icon={Diamond} title="Fire this event at the playhead" small onClick={(e) => (e.stopPropagation(), keyEvent(ev.id))} />
-                  <IconButton icon={Trash2} title="Delete event" small onClick={(e) => (e.stopPropagation(), deleteEvent(ev.id))} />
-                </span>
-              </div>
-              {openEvent === ev.id && (
-                <div className="event-edit">
-                  <Field label="Int" title="The whole number the event carries by default">
-                    <NumberField label="#" value={ev.int} step={1} precision={0} onChange={(v) => updateEvent(ev.id, { int: v })} />
-                  </Field>
-                  <Field label="Float" title="The decimal number the event carries by default">
-                    <NumberField label="f" value={ev.float} step={0.1} precision={3} onChange={(v) => updateEvent(ev.id, { float: v })} />
-                  </Field>
-                  <Field label="Text" title="The text the event carries by default">
-                    <TextField value={ev.string} onCommit={(v) => updateEvent(ev.id, { string: v })} wide />
-                  </Field>
-                  <Field label="Sound" title="The path of the sound file for the engine (kept in the export; the editor does not play it)">
-                    <TextField value={ev.audio ?? ''} onCommit={(v) => updateEvent(ev.id, { audio: v })} wide />
-                  </Field>
-                  {ev.audio && (
-                    <>
-                      <Field label="Volume" title="0 is silent, 1 is full">
-                        <NumberField label="v" value={ev.volume ?? 1} step={0.05} precision={2} min={0} max={1} onChange={(v) => updateEvent(ev.id, { volume: v })} />
+            {doc.events
+              .filter((ev) => !match.active || match.events.has(ev.id))
+              .map((ev) => (
+                <div key={ev.id}>
+                  <div
+                    className={`row${openEvent === ev.id ? ' selected' : ''}`}
+                    style={{ paddingLeft: 14 }}
+                    onClick={() => setOpenEvent((o) => (o === ev.id ? null : ev.id))}
+                    onDoubleClick={() => setEditing('e:' + ev.id)}
+                  >
+                    <span className="ico">
+                      <Zap size={13} />
+                    </span>
+                    <InlineName
+                      value={ev.name}
+                      editing={editing === 'e:' + ev.id}
+                      onDone={(v) => {
+                        setEditing(null);
+                        if (v !== null && v !== ev.name) updateEvent(ev.id, { name: v });
+                      }}
+                    />
+                    <span className="actions pinned">
+                      <IconButton
+                        icon={Diamond}
+                        title="Fire this event at the playhead"
+                        small
+                        onClick={(e) => (e.stopPropagation(), keyEvent(ev.id))}
+                      />
+                      <IconButton icon={Trash2} title="Delete event" small onClick={(e) => (e.stopPropagation(), deleteEvent(ev.id))} />
+                    </span>
+                  </div>
+                  {openEvent === ev.id && (
+                    <div className="event-edit">
+                      <Field label="Int" title="The whole number the event carries by default">
+                        <NumberField label="#" value={ev.int} step={1} precision={0} onChange={(v) => updateEvent(ev.id, { int: v })} />
                       </Field>
-                      <Field label="Balance" title="-1 is the left speaker, 1 the right">
-                        <NumberField label="b" value={ev.balance ?? 0} step={0.05} precision={2} min={-1} max={1} onChange={(v) => updateEvent(ev.id, { balance: v })} />
+                      <Field label="Float" title="The decimal number the event carries by default">
+                        <NumberField
+                          label="f"
+                          value={ev.float}
+                          step={0.1}
+                          precision={3}
+                          onChange={(v) => updateEvent(ev.id, { float: v })}
+                        />
                       </Field>
-                    </>
+                      <Field label="Text" title="The text the event carries by default">
+                        <TextField value={ev.string} onCommit={(v) => updateEvent(ev.id, { string: v })} wide />
+                      </Field>
+                      <Field
+                        label="Sound"
+                        title="The path of the sound file for the engine (kept in the export; the editor does not play it)"
+                      >
+                        <TextField value={ev.audio ?? ''} onCommit={(v) => updateEvent(ev.id, { audio: v })} wide />
+                      </Field>
+                      {ev.audio && (
+                        <>
+                          <Field label="Volume" title="0 is silent, 1 is full">
+                            <NumberField
+                              label="v"
+                              value={ev.volume ?? 1}
+                              step={0.05}
+                              precision={2}
+                              min={0}
+                              max={1}
+                              onChange={(v) => updateEvent(ev.id, { volume: v })}
+                            />
+                          </Field>
+                          <Field label="Balance" title="-1 is the left speaker, 1 the right">
+                            <NumberField
+                              label="b"
+                              value={ev.balance ?? 0}
+                              step={0.05}
+                              precision={2}
+                              min={-1}
+                              max={1}
+                              onChange={(v) => updateEvent(ev.id, { balance: v })}
+                            />
+                          </Field>
+                        </>
+                      )}
+                    </div>
                   )}
                 </div>
-              )}
-              </div>
-            ))}
+              ))}
           </>
         )}
 

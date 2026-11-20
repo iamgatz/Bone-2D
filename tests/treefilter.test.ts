@@ -13,7 +13,17 @@ const doc = () => docStore.get().skeleton;
 beforeEach(() => {
   const f = buildFixture();
   docStore.replace(f.project);
-  uiStore.patch({ mode: 'setup', tool: 'select', animationId: f.project.skeleton.animations[0].id, skinId: null, time: 0, selection: emptySelection, overrides: {}, autoKey: true, playing: false });
+  uiStore.patch({
+    mode: 'setup',
+    tool: 'select',
+    animationId: f.project.skeleton.animations[0].id,
+    skinId: null,
+    time: 0,
+    selection: emptySelection,
+    overrides: {},
+    autoKey: true,
+    playing: false,
+  });
 });
 
 describe('filterTree', () => {
@@ -26,7 +36,7 @@ describe('filterTree', () => {
     const m = filterTree(doc(), leaf.name.toUpperCase());
     expect(m.active).toBe(true);
     expect(m.bones.has(leaf.id)).toBe(true);
-    for (let at = leaf; at.parent; ) {
+    for (let at = leaf; at.parent;) {
       at = doc().bones.find((b) => b.id === at.parent)!;
       expect(m.bones.has(at.id)).toBe(true);
     }

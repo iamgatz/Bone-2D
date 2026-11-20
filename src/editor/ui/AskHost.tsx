@@ -24,7 +24,9 @@ function AskDialog({ ask }: { ask: Ask }) {
       onClose={() => ask.resolve(null)}
       footer={
         <>
-          <Button ghost onClick={() => ask.resolve(null)}>Cancel</Button>
+          <Button ghost onClick={() => ask.resolve(null)}>
+            Cancel
+          </Button>
           <Button primary disabled={!text.trim()} onClick={() => ask.resolve(text)}>
             {ask.ok}
           </Button>

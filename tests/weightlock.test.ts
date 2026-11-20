@@ -55,7 +55,20 @@ describe('brush on a mesh: lock, feather, copy and paste', () => {
     const slot = newSlot({ name: 's', bone: root.id });
     p.skeleton.slots.push(slot);
     p.skeleton.skins[0].attachments[slot.id] = {
-      img: meshFromRegion({ type: 'region', name: 'img', path: 'img', x: 100, y: 0, rotation: 0, scaleX: 1, scaleY: 1, width: 200, height: 60, color: [1, 1, 1, 1], sequence: null } as never),
+      img: meshFromRegion({
+        type: 'region',
+        name: 'img',
+        path: 'img',
+        x: 100,
+        y: 0,
+        rotation: 0,
+        scaleX: 1,
+        scaleY: 1,
+        width: 200,
+        height: 60,
+        color: [1, 1, 1, 1],
+        sequence: null,
+      } as never),
     };
     slot.attachment = 'img';
     docStore.replace(p);
@@ -66,7 +79,8 @@ describe('brush on a mesh: lock, feather, copy and paste', () => {
     bindMeshToBones(slotId, 'img', [ids[1], ids[2]]);
   });
   const w = () => getMesh(slotId, 'img')!.weights!;
-  const brush = (patch: object) => uiStore.patch({ brush: { size: 400, strength: 1, mode: 'replace', bone: ids[2], feather: 100, locked: [], ...patch } as never });
+  const brush = (patch: object) =>
+    uiStore.patch({ brush: { size: 400, strength: 1, mode: 'replace', bone: ids[2], feather: 100, locked: [], ...patch } as never });
 
   it('painting with the other bone locked leaves its weights as they were', () => {
     const before = w().map((l) => get(l, ids[1]));

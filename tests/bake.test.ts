@@ -1,6 +1,14 @@
 /** Simplifying keys and baking constraints into bone keys. */
 import { describe, expect, it } from 'vitest';
-import { DEFAULT_TOLERANCE, bakeAnimation, constrainedBoneIndices, countSimplifiable, poseFrames, simplifyAnimation, simplifyKeys } from '../src/core/bake';
+import {
+  DEFAULT_TOLERANCE,
+  bakeAnimation,
+  constrainedBoneIndices,
+  countSimplifiable,
+  poseFrames,
+  simplifyAnimation,
+  simplifyKeys,
+} from '../src/core/bake';
 import { sampleKeys } from '../src/core/curve';
 import { uid } from '../src/core/ids';
 import type { Animation, ImageRef, Key, Project } from '../src/core/model';
@@ -57,7 +65,12 @@ describe('simplifyKeys', () => {
   });
 
   it('does not smooth a stepped jump away', () => {
-    const keys: Key[] = [{ time: 0, value: [0], curve: 'stepped' }, { time: 0.2, value: [0], curve: 'stepped' }, { time: 0.4, value: [90], curve: 'stepped' }, { time: 0.6, value: [90] }];
+    const keys: Key[] = [
+      { time: 0, value: [0], curve: 'stepped' },
+      { time: 0.2, value: [0], curve: 'stepped' },
+      { time: 0.4, value: [90], curve: 'stepped' },
+      { time: 0.6, value: [90] },
+    ];
     const out = simplifyKeys(keys, 0.5, 30);
     expect(maxDifference(keys, out, 30)).toBeLessThanOrEqual(0.5 + 1e-9);
   });
@@ -149,7 +162,8 @@ describe('bakeAnimation', () => {
   it('stays close to the original after simplification, with far fewer keys', () => {
     const full = bakeAnimation(doc, walk, { simplify: null });
     const lean = bakeAnimation(doc, walk);
-    const count = (a: Animation) => Object.values(a.bones).reduce((n, tl) => n + Object.values(tl).reduce((m, keys) => m + (keys?.length ?? 0), 0), 0);
+    const count = (a: Animation) =>
+      Object.values(a.bones).reduce((n, tl) => n + Object.values(tl).reduce((m, keys) => m + (keys?.length ?? 0), 0), 0);
     expect(count(lean)).toBeLessThan(count(full));
     const withBaked = { ...structuredClone(doc), animations: [...doc.animations, lean] };
     const worst = worstDifference(poses(doc, walk).out, poses(withBaked, lean).out, poses(doc, walk).names);

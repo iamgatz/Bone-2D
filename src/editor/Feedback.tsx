@@ -18,7 +18,15 @@ const ENDPOINT = (import.meta.env.VITE_FEEDBACK_ENDPOINT as string | undefined) 
 
 function environment(): string {
   const nav = typeof navigator !== 'undefined' ? navigator : undefined;
-  return [`Bone 2D v${LATEST}`, SITE, `language: ${getLang()}`, nav ? `browser: ${nav.userAgent}` : '', typeof screen !== 'undefined' ? `screen: ${screen.width}×${screen.height}` : ''].filter(Boolean).join('\n');
+  return [
+    `Bone 2D v${LATEST}`,
+    SITE,
+    `language: ${getLang()}`,
+    nav ? `browser: ${nav.userAgent}` : '',
+    typeof screen !== 'undefined' ? `screen: ${screen.width}×${screen.height}` : '',
+  ]
+    .filter(Boolean)
+    .join('\n');
 }
 
 function issueUrl(kind: Kind, message: string, info: string | null): string {
@@ -27,7 +35,9 @@ function issueUrl(kind: Kind, message: string, info: string | null): string {
   let body = message.trim();
   if (info) body += `\n\n---\n${info}`;
   const url = `https://github.com/${REPO}/issues/new?title=${encodeURIComponent(title)}&body=${encodeURIComponent(body)}`;
-  return url.length > 7500 ? `https://github.com/${REPO}/issues/new?title=${encodeURIComponent(title)}&body=${encodeURIComponent(`${body.slice(0, 3000)}\n…`)}` : url;
+  return url.length > 7500
+    ? `https://github.com/${REPO}/issues/new?title=${encodeURIComponent(title)}&body=${encodeURIComponent(`${body.slice(0, 3000)}\n…`)}`
+    : url;
 }
 
 export function FeedbackDialog() {
@@ -92,7 +102,8 @@ export function FeedbackDialog() {
       }
     >
       <p className="hint-text flush mb">
-        Something broken, missing or confusing? Write it here: every message is read. A feature of Spine that you miss is the most useful thing you can send.
+        Something broken, missing or confusing? Write it here: every message is read. A feature of Spine that you miss is the most useful
+        thing you can send.
       </p>
       <div className="feedback">
         <SelectField

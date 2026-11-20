@@ -10,8 +10,50 @@ import { uid, uniqueName } from '../ids';
 import { deformLength } from '../mesh';
 import { attachmentPictures, cleanSequence, cleanSequenceKey, sequenceFrameNames } from '../sequence';
 import { isLegacySpineJson, upgradeLegacySpineJson } from './legacy';
-import { BLEND_MODES, DEFAULT_BOUNDING_BOX_COLOR, DEFAULT_CLIPPING_COLOR, DEFAULT_PATH_COLOR, DEFAULT_POINT_COLOR, GLOBAL_PHYSICS, INHERIT_MODES, PATH_POSITION_MODES, PATH_ROTATE_MODES, PATH_SPACING_MODES, PHYSICS_PARAMS, TRANSFORM_PROPS, emptyProject, newAnimation, newBone, newPhysicsConstraint, newSkin, newSlot } from '../model';
-import type { Animation, Attachment, BlendMode, Bone, Constraint, Curve, EventDef, Id, Influence, Key, MeshAttachment, PathTimelines, PhysicsTimelines, Project, RGB, RGBA, SequenceDef, SequenceMode, SkeletonDoc, Timeline, TransformFrom, TransformProp } from '../model';
+import {
+  BLEND_MODES,
+  DEFAULT_BOUNDING_BOX_COLOR,
+  DEFAULT_CLIPPING_COLOR,
+  DEFAULT_PATH_COLOR,
+  DEFAULT_POINT_COLOR,
+  GLOBAL_PHYSICS,
+  INHERIT_MODES,
+  PATH_POSITION_MODES,
+  PATH_ROTATE_MODES,
+  PATH_SPACING_MODES,
+  PHYSICS_PARAMS,
+  TRANSFORM_PROPS,
+  emptyProject,
+  newAnimation,
+  newBone,
+  newPhysicsConstraint,
+  newSkin,
+  newSlot,
+} from '../model';
+import type {
+  Animation,
+  Attachment,
+  BlendMode,
+  Bone,
+  Constraint,
+  Curve,
+  EventDef,
+  Id,
+  Influence,
+  Key,
+  MeshAttachment,
+  PathTimelines,
+  PhysicsTimelines,
+  Project,
+  RGB,
+  RGBA,
+  SequenceDef,
+  SequenceMode,
+  SkeletonDoc,
+  Timeline,
+  TransformFrom,
+  TransformProp,
+} from '../model';
 
 type J = Record<string, any>;
 
@@ -24,7 +66,7 @@ export interface SpineImportResult {
 const num = (v: unknown, d: number): number => (typeof v === 'number' && Number.isFinite(v) ? v : d);
 const bool = (v: unknown, d: boolean): boolean => (typeof v === 'boolean' ? v : d);
 const str = (v: unknown, d: string): string => (typeof v === 'string' ? v : d);
-const obj = (v: unknown): J => (v && typeof v === 'object' && !Array.isArray(v) ? (v) : {});
+const obj = (v: unknown): J => (v && typeof v === 'object' && !Array.isArray(v) ? v : {});
 const arr = (v: unknown): any[] => (Array.isArray(v) ? v : []);
 /** An enum value as the official loader reads it (first letter case does not matter), or the default. */
 const oneOf = <T extends string>(v: unknown, list: readonly T[], def: T): T => {
@@ -129,7 +171,8 @@ export function mergeRgbAlpha(rgb: Timeline | null, alpha: Timeline | null, setu
       return key;
     }
     if (c.spec === 'stepped' || d.spec === 'stepped') exact = false;
-    const part = (s: { spec: CurveSpec; inside: boolean }, channels: number) => (Array.isArray(s.spec) && !s.inside ? s.spec.slice(0, channels * 4) : Array.from({ length: channels }, () => LINEAR_CURVE).flat());
+    const part = (s: { spec: CurveSpec; inside: boolean }, channels: number) =>
+      Array.isArray(s.spec) && !s.inside ? s.spec.slice(0, channels * 4) : Array.from({ length: channels }, () => LINEAR_CURVE).flat();
     const bezier = (s: { spec: CurveSpec; inside: boolean }) => Array.isArray(s.spec) && !s.inside;
     if (bezier(c) || bezier(d)) key.curve = [...part(c, 3), ...part(d, 1)];
     return key;
@@ -160,7 +203,8 @@ export function importSpineJson(input: unknown, name = 'imported'): SpineImportR
   const project = emptyProject(name);
   const doc: SkeletonDoc = project.skeleton;
   doc.fps = num(header.fps, 30) || 30;
-  if (typeof header.referenceScale === 'number' && header.referenceScale > 0 && header.referenceScale !== 100) doc.referenceScale = header.referenceScale;
+  if (typeof header.referenceScale === 'number' && header.referenceScale > 0 && header.referenceScale !== 100)
+    doc.referenceScale = header.referenceScale;
   doc.bones = [];
   doc.skins = [];
 
@@ -227,7 +271,20 @@ export function importSpineJson(input: unknown, name = 'imported'): SpineImportR
         warn(`IK constraint "${cname}" was skipped: a bone is missing`);
         continue;
       }
-      const c: Constraint = { id: uid(), type: 'ik', name: cname, bones: bones as Id[], target, mix: num(cm.mix, 1), softness: num(cm.softness, 0), bendPositive: bool(cm.bendPositive, true), compress: bool(cm.compress, false), stretch: bool(cm.stretch, false), scaleY: cm.scaleY === 'uniform' || cm.scaleY === 'volume' ? cm.scaleY : 'none', skinRequired };
+      const c: Constraint = {
+        id: uid(),
+        type: 'ik',
+        name: cname,
+        bones: bones as Id[],
+        target,
+        mix: num(cm.mix, 1),
+        softness: num(cm.softness, 0),
+        bendPositive: bool(cm.bendPositive, true),
+        compress: bool(cm.compress, false),
+        stretch: bool(cm.stretch, false),
+        scaleY: cm.scaleY === 'uniform' || cm.scaleY === 'volume' ? cm.scaleY : 'none',
+        skinRequired,
+      };
       constraintByName.set(cname, c);
       doc.constraints.push(c);
     } else if (type === 'transform') {
@@ -245,7 +302,12 @@ export function importSpineJson(input: unknown, name = 'imported'): SpineImportR
           .filter(([toName]) => TRANSFORM_PROPS.includes(toName as TransformProp))
           .map(([toName, te]) => {
             used.add(toName as TransformProp);
-            return { prop: toName as TransformProp, offset: num(obj(te).offset, 0), max: num(obj(te).max, 1), scale: num(obj(te).scale, 1) };
+            return {
+              prop: toName as TransformProp,
+              offset: num(obj(te).offset, 0),
+              max: num(obj(te).max, 1),
+              scale: num(obj(te).scale, 1),
+            };
           });
         if (to.length) properties.push({ prop: fromName as TransformProp, offset: num(obj(fromEntry).offset, 0), to });
       }
@@ -262,8 +324,22 @@ export function importSpineJson(input: unknown, name = 'imported'): SpineImportR
         additive: bool(cm.additive, false),
         clamp: bool(cm.clamp, false),
         properties,
-        offsets: { rotation: num(cm.rotation, 0), x: num(cm.x, 0), y: num(cm.y, 0), scaleX: num(cm.scaleX, 0), scaleY: num(cm.scaleY, 0), shearY: num(cm.shearY, 0) },
-        mix: { rotate: used.has('rotate') ? num(cm.mixRotate, 1) : 1, x: mixX, y: used.has('y') ? num(cm.mixY, mixX) : 1, scaleX: mixScaleX, scaleY: used.has('scaleY') ? num(cm.mixScaleY, mixScaleX) : 1, shearY: used.has('shearY') ? num(cm.mixShearY, 1) : 1 },
+        offsets: {
+          rotation: num(cm.rotation, 0),
+          x: num(cm.x, 0),
+          y: num(cm.y, 0),
+          scaleX: num(cm.scaleX, 0),
+          scaleY: num(cm.scaleY, 0),
+          shearY: num(cm.shearY, 0),
+        },
+        mix: {
+          rotate: used.has('rotate') ? num(cm.mixRotate, 1) : 1,
+          x: mixX,
+          y: used.has('y') ? num(cm.mixY, mixX) : 1,
+          scaleX: mixScaleX,
+          scaleY: used.has('scaleY') ? num(cm.mixScaleY, mixScaleX) : 1,
+          shearY: used.has('shearY') ? num(cm.mixShearY, 1) : 1,
+        },
         skinRequired,
       };
       constraintByName.set(cname, c);
@@ -347,7 +423,10 @@ export function importSpineJson(input: unknown, name = 'imported'): SpineImportR
         wind: num(cm.wind, 0),
         gravity: num(cm.gravity, 0),
         mix: num(cm.mix, 1),
-        global: Object.fromEntries(PHYSICS_PARAMS.map((p) => [p, bool(cm[`${p}Global`], false)])) as Record<(typeof PHYSICS_PARAMS)[number], boolean>,
+        global: Object.fromEntries(PHYSICS_PARAMS.map((p) => [p, bool(cm[`${p}Global`], false)])) as Record<
+          (typeof PHYSICS_PARAMS)[number],
+          boolean
+        >,
         skinRequired,
       });
       constraintByName.set(cname, c);
@@ -366,7 +445,9 @@ export function importSpineJson(input: unknown, name = 'imported'): SpineImportR
   for (const sm of skinList) {
     const skin = newSkin(uniqueName(str(sm.name, 'skin'), new Set(skinByName.keys())));
     skinByName.set(skin.name, skin);
-    skin.bones = arr(sm.bones).map(boneId).filter((b): b is Id => !!b);
+    skin.bones = arr(sm.bones)
+      .map(boneId)
+      .filter((b): b is Id => !!b);
     for (const list of ['ik', 'transform', 'slider', 'path', 'physics'] as const) {
       for (const cn of arr(sm[list])) {
         const c = constraintByName.get(String(cn));
@@ -406,7 +487,12 @@ export function importSpineJson(input: unknown, name = 'imported'): SpineImportR
       }
       const inSkin = sourceSkin?.attachments[sourceSlot]?.[sourceName] ? sourceSkin : defaultSkinDoc;
       const path = str(l.map.path, str(l.map.name, l.key));
-      const copy: MeshAttachment = { ...structuredClone(parent), name: str(l.map.name, l.key), path, color: rgba(l.map.color, [1, 1, 1, 1]) };
+      const copy: MeshAttachment = {
+        ...structuredClone(parent),
+        name: str(l.map.name, l.key),
+        path,
+        color: rgba(l.map.color, [1, 1, 1, 1]),
+      };
       const ownSequence = readSequenceDef(l.map.sequence);
       if (ownSequence) copy.sequence = ownSequence;
       else delete copy.sequence;
@@ -423,7 +509,8 @@ export function importSpineJson(input: unknown, name = 'imported'): SpineImportR
       l.skin.attachments[l.slot][l.key] = copy;
     }
     if (rest.length === pending.length) {
-      for (const l of rest) warn(`linked mesh "${l.key}" was skipped: its source mesh "${String(l.map.source ?? l.map.parent)}" does not exist`);
+      for (const l of rest)
+        warn(`linked mesh "${l.key}" was skipped: its source mesh "${String(l.map.source ?? l.map.parent)}" does not exist`);
       break;
     }
     pending = rest;
@@ -478,7 +565,14 @@ export function importSpineJson(input: unknown, name = 'imported'): SpineImportR
       if (t.scale) tl.scale = timeline(t.scale, 2, pair(1));
       if (t.shear) tl.shear = timeline(t.shear, 2, pair(0));
       // the split axes keep their own key times and curves
-      for (const [axis, def] of [['translatex', 0], ['translatey', 0], ['scalex', 1], ['scaley', 1], ['shearx', 0], ['sheary', 0]] as const) {
+      for (const [axis, def] of [
+        ['translatex', 0],
+        ['translatey', 0],
+        ['scalex', 1],
+        ['scaley', 1],
+        ['shearx', 0],
+        ['sheary', 0],
+      ] as const) {
         if (t[axis]) tl[axis] = timeline(t[axis], 1, single('value', def));
       }
       if (t.inherit) warn(`animation "${an}": inherit timelines are not supported and were skipped`);
@@ -493,14 +587,24 @@ export function importSpineJson(input: unknown, name = 'imported'): SpineImportR
       }
       const t = obj(st);
       const tl = (a.slots[sid] ??= {});
-      if (t.attachment) tl.attachment = arr(t.attachment).map(obj).map((k) => ({ time: num(k.time, 0), name: typeof k.name === 'string' ? k.name : null }));
+      if (t.attachment)
+        tl.attachment = arr(t.attachment)
+          .map(obj)
+          .map((k) => ({ time: num(k.time, 0), name: typeof k.name === 'string' ? k.name : null }));
       if (t.rgba) tl.rgba = timeline(t.rgba, 4, (k) => [...rgba(k.color, [1, 1, 1, 1])]);
       else if (t.rgb || t.alpha) {
         // separate colour and alpha timelines (Spine 4.x): our colour keys hold both, so the two are merged at the times of either
         const setup = slotByName.get(sn)!.color;
-        const merged = mergeRgbAlpha(t.rgb ? timeline(t.rgb, 3, (k) => rgba(k.color, [1, 1, 1, 1]).slice(0, 3)) : null, t.alpha ? timeline(t.alpha, 1, single('value', 0)) : null, setup);
+        const merged = mergeRgbAlpha(
+          t.rgb ? timeline(t.rgb, 3, (k) => rgba(k.color, [1, 1, 1, 1]).slice(0, 3)) : null,
+          t.alpha ? timeline(t.alpha, 1, single('value', 0)) : null,
+          setup,
+        );
         tl.rgba = merged.keys;
-        if (!merged.exact) warn(`animation "${an}": the rgb and alpha timelines of a slot have keys at different times, so the curves between them are approximated`);
+        if (!merged.exact)
+          warn(
+            `animation "${an}": the rgb and alpha timelines of a slot have keys at different times, so the curves between them are approximated`,
+          );
       }
       if (t.rgba2 || t.rgb2) {
         const slot = slotByName.get(sn)!;
@@ -511,7 +615,9 @@ export function importSpineJson(input: unknown, name = 'imported'): SpineImportR
         if (t.rgba2) tl.rgba2 = timeline(t.rgba2, 7, (k) => [...rgba(k.light, [1, 1, 1, 1]), ...(rgb(k.dark) ?? [0, 0, 0])]);
         else {
           warn(`animation "${an}": a separate rgb2 timeline became a two-color timeline (alpha stays at the setup value)`);
-          tl.rgba2 = timeline(t.rgb2, 6, (k) => [...(rgb(k.light) ?? [1, 1, 1]), ...(rgb(k.dark) ?? [0, 0, 0])]).map((k) => withAlphaChannel(k, slot.color[3]));
+          tl.rgba2 = timeline(t.rgb2, 6, (k) => [...(rgb(k.light) ?? [1, 1, 1]), ...(rgb(k.dark) ?? [0, 0, 0])]).map((k) =>
+            withAlphaChannel(k, slot.color[3]),
+          );
         }
         if (tl.rgba) {
           delete tl.rgba;
@@ -526,7 +632,13 @@ export function importSpineJson(input: unknown, name = 'imported'): SpineImportR
       if (!c || c.type !== 'ik') continue;
       const list = arr(keys).map(obj);
       a.ik[c.id] = list.map((k, i) => {
-        const key: any = { time: num(k.time, 0), value: [num(k.mix, 1), num(k.softness, 0)], bendPositive: bool(k.bendPositive, true), compress: bool(k.compress, false), stretch: bool(k.stretch, false) };
+        const key: any = {
+          time: num(k.time, 0),
+          value: [num(k.mix, 1), num(k.softness, 0)],
+          bendPositive: bool(k.bendPositive, true),
+          compress: bool(k.compress, false),
+          stretch: bool(k.stretch, false),
+        };
         const curve = curveOf(k, list[i + 1], 2, (x) => [num(x.mix, 1), num(x.softness, 0)]);
         if (curve !== undefined) key.curve = curve;
         return key;
@@ -576,7 +688,10 @@ export function importSpineJson(input: unknown, name = 'imported'): SpineImportR
       const t = obj(tm);
       const tl: PhysicsTimelines = {};
       for (const p of PHYSICS_PARAMS) if (t[p]) tl[p] = timeline(t[p], 1, single('value', p === 'mix' ? 1 : 0));
-      if (Array.isArray(t.reset) && t.reset.length) tl.reset = arr(t.reset).map(obj).map((k) => ({ time: num(k.time, 0), value: [1] }));
+      if (Array.isArray(t.reset) && t.reset.length)
+        tl.reset = arr(t.reset)
+          .map(obj)
+          .map((k) => ({ time: num(k.time, 0), value: [1] }));
       if (Object.keys(tl).length) a.physics[c ? c.id : GLOBAL_PHYSICS] = tl;
     }
     // deform
@@ -615,18 +730,22 @@ export function importSpineJson(input: unknown, name = 'imported'): SpineImportR
             });
             return out;
           };
-          (((a.deform[skin.id] ??= {})[sid] ??= {})[attName] = timeline(keys, 1, valueOf, true));
+          ((a.deform[skin.id] ??= {})[sid] ??= {})[attName] = timeline(keys, 1, valueOf, true);
         }
       }
     }
     // draw order
     if (Array.isArray(am.drawOrder)) {
-      a.drawOrder = arr(am.drawOrder).map(obj).map((k) => ({ time: num(k.time, 0), order: drawOrderFromOffsets(arr(k.offsets).map(obj)) }));
+      a.drawOrder = arr(am.drawOrder)
+        .map(obj)
+        .map((k) => ({ time: num(k.time, 0), order: drawOrderFromOffsets(arr(k.offsets).map(obj)) }));
     }
     // draw order folders: one folder per distinct set of slots, shared by the animations
     if (Array.isArray(am.drawOrderFolder)) {
       for (const tl of arr(am.drawOrderFolder).map(obj)) {
-        const members = arr(tl.slots).map((n) => doc.slots.find((s) => s.name === String(n))?.id).filter((id): id is Id => !!id);
+        const members = arr(tl.slots)
+          .map((n) => doc.slots.find((s) => s.name === String(n))?.id)
+          .filter((id): id is Id => !!id);
         if (!members.length) continue;
         const sameSet = (list: Id[]) => list.length === members.length && members.every((m) => list.includes(m));
         let folder = doc.drawOrderFolders?.find((x) => sameSet(x.slots));
@@ -638,19 +757,24 @@ export function importSpineJson(input: unknown, name = 'imported'): SpineImportR
           folder = { id: uid(), name: `folder ${(doc.drawOrderFolders?.length ?? 0) + 1}`, slots: members };
           (doc.drawOrderFolders ??= []).push(folder);
         }
-        (a.drawOrderFolder ??= {})[folder.id] = arr(tl.keys).map(obj).map((k) => ({ time: num(k.time, 0), order: drawOrderFromOffsets(arr(k.offsets).map(obj), members) }));
+        (a.drawOrderFolder ??= {})[folder.id] = arr(tl.keys)
+          .map(obj)
+          .map((k) => ({ time: num(k.time, 0), order: drawOrderFromOffsets(arr(k.offsets).map(obj), members) }));
       }
     }
     // events
-    a.events = arr(am.events).map(obj).filter((k) => eventByName.has(String(k.name))).map((k) => {
-      const key: any = { time: num(k.time, 0), event: eventByName.get(String(k.name))! };
-      if (typeof k.int === 'number') key.int = k.int;
-      if (typeof k.float === 'number') key.float = k.float;
-      if (typeof k.string === 'string') key.string = k.string;
-      if (typeof k.volume === 'number') key.volume = k.volume;
-      if (typeof k.balance === 'number') key.balance = k.balance;
-      return key;
-    });
+    a.events = arr(am.events)
+      .map(obj)
+      .filter((k) => eventByName.has(String(k.name)))
+      .map((k) => {
+        const key: any = { time: num(k.time, 0), event: eventByName.get(String(k.name))! };
+        if (typeof k.int === 'number') key.int = k.int;
+        if (typeof k.float === 'number') key.float = k.float;
+        if (typeof k.string === 'string') key.string = k.string;
+        if (typeof k.volume === 'number') key.volume = k.volume;
+        if (typeof k.balance === 'number') key.balance = k.balance;
+        return key;
+      });
     a.duration = Math.max(animationEndTime(a), 1 / doc.fps);
     return a;
   }
@@ -675,10 +799,17 @@ export function importSpineJson(input: unknown, name = 'imported'): SpineImportR
   }
 
   const used = new Set<string>();
-  for (const skin of doc.skins) for (const slot of Object.values(skin.attachments)) for (const att of Object.values(slot)) {
-    for (const picture of attachmentPictures(att)) used.add(picture);
-  }
-  project.images = [...used].map((p) => ({ id: uid(), name: p, width: imageSizes.get(p)?.width ?? 0, height: imageSizes.get(p)?.height ?? 0 }));
+  for (const skin of doc.skins)
+    for (const slot of Object.values(skin.attachments))
+      for (const att of Object.values(slot)) {
+        for (const picture of attachmentPictures(att)) used.add(picture);
+      }
+  project.images = [...used].map((p) => ({
+    id: uid(),
+    name: p,
+    width: imageSizes.get(p)?.width ?? 0,
+    height: imageSizes.get(p)?.height ?? 0,
+  }));
   return { project, warnings };
 }
 
@@ -705,13 +836,27 @@ function readAttachment(
   const sequence = readSequenceDef(m.sequence);
   /** Every frame of a sequence is a picture of the size of the attachment. */
   const setSizes = (width: number, height: number) => {
-    for (const picture of sequence ? sequenceFrameNames(path, sequence) : [path]) if (!sizes.has(picture)) sizes.set(picture, { width, height });
+    for (const picture of sequence ? sequenceFrameNames(path, sequence) : [path])
+      if (!sizes.has(picture)) sizes.set(picture, { width, height });
   };
   if (type === 'region') {
     const width = num(m.width, 0);
     const height = num(m.height, 0);
     setSizes(width, height);
-    return { type: 'region', name, path, x: num(m.x, 0), y: num(m.y, 0), rotation: num(m.rotation, 0), scaleX: num(m.scaleX, 1), scaleY: num(m.scaleY, 1), width, height, color, ...(sequence ? { sequence } : {}) };
+    return {
+      type: 'region',
+      name,
+      path,
+      x: num(m.x, 0),
+      y: num(m.y, 0),
+      rotation: num(m.rotation, 0),
+      scaleX: num(m.scaleX, 1),
+      scaleY: num(m.scaleY, 1),
+      width,
+      height,
+      color,
+      ...(sequence ? { sequence } : {}),
+    };
   }
   if (type === 'linkedmesh') return 'linked';
   if (type === 'mesh') {
@@ -755,9 +900,17 @@ function readAttachment(
       count * 2,
       boneIds,
     );
-    return { type: 'path', name, color: rgba(m.color, DEFAULT_PATH_COLOR), closed: bool(m.closed, false), constantSpeed: bool(m.constantSpeed, true), ...data };
+    return {
+      type: 'path',
+      name,
+      color: rgba(m.color, DEFAULT_PATH_COLOR),
+      closed: bool(m.closed, false),
+      constantSpeed: bool(m.constantSpeed, true),
+      ...data,
+    };
   }
-  if (type === 'point') return { type: 'point', name, x: num(m.x, 0), y: num(m.y, 0), rotation: num(m.rotation, 0), color: rgba(m.color, DEFAULT_POINT_COLOR) };
+  if (type === 'point')
+    return { type: 'point', name, x: num(m.x, 0), y: num(m.y, 0), rotation: num(m.rotation, 0), color: rgba(m.color, DEFAULT_POINT_COLOR) };
   if (type === 'boundingbox' || type === 'clipping') {
     const count = Math.max(0, Math.floor(num(m.vertexCount, 0)));
     const data = readVertices(
@@ -767,8 +920,17 @@ function readAttachment(
     );
     if (type === 'boundingbox') return { type, name, color: rgba(m.color, DEFAULT_BOUNDING_BOX_COLOR), ...data };
     const end = typeof m.end === 'string' ? slotId(m.end) : null;
-    if (typeof m.end === 'string' && !end) warn(`clipping "${key}": the end slot "${m.end}" does not exist; it clips until the end of the draw order`);
-    return { type, name, color: rgba(m.color, DEFAULT_CLIPPING_COLOR), end, convex: bool(m.convex, false), inverse: bool(m.inverse, false), ...data };
+    if (typeof m.end === 'string' && !end)
+      warn(`clipping "${key}": the end slot "${m.end}" does not exist; it clips until the end of the draw order`);
+    return {
+      type,
+      name,
+      color: rgba(m.color, DEFAULT_CLIPPING_COLOR),
+      end,
+      convex: bool(m.convex, false),
+      inverse: bool(m.inverse, false),
+      ...data,
+    };
   }
   warn(`skin "${skinName}": ${type} attachment "${key}" is not supported and was skipped`);
   return null;
@@ -778,7 +940,7 @@ function readAttachment(
 function readVertices(vertices: number[], plainLength: number, boneIds: Id[]): { vertices: number[]; weights: Influence[][] | null } {
   if (vertices.length === plainLength) return { vertices, weights: null };
   const weights: Influence[][] = [];
-  for (let i = 0; i < vertices.length; ) {
+  for (let i = 0; i < vertices.length;) {
     const count = vertices[i++];
     const list: Influence[] = [];
     for (let k = 0; k < count && i + 3 < vertices.length + 1; k++, i += 4) {

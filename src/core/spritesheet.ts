@@ -50,7 +50,12 @@ export function gridByCell(width: number, height: number, cellW: number, cellH: 
 /** The cells in reading order: left to right then down, or (`byColumns`) top to bottom then to the right. */
 export function cellRects(grid: SheetGrid, byColumns = false): Rect[] {
   const out: Rect[] = [];
-  const at = (c: number, r: number): Rect => ({ x: grid.margin + c * (grid.cellW + grid.spacing), y: grid.margin + r * (grid.cellH + grid.spacing), w: grid.cellW, h: grid.cellH });
+  const at = (c: number, r: number): Rect => ({
+    x: grid.margin + c * (grid.cellW + grid.spacing),
+    y: grid.margin + r * (grid.cellH + grid.spacing),
+    w: grid.cellW,
+    h: grid.cellH,
+  });
   if (byColumns) for (let c = 0; c < grid.cols; c++) for (let r = 0; r < grid.rows; r++) out.push(at(c, r));
   else for (let r = 0; r < grid.rows; r++) for (let c = 0; c < grid.cols; c++) out.push(at(c, r));
   return out;

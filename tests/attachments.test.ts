@@ -17,8 +17,6 @@ import { POLYGON_SQUARE, addAttachmentRig, buildFixture } from './fixture';
 import type { AttachmentRig } from './fixture';
 import { S, exportAndLoad } from './official';
 
- 
-
 const close = (a: number, b: number, what: string, eps = 2e-3) => {
   if (!(Math.abs(a - b) <= eps * Math.max(1, Math.abs(a), Math.abs(b)))) throw new Error(`${what}: ours=${a} official=${b}`);
 };
@@ -168,7 +166,10 @@ describe('clipping / bounding box / point: geometry matches the official runtime
 // ------------------------------------------------------------------ clipping semantics
 
 /** What the official renderer loop (SkeletonRendererCore) does with `SkeletonClipping`, per slot that draws an image. */
-function officialPlan(sk: any): { draws: { slot: string; clip: string | null }[]; starts: { name: string; polygons: number[][]; inverse: boolean }[] } {
+function officialPlan(sk: any): {
+  draws: { slot: string; clip: string | null }[];
+  starts: { name: string; polygons: number[][]; inverse: boolean }[];
+} {
   const clipper = new S.SkeletonClipping();
   const draws: { slot: string; clip: string | null }[] = [];
   const starts: { name: string; polygons: number[][]; inverse: boolean }[] = [];
@@ -183,7 +184,8 @@ function officialPlan(sk: any): { draws: { slot: string; clip: string | null }[]
       const before = clipper.isClipping();
       clipper.clipStart(sk, slot, att);
       // the clipper is reset as soon as the clip ends, so copy what the test needs now (a nested clip is ignored)
-      if (!before) starts.push({ name: att.name, polygons: clipper.clippingPolygons.map((p: number[]) => p.slice()), inverse: clipper.inverse });
+      if (!before)
+        starts.push({ name: att.name, polygons: clipper.clippingPolygons.map((p: number[]) => p.slice()), inverse: clipper.inverse });
       continue;
     }
     if (att instanceof S.RegionAttachment || att instanceof S.MeshAttachment) {
@@ -218,8 +220,13 @@ describe('clipping: which slots are clipped, and where the visible region is', (
       const ours = oursAt(rig.project, t === null ? null : 'walk', t ?? 0);
       const theirs = officialPlan(official).draws;
       const plan = planClipping(ours);
-      const mine = ours.drawOrder.map((s, i) => ({ slot: s.data.name, att: ours.slotAttachment(s), clip: plan[i]?.att.name ?? null })).filter((e) => e.att && (e.att.kind === 'region' || e.att.kind === 'mesh'));
-      expect(mine.map((e) => [e.slot, e.clip]), `t=${t}`).toEqual(theirs.map((e) => [e.slot, e.clip]));
+      const mine = ours.drawOrder
+        .map((s, i) => ({ slot: s.data.name, att: ours.slotAttachment(s), clip: plan[i]?.att.name ?? null }))
+        .filter((e) => e.att && (e.att.kind === 'region' || e.att.kind === 'mesh'));
+      expect(
+        mine.map((e) => [e.slot, e.clip]),
+        `t=${t}`,
+      ).toEqual(theirs.map((e) => [e.slot, e.clip]));
     }
     // sanity: in this rig some slots are clipped and some are not (the end slot included, the one after it excluded)
     const plan = officialPlan(officialAt(sd, null, 0)).draws;
@@ -233,7 +240,7 @@ describe('clipping: which slots are clipped, and where the visible region is', (
     // a second clipping slot inside the first clip must be ignored; the draw order keys shuffle everything around
     const anim = newAnimation('orders', 2);
     let seed = 987;
-    const rnd = () => ((seed = (seed * 1664525 + 1013904223) >>> 0) / 4294967296);
+    const rnd = () => (seed = (seed * 1664525 + 1013904223) >>> 0) / 4294967296;
     const times: number[] = [];
     for (let k = 0; k < 10; k++) {
       const order = doc.slots.map((s) => s.id);
@@ -253,8 +260,13 @@ describe('clipping: which slots are clipped, and where the visible region is', (
       expect(ours.drawOrder.map((s) => s.data.name)).toEqual(official.drawOrder.appliedPose.map((s: any) => s.data.name));
       const theirs = officialPlan(official).draws;
       const plan = planClipping(ours);
-      const mine = ours.drawOrder.map((s, i) => ({ slot: s.data.name, att: ours.slotAttachment(s), clip: plan[i]?.att.name ?? null })).filter((e) => e.att && (e.att.kind === 'region' || e.att.kind === 'mesh'));
-      expect(mine.map((e) => [e.slot, e.clip]), `t=${t}`).toEqual(theirs.map((e) => [e.slot, e.clip]));
+      const mine = ours.drawOrder
+        .map((s, i) => ({ slot: s.data.name, att: ours.slotAttachment(s), clip: plan[i]?.att.name ?? null }))
+        .filter((e) => e.att && (e.att.kind === 'region' || e.att.kind === 'mesh'));
+      expect(
+        mine.map((e) => [e.slot, e.clip]),
+        `t=${t}`,
+      ).toEqual(theirs.map((e) => [e.slot, e.clip]));
       clippedSlots += theirs.filter((e) => e.clip).length;
     }
     expect(clippedSlots).toBeGreaterThan(5);
@@ -295,7 +307,8 @@ describe('clipping: which slots are clipped, and where the visible region is', (
             const refVisible = theirs.inverse ? !refInside : refInside;
             const mineInside = polygonContains(outline.vertices, outline.count, x, y);
             const mineVisible = state.att.inverse ? !mineInside : mineInside;
-            if (mineVisible !== refVisible) throw new Error(`${v.name} t=${t} (${x.toFixed(1)}, ${y.toFixed(1)}): ours visible=${mineVisible}, official=${refVisible}`);
+            if (mineVisible !== refVisible)
+              throw new Error(`${v.name} t=${t} (${x.toFixed(1)}, ${y.toFixed(1)}): ours visible=${mineVisible}, official=${refVisible}`);
             if (refVisible) inside++;
             else outside++;
           }

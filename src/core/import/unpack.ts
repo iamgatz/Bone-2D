@@ -60,7 +60,11 @@ export interface Unpacked {
  * Every picture of an atlas. `readPage` gives the pixels of a page by its file name (null when the file is missing: its regions are listed in
  * `warnings` and skipped). Two regions with the same name keep the first.
  */
-export function unpackAtlas(atlasText: string, readPage: (file: string) => Picture | null, opts: { unpremultiply?: boolean } = {}): { pictures: Unpacked[]; warnings: string[] } {
+export function unpackAtlas(
+  atlasText: string,
+  readPage: (file: string) => Picture | null,
+  opts: { unpremultiply?: boolean } = {},
+): { pictures: Unpacked[]; warnings: string[] } {
   const pictures: Unpacked[] = [];
   const warnings: string[] = [];
   const seen = new Set<string>();

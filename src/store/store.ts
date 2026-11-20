@@ -15,7 +15,7 @@ export function createStore<T extends object>(initial: T): Store<T> {
   return {
     get: () => state,
     set(next) {
-      const v = typeof next === 'function' ? (next)(state) : next;
+      const v = typeof next === 'function' ? next(state) : next;
       if (v === state) return;
       state = v;
       emit();

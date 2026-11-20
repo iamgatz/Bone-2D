@@ -45,10 +45,11 @@ export function duplicateSkin(doc: SkeletonDoc, skinId: Id, opts: DuplicateSkinO
   doc.skins.splice(index + 1, 0, copy);
   // a linked mesh that follows a mesh of the skin that is copied follows the one of the copy
   if (opts.relink ?? true) {
-    for (const slotId in copy.attachments) for (const name in copy.attachments[slotId]) {
-      const att = copy.attachments[slotId][name];
-      if (att.type === 'mesh' && att.link?.skin === src.id) att.link.skin = copy.id;
-    }
+    for (const slotId in copy.attachments)
+      for (const name in copy.attachments[slotId]) {
+        const att = copy.attachments[slotId][name];
+        if (att.type === 'mesh' && att.link?.skin === src.id) att.link.skin = copy.id;
+      }
   }
   if (!(opts.animations ?? true)) return copy;
   for (const anim of doc.animations) {
@@ -194,7 +195,12 @@ export interface MergeSkinOptions {
  * that slot and name, or everywhere with `overwrite`. The source skin stays as it is. Returns how many attachments were added and replaced,
  * or null when a skin is missing or both are the same one.
  */
-export function mergeSkin(doc: SkeletonDoc, fromId: Id, intoId: Id, opts: MergeSkinOptions = {}): { added: number; replaced: number } | null {
+export function mergeSkin(
+  doc: SkeletonDoc,
+  fromId: Id,
+  intoId: Id,
+  opts: MergeSkinOptions = {},
+): { added: number; replaced: number } | null {
   const from = doc.skins.find((s) => s.id === fromId);
   const into = doc.skins.find((s) => s.id === intoId);
   if (!from || !into || from === into) return null;

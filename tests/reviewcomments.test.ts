@@ -1,14 +1,26 @@
 /** Review comments: the file a reviewer sends back, read strictly, and applied to the timelines as markers. */
 import { describe, expect, it } from 'vitest';
 import { cleanMarkers } from '../src/core/markers';
-import { MAX_COMMENTS, MAX_TEXT, applyReview, makeComment, markerIdOf, parseReview, reviewCounts, serializeReview } from '../src/core/review';
+import {
+  MAX_COMMENTS,
+  MAX_TEXT,
+  applyReview,
+  makeComment,
+  markerIdOf,
+  parseReview,
+  reviewCounts,
+  serializeReview,
+} from '../src/core/review';
 import { buildFixture } from './fixture';
 
 const anim = (doc: ReturnType<typeof buildFixture>['project']['skeleton']) => doc.animations.find((a) => a.name === 'walk')!;
 
 describe('serialize and parse', () => {
   it('round-trips comments', () => {
-    const c = [makeComment('a1', 'walk', 0.5, ' the arm is stiff ', ' Mia ', 'armUpper', 1000), makeComment('a2', 'walk', 1.1, 'foot slides', '', undefined, 2000)];
+    const c = [
+      makeComment('a1', 'walk', 0.5, ' the arm is stiff ', ' Mia ', 'armUpper', 1000),
+      makeComment('a2', 'walk', 1.1, 'foot slides', '', undefined, 2000),
+    ];
     const back = parseReview(serializeReview('Hero', c))!;
     expect(back.title).toBe('Hero');
     expect(back.dropped).toBe(0);
@@ -19,7 +31,18 @@ describe('serialize and parse', () => {
   });
 
   it('is not a review file unless it says so', () => {
-    for (const t of ['', 'nope', '[]', '{}', '{"bone2dReview":2,"comments":[]}', '{"bone2dReview":1}', '{"bone2dReview":1,"comments":{}}', 'null', '5']) expect(parseReview(t)).toBeNull();
+    for (const t of [
+      '',
+      'nope',
+      '[]',
+      '{}',
+      '{"bone2dReview":2,"comments":[]}',
+      '{"bone2dReview":1}',
+      '{"bone2dReview":1,"comments":{}}',
+      'null',
+      '5',
+    ])
+      expect(parseReview(t)).toBeNull();
     expect(parseReview('x'.repeat(3_000_000))).toBeNull();
   });
 
@@ -51,14 +74,21 @@ describe('serialize and parse', () => {
     const r = parseReview(JSON.stringify({ bone2dReview: 1, comments: many }))!;
     expect(r.comments).toHaveLength(MAX_COMMENTS);
     expect(r.dropped).toBe(30);
-    const long = parseReview(JSON.stringify({ bone2dReview: 1, comments: [{ id: 'l', animation: 'walk', time: 0, text: `a\u0000b${'z'.repeat(MAX_TEXT * 2)}`, author: 'x\u0007y' }] }))!;
+    const long = parseReview(
+      JSON.stringify({
+        bone2dReview: 1,
+        comments: [{ id: 'l', animation: 'walk', time: 0, text: `a\u0000b${'z'.repeat(MAX_TEXT * 2)}`, author: 'x\u0007y' }],
+      }),
+    )!;
     expect(long.comments[0].text.length).toBe(MAX_TEXT);
     expect(long.comments[0].text.startsWith('ab')).toBe(true);
     expect(long.comments[0].author).toBe('xy');
   });
 
   it('reads only its own fields (nothing from a hostile object leaks through)', () => {
-    const r = parseReview('{"bone2dReview":1,"__proto__":{"x":1},"comments":[{"id":"p","animation":"walk","time":0,"text":"t","__proto__":{"evil":true},"constructor":"x","extra":{"a":1}}]}')!;
+    const r = parseReview(
+      '{"bone2dReview":1,"__proto__":{"x":1},"comments":[{"id":"p","animation":"walk","time":0,"text":"t","__proto__":{"evil":true},"constructor":"x","extra":{"a":1}}]}',
+    )!;
     expect(Object.keys(r.comments[0]).sort()).toEqual(['animation', 'at', 'author', 'id', 'text', 'time']);
     expect(({} as { evil?: boolean }).evil).toBeUndefined();
   });
@@ -81,7 +111,10 @@ describe('applyReview', () => {
   it('skips a comment about an animation that is not there and keeps a time inside the animation', () => {
     const doc = buildFixture().project.skeleton;
     const a = anim(doc);
-    const r = applyReview(doc, [makeComment('x', 'no such animation', 1, 'lost', 'A'), makeComment('y', 'walk', a.duration + 50, 'late', 'A')]);
+    const r = applyReview(doc, [
+      makeComment('x', 'no such animation', 1, 'lost', 'A'),
+      makeComment('y', 'walk', a.duration + 50, 'late', 'A'),
+    ]);
     expect(r).toEqual({ added: 1, updated: 0, skipped: 1 });
     expect(a.markers!.find((m) => m.id === markerIdOf({ id: 'y' }))!.time).toBe(a.duration);
   });

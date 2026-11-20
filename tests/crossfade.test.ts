@@ -15,8 +15,6 @@ import { uiStore } from '../src/store/ui';
 import { buildFixture } from './fixture';
 import { S, exportAndLoad } from './official';
 
- 
-
 /** The fixture with a clean animation "talk" that changes the picture of the slot "body" three times. */
 function rig() {
   const { project } = buildFixture();
@@ -24,7 +22,13 @@ function rig() {
   const slot = doc.slots.find((s) => s.name === 'body')!;
   slot.dark = null;
   const talk = newAnimation('talk', 2);
-  talk.slots[slot.id] = { attachment: [{ time: 0.5, name: 'bodyAlt' }, { time: 1, name: 'body' }, { time: 1.05, name: null }] };
+  talk.slots[slot.id] = {
+    attachment: [
+      { time: 0.5, name: 'bodyAlt' },
+      { time: 1, name: 'body' },
+      { time: 1.05, name: null },
+    ],
+  };
   doc.animations.push(talk);
   return { project, doc, slot, talk };
 }
@@ -33,7 +37,11 @@ describe('the steps', () => {
   it('lists each change with its fade, shortened to the time before the next change', () => {
     const { slot, talk } = rig();
     const steps = fadeSteps(slot, talk, 0.2);
-    expect(steps.map((s) => [s.time, s.from, s.to])).toEqual([[0.5, 'body', 'bodyAlt'], [1, 'bodyAlt', 'body'], [1.05, 'body', null]]);
+    expect(steps.map((s) => [s.time, s.from, s.to])).toEqual([
+      [0.5, 'body', 'bodyAlt'],
+      [1, 'bodyAlt', 'body'],
+      [1.05, 'body', null],
+    ]);
     expect(steps[0].seconds).toBeCloseTo(0.2, 9);
     expect(steps[1].seconds).toBeCloseTo(0.05, 9);
     expect(steps[2].seconds).toBeCloseTo(0.2, 9);
@@ -52,7 +60,10 @@ describe('keys that are closer than the editor tells apart', () => {
   it('a fade that ends a hair before the next change leaves a document with nothing to repair', () => {
     const { project, doc, slot, talk } = rig();
     // the first fade (0.5 .. 0.7) ends 0.00005 s before the next change: the end key and the next start key count as one time
-    talk.slots[slot.id].attachment = [{ time: 0.5, name: 'bodyAlt' }, { time: 0.70005, name: 'body' }];
+    talk.slots[slot.id].attachment = [
+      { time: 0.5, name: 'bodyAlt' },
+      { time: 0.70005, name: 'body' },
+    ];
     expect(applyCrossfade(doc, talk.id, slot.id, 0.2)).not.toBeNull();
     expect(validateProject(project)).toEqual([]);
   });
@@ -147,7 +158,10 @@ describe('against the official runtime', () => {
       state.update(t);
       state.apply(sk);
       const mine = ours(project, talk, t);
-      for (const [name, id] of [[slot.name, slot.id], [partnerName, r.partner]] as const) {
+      for (const [name, id] of [
+        [slot.name, slot.id],
+        [partnerName, r.partner],
+      ] as const) {
         const official = sk.findSlot(name).pose;
         const theirs = mine.slotById(id)!;
         expect(official.attachment?.name ?? null, `${name} picture at ${t}`).toBe(theirs.attachmentName ?? null);

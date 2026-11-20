@@ -30,7 +30,11 @@ describe('closeLoop', () => {
   it('adds a key at the end when the last key is before it', () => {
     const a = anim([key(0, 10), key(0.8, 30)]);
     closeLoop(a, { bones: ['b1'] });
-    expect(a.bones['b1'].rotate!.map((k) => [k.time, k.value[0]])).toEqual([[0, 10], [0.8, 30], [1, 10]]);
+    expect(a.bones['b1'].rotate!.map((k) => [k.time, k.value[0]])).toEqual([
+      [0, 10],
+      [0.8, 30],
+      [1, 10],
+    ]);
     expect(a.bones['b2'].rotate!.map((k) => k.value[0])).toEqual([5, 9]); // not asked for
   });
 
@@ -38,7 +42,10 @@ describe('closeLoop', () => {
     const a = anim([key(0, 10), key(1, 30)], [key(0, 1, 2), key(1, 5, 6)]);
     closeLoop(a, { keep: 'last', bones: ['b1'] });
     expect(a.bones['b1'].rotate!.map((k) => k.value[0])).toEqual([30, 30]);
-    expect(a.bones['b1'].translate!.map((k) => k.value)).toEqual([[5, 6], [5, 6]]);
+    expect(a.bones['b1'].translate!.map((k) => k.value)).toEqual([
+      [5, 6],
+      [5, 6],
+    ]);
   });
 
   it('changes nothing that already matches, or has a single key', () => {
@@ -50,7 +57,12 @@ describe('closeLoop', () => {
 
   it('leaves the curves of the keys alone', () => {
     const a = newAnimation('x', 1);
-    a.bones['b1'] = { rotate: [{ time: 0, value: [1], curve: 'stepped' }, { time: 1, value: [9], curve: [0.2, 0, 0.8, 1] }] };
+    a.bones['b1'] = {
+      rotate: [
+        { time: 0, value: [1], curve: 'stepped' },
+        { time: 1, value: [9], curve: [0.2, 0, 0.8, 1] },
+      ],
+    };
     closeLoop(a);
     expect(a.bones['b1'].rotate![1]).toEqual({ time: 1, value: [1], curve: [0.2, 0, 0.8, 1] });
     expect(a.bones['b1'].rotate![0].curve).toBe('stepped');
@@ -61,7 +73,17 @@ describe('closing the loop of a real animation', () => {
   beforeEach(() => {
     const f = buildFixture();
     docStore.replace(f.project);
-    uiStore.patch({ mode: 'animate', tool: 'select', animationId: f.project.skeleton.animations[0].id, skinId: null, time: 0, selection: emptySelection, overrides: {}, autoKey: true, playing: false });
+    uiStore.patch({
+      mode: 'animate',
+      tool: 'select',
+      animationId: f.project.skeleton.animations[0].id,
+      skinId: null,
+      time: 0,
+      selection: emptySelection,
+      overrides: {},
+      autoKey: true,
+      playing: false,
+    });
   });
 
   it('makes every number timeline end where it started, still exports, and undoes', () => {

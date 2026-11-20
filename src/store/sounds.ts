@@ -50,7 +50,13 @@ export function soundShape(path: string): Peaks | null {
       const ctx = new AudioContext();
       const audio = await ctx.decodeAudioData(await file.arrayBuffer());
       void ctx.close();
-      shapes.set(key, peaksOf(Array.from({ length: audio.numberOfChannels }, (_, c) => audio.getChannelData(c)), audio.sampleRate));
+      shapes.set(
+        key,
+        peaksOf(
+          Array.from({ length: audio.numberOfChannels }, (_, c) => audio.getChannelData(c)),
+          audio.sampleRate,
+        ),
+      );
     } catch {
       shapes.set(key, null);
     }

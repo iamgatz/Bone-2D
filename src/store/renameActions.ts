@@ -73,6 +73,9 @@ export function findReplaceNames(opts: FindReplaceOptions): number {
   docStore.update('Find and replace', (d) => {
     n = applyRename(d.skeleton, plan.changes) + applyImageRename(d, plan.changes);
   });
-  toast(plan.skipped.length ? `Renamed ${n} names, skipped ${plan.skipped.length} that would clash or become empty` : `Renamed ${n} names`, 'ok');
+  toast(
+    plan.skipped.length ? `Renamed ${n} names, skipped ${plan.skipped.length} that would clash or become empty` : `Renamed ${n} names`,
+    'ok',
+  );
   return n;
 }

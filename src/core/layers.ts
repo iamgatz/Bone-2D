@@ -58,10 +58,17 @@ function localAt(tl: BoneTimelines | undefined, time: number): Local {
 }
 
 /** The time of the layer for a time of the base animation. */
-export const layerTime = (layer: Animation, time: number, loop: boolean): number => (loop && layer.duration > 0 ? time % layer.duration : time);
+export const layerTime = (layer: Animation, time: number, loop: boolean): number =>
+  loop && layer.duration > 0 ? time % layer.duration : time;
 
 /** The pose the layered animation gives a bone at `time`: the base plus the weighted layer. Exposed for tests. */
-export function layeredLocal(base: BoneTimelines | undefined, layer: BoneTimelines | undefined, time: number, layerAt: number, weight: number): Local {
+export function layeredLocal(
+  base: BoneTimelines | undefined,
+  layer: BoneTimelines | undefined,
+  time: number,
+  layerAt: number,
+  weight: number,
+): Local {
   const b = localAt(base, time);
   const l = localAt(layer, layerAt);
   return {
@@ -77,7 +84,9 @@ export function layeredLocal(base: BoneTimelines | undefined, layer: BoneTimelin
 
 /** The bones a layer moves (timelines with keys) that exist in the skeleton. */
 export function layerBones(layer: Animation, boneIds: ReadonlySet<Id>): Id[] {
-  return Object.keys(layer.bones).filter((id) => boneIds.has(id) && Object.values(layer.bones[id] as Record<string, Timeline | undefined>).some((t) => has(t)));
+  return Object.keys(layer.bones).filter(
+    (id) => boneIds.has(id) && Object.values(layer.bones[id] as Record<string, Timeline | undefined>).some((t) => has(t)),
+  );
 }
 
 const FLAT = { rotate: 0, translate: 0, scale: 1, shear: 0 } as const;
@@ -86,7 +95,13 @@ const FLAT = { rotate: 0, translate: 0, scale: 1, shear: 0 } as const;
  * A copy of `base` in which every bone of `layer` carries `base + weight * layer`. The copy is as long as the base. `fps` is the frame rate
  * of the skeleton.
  */
-export function stackLayer(base: Animation, layer: Animation, boneIds: ReadonlySet<Id>, fps: number, options: Partial<LayerOptions> = {}): Animation {
+export function stackLayer(
+  base: Animation,
+  layer: Animation,
+  boneIds: ReadonlySet<Id>,
+  fps: number,
+  options: Partial<LayerOptions> = {},
+): Animation {
   const opts = { ...DEFAULT_LAYER, ...options };
   const weight = Math.max(0, Math.min(MAX_LAYER_WEIGHT, Number.isFinite(opts.weight) ? opts.weight : 1));
   const step = Math.max(1, Math.round(opts.step));
@@ -95,7 +110,11 @@ export function stackLayer(base: Animation, layer: Animation, boneIds: ReadonlyS
 
   const out: Animation = { ...structuredClone(base), id: uid(), name: `${base.name} + ${layer.name}` };
   for (const id of layerBones(layer, boneIds)) {
-    const tl = (key: (l: Local) => number[]): Timeline => times.map((t): Key => ({ time: t, value: key(layeredLocal(base.bones[id], layer.bones[id], t, layerTime(layer, t, opts.loop), weight)) }));
+    const tl = (key: (l: Local) => number[]): Timeline =>
+      times.map((t): Key => ({
+        time: t,
+        value: key(layeredLocal(base.bones[id], layer.bones[id], t, layerTime(layer, t, opts.loop), weight)),
+      }));
     const channels: Record<'rotate' | 'translate' | 'scale' | 'shear', Timeline> = {
       rotate: tl((l) => [l.rotate]),
       translate: tl((l) => [l.x, l.y]),

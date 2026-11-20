@@ -2,19 +2,63 @@ import { SoftControls } from './SoftControls';
 import { hasKey } from '@/core/edit';
 import { ConstraintEffects } from './ConstraintEffects';
 import { PivotSection } from './PivotSection';
-import { Bone as BoneIcon, BoxSelect, Crosshair, Image as ImageIcon, Layers, Link2, RotateCcw, Scissors, Spline, Triangle, X } from 'lucide-react';
+import {
+  Bone as BoneIcon,
+  BoxSelect,
+  Crosshair,
+  Image as ImageIcon,
+  Layers,
+  Link2,
+  RotateCcw,
+  Scissors,
+  Spline,
+  Triangle,
+  X,
+} from 'lucide-react';
 import { useState } from 'react';
 import { createTransformConstraint, PRESET_LABEL } from '@/store/transformActions';
 import type { TransformPreset } from '@/store/transformActions';
 import { AXIS_GROUPS, INHERIT_MODES } from '@/core/model';
 import { isSplit } from '@/core/axes';
 import { setAxesSplit } from '@/store/axisActions';
-import type { AxisGroup, BlendMode, BoneProp, Id, Inherit, PhysicsParam, PathAttachment, PointAttachment, PolygonAttachment, RGBA, RegionAttachment } from '@/core/model';
+import type {
+  AxisGroup,
+  BlendMode,
+  BoneProp,
+  Id,
+  Inherit,
+  PhysicsParam,
+  PathAttachment,
+  PointAttachment,
+  PolygonAttachment,
+  RGBA,
+  RegionAttachment,
+} from '@/core/model';
 import { BLEND_MODES, attachmentImage, pathNodeCount, polygonVertexCount } from '@/core/model';
 import { folderOfSlot } from '@/core/folders';
 import { deleteFolder, renameFolder, setSlotFolder } from '@/store/folderActions';
 import { resetPolygonShape } from '@/store/polygonActions';
-import { setSelection, deleteKeys, keyConstrainedBones, keySelectedBones, removeSkinImage, renameBone, renameSlot, setAnimationDuration, setAttachmentProps, setBonePose, setBoneProps, setFps, setSkinImage, setSlotAttachment, setSlotBone, setSlotColor, setSlotProps, setTool, currentAnimation } from '@/store/actions';
+import {
+  setSelection,
+  deleteKeys,
+  keyConstrainedBones,
+  keySelectedBones,
+  removeSkinImage,
+  renameBone,
+  renameSlot,
+  setAnimationDuration,
+  setAttachmentProps,
+  setBonePose,
+  setBoneProps,
+  setFps,
+  setSkinImage,
+  setSlotAttachment,
+  setSlotBone,
+  setSlotColor,
+  setSlotProps,
+  setTool,
+  currentAnimation,
+} from '@/store/actions';
 import type { PoseProps } from '@/store/actions';
 import { useProject } from '@/store/doc';
 import { bindPathToBones, resetPathShape, setPathClosed, unbindPath } from '@/store/pathActions';
@@ -53,7 +97,18 @@ function BoneInspector({ id }: { id: Id }) {
   if (!bone) return null;
   const animate = mode === 'animate';
   const sb = getScene().skeleton.boneById(id);
-  const pose: Required<PoseProps> = animate && sb ? { x: sb.x, y: sb.y, rotation: sb.rotation, scaleX: sb.scaleX, scaleY: sb.scaleY, shearX: sb.shearX, shearY: sb.shearY } : { x: bone.x, y: bone.y, rotation: bone.rotation, scaleX: bone.scaleX, scaleY: bone.scaleY, shearX: bone.shearX, shearY: bone.shearY };
+  const pose: Required<PoseProps> =
+    animate && sb
+      ? { x: sb.x, y: sb.y, rotation: sb.rotation, scaleX: sb.scaleX, scaleY: sb.scaleY, shearX: sb.shearX, shearY: sb.shearY }
+      : {
+          x: bone.x,
+          y: bone.y,
+          rotation: bone.rotation,
+          scaleX: bone.scaleX,
+          scaleY: bone.scaleY,
+          shearX: bone.shearX,
+          shearY: bone.shearY,
+        };
   const set = (props: PoseProps) => setBonePose([{ id, props }], 'Edit bone');
   // a bone with a rotation limit is turned by its control bone: that is the rotation shown, keyed and edited here
   const limit = rotationLimitOf(doc, id);
@@ -63,11 +118,24 @@ function BoneInspector({ id }: { id: Id }) {
   const keyedOn = (p: BoneProp) => (p === 'rotate' && limit ? limit.control : id);
   const keyed = (p: BoneProp) => animate && hasKey(anim?.bones[keyedOn(p)]?.[p], time);
   const keyButton = (p: BoneProp, label: string) => (
-    <KeyButton on={keyed(p)} title={`${keyed(p) ? 'Remove' : 'Set'} ${label} key at the playhead`} onClick={() => (keyed(p) ? deleteKeys([{ kind: 'bone', target: keyedOn(p), prop: p, time }]) : keySelectedBones([p]))} />
+    <KeyButton
+      on={keyed(p)}
+      title={`${keyed(p) ? 'Remove' : 'Set'} ${label} key at the playhead`}
+      onClick={() => (keyed(p) ? deleteKeys([{ kind: 'bone', target: keyedOn(p), prop: p, time }]) : keySelectedBones([p]))}
+    />
   );
   const tl = anim?.bones[id];
   /** One row for a group of two values, or one row per axis once the group is split (each axis then has its own key button). */
-  const pair = (g: AxisGroup, label: string, step: number, precision: number, x: number, y: number, setX: (v: number) => void, setY: (v: number) => void) => {
+  const pair = (
+    g: AxisGroup,
+    label: string,
+    step: number,
+    precision: number,
+    x: number,
+    y: number,
+    setX: (v: number) => void,
+    setY: (v: number) => void,
+  ) => {
     const [ax, ay] = AXIS_GROUPS[g];
     if (animate && isSplit(tl, g)) {
       return (
@@ -91,7 +159,13 @@ function BoneInspector({ id }: { id: Id }) {
 
   return (
     <>
-      <Section id="bone.name" title="Bone" icon={BoneIcon} collapsible={false} actions={animate && <span className="chip animate">animating</span>}>
+      <Section
+        id="bone.name"
+        title="Bone"
+        icon={BoneIcon}
+        collapsible={false}
+        actions={animate && <span className="chip animate">animating</span>}
+      >
         <TextField value={bone.name} onCommit={(v) => renameBone(id, v)} wide />
       </Section>
       <Section
@@ -100,7 +174,12 @@ function BoneInspector({ id }: { id: Id }) {
         actions={
           animate && (
             <>
-              <Button ghost small title="Key the pose the bone has after the constraints (IK, physics, ...) instead of its own pose" onClick={() => keyConstrainedBones()}>
+              <Button
+                ghost
+                small
+                title="Key the pose the bone has after the constraints (IK, physics, ...) instead of its own pose"
+                onClick={() => keyConstrainedBones()}
+              >
                 Key constrained
               </Button>
               <Button ghost small title="Key all transform channels" onClick={() => keySelectedBones()}>
@@ -113,26 +192,71 @@ function BoneInspector({ id }: { id: Id }) {
         <Field label="Rotation" keyButton={keyButton('rotate', 'rotation')}>
           <NumberField label="°" value={pose.rotation} step={1} keyed={keyed('rotate')} onChange={(v) => set({ rotation: v })} />
         </Field>
-        {pair('translate', 'Position', 1, 2, pose.x, pose.y, (v) => set({ x: v }), (v) => set({ y: v }))}
-        {pair('scale', 'Scale', 0.01, 3, pose.scaleX, pose.scaleY, (v) => set({ scaleX: v }), (v) => set({ scaleY: v }))}
-        {pair('shear', 'Shear', 1, 2, pose.shearX, pose.shearY, (v) => set({ shearX: v }), (v) => set({ shearY: v }))}
+        {pair(
+          'translate',
+          'Position',
+          1,
+          2,
+          pose.x,
+          pose.y,
+          (v) => set({ x: v }),
+          (v) => set({ y: v }),
+        )}
+        {pair(
+          'scale',
+          'Scale',
+          0.01,
+          3,
+          pose.scaleX,
+          pose.scaleY,
+          (v) => set({ scaleX: v }),
+          (v) => set({ scaleY: v }),
+        )}
+        {pair(
+          'shear',
+          'Shear',
+          1,
+          2,
+          pose.shearX,
+          pose.shearY,
+          (v) => set({ shearX: v }),
+          (v) => set({ shearY: v }),
+        )}
         {!animate && (
           <>
             <Field label="Keep children" title="Compensation: the child bones stay where they are in the scene while this bone is edited">
-              <Toggle on={compensate.bones} onChange={(v) => uiStore.patch({ compensate: { ...compensate, bones: v } })} title="Keep children in place" />
+              <Toggle
+                on={compensate.bones}
+                onChange={(v) => uiStore.patch({ compensate: { ...compensate, bones: v } })}
+                title="Keep children in place"
+              />
             </Field>
-            <Field label="Keep images" title="Compensation: the pictures, points and outlines on this bone stay where they are in the scene while it is edited">
-              <Toggle on={compensate.images} onChange={(v) => uiStore.patch({ compensate: { ...compensate, images: v } })} title="Keep images in place" />
+            <Field
+              label="Keep images"
+              title="Compensation: the pictures, points and outlines on this bone stay where they are in the scene while it is edited"
+            >
+              <Toggle
+                on={compensate.images}
+                onChange={(v) => uiStore.patch({ compensate: { ...compensate, images: v } })}
+                title="Keep images in place"
+              />
             </Field>
           </>
         )}
         {animate && (
-          <Field label="Split X / Y" title="Key position, scale or shear one axis at a time: X and Y get their own timelines (Spine's split timelines)">
+          <Field
+            label="Split X / Y"
+            title="Key position, scale or shear one axis at a time: X and Y get their own timelines (Spine's split timelines)"
+          >
             <div className="hstack">
               {(['translate', 'scale', 'shear'] as const).map((g) => (
                 <span key={g} className="hstack">
                   <span className="dim">{AXIS_SHORT[g]}</span>
-                  <Toggle on={isSplit(tl, g)} title={isSplit(tl, g) ? `Merge ${g} X / Y into one timeline` : `Split ${g} into X and Y timelines`} onChange={(v) => setAxesSplit([id], g, v)} />
+                  <Toggle
+                    on={isSplit(tl, g)}
+                    title={isSplit(tl, g) ? `Merge ${g} X / Y into one timeline` : `Split ${g} into X and Y timelines`}
+                    onChange={(v) => setAxesSplit([id], g, v)}
+                  />
                 </span>
               ))}
             </div>
@@ -141,10 +265,20 @@ function BoneInspector({ id }: { id: Id }) {
       </Section>
       <Section id="bone.setup" title="Bone setup">
         <Field label="Length">
-          <NumberField label="L" value={bone.length} step={1} disabled={animate} onChange={(v) => setBoneProps(id, { length: Math.max(0, v) })} />
+          <NumberField
+            label="L"
+            value={bone.length}
+            step={1}
+            disabled={animate}
+            onChange={(v) => setBoneProps(id, { length: Math.max(0, v) })}
+          />
         </Field>
         <Field label="Inherit">
-          <SelectField value={bone.inherit} options={INHERIT_MODES.map((m) => ({ value: m, label: m.replace(/([A-Z])/g, ' $1').toLowerCase() }))} onChange={(v: Inherit) => setBoneProps(id, { inherit: v })} />
+          <SelectField
+            value={bone.inherit}
+            options={INHERIT_MODES.map((m) => ({ value: m, label: m.replace(/([A-Z])/g, ' $1').toLowerCase() }))}
+            onChange={(v: Inherit) => setBoneProps(id, { inherit: v })}
+          />
         </Field>
         <Field label="Color">
           <div className="hstack">
@@ -153,7 +287,11 @@ function BoneInspector({ id }: { id: Id }) {
           </div>
         </Field>
         <Field label="Name on screen" title="Draw the name of this bone in the viewport even when Bone names is off (editor only)">
-          <Toggle on={!!bone.showName} onChange={(v) => setBoneProps(id, { showName: v || undefined }, 'Bone name on screen')} title="Name on screen" />
+          <Toggle
+            on={!!bone.showName}
+            onChange={(v) => setBoneProps(id, { showName: v || undefined }, 'Bone name on screen')}
+            title="Name on screen"
+          />
         </Field>
       </Section>
       <LimitSection id={id} animate={animate} />
@@ -186,8 +324,20 @@ function LimitSection({ id, animate }: { id: Id; animate: boolean }) {
               : `This is the control bone of the limit on "${nameOf(shown.bone)}": it can turn all the way round, that bone stays in the sector.`}
           </p>
           <Field label="Sector">
-            <NumberField label="−" value={shown.min} step={1} precision={0} onChange={(v) => setLimit(shown.bone, Math.min(v, shown.max - 1), shown.max)} />
-            <NumberField label="+" value={shown.max} step={1} precision={0} onChange={(v) => setLimit(shown.bone, shown.min, Math.max(v, shown.min + 1))} />
+            <NumberField
+              label="−"
+              value={shown.min}
+              step={1}
+              precision={0}
+              onChange={(v) => setLimit(shown.bone, Math.min(v, shown.max - 1), shown.max)}
+            />
+            <NumberField
+              label="+"
+              value={shown.max}
+              step={1}
+              precision={0}
+              onChange={(v) => setLimit(shown.bone, shown.min, Math.max(v, shown.min + 1))}
+            />
           </Field>
           <div className="hstack">
             <Button small onClick={() => setSelection({ bones: [limit ? limit.control : shown.bone] })}>
@@ -202,9 +352,20 @@ function LimitSection({ id, animate }: { id: Id; animate: boolean }) {
         </>
       ) : (
         <>
-          <p className="hint-text mb">Keep this bone inside a sector of angles (a knee that does not bend backwards, a neck that does not spin). It is a transform constraint with a clamp, so it exports and plays in every Spine runtime.</p>
+          <p className="hint-text mb">
+            Keep this bone inside a sector of angles (a knee that does not bend backwards, a neck that does not spin). It is a transform
+            constraint with a clamp, so it exports and plays in every Spine runtime.
+          </p>
           <Field label="Half width">
-            <NumberField label="°" value={half} step={5} precision={0} min={1} max={179} onChange={(v) => setHalf(Math.max(1, Math.min(179, Math.round(v))))} />
+            <NumberField
+              label="°"
+              value={half}
+              step={5}
+              precision={0}
+              min={1}
+              max={179}
+              onChange={(v) => setHalf(Math.max(1, Math.min(179, Math.round(v))))}
+            />
           </Field>
           <Button icon={Crosshair} onClick={() => addLimit(id, half)}>
             Add rotation limit
@@ -226,7 +387,15 @@ const CHAIN_DEFAULTS: Record<PhysicsParam, [number, number]> = {
   gravity: [0, 1],
 };
 
-const CHAIN_PARAM_LABEL: Record<PhysicsParam, string> = { strength: 'Strength', damping: 'Damping', inertia: 'Inertia', mass: 'Mass', mix: 'Mix', wind: 'Wind', gravity: 'Gravity' };
+const CHAIN_PARAM_LABEL: Record<PhysicsParam, string> = {
+  strength: 'Strength',
+  damping: 'Damping',
+  inertia: 'Inertia',
+  mass: 'Mass',
+  mix: 'Mix',
+  wind: 'Wind',
+  gravity: 'Gravity',
+};
 
 const CHAIN_SHAPE_LABEL: Record<ChainShape, string> = { linear: 'Straight', in: 'Slow start', out: 'Fast start', smooth: 'S-curve' };
 
@@ -254,7 +423,9 @@ function ChainSection({ id }: { id: Id }) {
   };
   const W = 200;
   const H = 54;
-  const pts = values.map((v, i) => [chain.length === 1 ? 0 : 8 + (i / (chain.length - 1)) * (W - 16), H - 8 - ((v - lo) / span) * (H - 16)] as const);
+  const pts = values.map(
+    (v, i) => [chain.length === 1 ? 0 : 8 + (i / (chain.length - 1)) * (W - 16), H - 8 - ((v - lo) / span) * (H - 16)] as const,
+  );
   const curve = Array.from({ length: 41 }, (_, i) => {
     const t = i / 40;
     const v = from + (to - from) * shapeAt(t, shape, power);
@@ -264,18 +435,46 @@ function ChainSection({ id }: { id: Id }) {
     <Section id="bone.chain" title="Chain curve" icon={Spline}>
       <p className="hint-text mb">{`Spreads one physics value over ${chain.length} bones along a curve, so a tail or a spine gets its stiffness without typing it bone by bone.`}</p>
       <Field label="Value">
-        <SelectField<PhysicsParam> value={param} options={CHAIN_PARAMS.map((p) => ({ value: p, label: CHAIN_PARAM_LABEL[p] }))} onChange={pick} />
+        <SelectField<PhysicsParam>
+          value={param}
+          options={CHAIN_PARAMS.map((p) => ({ value: p, label: CHAIN_PARAM_LABEL[p] }))}
+          onChange={pick}
+        />
       </Field>
       <Field label="First → last">
-        <NumberField label="1" value={from} step={param === 'strength' ? 10 : 0.05} precision={param === 'strength' ? 0 : 2} onChange={setFrom} />
-        <NumberField label="n" value={to} step={param === 'strength' ? 10 : 0.05} precision={param === 'strength' ? 0 : 2} onChange={setTo} />
+        <NumberField
+          label="1"
+          value={from}
+          step={param === 'strength' ? 10 : 0.05}
+          precision={param === 'strength' ? 0 : 2}
+          onChange={setFrom}
+        />
+        <NumberField
+          label="n"
+          value={to}
+          step={param === 'strength' ? 10 : 0.05}
+          precision={param === 'strength' ? 0 : 2}
+          onChange={setTo}
+        />
       </Field>
       <Field label="Curve">
-        <SelectField<ChainShape> value={shape} options={CHAIN_SHAPES.map((s) => ({ value: s, label: CHAIN_SHAPE_LABEL[s] }))} onChange={setShape} />
+        <SelectField<ChainShape>
+          value={shape}
+          options={CHAIN_SHAPES.map((s) => ({ value: s, label: CHAIN_SHAPE_LABEL[s] }))}
+          onChange={setShape}
+        />
       </Field>
       {shape !== 'linear' && (
         <Field label="Bend">
-          <NumberField label="×" value={power} step={0.25} precision={2} min={0.25} max={6} onChange={(v) => setPower(Math.max(0.25, Math.min(6, v)))} />
+          <NumberField
+            label="×"
+            value={power}
+            step={0.25}
+            precision={2}
+            min={0.25}
+            max={6}
+            onChange={(v) => setPower(Math.max(0.25, Math.min(6, v)))}
+          />
         </Field>
       )}
       <svg className="chain-preview" viewBox={`0 0 ${W} ${H}`} width="100%" height={H} role="img" aria-label="Chain curve">
@@ -285,7 +484,11 @@ function ChainSection({ id }: { id: Id }) {
         ))}
       </svg>
       <Field label="Add missing constraints">
-        <Toggle on={create} onChange={setCreate} title="Bones of the chain without a physics constraint get one. Off: only the constraints that exist are changed" />
+        <Toggle
+          on={create}
+          onChange={setCreate}
+          title="Bones of the chain without a physics constraint get one. Off: only the constraints that exist are changed"
+        />
       </Field>
       <Button icon={Spline} onClick={() => applyChainCurve(chain, { param, from, to, shape, power, create })}>
         Apply to the chain
@@ -303,15 +506,34 @@ function SplitSection({ id, rootBone }: { id: Id; rootBone: boolean }) {
     <Section id="bone.split" title="Split" icon={Scissors}>
       <p className="hint-text mb">Cut this bone into shorter bones along its length: a chain for a tail, a spine or a tentacle.</p>
       <Field label="Parts">
-        <NumberField label="#" value={count} step={1} precision={0} min={2} max={MAX_SPLIT} onChange={(v) => setCount(Math.max(2, Math.min(MAX_SPLIT, Math.round(v))))} />
+        <NumberField
+          label="#"
+          value={count}
+          step={1}
+          precision={0}
+          min={2}
+          max={MAX_SPLIT}
+          onChange={(v) => setCount(Math.max(2, Math.min(MAX_SPLIT, Math.round(v))))}
+        />
       </Field>
       <Field label="Nested">
-        <Toggle on={nested || rootBone} onChange={setNested} title="Each new bone is a child of the one before it. Off: they stand side by side under the parent" />
+        <Toggle
+          on={nested || rootBone}
+          onChange={setNested}
+          title="Each new bone is a child of the one before it. Off: they stand side by side under the parent"
+        />
       </Field>
       <Field label="Fibonacci">
-        <Toggle on={fibonacci} onChange={setFibonacci} title="Each bone is shorter than the one before it (5 3 2 1 1). Off: equal lengths" />
+        <Toggle
+          on={fibonacci}
+          onChange={setFibonacci}
+          title="Each bone is shorter than the one before it (5 3 2 1 1). Off: equal lengths"
+        />
       </Field>
-      <Field label="Mesh weights" title="Meshes that follow this bone: keep all their weight on the first part, give each vertex to the part it lies on, or share it smoothly around each cut">
+      <Field
+        label="Mesh weights"
+        title="Meshes that follow this bone: keep all their weight on the first part, give each vertex to the part it lies on, or share it smoothly around each cut"
+      >
         <SelectField<'keep' | 'split' | 'blend'>
           value={weights}
           options={[
@@ -342,7 +564,11 @@ function TransformCreate({ boneIds }: { boneIds: Id[] }) {
         <SelectField value={src} options={bones.map((b) => ({ value: b.id, label: b.name }))} onChange={setSource} />
       </Field>
       <Field label="Preset">
-        <SelectField value={preset} options={(Object.keys(PRESET_LABEL) as TransformPreset[]).map((p) => ({ value: p, label: PRESET_LABEL[p] }))} onChange={setPreset} />
+        <SelectField
+          value={preset}
+          options={(Object.keys(PRESET_LABEL) as TransformPreset[]).map((p) => ({ value: p, label: PRESET_LABEL[p] }))}
+          onChange={setPreset}
+        />
       </Field>
       <Button icon={Link2} onClick={() => createTransformConstraint(boneIds, src, preset)} disabled={!src}>
         Create constraint
@@ -365,21 +591,44 @@ export function SlotColorFields({ slotId }: { slotId: Id }) {
   const darkNow = animate && dark ? dark : undefined; // keyed together with the light color
   return (
     <>
-      <Field label="Tint" keyButton={<KeyButton on={false} title="Key color" onClick={() => setSlotColor(slotId, [color[0], color[1], color[2], color[3]], darkNow)} />}>
+      <Field
+        label="Tint"
+        keyButton={
+          <KeyButton on={false} title="Key color" onClick={() => setSlotColor(slotId, [color[0], color[1], color[2], color[3]], darkNow)} />
+        }
+      >
         <div className="hstack">
           <ColorSwatch value={color} onChange={(rgb) => setSlotColor(slotId, [rgb[0], rgb[1], rgb[2], color[3]], darkNow)} />
-          <NumberField label="A" value={color[3]} step={0.01} precision={2} min={0} max={1} onChange={(v) => setSlotColor(slotId, [color[0], color[1], color[2], v], darkNow)} />
+          <NumberField
+            label="A"
+            value={color[3]}
+            step={0.01}
+            precision={2}
+            min={0}
+            max={1}
+            onChange={(v) => setSlotColor(slotId, [color[0], color[1], color[2], v], darkNow)}
+          />
         </div>
       </Field>
       {(!animate || dark) && (
         <Field label="Dark tint">
           <div className="hstack">
-            {!animate && <Toggle on={!!slot.dark} onChange={(on) => setSlotProps(slotId, { dark: on ? [0, 0, 0] : null }, 'Dark tint')} title="Two-color tint: a dark color that fills in where the image is dark (glow, hit flash)" />}
+            {!animate && (
+              <Toggle
+                on={!!slot.dark}
+                onChange={(on) => setSlotProps(slotId, { dark: on ? [0, 0, 0] : null }, 'Dark tint')}
+                title="Two-color tint: a dark color that fills in where the image is dark (glow, hit flash)"
+              />
+            )}
             {dark && (
               <ColorSwatch
                 value={dark}
                 title="Dark color"
-                onChange={(rgb) => (animate ? setSlotColor(slotId, [color[0], color[1], color[2], color[3]], rgb) : setSlotProps(slotId, { dark: rgb }, 'Dark color'))}
+                onChange={(rgb) =>
+                  animate
+                    ? setSlotColor(slotId, [color[0], color[1], color[2], color[3]], rgb)
+                    : setSlotProps(slotId, { dark: rgb }, 'Dark color')
+                }
               />
             )}
           </div>
@@ -415,32 +664,57 @@ function SlotInspector({ slotId, attachmentName }: { slotId: Id; attachmentName:
       </Section>
       <div className="group">
         <Field label="Bone">
-          <SelectField value={slot.bone} options={doc.bones.map((b) => ({ value: b.id, label: b.name }))} onChange={(v) => setSlotBone(slotId, v)} />
+          <SelectField
+            value={slot.bone}
+            options={doc.bones.map((b) => ({ value: b.id, label: b.name }))}
+            onChange={(v) => setSlotBone(slotId, v)}
+          />
         </Field>
-        <Field label={att && attachmentImage(att) === null ? 'Shape' : 'Image'} keyButton={<KeyButton on={false} title="Key attachment" onClick={() => setSlotAttachment(slotId, current)} />}>
+        <Field
+          label={att && attachmentImage(att) === null ? 'Shape' : 'Image'}
+          keyButton={<KeyButton on={false} title="Key attachment" onClick={() => setSlotAttachment(slotId, current)} />}
+        >
           <SelectField value={current ?? ''} options={attOptions} onChange={(v) => setSlotAttachment(slotId, v || null)} />
         </Field>
         {activeSkin && att && attachmentImage(att) !== null && (
           <Field label="In skin">
             <SelectField
               value={(activeSkin.attachments[slotId]?.[att.name] && attachmentImage(activeSkin.attachments[slotId][att.name])) || ''}
-              options={[{ value: '', label: `default (${attachmentImage(att)})` }, ...project.images.map((i) => ({ value: i.name, label: i.name }))]}
+              options={[
+                { value: '', label: `default (${attachmentImage(att)})` },
+                ...project.images.map((i) => ({ value: i.name, label: i.name })),
+              ]}
               onChange={(v) => (v ? setSkinImage(activeSkin.id, slotId, att.name, v) : removeSkinImage(activeSkin.id, slotId, att.name))}
             />
           </Field>
         )}
-        {activeSkin && att && (() => {
-          const own = activeSkin.attachments[slotId]?.[att.name];
-          return own?.type === 'mesh' && own.link ? <LinkedMeshFields skinId={activeSkin.id} slotId={slotId} name={att.name} mesh={own} /> : null;
-        })()}
+        {activeSkin &&
+          att &&
+          (() => {
+            const own = activeSkin.attachments[slotId]?.[att.name];
+            return own?.type === 'mesh' && own.link ? (
+              <LinkedMeshFields skinId={activeSkin.id} slotId={slotId} name={att.name} mesh={own} />
+            ) : null;
+          })()}
         <Field label="Blend">
-          <SelectField value={slot.blend} options={BLEND_MODES.map((b) => ({ value: b, label: b }))} onChange={(v: BlendMode) => setSlotProps(slotId, { blend: v }, 'Blend mode')} />
+          <SelectField
+            value={slot.blend}
+            options={BLEND_MODES.map((b) => ({ value: b, label: b }))}
+            onChange={(v: BlendMode) => setSlotProps(slotId, { blend: v }, 'Blend mode')}
+          />
         </Field>
         {!animate && (
-          <Field label="Folder" title="Draw order folder: slots of a folder swap places with each other when you key the draw order, the other slots stay where they are">
+          <Field
+            label="Folder"
+            title="Draw order folder: slots of a folder swap places with each other when you key the draw order, the other slots stay where they are"
+          >
             <SelectField
               value={folder?.id ?? ''}
-              options={[{ value: '', label: '— none —' }, ...(doc.drawOrderFolders ?? []).map((x) => ({ value: x.id, label: x.name })), { value: 'new', label: '+ new folder' }]}
+              options={[
+                { value: '', label: '— none —' },
+                ...(doc.drawOrderFolders ?? []).map((x) => ({ value: x.id, label: x.name })),
+                { value: 'new', label: '+ new folder' },
+              ]}
               onChange={(v) => setSlotFolder(slotId, v === '' ? null : v)}
             />
           </Field>
@@ -448,7 +722,12 @@ function SlotInspector({ slotId, attachmentName }: { slotId: Id; attachmentName:
         {!animate && folder && (
           <Field label="Folder name">
             <TextField value={folder.name} onCommit={(v) => renameFolder(folder.id, v)} wide />
-            <IconButton icon={X} small title="Delete the folder (its slots stay, its draw order keys go)" onClick={() => deleteFolder(folder.id)} />
+            <IconButton
+              icon={X}
+              small
+              title="Delete the folder (its slots stay, its draw order keys go)"
+              onClick={() => deleteFolder(folder.id)}
+            />
           </Field>
         )}
         {!colorFloats && <SlotColorFields slotId={slotId} />}
@@ -469,7 +748,16 @@ function ColorRow({ label, color, disabled, onChange }: { label: string; color: 
     <Field label={label}>
       <div className="hstack">
         <ColorSwatch value={color} onChange={(rgb) => onChange([rgb[0], rgb[1], rgb[2], color[3]])} />
-        <NumberField label="A" value={color[3]} step={0.01} precision={2} min={0} max={1} disabled={disabled} onChange={(v) => onChange([color[0], color[1], color[2], v])} />
+        <NumberField
+          label="A"
+          value={color[3]}
+          step={0.01}
+          precision={2}
+          min={0}
+          max={1}
+          disabled={disabled}
+          onChange={(v) => onChange([color[0], color[1], color[2], v])}
+        />
       </div>
     </Field>
   );
@@ -485,7 +773,9 @@ function PolygonInspector({ slotId, att, disabled }: { slotId: Id; att: PolygonA
   const slotOptions = [{ value: '', label: '— to the end of the draw order —' }, ...doc.slots.map((s) => ({ value: s.id, label: s.name }))];
   const index = doc.slots.findIndex((s) => s.id === slotId);
   const endIndex = clip?.end ? doc.slots.findIndex((s) => s.id === clip.end) : -1;
-  const clipHint = clip ? `Clips the slots below this one in the list${clip.end ? (endIndex >= 0 && endIndex <= index ? ' — the end slot is above this slot, so it has no effect' : '') : ' up to the end of the draw order'}.` : '';
+  const clipHint = clip
+    ? `Clips the slots below this one in the list${clip.end ? (endIndex >= 0 && endIndex <= index ? ' — the end slot is above this slot, so it has no effect' : '') : ' up to the end of the draw order'}.`
+    : '';
   return (
     <Section id={clip ? 'slot.clipping' : 'slot.boundingbox'} title={clip ? 'Clipping' : 'Bounding box'} icon={clip ? Scissors : BoxSelect}>
       <div className="hstack wrap mb">
@@ -495,13 +785,25 @@ function PolygonInspector({ slotId, att, disabled }: { slotId: Id; att: PolygonA
       {clip && (
         <>
           <Field label="End slot">
-            <SelectField value={clip.end ?? ''} options={slotOptions} onChange={(v) => !disabled && set({ end: v || null }, 'Clipping end slot')} />
+            <SelectField
+              value={clip.end ?? ''}
+              options={slotOptions}
+              onChange={(v) => !disabled && set({ end: v || null }, 'Clipping end slot')}
+            />
           </Field>
           <Field label="Convex">
-            <Toggle on={clip.convex} onChange={(v) => !disabled && set({ convex: v }, 'Clipping convex')} title="Treat the polygon as convex (its convex hull is used when it is not)" />
+            <Toggle
+              on={clip.convex}
+              onChange={(v) => !disabled && set({ convex: v }, 'Clipping convex')}
+              title="Treat the polygon as convex (its convex hull is used when it is not)"
+            />
           </Field>
           <Field label="Inverse">
-            <Toggle on={clip.inverse} onChange={(v) => !disabled && set({ inverse: v }, 'Clipping inverse')} title="Show everything outside the polygon instead of the inside" />
+            <Toggle
+              on={clip.inverse}
+              onChange={(v) => !disabled && set({ inverse: v }, 'Clipping inverse')}
+              title="Show everything outside the polygon instead of the inside"
+            />
           </Field>
           <p className="hint-text mb">{clipHint}</p>
         </>
@@ -513,7 +815,13 @@ function PolygonInspector({ slotId, att, disabled }: { slotId: Id; att: PolygonA
         </Button>
       )}
       {!disabled && (
-        <Button ghost small icon={RotateCcw} onClick={() => resetPolygonShape(slotId, att.name)} title="Reset the polygon to a square around the bone (weights and deform keys of the old shape go)">
+        <Button
+          ghost
+          small
+          icon={RotateCcw}
+          onClick={() => resetPolygonShape(slotId, att.name)}
+          title="Reset the polygon to a square around the bone (weights and deform keys of the old shape go)"
+        >
           Reset shape
         </Button>
       )}
@@ -536,23 +844,42 @@ function PathAttachmentInspector({ slotId, att, disabled }: { slotId: Id; att: P
         {att.weights && <span className="chip accent">weighted</span>}
       </div>
       <Field label="Closed">
-        <Toggle on={att.closed} onChange={(v) => !disabled && setPathClosed(slotId, att.name, v)} title="Join the last node to the first one" />
+        <Toggle
+          on={att.closed}
+          onChange={(v) => !disabled && setPathClosed(slotId, att.name, v)}
+          title="Join the last node to the first one"
+        />
       </Field>
       <Field label="Constant speed">
-        <Toggle on={att.constantSpeed} onChange={(v) => !disabled && set({ constantSpeed: v }, 'Path constant speed')} title="Measure the curves every frame so bones move at a constant speed; otherwise the lengths of the setup pose are used (cheaper)" />
+        <Toggle
+          on={att.constantSpeed}
+          onChange={(v) => !disabled && set({ constantSpeed: v }, 'Path constant speed')}
+          title="Measure the curves every frame so bones move at a constant speed; otherwise the lengths of the setup pose are used (cheaper)"
+        />
       </Field>
       <ColorRow label="Color" color={att.color} disabled={disabled} onChange={(c) => set({ color: c }, 'Attachment color')} />
       <Button primary={tool === 'mesh'} icon={Triangle} onClick={() => setTool('mesh')} title="Edit nodes (M)">
         Edit nodes
       </Button>
       {!disabled && (
-        <Button ghost small icon={RotateCcw} onClick={() => resetPathShape(slotId, att.name)} title="Reset the path to a straight line of two nodes around the bone (weights and deform keys of the old path go)">
+        <Button
+          ghost
+          small
+          icon={RotateCcw}
+          onClick={() => resetPathShape(slotId, att.name)}
+          title="Reset the path to a straight line of two nodes around the bone (weights and deform keys of the old path go)"
+        >
           Reset path
         </Button>
       )}
       {!disabled && (
         <div className="hstack mt">
-          <Button ghost disabled={!selectedBones.length} onClick={() => bindPathToBones(slotId, att.name, selectedBones)} title="Let the selected bones move the path (automatic weights)">
+          <Button
+            ghost
+            disabled={!selectedBones.length}
+            onClick={() => bindPathToBones(slotId, att.name, selectedBones)}
+            title="Let the selected bones move the path (automatic weights)"
+          >
             Bind to the selected bones
           </Button>
           {att.weights && (
@@ -562,7 +889,10 @@ function PathAttachmentInspector({ slotId, att, disabled }: { slotId: Id; att: P
           )}
         </div>
       )}
-      <p className="hint-text mt">Drag nodes and handles · Alt-drag a handle mirrors the other one · Ctrl-click or double-click the curve adds a node · Del removes the selected nodes · in Animate mode dragging keys a deform.</p>
+      <p className="hint-text mt">
+        Drag nodes and handles · Alt-drag a handle mirrors the other one · Ctrl-click or double-click the curve adds a node · Del removes
+        the selected nodes · in Animate mode dragging keys a deform.
+      </p>
     </Section>
   );
 }
@@ -605,7 +935,14 @@ function RegionInspector({ slotId, att, disabled }: { slotId: Id; att: RegionAtt
       <Field label="Color">
         <div className="hstack">
           <ColorSwatch value={att.color} onChange={(rgb) => set({ color: [rgb[0], rgb[1], rgb[2], att.color[3]] })} />
-          <NumberField label="A" value={att.color[3]} step={0.01} min={0} max={1} onChange={(v) => set({ color: [att.color[0], att.color[1], att.color[2], v] })} />
+          <NumberField
+            label="A"
+            value={att.color[3]}
+            step={0.01}
+            min={0}
+            max={1}
+            onChange={(v) => set({ color: [att.color[0], att.color[1], att.color[2], v] })}
+          />
         </div>
       </Field>
     </Section>
@@ -643,7 +980,14 @@ export function InspectorPanel() {
             {mode === 'animate' && anim && (
               <Section id="skeleton.animation" title={`Animation · ${anim.name}`}>
                 <Field label="Length">
-                  <NumberField label="s" value={anim.duration} step={0.05} precision={3} min={0.05} onChange={(v) => setAnimationDuration(anim.id, v)} />
+                  <NumberField
+                    label="s"
+                    value={anim.duration}
+                    step={0.05}
+                    precision={3}
+                    min={0.05}
+                    onChange={(v) => setAnimationDuration(anim.id, v)}
+                  />
                 </Field>
               </Section>
             )}

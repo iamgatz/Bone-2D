@@ -56,7 +56,17 @@ export function ExportAnimation() {
     let made: Prepared | null = null;
     const timer = setTimeout(() => {
       try {
-        made = prepareRender({ doc, animation: anim, fps: +fps, scale: +scale, padding: +pad, background, from, to: to ?? undefined, warmUp: warm });
+        made = prepareRender({
+          doc,
+          animation: anim,
+          fps: +fps,
+          scale: +scale,
+          padding: +pad,
+          background,
+          from,
+          to: to ?? undefined,
+          warmUp: warm,
+        });
         setPrepared(made);
         setError(null);
       } catch (e) {
@@ -86,7 +96,11 @@ export function ExportAnimation() {
     const base = (doc.name || 'skeleton').replace(/[^\w-]+/g, '_') + '-' + anim.name.replace(/[^\w-]+/g, '_');
     try {
       if (format === 'webm') {
-        const blob = await framesToWebm(prepared, (n) => setProgress(n / prepared.count), () => cancel.current);
+        const blob = await framesToWebm(
+          prepared,
+          (n) => setProgress(n / prepared.count),
+          () => cancel.current,
+        );
         if (!cancel.current) downloadBlob(blob, `${base}.webm`);
       } else if (format === 'gif') {
         const frames: Uint8ClampedArray[] = [];
@@ -97,7 +111,12 @@ export function ExportAnimation() {
         }
         if (!cancel.current) {
           await sleep();
-          const gif = encodeGif(frames, { width: prepared.width, height: prepared.height, delayCs: 100 / prepared.fps, transparent: !solid });
+          const gif = encodeGif(frames, {
+            width: prepared.width,
+            height: prepared.height,
+            delayCs: 100 / prepared.fps,
+            transparent: !solid,
+          });
           downloadBlob(new Blob([gif as BlobPart], { type: 'image/gif' }), `${base}.gif`);
         }
       } else if (format === 'apng') {
@@ -106,7 +125,11 @@ export function ExportAnimation() {
           frames.push(await frameToPng(prepared.frame(i)));
           setProgress((i + 1) / prepared.count);
         }
-        if (!cancel.current) downloadBlob(new Blob([encodeApng(frames, { ...frameDelay(prepared.fps), plays: 0 }) as BlobPart], { type: 'image/apng' }), `${base}.png`);
+        if (!cancel.current)
+          downloadBlob(
+            new Blob([encodeApng(frames, { ...frameDelay(prepared.fps), plays: 0 }) as BlobPart], { type: 'image/apng' }),
+            `${base}.png`,
+          );
       } else if (format === 'jpeg') {
         const files: { name: string; data: Uint8Array }[] = [];
         for (let i = 0; i < prepared.count && !cancel.current; i++) {
@@ -153,16 +176,47 @@ export function ExportAnimation() {
         <label>Frame rate</label>
         <SelectField value={fps} options={['12', '15', '24', '30', '60'].map((v) => ({ value: v, label: `${v} fps` }))} onChange={setFps} />
         <label>Size</label>
-        <SelectField value={scale} options={['0.25', '0.5', '1', '1.5', '2'].map((v) => ({ value: v, label: `${+v * 100}%` }))} onChange={setScale} />
+        <SelectField
+          value={scale}
+          options={['0.25', '0.5', '1', '1.5', '2'].map((v) => ({ value: v, label: `${+v * 100}%` }))}
+          onChange={setScale}
+        />
         <label>Margin</label>
         <SelectField value={pad} options={['0', '4', '8', '16', '32'].map((v) => ({ value: v, label: `${v} px` }))} onChange={setPad} />
         <label>Frames</label>
         <div className="hstack">
-          <NumberField label="from" value={from} step={1} precision={0} min={0} max={Math.max(0, total - 1)} onChange={(v) => setFrom(Math.max(0, Math.min(total - 1, Math.round(v))))} title="The first frame that is rendered (the animation has frames 0 to the last one)" />
-          <NumberField label="to" value={to ?? total} step={1} precision={0} min={1} max={total} onChange={(v) => setTo(v >= total ? null : Math.max(1, Math.round(v)))} title="Rendering stops before this frame (the end of the animation is the last frame plus one)" />
+          <NumberField
+            label="from"
+            value={from}
+            step={1}
+            precision={0}
+            min={0}
+            max={Math.max(0, total - 1)}
+            onChange={(v) => setFrom(Math.max(0, Math.min(total - 1, Math.round(v))))}
+            title="The first frame that is rendered (the animation has frames 0 to the last one)"
+          />
+          <NumberField
+            label="to"
+            value={to ?? total}
+            step={1}
+            precision={0}
+            min={1}
+            max={total}
+            onChange={(v) => setTo(v >= total ? null : Math.max(1, Math.round(v)))}
+            title="Rendering stops before this frame (the end of the animation is the last frame plus one)"
+          />
         </div>
         <label>Warm up</label>
-        <NumberField label="s" value={warm} step={0.25} precision={2} min={0} max={20} onChange={(v) => setWarm(Math.max(0, Math.min(20, v)))} title="Seconds the animation runs before the first frame, as if it had been looping, so the physics has settled (only for a skeleton with physics)" />
+        <NumberField
+          label="s"
+          value={warm}
+          step={0.25}
+          precision={2}
+          min={0}
+          max={20}
+          onChange={(v) => setWarm(Math.max(0, Math.min(20, v)))}
+          title="Seconds the animation runs before the first frame, as if it had been looping, so the physics has settled (only for a skeleton with physics)"
+        />
         <label>Background</label>
         <div className="hstack">
           {format !== 'webm' && format !== 'jpeg' && <Toggle on={transparent} onChange={setTransparent} title="Transparent background" />}
@@ -182,7 +236,14 @@ export function ExportAnimation() {
               <Film size={15} />
               {`${prepared.width}×${prepared.height} px · ${prepared.count} frames · ${(prepared.count / prepared.fps).toFixed(2)} s`}
             </div>
-            <input type="range" min={0} max={Math.max(0, prepared.count - 1)} value={Math.min(frameIndex, prepared.count - 1)} onChange={(e) => setFrameIndex(+e.target.value)} aria-label="Preview frame" />
+            <input
+              type="range"
+              min={0}
+              max={Math.max(0, prepared.count - 1)}
+              value={Math.min(frameIndex, prepared.count - 1)}
+              onChange={(e) => setFrameIndex(+e.target.value)}
+              aria-label="Preview frame"
+            />
           </>
         )}
       </div>

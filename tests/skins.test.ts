@@ -148,7 +148,11 @@ describe('what a skin does not activate', () => {
     const seen = new Set<string | null>();
     const fsk = createSkeleton(fdata, null);
     for (let i = 0; i <= 20; i++) {
-      applyAnimation(fsk, free.animations.find((x) => x.name === anim.name)!, (anim.duration * i) / 20);
+      applyAnimation(
+        fsk,
+        free.animations.find((x) => x.name === anim.name)!,
+        (anim.duration * i) / 20,
+      );
       seen.add(fsk.slots.find((x) => x.data.name === slot.name)!.attachmentName);
     }
     expect(seen.size).toBeGreaterThan(1);

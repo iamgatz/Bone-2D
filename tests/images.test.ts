@@ -41,7 +41,9 @@ describe('rename and usage', () => {
     const from = p.images[0].name;
     const shown = (name: string) => {
       let n = 0;
-      for (const skin of p.skeleton.skins) for (const slot of Object.values(skin.attachments)) for (const a of Object.values(slot)) if ((a.type === 'region' || a.type === 'mesh') && a.path === name) n++;
+      for (const skin of p.skeleton.skins)
+        for (const slot of Object.values(skin.attachments))
+          for (const a of Object.values(slot)) if ((a.type === 'region' || a.type === 'mesh') && a.path === name) n++;
       return n;
     };
     const before = shown(from);

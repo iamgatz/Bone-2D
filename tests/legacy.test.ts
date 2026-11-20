@@ -10,7 +10,6 @@ import { isLegacySpineJson, parseSpineVersion, upgradeLegacySpineJson } from '..
 import { compileSkeleton, createSkeleton } from '../src/core/skeleton';
 import { parityMismatch } from './fuzzkit';
 
- 
 const fixtureUrl = new URL('./fixtures/legacy42.json', import.meta.url);
 const goldenUrl = new URL('./fixtures/legacy42.golden.json', import.meta.url);
 const load = (): any => JSON.parse(readFileSync(fixtureUrl, 'utf8'));
@@ -38,7 +37,7 @@ function as40(doc: any): any {
     const moved: any = {};
     for (const [skin, perSkin] of Object.entries<any>(deform))
       for (const [slot, perSlot] of Object.entries<any>(perSkin))
-        for (const [att, tl] of Object.entries<any>(perSlot)) (((moved[skin] ??= {})[slot] ??= {})[att] = tl.deform);
+        for (const [att, tl] of Object.entries<any>(perSlot)) ((moved[skin] ??= {})[slot] ??= {})[att] = tl.deform;
     delete a.attachments;
     a.deform = moved;
   }
@@ -96,14 +95,28 @@ describe('constraints', () => {
   });
 
   it('keep the order of the file when `order` is missing', () => {
-    const doc = { bones: [{ name: 'root' }], ik: [{ name: 'i1', bones: ['root'], target: 'root' }, { name: 'i2', bones: ['root'], target: 'root' }], transform: [{ name: 't1', bones: ['root'], target: 'root' }] };
+    const doc = {
+      bones: [{ name: 'root' }],
+      ik: [
+        { name: 'i1', bones: ['root'], target: 'root' },
+        { name: 'i2', bones: ['root'], target: 'root' },
+      ],
+      transform: [{ name: 't1', bones: ['root'], target: 'root' }],
+    };
     expect(upgradeLegacySpineJson(doc).root.constraints.map((c: any) => c.name)).toEqual(['i1', 'i2', 't1']);
   });
 
   it('ik: `uniform` becomes the scaleY mode, the rest is kept', () => {
     const { root } = upgradeLegacySpineJson(load());
     const leg = root.constraints.find((c: any) => c.name === 'leg ik');
-    expect(leg).toMatchObject({ type: 'ik', bones: ['legU', 'legL'], target: 'footTarget', compress: true, stretch: true, scaleY: 'uniform' });
+    expect(leg).toMatchObject({
+      type: 'ik',
+      bones: ['legU', 'legL'],
+      target: 'footTarget',
+      compress: true,
+      stretch: true,
+      scaleY: 'uniform',
+    });
     const arm = root.constraints.find((c: any) => c.name === 'arm ik');
     expect(arm).toMatchObject({ mix: 0.8, softness: 10, bendPositive: false });
     expect(arm.scaleY).toBeUndefined();
@@ -129,7 +142,16 @@ describe('constraints', () => {
   it('path: the slot moves from `target` to `slot`', () => {
     const { root } = upgradeLegacySpineJson(load());
     const p = root.constraints.find((c: any) => c.name === 'path chain');
-    expect(p).toMatchObject({ type: 'path', slot: 'pathSlot', positionMode: 'fixed', spacingMode: 'fixed', rotateMode: 'chain', position: 20, spacing: 40, rotation: 20 });
+    expect(p).toMatchObject({
+      type: 'path',
+      slot: 'pathSlot',
+      positionMode: 'fixed',
+      spacingMode: 'fixed',
+      rotateMode: 'chain',
+      position: 20,
+      spacing: 40,
+      rotation: 20,
+    });
     expect(p.target).toBeUndefined();
   });
 
@@ -217,12 +239,24 @@ describe('import', () => {
 
   it('a 4.0 / 4.1 file gives the same document', () => {
     const base = importSpineJson(load(), 'x').project.skeleton;
-    for (const [doc, label] of [[as41(load()), '4.1'], [as40(load()), '4.0']] as const) {
+    for (const [doc, label] of [
+      [as41(load()), '4.1'],
+      [as40(load()), '4.0'],
+    ] as const) {
       const got = importSpineJson(doc, 'x');
-      expect(got.warnings.some((w) => w.includes(label)), label).toBe(true);
+      expect(
+        got.warnings.some((w) => w.includes(label)),
+        label,
+      ).toBe(true);
       const d = got.project.skeleton;
-      expect(d.constraints.map((c) => c.name), label).toEqual(base.constraints.map((c) => c.name));
-      expect(d.bones.map((b) => `${b.name}:${b.inherit}`), label).toEqual(base.bones.map((b) => `${b.name}:${b.inherit}`));
+      expect(
+        d.constraints.map((c) => c.name),
+        label,
+      ).toEqual(base.constraints.map((c) => c.name));
+      expect(
+        d.bones.map((b) => `${b.name}:${b.inherit}`),
+        label,
+      ).toEqual(base.bones.map((b) => `${b.name}:${b.inherit}`));
       const idle = d.animations.find((a) => a.name === 'idle')!;
       expect(Object.keys(idle.deform[d.skins[0].id] ?? {}), label).toHaveLength(2);
     }
@@ -232,7 +266,11 @@ describe('import', () => {
     const pose = (doc: any) => {
       const d = importSpineJson(doc, 'x').project.skeleton;
       const sk = createSkeleton(compileSkeleton(d));
-      applyAnimation(sk, d.animations.find((a) => a.name === 'idle')!, 0.37);
+      applyAnimation(
+        sk,
+        d.animations.find((a) => a.name === 'idle')!,
+        0.37,
+      );
       sk.updateWorldTransform();
       return sk.bones.map((b) => [b.data.name, b.a, b.b, b.c, b.d, b.worldX, b.worldY]);
     };
@@ -250,7 +288,15 @@ describe('import', () => {
   it('a 4.2 physics constraint and its timelines are imported with the 4.2 defaults', () => {
     const doc = load();
     doc.physics = [{ name: 'hair', order: 10, bone: 'head', mass: 2, rotate: 1 }];
-    doc.animations.idle.physics = { hair: { mix: [{ time: 0, value: 1 }, { time: 1, value: 0.5 }], reset: [{ time: 0.5 }] } };
+    doc.animations.idle.physics = {
+      hair: {
+        mix: [
+          { time: 0, value: 1 },
+          { time: 1, value: 0.5 },
+        ],
+        reset: [{ time: 0.5 }],
+      },
+    };
     const { project, warnings } = importSpineJson(doc, 'x');
     const hair = project.skeleton.constraints.find((c) => c.name === 'hair');
     expect(hair).toMatchObject({ type: 'physics', rotate: 1, mass: 2, inertia: 1, damping: 1, fps: 60, strength: 100, mix: 1 });
@@ -268,7 +314,11 @@ describe('import', () => {
 
 describe.skipIf(!golden)('poses of the 4.2 rig against the official 4.2 runtime', () => {
   const close = (x: number, y: number) => Math.abs(x - y) <= 2e-4 * Math.max(1, Math.abs(x), Math.abs(y));
-  for (const [label, make] of [['4.2', load], ['4.1', () => as41(load())], ['4.0', () => as40(load())]] as const) {
+  for (const [label, make] of [
+    ['4.2', load],
+    ['4.1', () => as41(load())],
+    ['4.0', () => as40(load())],
+  ] as const) {
     for (const pose of golden?.poses ?? []) {
       it(`${label}: skin ${pose.skin ?? 'default'}, ${pose.animation ?? 'setup pose'} at ${pose.time}`, () => {
         const doc = importSpineJson(make(), 'x').project.skeleton;
@@ -289,11 +339,15 @@ describe.skipIf(!golden)('poses of the 4.2 rig against the official 4.2 runtime'
         }
         for (const [name, s] of Object.entries<any>(pose.slots)) {
           const slot = sk.slots.find((x) => x.data.name === name)!;
-          if (slot.attachmentName !== s.attachment) problems.push(`slot ${name}: attachment ours ${slot.attachmentName}, 4.2 ${s.attachment}`);
+          if (slot.attachmentName !== s.attachment)
+            problems.push(`slot ${name}: attachment ours ${slot.attachmentName}, 4.2 ${s.attachment}`);
           slot.color.forEach((v, i) => {
             if (Math.abs(v - s.color[i]) > 2e-2) problems.push(`slot ${name}: color[${i}] ours ${v}, 4.2 ${s.color[i]}`);
           });
-          if (s.dark && slot.dark) slot.dark.forEach((v, i) => Math.abs(v - s.dark[i]) > 2e-2 && problems.push(`slot ${name}: dark[${i}] ours ${v}, 4.2 ${s.dark[i]}`));
+          if (s.dark && slot.dark)
+            slot.dark.forEach(
+              (v, i) => Math.abs(v - s.dark[i]) > 2e-2 && problems.push(`slot ${name}: dark[${i}] ours ${v}, 4.2 ${s.dark[i]}`),
+            );
         }
         expect(sk.drawOrder.map((s) => s.data.name)).toEqual(pose.drawOrder);
         expect(problems).toEqual([]);

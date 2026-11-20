@@ -1,4 +1,18 @@
-import { Bone, BoxSelect, Brush, Crosshair, Italic, Link2, MousePointer2, Move, PenTool, RotateCw, Scaling, Scissors, Triangle } from 'lucide-react';
+import {
+  Bone,
+  BoxSelect,
+  Brush,
+  Crosshair,
+  Italic,
+  Link2,
+  MousePointer2,
+  Move,
+  PenTool,
+  RotateCw,
+  Scaling,
+  Scissors,
+  Triangle,
+} from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { settingsStore, setSettings } from '@/store/settings';
 import type { Tool } from '@/store/ui';
@@ -49,8 +63,10 @@ export const HINTS: Record<Tool, string> = {
   mesh: 'Drag vertices · Ctrl-click or double-click adds a vertex · Ctrl-drag between vertices draws an edge · Del removes · in Animate mode dragging keys a deform',
   weights: 'Paint over the mesh · click a bone to switch the brush bone · adjust size and strength in the Inspector',
   ik: 'Drag from the end of a bone chain to a target bone (or empty space to create one)',
-  clipping: 'Click to place polygon points · click the first point, double-click or Enter to finish · Esc cancels · it is created on the selected bone',
-  boundingbox: 'Click to place polygon points · click the first point, double-click or Enter to finish · Esc cancels · it is created on the selected bone',
+  clipping:
+    'Click to place polygon points · click the first point, double-click or Enter to finish · Esc cancels · it is created on the selected bone',
+  boundingbox:
+    'Click to place polygon points · click the first point, double-click or Enter to finish · Esc cancels · it is created on the selected bone',
   point: 'Click to place a point attachment on the selected bone · set its rotation in the Inspector',
   path: 'Click to place a node · drag to pull its handles · click the first node, double-click or Enter to finish · Esc cancels · it is created on the selected bone',
 };

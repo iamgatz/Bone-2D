@@ -46,8 +46,12 @@ function lzwDecode(data: Uint8Array, minCode: number, count: number): number[] {
 describe('lzw', () => {
   it('round-trips pixels, including runs long enough to fill the table and force a clear code', () => {
     let seed = 7;
-    const rnd = () => ((seed = (seed * 1664525 + 1013904223) >>> 0) / 2 ** 32);
-    for (const [n, bits] of [[10, 2], [500, 4], [30000, 8]] as const) {
+    const rnd = () => (seed = (seed * 1664525 + 1013904223) >>> 0) / 2 ** 32;
+    for (const [n, bits] of [
+      [10, 2],
+      [500, 4],
+      [30000, 8],
+    ] as const) {
       const px = new Uint8Array(n).map(() => Math.floor(rnd() * (1 << bits) * (rnd() < 0.5 ? 1 : 0.2)));
       expect(lzwDecode(lzwEncode(px, Math.max(2, bits)), Math.max(2, bits), n)).toEqual(Array.from(px));
     }
@@ -114,7 +118,8 @@ describe('gif', () => {
     }
     const px = lzwDecode(Uint8Array.from(data), min, w * h);
     px.forEach((idx, p) => {
-      if (p % 2 === 0) expect(idx).toBe(0); // the transparent index
+      if (p % 2 === 0)
+        expect(idx).toBe(0); // the transparent index
       else {
         expect(idx).toBeGreaterThan(0);
         const pal = gif.subarray(13 + idx * 3, 13 + idx * 3 + 3); // the global table starts right after the 13-byte header

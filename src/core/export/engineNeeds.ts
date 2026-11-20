@@ -26,14 +26,17 @@ export interface EngineNeedsOptions {
 }
 
 const TEXT = {
-  version: 'The data is Spine 4.3: load it with the 4.3 runtimes. A runtime of another version is the most common reason an animation looks different in the game.',
+  version:
+    'The data is Spine 4.3: load it with the 4.3 runtimes. A runtime of another version is the most common reason an animation looks different in the game.',
   binary: 'Binary data (.skel): load it with the binary loader of the runtime, not the JSON one.',
   scale: 'The export is scaled: pictures and data are scaled together, so leave the scale of the skeleton in the engine at 1.',
   pma: 'Premultiplied alpha pages: set the texture to premultiplied alpha and use the premultiplied blend function, or the edges get a light or dark halo.',
   nearest: 'Sharp pixels (Nearest): the engine has to sample the atlas without smoothing, or the pixel art blurs.',
-  perSkin: 'An atlas per skin: load the atlas of the default skin and the atlas of the skin you show; the pictures of a skin that the default skin does not use are only in its own atlas.',
+  perSkin:
+    'An atlas per skin: load the atlas of the default skin and the atlas of the skin you show; the pictures of a skin that the default skin does not use are only in its own atlas.',
   rotate: 'The atlas has pictures turned a quarter turn (rotate: 90): the loader has to read rotated regions (the official runtimes do).',
-  twoColor: 'Two colour tint (slots with a dark colour): the engine needs the two colour tint shader and a vertex format with the second colour.',
+  twoColor:
+    'Two colour tint (slots with a dark colour): the engine needs the two colour tint shader and a vertex format with the second colour.',
   blend: 'Additive, multiply or screen blend modes: the engine needs a material with the matching blend function for each.',
   clipping: 'Clipping attachments: the renderer has to support clipping (stencil or in software).',
   inverse: 'Inverse clipping: runtime 4.3 or later.',

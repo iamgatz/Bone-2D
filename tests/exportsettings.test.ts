@@ -1,12 +1,21 @@
 /** Export settings: what a damaged or foreign file does, and the round trip through a file. */
 import { describe, expect, it, vi } from 'vitest';
-import { DEFAULT_EXPORT_SETTINGS, exportSettingsFromText, exportSettingsToText, loadExportSettings, readExportSettings, rememberExportSettings } from '../src/core/export/settings';
+import {
+  DEFAULT_EXPORT_SETTINGS,
+  exportSettingsFromText,
+  exportSettingsToText,
+  loadExportSettings,
+  readExportSettings,
+  rememberExportSettings,
+} from '../src/core/export/settings';
 
 describe('export settings', () => {
   it('reads defaults from nothing, and from rubbish', () => {
     expect(readExportSettings(undefined)).toEqual(DEFAULT_EXPORT_SETTINGS);
     expect(readExportSettings('x')).toEqual(DEFAULT_EXPORT_SETTINGS);
-    expect(readExportSettings({ scale: 7, maxSize: '2048', padding: -1, format: 'xml', pot: 1, filter: 'Cubic' })).toEqual(DEFAULT_EXPORT_SETTINGS);
+    expect(readExportSettings({ scale: 7, maxSize: '2048', padding: -1, format: 'xml', pot: 1, filter: 'Cubic' })).toEqual(
+      DEFAULT_EXPORT_SETTINGS,
+    );
   });
 
   it('keeps the valid fields and defaults the rest', () => {
@@ -28,7 +37,10 @@ describe('export settings', () => {
 
   it('is kept between sessions', () => {
     const store = new Map<string, string>();
-    vi.stubGlobal('localStorage', { getItem: (k: string) => store.get(k) ?? null, setItem: (k: string, v: string) => void store.set(k, v) });
+    vi.stubGlobal('localStorage', {
+      getItem: (k: string) => store.get(k) ?? null,
+      setItem: (k: string, v: string) => void store.set(k, v),
+    });
     const s = { ...DEFAULT_EXPORT_SETTINGS, rotate: true, scale: 0.75 };
     rememberExportSettings(s);
     expect(loadExportSettings()).toEqual(s);
@@ -39,10 +51,20 @@ describe('export settings', () => {
 });
 
 describe('the mix table file', () => {
-  const anims = [{ id: 'a', name: 'walk' }, { id: 'b', name: 'run' }, { id: 'c', name: 'idle' }];
+  const anims = [
+    { id: 'a', name: 'walk' },
+    { id: 'b', name: 'run' },
+    { id: 'c', name: 'idle' },
+  ];
   it('names the animations, drops pairs with a missing one, and says nothing for an empty table', async () => {
     const { mixesToText } = await import('../src/core/export/mixes');
-    const text = mixesToText(anims, { default: 0.2, pairs: [{ from: 'a', to: 'b', time: 0.35 }, { from: 'a', to: 'zzz', time: 1 }] })!;
+    const text = mixesToText(anims, {
+      default: 0.2,
+      pairs: [
+        { from: 'a', to: 'b', time: 0.35 },
+        { from: 'a', to: 'zzz', time: 1 },
+      ],
+    })!;
     expect(JSON.parse(text)).toMatchObject({ defaultMix: 0.2, mixes: [{ from: 'walk', to: 'run', duration: 0.35 }] });
     expect(mixesToText(anims, { default: 0, pairs: [] })).toBeNull();
     expect(mixesToText(anims, undefined)).toBeNull();

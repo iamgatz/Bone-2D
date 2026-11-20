@@ -43,11 +43,23 @@ export function getScene(): Scene {
   const time = anim ? (ui.stepped ? steppedTime(ui.time, doc.fps) : ui.time) : 0;
   const overrides = ui.mode === 'animate' ? ui.overrides : EMPTY;
   const c = cache;
-  if (c && c.doc === doc && c.skinId === ui.skinId && c.skinMix === ui.skinMix && c.anim === anim && c.time === time && c.overrides === overrides && c.muted === ui.muted) return c.scene;
+  if (
+    c &&
+    c.doc === doc &&
+    c.skinId === ui.skinId &&
+    c.skinMix === ui.skinMix &&
+    c.anim === anim &&
+    c.time === time &&
+    c.overrides === overrides &&
+    c.muted === ui.muted
+  )
+    return c.scene;
 
   const data = compileSkeleton(doc);
   const reuse = !!c && c.scene.data === data && c.skinId === ui.skinId && c.skinMix === ui.skinMix;
-  const skeleton = reuse ? c.scene.skeleton : createSkeleton(data, ui.skinId && doc.skins.some((s) => s.id === ui.skinId) ? ui.skinId : null, ui.skinMix);
+  const skeleton = reuse
+    ? c.scene.skeleton
+    : createSkeleton(data, ui.skinId && doc.skins.some((s) => s.id === ui.skinId) ? ui.skinId : null, ui.skinMix);
   poseSkeleton(skeleton, anim, time, overrides, ui.muted);
   // Physics only simulates while an animation plays: a step forward advances it, the same frame again keeps what it has
   // computed (pause, a bone dragged), any other time starts it again from rest. In Setup mode it does not run at all.
@@ -81,7 +93,13 @@ export function getScene(): Scene {
 const EMPTY: Record<Id, PoseOverride> = {};
 
 /** Puts a skeleton into the pose the editor shows: the animation at the time (without the muted timelines), then the bones being dragged. The world transform is not updated. */
-export function poseSkeleton(skeleton: Skeleton, anim: Animation | null, time: number, overrides: Record<Id, PoseOverride>, muted: readonly string[]) {
+export function poseSkeleton(
+  skeleton: Skeleton,
+  anim: Animation | null,
+  time: number,
+  overrides: Record<Id, PoseOverride>,
+  muted: readonly string[],
+) {
   applyAnimation(skeleton, anim && muted.length ? withoutMuted(anim, new Set(muted)) : anim, time);
   for (const id in overrides) {
     const b = skeleton.boneById(id);

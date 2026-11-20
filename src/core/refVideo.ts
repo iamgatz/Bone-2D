@@ -45,7 +45,14 @@ export function syncPlan(videoTime: number, wanted: number, playing: boolean, du
 }
 
 /** The rectangle of the video on the screen, in CSS pixels, for a camera and the viewport size. */
-export function videoRect(cam: { x: number; y: number; zoom: number; flip?: boolean }, width: number, height: number, view: RefVideoView, videoW: number, videoH: number): { left: number; top: number; width: number; height: number } {
+export function videoRect(
+  cam: { x: number; y: number; zoom: number; flip?: boolean },
+  width: number,
+  height: number,
+  view: RefVideoView,
+  videoW: number,
+  videoH: number,
+): { left: number; top: number; width: number; height: number } {
   const k = (view.scale / 100) * cam.zoom;
   const w = videoW * k;
   const h = videoH * k;

@@ -44,7 +44,8 @@ type Drag =
   | { kind: 'points'; moves: Map<number, { x: number; y: number; s: number }>; p0: [number, number]; base: number[] | null }
   | Marquee;
 
-const rgba = (c: ArrayLike<number>, a: number) => `rgba(${Math.round(c[0] * 255)},${Math.round(c[1] * 255)},${Math.round(c[2] * 255)},${a})`;
+const rgba = (c: ArrayLike<number>, a: number) =>
+  `rgba(${Math.round(c[0] * 255)},${Math.round(c[1] * 255)},${Math.round(c[2] * 255)},${a})`;
 
 /** World positions of every point of the path that `slotId` shows now (deformation and bones included). */
 function worldPoints(scene: Scene, slotId: Id): { pts: number[]; att: PathAttachmentData } | null {
@@ -153,7 +154,8 @@ export class PathTool {
   private nearCurve(pts: number[], att: PathAttachmentData, wx: number, wy: number, zoom: number): boolean {
     const poly = samplePath(pts, Math.floor(att.vertexCount / 3), att.closed, 24);
     const tol = (9 / zoom) ** 2;
-    for (let i = 0; i + 3 < poly.length; i += 2) if (distToSegmentSq(wx, wy, poly[i], poly[i + 1], poly[i + 2], poly[i + 3]) <= tol) return true;
+    for (let i = 0; i + 3 < poly.length; i += 2)
+      if (distToSegmentSq(wx, wy, poly[i], poly[i + 1], poly[i + 2], poly[i + 3]) <= tol) return true;
     return false;
   }
 
@@ -241,8 +243,19 @@ export class PathTool {
     if (d.kind === 'points') {
       const dx = wx - d.p0[0];
       const dy = wy - d.p0[1];
-      if (!d.base) movePolygonVertices(ap.slotId, ap.name, [...d.moves].map(([index, m]) => ({ index, x: m.x + dx * m.s, y: m.y + dy * m.s })));
-      else setDeformKey(ap.slotId, ap.name, d.base, [...d.moves].map(([index, m]) => ({ index, dx: dx * m.s, dy: dy * m.s })));
+      if (!d.base)
+        movePolygonVertices(
+          ap.slotId,
+          ap.name,
+          [...d.moves].map(([index, m]) => ({ index, x: m.x + dx * m.s, y: m.y + dy * m.s })),
+        );
+      else
+        setDeformKey(
+          ap.slotId,
+          ap.name,
+          d.base,
+          [...d.moves].map(([index, m]) => ({ index, dx: dx * m.s, dy: dy * m.s })),
+        );
     } else if (d.kind === 'marquee') {
       const [x0, y0, x1, y1] = dragMarquee(d, wx, wy);
       const picked = new Set(d.base);
@@ -434,4 +447,3 @@ export class PathTool {
     }
   }
 }
-

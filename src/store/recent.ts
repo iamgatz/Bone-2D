@@ -72,7 +72,10 @@ export async function recentHandle(id: string): Promise<FileHandle | undefined> 
 export async function forgetRecent(id: string): Promise<void> {
   try {
     const list = await listRecent();
-    await idbSet(INDEX, list.filter((e) => e.id !== id));
+    await idbSet(
+      INDEX,
+      list.filter((e) => e.id !== id),
+    );
     await idbDelete(handleKey(id));
   } catch (e) {
     console.warn('could not forget the file', e);

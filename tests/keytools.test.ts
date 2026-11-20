@@ -42,7 +42,10 @@ describe('favorKeys', () => {
   });
 
   it('neutral takes every channel to the setup value; amounts are clamped; no change returns 0', () => {
-    const k = [{ time: 0, value: [2, 3] }, { time: 1, value: [4, 5] }];
+    const k = [
+      { time: 0, value: [2, 3] },
+      { time: 1, value: [4, 5] },
+    ];
     favorKeys(k, [1], 'neutral', 2, [1, 1]);
     expect(k[1].value).toEqual([1, 1]);
     expect(favorKeys(k, [1], 'neutral', 0, [1, 1])).toBe(0);
@@ -98,7 +101,13 @@ describe('the actions', () => {
     const { project } = buildFixture();
     const bone = project.skeleton.bones[1];
     const anim = newAnimation('a', 2);
-    anim.bones[bone.id] = { rotate: [0, 0.5, 1, 1.5].map((time, i) => ({ time, value: [i * 10] })), scale: [{ time: 0, value: [1, 1] }, { time: 1, value: [2, 3] }] };
+    anim.bones[bone.id] = {
+      rotate: [0, 0.5, 1, 1.5].map((time, i) => ({ time, value: [i * 10] })),
+      scale: [
+        { time: 0, value: [1, 1] },
+        { time: 1, value: [2, 3] },
+      ],
+    };
     project.skeleton.animations.push(anim);
     project.skeleton.fps = 20;
     docStore.replace(project);
@@ -136,7 +145,11 @@ describe('the actions', () => {
   });
   it('Store and Swap: set the values aside, trade them with the keys, trade back', () => {
     const { bone, anim } = open();
-    const rot = () => docStore.get().skeleton.animations.find((a) => a.id === anim.id)!.bones[bone.id].rotate!.map((k) => k.value[0]);
+    const rot = () =>
+      docStore
+        .get()
+        .skeleton.animations.find((a) => a.id === anim.id)!
+        .bones[bone.id].rotate!.map((k) => k.value[0]);
     uiStore.patch({ selectedKeys: sel(bone.id, 'rotate', 0.5, 1) });
     expect(storeSelectedKeys()).toBe(2);
     expect(keyStash.get().items.map((i) => i.value)).toEqual([[10], [20]]);
@@ -175,7 +188,13 @@ describe('the actions', () => {
     const slot = docStore.get().skeleton.slots[0];
     docStore.update('x', (d) => {
       const a = d.skeleton.animations.find((x) => x.id === anim.id)!;
-      a.slots[slot.id] = { rgba: [{ time: 0, value: [0, 0, 0, 1] }, { time: 1, value: [0.9, 0.9, 0.9, 1] }, { time: 1.5, value: [0.2, 0.2, 0.2, 1] }] };
+      a.slots[slot.id] = {
+        rgba: [
+          { time: 0, value: [0, 0, 0, 1] },
+          { time: 1, value: [0.9, 0.9, 0.9, 1] },
+          { time: 1.5, value: [0.2, 0.2, 0.2, 1] },
+        ],
+      };
     });
     uiStore.patch({ selectedKeys: [encodeKey({ kind: 'slot', target: slot.id, prop: 'rgba', time: 1 })] });
     const before = docStore.get();

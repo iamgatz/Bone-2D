@@ -25,7 +25,12 @@ describe('the scene', () => {
     const doc = project.skeleton;
     const bone = doc.bones[1];
     const anim = newAnimation('turn', 1);
-    anim.bones[bone.id] = { rotate: [{ time: 0, value: [0] }, { time: 1, value: [90] }] };
+    anim.bones[bone.id] = {
+      rotate: [
+        { time: 0, value: [0] },
+        { time: 1, value: [90] },
+      ],
+    };
     doc.animations.push(anim);
     doc.fps = 10;
     docStore.replace(project);

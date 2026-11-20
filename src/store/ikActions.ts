@@ -48,10 +48,30 @@ export function createIkFromDrag(endBone: Id, targetBone: Id | null, x: number, 
   if (!target) {
     const rootSetup = rootId ? setup.boneById(rootId) : undefined;
     const [lx, ly] = rootSetup ? rootSetup.worldToLocal(x, y) : [x, y];
-    newTarget = newBone({ name: freshName(`${end.name} target`, doc.bones), parent: rootId, x: lx, y: ly, length: 0, color: [1, 0.48, 0.35, 1] });
+    newTarget = newBone({
+      name: freshName(`${end.name} target`, doc.bones),
+      parent: rootId,
+      x: lx,
+      y: ly,
+      length: 0,
+      color: [1, 0.48, 0.35, 1],
+    });
     target = newTarget.id;
   }
-  const c: IkConstraint = { id: constraintId, type: 'ik', name: cname, bones: chain, target, mix: 1, softness: 0, bendPositive, compress: false, stretch: false, scaleY: 'none', skinRequired: false };
+  const c: IkConstraint = {
+    id: constraintId,
+    type: 'ik',
+    name: cname,
+    bones: chain,
+    target,
+    mix: 1,
+    softness: 0,
+    bendPositive,
+    compress: false,
+    stretch: false,
+    scaleY: 'none',
+    skinRequired: false,
+  };
   docStore.update('Create IK', (d) => {
     if (newTarget) d.skeleton.bones.push(newTarget);
     d.skeleton.constraints.push(c);
@@ -90,7 +110,10 @@ export function renameConstraint(id: Id, name: string) {
   const clean = name.trim();
   if (!clean) return;
   const doc = docStore.get().skeleton;
-  const unique = freshName(clean, doc.constraints.filter((c) => c.id !== id));
+  const unique = freshName(
+    clean,
+    doc.constraints.filter((c) => c.id !== id),
+  );
   docStore.update('Rename constraint', (d) => {
     const c = d.skeleton.constraints.find((x) => x.id === id);
     if (c) c.name = unique;
@@ -144,7 +167,14 @@ export function setIkValues(id: Id, patch: Partial<IkValues>, label = 'Edit IK')
       exist.stretch = v.stretch;
     } else {
       const curve = makeCurve(ui.defaultCurve, 2);
-      const key: IkKey = { time: ui.time, value: [v.mix, v.softness], bendPositive: v.bendPositive, compress: v.compress, stretch: v.stretch, ...(curve !== undefined ? { curve } : {}) };
+      const key: IkKey = {
+        time: ui.time,
+        value: [v.mix, v.softness],
+        bendPositive: v.bendPositive,
+        compress: v.compress,
+        stretch: v.stretch,
+        ...(curve !== undefined ? { curve } : {}),
+      };
       upsertKey(keys, key);
     }
     if (ui.time > a.duration) a.duration = ui.time;

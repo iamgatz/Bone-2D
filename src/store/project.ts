@@ -55,7 +55,14 @@ export async function serializeProject(): Promise<string> {
 export function readProjectWithPictures(text: string): { project: Project; pictures: Record<string, string> } | null {
   try {
     const file = JSON.parse(text) as ProjectFile;
-    if (!file || typeof file !== 'object' || (file.bone2d !== 1 && file.marrow !== 1) || !file.project?.skeleton || typeof file.project.skeleton !== 'object') return null;
+    if (
+      !file ||
+      typeof file !== 'object' ||
+      (file.bone2d !== 1 && file.marrow !== 1) ||
+      !file.project?.skeleton ||
+      typeof file.project.skeleton !== 'object'
+    )
+      return null;
     repairProject(file.project);
     const pictures = file.images && typeof file.images === 'object' ? file.images : {};
     return { project: migrateProject(file.project), pictures };
@@ -80,7 +87,10 @@ export interface LoadReport {
 export function backupCurrent(why: BackupWhy): Promise<boolean> {
   if (!hasContent()) return Promise.resolve(false);
   const info = describeProject();
-  return serializeProject().then((text) => saveBackup(text, why, info), () => false);
+  return serializeProject().then(
+    (text) => saveBackup(text, why, info),
+    () => false,
+  );
 }
 
 /** Brings a backup copy back as the open project; what was open is backed up first, so the restore can be taken back too. */
@@ -141,7 +151,17 @@ export function newProject(name = 'untitled') {
   currentHandle = null;
   assets.clear();
   docStore.replace(emptyProject(name));
-  uiStore.patch({ mode: 'setup', selection: emptySelection, animationId: null, skinId: null, time: 0, playing: false, overrides: {}, selectedKeys: [], camera: { x: 0, y: 120, zoom: 1.2 } });
+  uiStore.patch({
+    mode: 'setup',
+    selection: emptySelection,
+    animationId: null,
+    skinId: null,
+    time: 0,
+    playing: false,
+    overrides: {},
+    selectedKeys: [],
+    camera: { x: 0, y: 120, zoom: 1.2 },
+  });
 }
 
 function downloadBlob(blob: Blob, filename: string) {
@@ -217,7 +237,10 @@ export async function saveProjectFile(saveAs = false) {
   const picker = pickers().showSaveFilePicker;
   if (picker) {
     try {
-      const handle = await picker({ suggestedName: `${name}.bone2d`, types: [{ description: 'Bone 2D project', accept: { 'application/json': ['.bone2d'] } }] });
+      const handle = await picker({
+        suggestedName: `${name}.bone2d`,
+        types: [{ description: 'Bone 2D project', accept: { 'application/json': ['.bone2d'] } }],
+      });
       await writeTo(handle, blob);
       currentHandle = handle;
       return;
@@ -231,7 +254,10 @@ export async function saveProjectFile(saveAs = false) {
 }
 
 function reportOpened(name: string, r: LoadReport) {
-  const notes = [r.repaired.length ? `${r.repaired.length} problem${r.repaired.length === 1 ? '' : 's'} repaired` : '', r.failedImages.length ? `${r.failedImages.length} image${r.failedImages.length === 1 ? '' : 's'} could not be read` : ''].filter(Boolean);
+  const notes = [
+    r.repaired.length ? `${r.repaired.length} problem${r.repaired.length === 1 ? '' : 's'} repaired` : '',
+    r.failedImages.length ? `${r.failedImages.length} image${r.failedImages.length === 1 ? '' : 's'} could not be read` : '',
+  ].filter(Boolean);
   toast(`Opened ${name}${notes.length ? ` (${notes.join(', ')})` : ''}`, notes.length ? 'info' : 'ok');
 }
 

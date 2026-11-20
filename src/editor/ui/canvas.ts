@@ -26,5 +26,7 @@ export function localPoint(e: { clientX: number; clientY: number }, el: Element)
 
 /** A canvas as a picture file (`image/png` by default). */
 export function canvasToBlob(canvas: HTMLCanvasElement, type = 'image/png', quality?: number): Promise<Blob> {
-  return new Promise((resolve, reject) => canvas.toBlob((b) => (b ? resolve(b) : reject(new Error(`Could not encode a ${type} picture`))), type, quality));
+  return new Promise((resolve, reject) =>
+    canvas.toBlob((b) => (b ? resolve(b) : reject(new Error(`Could not encode a ${type} picture`))), type, quality),
+  );
 }

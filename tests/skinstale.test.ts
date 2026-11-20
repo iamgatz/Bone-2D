@@ -20,7 +20,13 @@ describe('putSkinImage', () => {
       }
     }
     expect(slotId).not.toBe('');
-    const skin: Skin = { id: uid(), name: 'red', attachments: { [slotId]: { [name]: structuredClone(doc.skins[0].attachments[slotId][name]) } }, bones: [], constraints: [] };
+    const skin: Skin = {
+      id: uid(),
+      name: 'red',
+      attachments: { [slotId]: { [name]: structuredClone(doc.skins[0].attachments[slotId][name]) } },
+      bones: [],
+      constraints: [],
+    };
     doc.skins.push(skin);
     const anim = doc.animations[0];
     ((anim.deform[skin.id] ??= {})[slotId] ??= {})[name] = [{ time: 0, value: [1, 2, 3] }] as never;

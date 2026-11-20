@@ -46,7 +46,14 @@ export function FloatingWindow(props: { id: FloatId; title: string; icon?: Lucid
   };
 
   return (
-    <div ref={box} className="float-win" role="dialog" aria-label={props.title} style={{ left: pos.x, top: pos.y, width, zIndex: `calc(var(--z-float) + ${Math.max(0, rank)})` }} onPointerDownCapture={() => raiseFloat(props.id)}>
+    <div
+      ref={box}
+      className="float-win"
+      role="dialog"
+      aria-label={props.title}
+      style={{ left: pos.x, top: pos.y, width, zIndex: `calc(var(--z-float) + ${Math.max(0, rank)})` }}
+      onPointerDownCapture={() => raiseFloat(props.id)}
+    >
       <div className="float-head" onPointerDown={down} onPointerMove={move} onPointerUp={up} onPointerCancel={up}>
         {Icon && <Icon size={14} />}
         <span className="title">{props.title}</span>

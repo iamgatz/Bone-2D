@@ -43,7 +43,15 @@ describe('keys between frames', () => {
     const f = buildFixture();
     docStore.replace(f.project);
     const anim = f.project.skeleton.animations.find((a) => a.name === 'walk')!;
-    uiStore.patch({ mode: 'animate', animationId: anim.id, selection: emptySelection, overrides: {}, time: 0, playing: false, autoKey: true });
+    uiStore.patch({
+      mode: 'animate',
+      animationId: anim.id,
+      selection: emptySelection,
+      overrides: {},
+      time: 0,
+      playing: false,
+      autoKey: true,
+    });
     return { project: f.project, anim, bone: f.project.skeleton.bones[1] };
   }
 
@@ -70,7 +78,9 @@ describe('keys between frames', () => {
     expect(moved[0].time).toBeCloseTo(second.time + 1 / 60, 6);
     const now = docStore.get().skeleton.animations.find((a) => a.id === anim.id)!;
     expect(now.bones[bone.id].rotate!.some((k) => Math.abs(k.time - (second.time + 1 / 60)) < 1e-6)).toBe(true);
-    const json = exportSpineJson(docStore.get().skeleton) as { animations: Record<string, { bones: Record<string, { rotate: { time?: number }[] }> }> };
+    const json = exportSpineJson(docStore.get().skeleton) as {
+      animations: Record<string, { bones: Record<string, { rotate: { time?: number }[] }> }>;
+    };
     const times = json.animations.walk.bones[bone.name].rotate.map((k) => k.time ?? 0);
     expect(times.some((t) => Math.abs(t - (second.time + 1 / 60)) < 1e-4)).toBe(true);
     expect(() => exportAndLoad(docStore.get())).not.toThrow();

@@ -17,10 +17,11 @@ const kinds = (p: Project) => projectWarnings(p).map((w) => w.kind);
 
 function weightedMesh(p: Project): { slotId: string; mesh: MeshAttachment } {
   const skin = p.skeleton.skins[0];
-  for (const slotId in skin.attachments) for (const name in skin.attachments[slotId]) {
-    const a = skin.attachments[slotId][name];
-    if (a.type === 'mesh' && a.weights && !a.link) return { slotId, mesh: a };
-  }
+  for (const slotId in skin.attachments)
+    for (const name in skin.attachments[slotId]) {
+      const a = skin.attachments[slotId][name];
+      if (a.type === 'mesh' && a.weights && !a.link) return { slotId, mesh: a };
+    }
   throw new Error('the fixture has no weighted mesh');
 }
 
@@ -51,7 +52,22 @@ describe('the fixes', () => {
     other.name = 'second';
     const skin = other.skins[0];
     const slot = other.slots[0];
-    skin.attachments[slot.id] = { ...skin.attachments[slot.id], z: { type: 'region', name: 'z', path: 'only_here', x: 0, y: 0, rotation: 0, scaleX: 1, scaleY: 1, width: 8, height: 8, color: [1, 1, 1, 1] } as never };
+    skin.attachments[slot.id] = {
+      ...skin.attachments[slot.id],
+      z: {
+        type: 'region',
+        name: 'z',
+        path: 'only_here',
+        x: 0,
+        y: 0,
+        rotation: 0,
+        scaleX: 1,
+        scaleY: 1,
+        width: 8,
+        height: 8,
+        color: [1, 1, 1, 1],
+      } as never,
+    };
     project.others = [other];
     project.activeAt = 0;
     project.images.push({ id: 'only_here', name: 'only_here', width: 8, height: 8 });
@@ -64,7 +80,20 @@ describe('the fixes', () => {
     const { project } = buildFixture();
     const empty = newAnimation('blank');
     project.skeleton.animations.push(empty);
-    project.skeleton.constraints.push({ id: 'sl', type: 'slider', name: 'sl', bone: null, property: 'x', mix: 1, time: 0, from: 0, to: 1, scale: 1, max: 1, animation: empty.id } as never);
+    project.skeleton.constraints.push({
+      id: 'sl',
+      type: 'slider',
+      name: 'sl',
+      bone: null,
+      property: 'x',
+      mix: 1,
+      time: 0,
+      from: 0,
+      to: 1,
+      scale: 1,
+      max: 1,
+      animation: empty.id,
+    } as never);
     const w = projectWarnings(project).find((x) => x.kind === 'emptyAnimation' && x.subject === 'blank')!;
     expect(fixProblem(project, w)).toBe(true);
     expect(project.skeleton.animations.some((a) => a.id === empty.id)).toBe(false);
@@ -87,7 +116,10 @@ describe('the fixes', () => {
     const { project } = buildFixture();
     const { mesh } = overweight(project);
     const others = structuredClone(mesh.weights!.slice(1));
-    const strongest = [...mesh.weights![0]].sort((a, b) => b[3] - a[3]).slice(0, MAX_INFLUENCES).map((i) => i[0]);
+    const strongest = [...mesh.weights![0]]
+      .sort((a, b) => b[3] - a[3])
+      .slice(0, MAX_INFLUENCES)
+      .map((i) => i[0]);
     const w = projectWarnings(project).find((x) => x.kind === 'tooManyInfluences')!;
     expect(fixProblem(project, w)).toBe(true);
     const fixed = weightedMesh(project).mesh.weights!;
@@ -108,9 +140,17 @@ describe('the fixes', () => {
     const n = deformLength(mesh, has);
     const anim = doc.animations[0];
     for (const a of doc.animations) delete a.deform[doc.skins[0].id]?.[slotId]?.[mesh.name]; // the keys of the fixture were made for the old weights
-    (((anim.deform[doc.skins[0].id] ??= {})[slotId] ??= {})[mesh.name] ??= []).push({ time: 0.2, value: Array.from({ length: n }, (_, i) => (i % 5) * 0.1) });
+    (((anim.deform[doc.skins[0].id] ??= {})[slotId] ??= {})[mesh.name] ??= []).push({
+      time: 0.2,
+      value: Array.from({ length: n }, (_, i) => (i % 5) * 0.1),
+    });
     expect(repairProject(structuredClone(project))).toEqual([]);
-    expect(fixProblem(project, projectWarnings(project).find((x) => x.kind === 'tooManyInfluences')!)).toBe(true);
+    expect(
+      fixProblem(
+        project,
+        projectWarnings(project).find((x) => x.kind === 'tooManyInfluences')!,
+      ),
+    ).toBe(true);
     expect(repairProject(structuredClone(project))).toEqual([]);
   });
 
@@ -119,7 +159,9 @@ describe('the fixes', () => {
     const doc = project.skeleton;
     const { slotId, mesh } = overweight(project);
     const alt = { id: 'altskin', name: 'linkedskin', attachments: {}, bones: [], constraints: [] } as unknown as (typeof doc.skins)[number];
-    alt.attachments[slotId] = { [mesh.name]: { ...structuredClone(mesh), link: makeLink(doc, slotId, { skinId: doc.skins[0].id, slotId, name: mesh.name }) } };
+    alt.attachments[slotId] = {
+      [mesh.name]: { ...structuredClone(mesh), link: makeLink(doc, slotId, { skinId: doc.skins[0].id, slotId, name: mesh.name }) },
+    };
     doc.skins.push(alt);
     syncLinkedMeshes(doc);
     const found = projectWarnings(project).filter((w) => w.kind === 'tooManyInfluences');
@@ -137,7 +179,9 @@ describe('the fixes', () => {
     const doc = project.skeleton;
     const { slotId, mesh } = weightedMesh(project);
     const alt = { id: 'altskin', name: 'linkedskin', attachments: {}, bones: [], constraints: [] } as unknown as (typeof doc.skins)[number];
-    alt.attachments[slotId] = { [mesh.name]: { ...structuredClone(mesh), link: makeLink(doc, slotId, { skinId: doc.skins[0].id, slotId, name: mesh.name }) } };
+    alt.attachments[slotId] = {
+      [mesh.name]: { ...structuredClone(mesh), link: makeLink(doc, slotId, { skinId: doc.skins[0].id, slotId, name: mesh.name }) },
+    };
     doc.skins.push(alt);
     syncLinkedMeshes(doc);
     const has = (id: string) => doc.bones.some((b) => b.id === id);

@@ -30,7 +30,10 @@ export function makeSequence(slotId: Id, name: string): number {
   const project = docStore.get();
   const att = project.skeleton.skins[0]?.attachments[slotId]?.[name];
   if (!att || (att.type !== 'region' && att.type !== 'mesh')) return 0;
-  const found = detectSequence(project.images.map((i) => i.name), att.path);
+  const found = detectSequence(
+    project.images.map((i) => i.name),
+    att.path,
+  );
   if (!found) {
     toast('No numbered pictures were found: import pictures named like flame01, flame02… and try again', 'info');
     return 0;
@@ -50,7 +53,10 @@ export function findFrames(slotId: Id, name: string): number {
   const project = docStore.get();
   const att = project.skeleton.skins[0]?.attachments[slotId]?.[name];
   if (!att || (att.type !== 'region' && att.type !== 'mesh') || !att.sequence) return 0;
-  const found = detectSequence(project.images.map((i) => i.name), att.path);
+  const found = detectSequence(
+    project.images.map((i) => i.name),
+    att.path,
+  );
   if (!found) {
     toast('No numbered pictures were found', 'info');
     return 0;
@@ -87,8 +93,14 @@ export function keySequence(slotId: Id, name: string, patch: Partial<Omit<Sequen
     const skin = d.skeleton.skins[0];
     const att = skin?.attachments[slotId]?.[name];
     if (!a || !skin || !att || (att.type !== 'region' && att.type !== 'mesh') || !att.sequence) return;
-    const key = cleanSequenceKey({ time: ui.time, mode: before?.mode ?? 'hold', index: before?.index ?? 0, delay: before?.delay ?? 1 / fps, ...patch });
-    const keys = (((a.sequence ??= {})[skin.id] ??= {})[slotId] ??= {})[name] ??= [];
+    const key = cleanSequenceKey({
+      time: ui.time,
+      mode: before?.mode ?? 'hold',
+      index: before?.index ?? 0,
+      delay: before?.delay ?? 1 / fps,
+      ...patch,
+    });
+    const keys = ((((a.sequence ??= {})[skin.id] ??= {})[slotId] ??= {})[name] ??= []);
     upsertKey(keys, key);
     extendDuration(a, ui.time);
   });

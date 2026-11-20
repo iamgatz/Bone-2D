@@ -17,7 +17,7 @@
 
 type J = Record<string, any>;
 
-const obj = (v: unknown): J => (v && typeof v === 'object' && !Array.isArray(v) ? (v) : {});
+const obj = (v: unknown): J => (v && typeof v === 'object' && !Array.isArray(v) ? v : {});
 const arr = (v: unknown): any[] => (Array.isArray(v) ? v : []);
 const num = (v: unknown, d: number): number => (typeof v === 'number' && Number.isFinite(v) ? v : d);
 
@@ -83,14 +83,28 @@ function convertTransform(map: J, warn: (m: string) => void, scales: (bone: stri
       const [sx, sy] = scales(String(b));
       return (mixX !== 0 && sx !== 1) || (mixY !== 0 && sy !== 1);
     });
-    if (odd) warn(`transform constraint "${String(map.name)}": the scale of a local, absolute constraint on a bone whose scale is not 1 is computed differently in 4.3`);
+    if (odd)
+      warn(
+        `transform constraint "${String(map.name)}": the scale of a local, absolute constraint on a bone whose scale is not 1 is computed differently in 4.3`,
+      );
   }
   return o;
 }
 
 function convertPath(map: J): J {
   const o: J = { type: 'path', name: map.name, bones: map.bones, slot: map.target };
-  copyDefined(map, o, ['skin', 'positionMode', 'spacingMode', 'rotateMode', 'rotation', 'position', 'spacing', 'mixRotate', 'mixX', 'mixY']);
+  copyDefined(map, o, [
+    'skin',
+    'positionMode',
+    'spacingMode',
+    'rotateMode',
+    'rotation',
+    'position',
+    'spacing',
+    'mixRotate',
+    'mixX',
+    'mixY',
+  ]);
   return o;
 }
 
@@ -133,7 +147,8 @@ export function upgradeLegacySpineJson(input: J): LegacyUpgrade {
     if (kind === 'path') return convertPath(map);
     return convertPhysics(map);
   });
-  if (entries.some((e) => e.kind === 'physics')) warn('physics constraints use the 4.3 simulation, which smooths the motion between steps: it moves slightly differently from 4.2');
+  if (entries.some((e) => e.kind === 'physics'))
+    warn('physics constraints use the 4.3 simulation, which smooths the motion between steps: it moves slightly differently from 4.2');
   for (const kind of ['ik', 'transform', 'path', 'physics']) delete root[kind];
 
   const animations: J = {};

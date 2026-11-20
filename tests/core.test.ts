@@ -72,7 +72,10 @@ describe('document edits', () => {
     upsertKey(keys, { time: 1, value: [1] });
     upsertKey(keys, { time: 0.5, value: [2] });
     upsertKey(keys, { time: 1, value: [3] });
-    expect(keys.map((k) => [k.time, k.value[0]])).toEqual([[0.5, 2], [1, 3]]);
+    expect(keys.map((k) => [k.time, k.value[0]])).toEqual([
+      [0.5, 2],
+      [1, 3],
+    ]);
   });
 
   it('decompose recovers rotation and scale', () => {
@@ -89,12 +92,21 @@ describe('document edits', () => {
 describe('key references', () => {
   it('moves keys and drops collisions, removes and prunes empty timelines', () => {
     const anim = newAnimation('t', 2);
-    anim.bones.b = { rotate: [{ time: 0, value: [0] }, { time: 0.5, value: [1] }, { time: 1, value: [2] }] };
+    anim.bones.b = {
+      rotate: [
+        { time: 0, value: [0] },
+        { time: 0.5, value: [1] },
+        { time: 1, value: [2] },
+      ],
+    };
     const moved = moveKeys(anim, [{ kind: 'bone', target: 'b', prop: 'rotate', time: 0 }], 0.5);
     expect(anim.bones.b.rotate!.map((k) => k.time)).toEqual([0.5, 1]);
     expect(anim.bones.b.rotate![0].value[0]).toBe(0); // the moved key replaced the one at 0.5
     expect(moved[0].time).toBeCloseTo(0.5, 9);
-    removeKeys(anim, [{ kind: 'bone', target: 'b', prop: 'rotate', time: 0.5 }, { kind: 'bone', target: 'b', prop: 'rotate', time: 1 }]);
+    removeKeys(anim, [
+      { kind: 'bone', target: 'b', prop: 'rotate', time: 0.5 },
+      { kind: 'bone', target: 'b', prop: 'rotate', time: 1 },
+    ]);
     expect(anim.bones.b).toBeUndefined();
   });
 });

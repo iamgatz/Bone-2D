@@ -128,7 +128,20 @@ export function computeWorldPositions(path: PathInput, scratch: PathScratch, spa
           slice(points, 0, 4, world, 4);
         } else slice(points, curve * 6 + 2, 8, world, 0);
       }
-      addCurvePosition(p, world[0], world[1], world[2], world[3], world[4], world[5], world[6], world[7], out, o, tangents || (i > 0 && space === 0));
+      addCurvePosition(
+        p,
+        world[0],
+        world[1],
+        world[2],
+        world[3],
+        world[4],
+        world[5],
+        world[6],
+        world[7],
+        out,
+        o,
+        tangents || (i > 0 && space === 0),
+      );
     }
     return out;
   }
@@ -318,7 +331,20 @@ function addAfterPosition(p: number, temp: number[], i: number, out: number[], o
   out[o + 2] = r;
 }
 
-function addCurvePosition(p: number, x1: number, y1: number, cx1: number, cy1: number, cx2: number, cy2: number, x2: number, y2: number, out: number[], o: number, tangents: boolean) {
+function addCurvePosition(
+  p: number,
+  x1: number,
+  y1: number,
+  cx1: number,
+  cy1: number,
+  cx2: number,
+  cy2: number,
+  x2: number,
+  y2: number,
+  out: number[],
+  o: number,
+  tangents: boolean,
+) {
   if (p === 0 || Number.isNaN(p)) {
     out[o] = x1;
     out[o + 1] = y1;
@@ -404,7 +430,10 @@ export function samplePath(points: ArrayLike<number>, nodeCount: number, closed:
     for (let s = i === 0 ? 0 : 1; s <= steps; s++) {
       const t = s / steps;
       const u = 1 - t;
-      out.push(u * u * u * x0 + 3 * u * u * t * x1 + 3 * u * t * t * x2 + t * t * t * x3, u * u * u * y0 + 3 * u * u * t * y1 + 3 * u * t * t * y2 + t * t * t * y3);
+      out.push(
+        u * u * u * x0 + 3 * u * u * t * x1 + 3 * u * t * t * x2 + t * t * t * x3,
+        u * u * u * y0 + 3 * u * u * t * y1 + 3 * u * t * t * y2 + t * t * t * y3,
+      );
     }
   }
   return out;

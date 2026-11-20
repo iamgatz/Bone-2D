@@ -17,8 +17,18 @@ function rig() {
   const leg = newBone({ name: 'leg', parent: root.id, length: 50 });
   p.skeleton.bones.push(root, arm, leg);
   const a = newAnimation('a', 2);
-  a.bones[arm.id] = { rotate: [{ time: 0, value: [0] }, { time: 1, value: [40] }] };
-  a.bones[leg.id] = { rotate: [{ time: 0, value: [0] }, { time: 1, value: [25] }] };
+  a.bones[arm.id] = {
+    rotate: [
+      { time: 0, value: [0] },
+      { time: 1, value: [40] },
+    ],
+  };
+  a.bones[leg.id] = {
+    rotate: [
+      { time: 0, value: [0] },
+      { time: 1, value: [25] },
+    ],
+  };
   p.skeleton.animations.push(a);
   docStore.replace(p);
   uiStore.patch({ mode: 'animate', animationId: a.id, time: 1, muted: [], overrides: {}, selectedKeys: [] });

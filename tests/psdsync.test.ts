@@ -7,13 +7,31 @@ import type { ImageRef } from '@/core/model';
 import { repairProject } from '@/core/validate';
 
 function layer(name: string): PsdLayer {
-  return { name, left: 0, top: 0, width: 2, height: 2, opacity: 1, blend: 'normal', pixels: { width: 2, height: 2, data: new Uint8ClampedArray(16) } };
+  return {
+    name,
+    left: 0,
+    top: 0,
+    width: 2,
+    height: 2,
+    opacity: 1,
+    blend: 'normal',
+    pixels: { width: 2, height: 2, data: new Uint8ClampedArray(16) },
+  };
 }
-const image = (name: string, psd?: [number, number]): ImageRef => ({ id: `id-${name}`, name, width: 2, height: 2, ...(psd ? { psd } : {}) });
+const image = (name: string, psd?: [number, number]): ImageRef => ({
+  id: `id-${name}`,
+  name,
+  width: 2,
+  height: 2,
+  ...(psd ? { psd } : {}),
+});
 
 describe('PSD sync plan', () => {
   it('matches layers to pictures by name, lists new layers and the pictures whose layer is gone', () => {
-    const plan = planPsdSync([layer('back'), layer('arm/upper'), layer('hat')], [image('back', [0, 0]), image('arm/upper', [1, 1]), image('old', [2, 2]), image('hand-drawn')]);
+    const plan = planPsdSync(
+      [layer('back'), layer('arm/upper'), layer('hat')],
+      [image('back', [0, 0]), image('arm/upper', [1, 1]), image('old', [2, 2]), image('hand-drawn')],
+    );
     expect(plan.updates.map((u) => u.image.name)).toEqual(['back', 'arm/upper']);
     expect(plan.added.map((l) => l.name)).toEqual(['hat']);
     // "hand-drawn" never came from a PSD, so a file that lacks it says nothing about it
@@ -34,7 +52,12 @@ describe('fitRegion', () => {
     expect(fitRegion(att, { width: 20, height: 30 }, { width: 20, height: 30 }, [0, 0])).toEqual(att);
     expect(fitRegion(att, { width: 20, height: 30 }, { width: 40, height: 15 }, [2, 4])).toEqual({ x: 7, y: 1, width: 40, height: 15 });
     // an attachment the user had scaled to half stays at half of the new pixels
-    expect(fitRegion({ x: 0, y: 0, width: 10, height: 10 }, { width: 20, height: 20 }, { width: 30, height: 20 }, [0, 0])).toEqual({ x: 0, y: 0, width: 15, height: 10 });
+    expect(fitRegion({ x: 0, y: 0, width: 10, height: 10 }, { width: 20, height: 20 }, { width: 30, height: 20 }, [0, 0])).toEqual({
+      x: 0,
+      y: 0,
+      width: 15,
+      height: 10,
+    });
   });
 });
 

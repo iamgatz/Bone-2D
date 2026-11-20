@@ -4,7 +4,31 @@ import { brushFalloff, strengthAmount } from '@/core/brush';
 import { RAD2DEG } from '@/core/math';
 import type { Mat } from '@/core/math';
 import { deformHome } from '@/core/links';
-import { adjacency, moveTriangle, autoWeights, bindMesh, generateMeshFromImage, keepOutside, locateInMesh, meshFromRegion, meshWorldPositions, mirrorWeights, normalizeInfluences, pruneWeights, remapEdges, edgeProblem, removeBoneWeights, removeMeshVertices, setBoneWeight, smoothWeights, swapBoneWeights, triangulate, unbindMesh, updateBindings, weldWeights } from '@/core/mesh';
+import {
+  adjacency,
+  moveTriangle,
+  autoWeights,
+  bindMesh,
+  generateMeshFromImage,
+  keepOutside,
+  locateInMesh,
+  meshFromRegion,
+  meshWorldPositions,
+  mirrorWeights,
+  normalizeInfluences,
+  pruneWeights,
+  remapEdges,
+  edgeProblem,
+  removeBoneWeights,
+  removeMeshVertices,
+  setBoneWeight,
+  smoothWeights,
+  swapBoneWeights,
+  triangulate,
+  unbindMesh,
+  updateBindings,
+  weldWeights,
+} from '@/core/mesh';
 import { mirrorName } from '@/core/duplicate';
 import type { BoneMats, TraceOptions, TriangleMove, VertexMap } from '@/core/mesh';
 import { matInvert } from '@/core/math';
@@ -50,7 +74,8 @@ function getShapeMesh(slotId: Id, name: string): MeshAttachment | undefined {
   const mesh = getMesh(slotId, name);
   if (mesh?.link) {
     const now = Date.now();
-    if (now - lastLinkedToast > 1500) toast(`This mesh follows the shape of "${mesh.link.source}": edit that mesh, or unlink this one first`, 'error');
+    if (now - lastLinkedToast > 1500)
+      toast(`This mesh follows the shape of "${mesh.link.source}": edit that mesh, or unlink this one first`, 'error');
     lastLinkedToast = now;
     return undefined;
   }
@@ -85,7 +110,15 @@ export function convertToMesh(slotId: Id, name: string, kind: 'trace' | 'quad' =
     const img = assets.getImageData(setupPicture(region) ?? region.path);
     mesh = img ? generateMeshFromImage(region, img.data, img.width, img.height, opts) : meshFromRegion(region);
   }
-  mesh.region = { x: region.x, y: region.y, rotation: region.rotation, scaleX: region.scaleX, scaleY: region.scaleY, width: region.width, height: region.height };
+  mesh.region = {
+    x: region.x,
+    y: region.y,
+    rotation: region.rotation,
+    scaleX: region.scaleX,
+    scaleY: region.scaleY,
+    width: region.width,
+    height: region.height,
+  };
   writeMesh(slotId, name, mesh, 'Convert to mesh');
   setSelection({ slot: slotId, attachment: name, bones: uiStore.get().selection.bones });
   uiStore.patch({ tool: 'mesh' });
@@ -101,7 +134,14 @@ export function regenerateMesh(slotId: Id, name: string, opts: TraceOptions) {
     return;
   }
   const r = mesh.region ?? { x: 0, y: 0, rotation: 0, scaleX: 1, scaleY: 1, width: mesh.width, height: mesh.height };
-  const region: RegionAttachment = { type: 'region', name: mesh.name, path: mesh.path, color: mesh.color, ...r, ...(mesh.sequence ? { sequence: mesh.sequence } : {}) };
+  const region: RegionAttachment = {
+    type: 'region',
+    name: mesh.name,
+    path: mesh.path,
+    color: mesh.color,
+    ...r,
+    ...(mesh.sequence ? { sequence: mesh.sequence } : {}),
+  };
   const img = assets.getImageData(setupPicture(mesh) ?? mesh.path);
   if (!img) return;
   const next = generateMeshFromImage(region, img.data, img.width, img.height, opts);
@@ -160,8 +200,12 @@ export function addMeshVertex(slotId: Id, name: string, wx: number, wy: number):
     let best = Infinity;
     for (let i = 0; i < mesh.hull; i++) {
       const j = (i + 1) % mesh.hull;
-      const ax = world[i * 2], ay = world[i * 2 + 1], bx = world[j * 2], by = world[j * 2 + 1];
-      const dx = bx - ax, dy = by - ay;
+      const ax = world[i * 2],
+        ay = world[i * 2 + 1],
+        bx = world[j * 2],
+        by = world[j * 2 + 1];
+      const dx = bx - ax,
+        dy = by - ay;
       const l2s = dx * dx + dy * dy || 1;
       const t = Math.max(0, Math.min(1, ((wx - ax) * dx + (wy - ay) * dy) / l2s));
       const d = (ax + dx * t - wx) ** 2 + (ay + dy * t - wy) ** 2;
@@ -331,9 +375,11 @@ export const bindMeshesToBones = (boneIds: Id[]) => inGroup('Bind meshes', (m) =
 export const unbindMeshesFromBones = () => inGroup('Unbind meshes', (m) => unbindMeshFromBones(m.slotId, m.name));
 export const autoWeightMeshes = () => inGroup('Auto weights', (m) => autoWeightMesh(m.slotId, m.name));
 export const smoothMeshesWeights = (passes = 1) => inGroup('Smooth weights', (m) => smoothMeshWeights(m.slotId, m.name, passes));
-export const pruneMeshesWeights = (threshold = 0.05, max = 4) => inGroup('Prune weights', (m) => pruneMeshWeights(m.slotId, m.name, threshold, max));
+export const pruneMeshesWeights = (threshold = 0.05, max = 4) =>
+  inGroup('Prune weights', (m) => pruneMeshWeights(m.slotId, m.name, threshold, max));
 export const swapMeshesWeights = (a: Id, b: Id) => inGroup('Swap weights', (m) => void swapMeshWeights(m.slotId, m.name, a, b));
-export const removeBoneFromMeshes = (bone: Id) => inGroup('Remove bone from meshes', (m) => void removeBoneFromMesh(m.slotId, m.name, bone));
+export const removeBoneFromMeshes = (bone: Id) =>
+  inGroup('Remove bone from meshes', (m) => void removeBoneFromMesh(m.slotId, m.name, bone));
 
 /** The images (regions) the selected slots show now: what Trace mesh turns into meshes together. */
 export function traceGroup(): MeshRef[] {
@@ -443,7 +489,12 @@ export function autoWeightMesh(slotId: Id, name: string) {
   w = smoothWeights(w, adjacency(mesh.triangles, mesh.uvs.length / 2), 2, 0.5);
   const done = bindMesh(unbindMesh(mesh, slotMat(slotId), mats), slotMat(slotId), mats, w);
   const only = weightScope(slotId, name, mesh.uvs.length / 2);
-  writeMesh(slotId, name, only && done.weights ? { ...done, weights: keepOutside(mesh.weights, done.weights, only) } : done, 'Auto weights');
+  writeMesh(
+    slotId,
+    name,
+    only && done.weights ? { ...done, weights: keepOutside(mesh.weights, done.weights, only) } : done,
+    'Auto weights',
+  );
 }
 
 export function smoothMeshWeights(slotId: Id, name: string, passes = 1) {
@@ -459,11 +510,21 @@ export function smoothMeshWeights(slotId: Id, name: string, passes = 1) {
     normalizeInfluences(
       list.map((e) => {
         const im = inv.get(e.bone)!;
-        return [e.bone, im.a * world[i * 2] + im.b * world[i * 2 + 1] + im.x, im.c * world[i * 2] + im.d * world[i * 2 + 1] + im.y, e.w] as Influence;
+        return [
+          e.bone,
+          im.a * world[i * 2] + im.b * world[i * 2 + 1] + im.x,
+          im.c * world[i * 2] + im.d * world[i * 2 + 1] + im.y,
+          e.w,
+        ] as Influence;
       }),
     ),
   );
-  writeMesh(slotId, name, { ...mesh, weights: keepOutside(mesh.weights, weights, weightScope(slotId, name, mesh.uvs.length / 2)) }, 'Smooth weights');
+  writeMesh(
+    slotId,
+    name,
+    { ...mesh, weights: keepOutside(mesh.weights, weights, weightScope(slotId, name, mesh.uvs.length / 2)) },
+    'Smooth weights',
+  );
 }
 
 /** Drops the faint influences of every vertex and keeps at most `max` bones per vertex (Spine's Prune). */
@@ -507,7 +568,8 @@ export function removeBoneFromMesh(slotId: Id, name: string, bone: Id): number {
   }
   writeMesh(slotId, name, { ...mesh, weights: r.weights }, 'Remove bone from mesh');
   const { brush } = uiStore.get();
-  if (brush.bone === bone || brush.locked.includes(bone)) uiStore.patch({ brush: { ...brush, bone: brush.bone === bone ? null : brush.bone, locked: brush.locked.filter((b) => b !== bone) } });
+  if (brush.bone === bone || brush.locked.includes(bone))
+    uiStore.patch({ brush: { ...brush, bone: brush.bone === bone ? null : brush.bone, locked: brush.locked.filter((b) => b !== bone) } });
   toast(`The mesh no longer follows the bone (${r.changed} vertices)`, 'ok');
   return r.changed;
 }
@@ -538,7 +600,12 @@ export function weldTargets(slotId: Id, name: string): { slotId: Id; name: strin
   for (const slot of doc.slots) {
     for (const [n, a] of Object.entries(doc.skins[0].attachments[slot.id] ?? {})) {
       if (a.type !== 'mesh' || a.link || !a.weights || (slot.id === slotId && n === name)) continue;
-      const shared = new Set(a.weights.flat().map((e) => e[0]).filter((b) => mineBones.has(b))).size;
+      const shared = new Set(
+        a.weights
+          .flat()
+          .map((e) => e[0])
+          .filter((b) => mineBones.has(b)),
+      ).size;
       out.push({ slotId: slot.id, name: n, label: n === slot.name ? n : `${slot.name} · ${n}`, shared });
     }
   }
@@ -587,7 +654,10 @@ export function mirrorMeshWeights(slotId: Id, name: string, fromLeft: boolean): 
   const world = meshWorldPositions(mesh, slotMat(slotId), mats);
   const result = mirrorWeights(mesh.weights, world, 0, fromLeft, twin, mats);
   if (result.changed === 0) {
-    toast("No vertex has a mirrored partner on the other side. Mirror weights needs a mesh that is symmetric about the skeleton's center line.", 'info');
+    toast(
+      "No vertex has a mirrored partner on the other side. Mirror weights needs a mesh that is symmetric about the skeleton's center line.",
+      'info',
+    );
     return 0;
   }
   writeMesh(slotId, name, { ...mesh, weights: result.weights }, 'Mirror weights');
@@ -669,7 +739,10 @@ export function paintWeights(slotId: Id, name: string, stroke: BrushStroke, bone
     const f = brushFalloff(d, radius, brush.feather, brush.shape) * strengthAmount(brush.strength, brush.curve);
     const list = weights[i];
     const cur = list.find((e) => e[0] === bone)?.[3] ?? 0;
-    const bindFor = (): [number, number] => [inv.a * world[i * 2] + inv.b * world[i * 2 + 1] + inv.x, inv.c * world[i * 2] + inv.d * world[i * 2 + 1] + inv.y];
+    const bindFor = (): [number, number] => [
+      inv.a * world[i * 2] + inv.b * world[i * 2 + 1] + inv.x,
+      inv.c * world[i * 2] + inv.d * world[i * 2 + 1] + inv.y,
+    ];
     let target = cur;
     if (brush.mode === 'add') target = cur + f * 0.6;
     else if (brush.mode === 'subtract') target = cur - f * 0.6;

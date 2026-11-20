@@ -69,7 +69,15 @@ describe('softWeights', () => {
 describe('softMoves', () => {
   it('moves each vertex by its share of the drag', () => {
     const start = [0, 0, 10, 0, 20, 0];
-    const moves = softMoves(start, new Map([[0, 1], [1, 0.5]]), 8, -4);
+    const moves = softMoves(
+      start,
+      new Map([
+        [0, 1],
+        [1, 0.5],
+      ]),
+      8,
+      -4,
+    );
     expect(moves).toEqual([
       { index: 0, x: 8, y: -4 },
       { index: 1, x: 14, y: -2 },
@@ -84,10 +92,11 @@ describe('a soft drag of a mesh', () => {
       docStore.replace(project);
       const skin = project.skeleton.skins[0];
       let found: { slotId: string; name: string } | null = null;
-      for (const slotId in skin.attachments) for (const name in skin.attachments[slotId]) {
-        const a = skin.attachments[slotId][name];
-        if (!found && a.type === 'mesh' && !!a.weights === weighted) found = { slotId, name };
-      }
+      for (const slotId in skin.attachments)
+        for (const name in skin.attachments[slotId]) {
+          const a = skin.attachments[slotId][name];
+          if (!found && a.type === 'mesh' && !!a.weights === weighted) found = { slotId, name };
+        }
       expect(found).not.toBeNull();
       const { slotId, name } = found!;
       const world = () => {
@@ -113,7 +122,13 @@ describe('a soft drag of a clipping polygon', () => {
     const { project } = buildFixture();
     docStore.replace(project);
     A.selectBone(project.skeleton.bones[0].id);
-    const made = P.createPolygon('clipping', [[0, 0], [100, 0], [100, 100], [0, 100], [50, 160]])!;
+    const made = P.createPolygon('clipping', [
+      [0, 0],
+      [100, 0],
+      [100, 100],
+      [0, 100],
+      [50, 160],
+    ])!;
     expect(made).not.toBeNull();
     const poly = () => P.getPolygon(made.slotId, made.name)!;
     const before = Array.from(poly().vertices);

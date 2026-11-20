@@ -43,6 +43,7 @@ export function fixAllSafeWarnings(): number {
 export function revealWarning(w: Warning): void {
   const ref = w.ref;
   if (!ref) return;
-  if (ref.animation && w.kind === 'emptyAnimation') uiStore.patch({ animationId: ref.animation, time: 0, playing: false, overrides: {}, selectedKeys: [] });
+  if (ref.animation && w.kind === 'emptyAnimation')
+    uiStore.patch({ animationId: ref.animation, time: 0, playing: false, overrides: {}, selectedKeys: [] });
   else if (ref.slot) setSelection({ slot: ref.slot, attachment: ref.name ?? null, bones: uiStore.get().selection.bones });
 }

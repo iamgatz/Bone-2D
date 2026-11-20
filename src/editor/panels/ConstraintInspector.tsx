@@ -37,7 +37,13 @@ function IkInspector({ id }: { id: Id }) {
   const anim = currentAnimation();
   const keys = anim?.ik[id];
   const keyed = hasKey(keys, time);
-  const v = (animate ? currentIkValues(id) : null) ?? { mix: c.mix, softness: c.softness, bendPositive: c.bendPositive, compress: c.compress, stretch: c.stretch };
+  const v = (animate ? currentIkValues(id) : null) ?? {
+    mix: c.mix,
+    softness: c.softness,
+    bendPositive: c.bendPositive,
+    compress: c.compress,
+    stretch: c.stretch,
+  };
   const boneName = (b: Id) => doc.bones.find((x) => x.id === b)?.name ?? '?';
 
   return (
@@ -46,20 +52,49 @@ function IkInspector({ id }: { id: Id }) {
       <Section
         id="ik.chain"
         title="Chain"
-        actions={animate && <KeyButton on={keyed} title={keyed ? 'Remove the IK key at the playhead' : 'Key the IK values at the playhead'} onClick={() => (keyed ? deleteKeys([{ kind: 'ik', target: id, prop: '', time }]) : setIkValues(id, {}))} />}
+        actions={
+          animate && (
+            <KeyButton
+              on={keyed}
+              title={keyed ? 'Remove the IK key at the playhead' : 'Key the IK values at the playhead'}
+              onClick={() => (keyed ? deleteKeys([{ kind: 'ik', target: id, prop: '', time }]) : setIkValues(id, {}))}
+            />
+          )
+        }
       >
         <Field label="Bones">
           <span className="val">{c.bones.map(boneName).join(' → ')}</span>
         </Field>
         <Field label="Target">
-          <SelectField value={c.target} options={doc.bones.filter((b) => !c.bones.includes(b.id)).map((b) => ({ value: b.id, label: b.name }))} onChange={(t) => setConstraintSetup(id, { target: t })} />
+          <SelectField
+            value={c.target}
+            options={doc.bones.filter((b) => !c.bones.includes(b.id)).map((b) => ({ value: b.id, label: b.name }))}
+            onChange={(t) => setConstraintSetup(id, { target: t })}
+          />
         </Field>
         <Field label="Mix">
-          <NumberField label="%" value={v.mix * 100} step={1} precision={0} min={0} max={100} keyed={animate && keyed} onChange={(x) => setIkValues(id, { mix: x / 100 })} />
+          <NumberField
+            label="%"
+            value={v.mix * 100}
+            step={1}
+            precision={0}
+            min={0}
+            max={100}
+            keyed={animate && keyed}
+            onChange={(x) => setIkValues(id, { mix: x / 100 })}
+          />
         </Field>
         {c.bones.length === 2 && (
           <Field label="Softness">
-            <NumberField label="px" value={v.softness} step={0.5} precision={1} min={0} keyed={animate && keyed} onChange={(x) => setIkValues(id, { softness: Math.max(0, x) })} />
+            <NumberField
+              label="px"
+              value={v.softness}
+              step={0.5}
+              precision={1}
+              min={0}
+              keyed={animate && keyed}
+              onChange={(x) => setIkValues(id, { softness: Math.max(0, x) })}
+            />
           </Field>
         )}
         {c.bones.length === 2 && (
@@ -77,7 +112,15 @@ function IkInspector({ id }: { id: Id }) {
         )}
         {(v.stretch || v.compress) && (
           <Field label="Scale Y">
-            <SelectField value={c.scaleY} options={[{ value: 'none', label: 'Keep' }, { value: 'uniform', label: 'Uniform' }, { value: 'volume', label: 'Preserve volume' }]} onChange={(x) => setConstraintSetup(id, { scaleY: x })} />
+            <SelectField
+              value={c.scaleY}
+              options={[
+                { value: 'none', label: 'Keep' },
+                { value: 'uniform', label: 'Uniform' },
+                { value: 'volume', label: 'Preserve volume' },
+              ]}
+              onChange={(x) => setConstraintSetup(id, { scaleY: x })}
+            />
           </Field>
         )}
       </Section>

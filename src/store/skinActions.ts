@@ -15,7 +15,8 @@ export function setActiveSkin(id: Id | null) {
   let mix = id && ui.skinMix.includes(id) ? ui.skinMix.filter((m) => m !== id) : ui.skinMix;
   // a pinned skin stays shown when another one is chosen
   const old = ui.skinId;
-  if (old && old !== id && ui.skinPins.includes(old) && !mix.includes(old) && skeletonDoc().skins.some((s) => s.id === old)) mix = [...mix, old];
+  if (old && old !== id && ui.skinPins.includes(old) && !mix.includes(old) && skeletonDoc().skins.some((s) => s.id === old))
+    mix = [...mix, old];
   uiStore.patch({ skinId: id, skinMix: mix });
 }
 
@@ -58,7 +59,11 @@ export function renameSkin(id: Id, name: string) {
   const doc = skeletonDoc();
   docStore.update('Rename skin', (d) => {
     const s = d.skeleton.skins.find((x) => x.id === id);
-    if (s && s !== d.skeleton.skins[0]) s.name = freshName(clean, doc.skins.filter((x) => x.id !== id));
+    if (s && s !== d.skeleton.skins[0])
+      s.name = freshName(
+        clean,
+        doc.skins.filter((x) => x.id !== id),
+      );
   });
 }
 
@@ -108,7 +113,10 @@ export function createSkinFromImages(prefix: string): Id | null {
   if (!result.placed) return null;
   setActiveSkin(result.skinId);
   const odd = picks.filter((p) => p.sizeDiffers).length;
-  toast(odd ? `Skin made from ${result.placed} pictures; ${odd} of a different size than the mesh` : `Skin made from ${result.placed} pictures`, odd ? 'info' : 'ok');
+  toast(
+    odd ? `Skin made from ${result.placed} pictures; ${odd} of a different size than the mesh` : `Skin made from ${result.placed} pictures`,
+    odd ? 'info' : 'ok',
+  );
   return result.skinId;
 }
 
@@ -132,7 +140,8 @@ export function linkMeshTo(slotId: Id, name: string, source: { slotId: Id; name:
   }
   docStore.update('Link mesh', (d) => {
     const m = d.skeleton.skins[0].attachments[slotId]?.[name];
-    if (m?.type === 'mesh') m.link = makeLink(d.skeleton, slotId, { skinId: d.skeleton.skins[0].id, slotId: source.slotId, name: source.name });
+    if (m?.type === 'mesh')
+      m.link = makeLink(d.skeleton, slotId, { skinId: d.skeleton.skins[0].id, slotId: source.slotId, name: source.name });
   });
 }
 
@@ -165,11 +174,18 @@ export function duplicateSkinAction(id: Id, opts?: DuplicateSkinOptions, picture
   docStore.update('Duplicate skin', (d) => {
     made = duplicateSkin(d.skeleton, id, opts)?.id ?? null;
     // the copy shows pictures of its own: a part of the picture names is swapped, where the swapped name is a picture that exists
-    if (made && pictures?.find) repointed = repointSkinPictures(d.skeleton, made, pictures.find, pictures.replace, new Set(d.images.map((i) => i.name)));
+    if (made && pictures?.find)
+      repointed = repointSkinPictures(d.skeleton, made, pictures.find, pictures.replace, new Set(d.images.map((i) => i.name)));
   });
   if (made) {
     setActiveSkin(made);
-    if (pictures?.find) toast(repointed ? `Duplicated, ${repointed} pictures point at other pictures` : 'Duplicated, no picture name matched a picture that exists', repointed ? 'ok' : 'info');
+    if (pictures?.find)
+      toast(
+        repointed
+          ? `Duplicated, ${repointed} pictures point at other pictures`
+          : 'Duplicated, no picture name matched a picture that exists',
+        repointed ? 'ok' : 'info',
+      );
   } else toast('The default skin cannot be duplicated');
 }
 

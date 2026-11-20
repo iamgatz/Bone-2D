@@ -67,7 +67,12 @@ export function planSkinImages(doc: SkeletonDoc, images: ImageRef[], rawPrefix: 
       const key = `${t.slotId}\n${rest}`;
       if (taken.has(key) || t.path === img.name) continue; // the default skin already shows this picture
       taken.add(key);
-      picks.push({ slotId: t.slotId, placeholder: rest, image: img.name, sizeDiffers: t.mesh && (t.width !== img.width || t.height !== img.height) });
+      picks.push({
+        slotId: t.slotId,
+        placeholder: rest,
+        image: img.name,
+        sizeDiffers: t.mesh && (t.width !== img.width || t.height !== img.height),
+      });
     }
   }
   return picks;
@@ -105,7 +110,13 @@ function dropReplacedTimelines(doc: SkeletonDoc, skinId: Id, slotId: Id, name: s
   }
 }
 
-export function putSkinImage(doc: SkeletonDoc, skinId: Id, slotId: Id, placeholder: string, img: { name: string; width: number; height: number }): boolean {
+export function putSkinImage(
+  doc: SkeletonDoc,
+  skinId: Id,
+  slotId: Id,
+  placeholder: string,
+  img: { name: string; width: number; height: number },
+): boolean {
   const defSkin = doc.skins[0];
   const def = defSkin?.attachments[slotId]?.[placeholder];
   const skin = doc.skins.find((s) => s.id === skinId);
@@ -117,10 +128,17 @@ export function putSkinImage(doc: SkeletonDoc, skinId: Id, slotId: Id, placehold
     delete shape.sequence; // one picture
     delete shape.region;
     dropReplacedTimelines(doc, skin.id, slotId, placeholder);
-    (skin.attachments[slotId] ??= {})[placeholder] = { ...shape, name: placeholder, path: img.name, color: [1, 1, 1, 1], link: makeLink(doc, slotId, { skinId: defSkin.id, slotId, name: placeholder }) };
+    (skin.attachments[slotId] ??= {})[placeholder] = {
+      ...shape,
+      name: placeholder,
+      path: img.name,
+      color: [1, 1, 1, 1],
+      link: makeLink(doc, slotId, { skinId: defSkin.id, slotId, name: placeholder }),
+    };
     return true;
   }
-  const base: Pick<RegionAttachment, 'x' | 'y' | 'rotation' | 'scaleX' | 'scaleY'> = def.type === 'region' ? def : { x: 0, y: 0, rotation: 0, scaleX: 1, scaleY: 1 };
+  const base: Pick<RegionAttachment, 'x' | 'y' | 'rotation' | 'scaleX' | 'scaleY'> =
+    def.type === 'region' ? def : { x: 0, y: 0, rotation: 0, scaleX: 1, scaleY: 1 };
   dropReplacedTimelines(doc, skin.id, slotId, placeholder);
   (skin.attachments[slotId] ??= {})[placeholder] = {
     type: 'region',

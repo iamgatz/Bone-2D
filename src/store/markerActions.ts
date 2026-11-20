@@ -70,7 +70,10 @@ export function splitAtMarkersAction(): number {
   const anim = currentAnimation();
   if (!anim) return 0;
   const doc = docStore.get().skeleton;
-  const pieces = splitAtMarkers(anim, doc.animations.map((a) => a.name));
+  const pieces = splitAtMarkers(
+    anim,
+    doc.animations.map((a) => a.name),
+  );
   if (!pieces.length) {
     toast('Add a marker inside the animation first: it is cut where the markers are');
     return 0;

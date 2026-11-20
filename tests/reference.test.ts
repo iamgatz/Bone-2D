@@ -30,7 +30,12 @@ describe('reference ghost', () => {
   const arm = newBone({ name: 'arm', parent: root.id, length: 40, rotation: 10 });
   p.skeleton.bones.push(root, arm);
   const a = newAnimation('wave', 1);
-  a.bones[arm.id] = { rotate: [{ time: 0, value: [0] }, { time: 1, value: [90] }] };
+  a.bones[arm.id] = {
+    rotate: [
+      { time: 0, value: [0] },
+      { time: 1, value: [90] },
+    ],
+  };
   p.skeleton.animations.push(a);
   const data = compileSkeleton(p.skeleton);
   const scene = { data } as unknown as Scene;

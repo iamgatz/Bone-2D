@@ -52,7 +52,12 @@ export function encodePng(width: number, height: number, rgba: ArrayLike<number>
     raw[row] = 1;
     for (let x = 0; x < stride; x++) raw[row + 1 + x] = (rgba[y * stride + x] - (x >= 4 ? rgba[y * stride + x - 4] : 0)) & 0xff;
   }
-  return Buffer.concat([Buffer.from(SIGNATURE), chunk('IHDR', head), chunk('IDAT', deflateSync(raw, { level: 9 })), chunk('IEND', new Uint8Array(0))]);
+  return Buffer.concat([
+    Buffer.from(SIGNATURE),
+    chunk('IHDR', head),
+    chunk('IDAT', deflateSync(raw, { level: 9 })),
+    chunk('IEND', new Uint8Array(0)),
+  ]);
 }
 
 const CHANNELS: Record<number, number> = { 0: 1, 2: 3, 3: 1, 4: 2, 6: 4 };
@@ -101,7 +106,7 @@ export function decodePng(file: Uint8Array): Pixels | null {
     let palette: Uint8Array | null = null;
     let trns: Uint8Array | null = null;
     const idat: Uint8Array[] = [];
-    for (let at = 8; at + 8 <= file.length; ) {
+    for (let at = 8; at + 8 <= file.length;) {
       const len = view.getUint32(at);
       const type = String.fromCharCode(file[at + 4], file[at + 5], file[at + 6], file[at + 7]);
       const body = file.subarray(at + 8, at + 8 + len);
@@ -132,7 +137,8 @@ export function decodePng(file: Uint8Array): Pixels | null {
       const bit = index * depth;
       return (row[rowAt + (bit >> 3)] >> (8 - depth - (bit & 7))) & max;
     };
-    const rawSample = (row: Uint8Array, rowAt: number, index: number): number => (depth === 16 ? (row[rowAt + index * 2] << 8) | row[rowAt + index * 2 + 1] : sample(row, rowAt, index));
+    const rawSample = (row: Uint8Array, rowAt: number, index: number): number =>
+      depth === 16 ? (row[rowAt + index * 2] << 8) | row[rowAt + index * 2 + 1] : sample(row, rowAt, index);
     const scale = depth < 8 ? 255 / max : 1;
     const put = (rows: Uint8Array, rowBytes: number, w: number, h: number, place: (x: number, y: number) => number) => {
       for (let y = 0; y < h; y++) {
@@ -159,7 +165,12 @@ export function decodePng(file: Uint8Array): Pixels | null {
             out[o + 2] = sample(rows, base, x * channels + 2);
             if (colour === 6) out[o + 3] = sample(rows, base, x * channels + 3);
             else {
-              const hit = trns && trns.length >= 6 && rawSample(rows, base, x * 3) === ((trns[0] << 8) | trns[1]) && rawSample(rows, base, x * 3 + 1) === ((trns[2] << 8) | trns[3]) && rawSample(rows, base, x * 3 + 2) === ((trns[4] << 8) | trns[5]);
+              const hit =
+                trns &&
+                trns.length >= 6 &&
+                rawSample(rows, base, x * 3) === ((trns[0] << 8) | trns[1]) &&
+                rawSample(rows, base, x * 3 + 1) === ((trns[2] << 8) | trns[3]) &&
+                rawSample(rows, base, x * 3 + 2) === ((trns[4] << 8) | trns[5]);
               out[o + 3] = hit ? 0 : 255;
             }
           }
@@ -204,7 +215,8 @@ export function resizePixels(src: Pixels, width: number, height: number): Pixels
   const out = new Uint8ClampedArray(width * height * 4);
   const sx = src.width / width;
   const sy = src.height / height;
-  const at = (x: number, y: number, k: number) => src.data[(Math.min(src.height - 1, Math.max(0, y)) * src.width + Math.min(src.width - 1, Math.max(0, x))) * 4 + k];
+  const at = (x: number, y: number, k: number) =>
+    src.data[(Math.min(src.height - 1, Math.max(0, y)) * src.width + Math.min(src.width - 1, Math.max(0, x))) * 4 + k];
   for (let y = 0; y < height; y++) {
     for (let x = 0; x < width; x++) {
       let r = 0;

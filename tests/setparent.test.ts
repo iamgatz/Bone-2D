@@ -15,7 +15,11 @@ function rig() {
   const c = newBone({ name: 'c', parent: root.id, x: -30, length: 20 });
   p.skeleton.bones.push(root, a, b, c);
   docStore.replace(p);
-  uiStore.patch({ mode: 'setup', pickParent: false, selection: { bones: [], slot: null, attachment: null, constraint: null, vertices: [] } });
+  uiStore.patch({
+    mode: 'setup',
+    pickParent: false,
+    selection: { bones: [], slot: null, attachment: null, constraint: null, vertices: [] },
+  });
   return { root, a, b, c };
 }
 const world = (id: string) => {

@@ -501,7 +501,18 @@ export interface BoneTimelines {
 
 /** Every timeline name a bone can carry. */
 export type BoneProp = keyof BoneTimelines;
-export const BONE_PROPS: BoneProp[] = ['rotate', 'translate', 'translatex', 'translatey', 'scale', 'scalex', 'scaley', 'shear', 'shearx', 'sheary'];
+export const BONE_PROPS: BoneProp[] = [
+  'rotate',
+  'translate',
+  'translatex',
+  'translatey',
+  'scale',
+  'scalex',
+  'scaley',
+  'shear',
+  'shearx',
+  'sheary',
+];
 /** The three channels that can be keyed per axis, and the two timelines each splits into. */
 export type AxisGroup = 'translate' | 'scale' | 'shear';
 export const AXIS_GROUPS: Record<AxisGroup, [BoneProp, BoneProp]> = {
@@ -693,7 +704,21 @@ export function newSkin(name: string): Skin {
 }
 
 export function newAnimation(name: string, duration = 1): Animation {
-  return { id: uid(), name, duration, bones: {}, slots: {}, ik: {}, transform: {}, slider: {}, path: {}, physics: {}, deform: {}, drawOrder: [], events: [] };
+  return {
+    id: uid(),
+    name,
+    duration,
+    bones: {},
+    slots: {},
+    ik: {},
+    transform: {},
+    slider: {},
+    path: {},
+    physics: {},
+    deform: {},
+    drawOrder: [],
+    events: [],
+  };
 }
 
 export function newPathConstraint(partial: Partial<PathConstraint> & { name: string; bones: Id[]; target: Id }): PathConstraint {
@@ -758,7 +783,9 @@ export function newSliderConstraint(partial: Partial<SliderConstraint> & { name:
   };
 }
 
-export function newTransformConstraint(partial: Partial<TransformConstraint> & { name: string; bones: Id[]; source: Id }): TransformConstraint {
+export function newTransformConstraint(
+  partial: Partial<TransformConstraint> & { name: string; bones: Id[]; source: Id },
+): TransformConstraint {
   return {
     id: uid(),
     type: 'transform',

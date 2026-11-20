@@ -76,7 +76,8 @@ export function removeSlots(doc: SkeletonDoc, slotIds: Set<Id>) {
     }
     pruneSequences(a);
     a.drawOrder = a.drawOrder.map((k) => ({ ...k, order: k.order.filter((s) => !slotIds.has(s)) }));
-    for (const id in a.drawOrderFolder ?? {}) a.drawOrderFolder![id] = a.drawOrderFolder![id].map((k) => ({ ...k, order: k.order.filter((s) => !slotIds.has(s)) }));
+    for (const id in a.drawOrderFolder ?? {})
+      a.drawOrderFolder![id] = a.drawOrderFolder![id].map((k) => ({ ...k, order: k.order.filter((s) => !slotIds.has(s)) }));
   }
   for (const f of doc.drawOrderFolders ?? []) f.slots = f.slots.filter((s) => !slotIds.has(s));
   pruneFolders(doc);
@@ -119,9 +120,11 @@ export function removeBones(doc: SkeletonDoc, ids: Iterable<Id>, bindPose?: Bone
             return sum > 0 ? kept.map((inf) => [inf[0], inf[1], inf[2], inf[3] / sum] as typeof inf) : kept;
           });
           // influences vanished: deform values follow the bones that stay
-          if (before && att.type === 'mesh' && touched) reconcileDeform(doc, slotId, name, before, att, null, (id) => wasBone.has(id), skin.id);
+          if (before && att.type === 'mesh' && touched)
+            reconcileDeform(doc, slotId, name, before, att, null, (id) => wasBone.has(id), skin.id);
           // a path whose influences changed can no longer use its deform keys (their layout is per influence)
-          if (att.type === 'path' && touched) for (const a of doc.animations) for (const skinId of Object.keys(a.deform)) dropDeformTimeline(a, skinId, slotId, name);
+          if (att.type === 'path' && touched)
+            for (const a of doc.animations) for (const skinId of Object.keys(a.deform)) dropDeformTimeline(a, skinId, slotId, name);
         }
       }
     }
@@ -173,7 +176,16 @@ export function dropDeformTimeline(a: Animation, skinId: Id, slotId: Id, attName
  * (vertices added / removed, influences changed). Keys follow their vertices when the layouts are compatible;
  * otherwise (bind / unbind, re-trace) the timelines are dropped. Returns true when timelines had to be dropped.
  */
-export function reconcileDeform(doc: SkeletonDoc, slotId: Id, attName: string, before: MeshAttachment, after: MeshAttachment, map: VertexMap | 'drop' = null, hasBoneBefore?: (id: Id) => boolean, ofSkin?: Id): boolean {
+export function reconcileDeform(
+  doc: SkeletonDoc,
+  slotId: Id,
+  attName: string,
+  before: MeshAttachment,
+  after: MeshAttachment,
+  map: VertexMap | 'drop' = null,
+  hasBoneBefore?: (id: Id) => boolean,
+  ofSkin?: Id,
+): boolean {
   const skinId = ofSkin ?? doc.skins[0]?.id;
   if (!skinId) return false;
   const boneIds = new Set(doc.bones.map((b) => b.id));
@@ -334,7 +346,8 @@ export function rgba2ToRgba(keys: Timeline): Timeline {
 export function rgbaToRgba2(keys: Timeline, dark: RGB): Timeline {
   return keys.map((k) => {
     const out: Key = { time: k.time, value: [k.value[0], k.value[1], k.value[2], k.value[3], dark[0], dark[1], dark[2]] };
-    if (Array.isArray(k.curve)) out.curve = [...k.curve.slice(0, 16), 1 / 3, 1 / 3, 2 / 3, 2 / 3, 1 / 3, 1 / 3, 2 / 3, 2 / 3, 1 / 3, 1 / 3, 2 / 3, 2 / 3];
+    if (Array.isArray(k.curve))
+      out.curve = [...k.curve.slice(0, 16), 1 / 3, 1 / 3, 2 / 3, 2 / 3, 1 / 3, 1 / 3, 2 / 3, 2 / 3, 1 / 3, 1 / 3, 2 / 3, 2 / 3];
     else if (k.curve !== undefined) out.curve = k.curve;
     return out;
   });

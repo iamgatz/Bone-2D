@@ -5,7 +5,11 @@ import type { VertexData } from './skeleton';
  * One flag per vertex: true when the deform array moves it by more than `eps`. An unweighted mesh has two numbers per vertex, a
  * weighted one two per influence (see `VertexData.bones`); a vertex is moved when any of its numbers is.
  */
-export function deformedVertices(att: Pick<VertexData, 'vertexCount' | 'weighted' | 'bones'>, deform: ArrayLike<number>, eps = 1e-3): boolean[] {
+export function deformedVertices(
+  att: Pick<VertexData, 'vertexCount' | 'weighted' | 'bones'>,
+  deform: ArrayLike<number>,
+  eps = 1e-3,
+): boolean[] {
   const out = new Array<boolean>(att.vertexCount).fill(false);
   if (!deform.length) return out;
   if (!att.weighted || !att.bones) {

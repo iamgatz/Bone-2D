@@ -16,7 +16,9 @@ beforeEach(() => {
 describe('what matches', () => {
   it('lists the bones whose own name matches, in the order of the document, without their ancestors', () => {
     const m = filterTree(doc(), 'arm');
-    const byName = doc().bones.filter((b) => /arm/i.test(b.name)).map((b) => b.id);
+    const byName = doc()
+      .bones.filter((b) => /arm/i.test(b.name))
+      .map((b) => b.id);
     expect(byName.length).toBeGreaterThan(1);
     expect(m.matchedBones).toEqual(byName);
     // the ancestors are shown but not selected
@@ -28,7 +30,11 @@ describe('what matches', () => {
     const m = filterTree(doc(), 'arm');
     expect(m.matchedSlots.length).toBeGreaterThan(0);
     for (const id of m.matchedSlots) expect(m.slots.has(id)).toBe(true);
-    expect(m.matchedSlots).toEqual(doc().slots.filter((s) => m.slots.has(s.id)).map((s) => s.id));
+    expect(m.matchedSlots).toEqual(
+      doc()
+        .slots.filter((s) => m.slots.has(s.id))
+        .map((s) => s.id),
+    );
   });
 
   it('has nothing for an empty filter or one that matches nothing', () => {
@@ -41,7 +47,9 @@ describe('what matches', () => {
   });
 
   it('works with a regular expression and with wildcards', () => {
-    const named = doc().bones.filter((b) => /^arm/.test(b.name)).map((b) => b.id);
+    const named = doc()
+      .bones.filter((b) => /^arm/.test(b.name))
+      .map((b) => b.id);
     expect(filterTree(doc(), '/^arm/').matchedBones).toEqual(named);
     expect(filterTree(doc(), 'arm*').matchedBones).toEqual(expect.arrayContaining(named));
   });

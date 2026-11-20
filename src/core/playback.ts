@@ -65,11 +65,19 @@ export function cleanPlay(raw: unknown, duration: number): PlaySettings {
     const hi = Math.min(Math.max(0, +r.range[1]), duration);
     if (hi - lo >= 1e-3) range = [lo, hi];
   }
-  return { loop: typeof r.loop === 'boolean' ? r.loop : DEFAULT_PLAY.loop, pingPong: typeof r.pingPong === 'boolean' ? r.pingPong : DEFAULT_PLAY.pingPong, range };
+  return {
+    loop: typeof r.loop === 'boolean' ? r.loop : DEFAULT_PLAY.loop,
+    pingPong: typeof r.pingPong === 'boolean' ? r.pingPong : DEFAULT_PLAY.pingPong,
+    range,
+  };
 }
 
 export function samePlay(a: PlaySettings, b: PlaySettings): boolean {
-  return a.loop === b.loop && a.pingPong === b.pingPong && (a.range === b.range || (!!a.range && !!b.range && a.range[0] === b.range[0] && a.range[1] === b.range[1]));
+  return (
+    a.loop === b.loop &&
+    a.pingPong === b.pingPong &&
+    (a.range === b.range || (!!a.range && !!b.range && a.range[0] === b.range[0] && a.range[1] === b.range[1]))
+  );
 }
 
 /** The time the pose is shown at when playback is "stepped": the start of the frame the time falls in, as a game that runs at the animation's frame rate would. */

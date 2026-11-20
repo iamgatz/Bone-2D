@@ -18,7 +18,12 @@ function MarkerDialog({ id }: { id: string }) {
   const doc = useProject().skeleton; // also follows every edit
   const fps = doc.fps;
   const m = currentAnimation()?.markers?.find((x) => x.id === id);
-  if (!m) return <Dialog title="Marker" onClose={closeMarkerDialog}><p className="hint-text">This marker no longer exists.</p></Dialog>;
+  if (!m)
+    return (
+      <Dialog title="Marker" onClose={closeMarkerDialog}>
+        <p className="hint-text">This marker no longer exists.</p>
+      </Dialog>
+    );
   return (
     <Dialog
       title="Marker"
@@ -44,7 +49,20 @@ function MarkerDialog({ id }: { id: string }) {
         <Field label="From" title="This comment came from a review file">
           <span className="hint-text">{m.author || 'a reviewer'}</span>
           {m.bone && (
-            <Button small ghost disabled={!doc.bones.some((b) => b.name === m.bone)} title="Select the bone the comment points at" onClick={() => setSelection({ bones: doc.bones.filter((b) => b.name === m.bone).map((b) => b.id).slice(0, 1) })}>
+            <Button
+              small
+              ghost
+              disabled={!doc.bones.some((b) => b.name === m.bone)}
+              title="Select the bone the comment points at"
+              onClick={() =>
+                setSelection({
+                  bones: doc.bones
+                    .filter((b) => b.name === m.bone)
+                    .map((b) => b.id)
+                    .slice(0, 1),
+                })
+              }
+            >
               {m.bone}
             </Button>
           )}
@@ -56,7 +74,14 @@ function MarkerDialog({ id }: { id: string }) {
         </Field>
       )}
       <Field label="Frame" title="The frame of the marker (seconds are frame / fps)">
-        <NumberField label="f" value={Math.round(m.time * fps * 100) / 100} step={1} precision={2} min={0} onChange={(f) => updateMarker(id, { time: f / fps })} />
+        <NumberField
+          label="f"
+          value={Math.round(m.time * fps * 100) / 100}
+          step={1}
+          precision={2}
+          min={0}
+          onChange={(f) => updateMarker(id, { time: f / fps })}
+        />
         <span className="hint-text">{`${m.time.toFixed(3)} s`}</span>
       </Field>
       <Field label="Colour">

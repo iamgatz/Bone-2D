@@ -38,12 +38,19 @@ beforeEach(() => {
   only.weights = only.weights!.map((list) => [[armUpper, list[0][1], list[0][2], 1]]);
   d.skins[0].attachments[third.id] = { third: only };
   docStore.replace(f.project);
-  uiStore.patch({ mode: 'setup', tool: 'weights', selection: { ...emptySelection, slot: armSlot, attachment: 'arm', bones: [armLower], extraSlots: [twinSlot] } });
+  uiStore.patch({
+    mode: 'setup',
+    tool: 'weights',
+    selection: { ...emptySelection, slot: armSlot, attachment: 'arm', bones: [armLower], extraSlots: [twinSlot] },
+  });
 });
 
 describe('the group of meshes', () => {
   it('is the selected mesh and the mesh each other selected slot shows', () => {
-    expect(M.weightGroup()).toEqual([{ slotId: armSlot, name: 'arm' }, { slotId: twinSlot, name: 'twin' }]);
+    expect(M.weightGroup()).toEqual([
+      { slotId: armSlot, name: 'arm' },
+      { slotId: twinSlot, name: 'twin' },
+    ]);
     uiStore.patch({ selection: { ...uiStore.get().selection, extraSlots: [] } });
     expect(M.weightGroup()).toEqual([{ slotId: armSlot, name: 'arm' }]);
   });
@@ -83,7 +90,11 @@ describe('the tools on the group', () => {
     const before = docStore.history.past.length;
     M.pruneMeshesWeights(0, 1);
     expect(docStore.history.past.length).toBe(before + 1);
-    for (const [slot, name] of [[armSlot, 'arm'], [twinSlot, 'twin']] as const) expect(mesh(slot, name).weights!.every((l) => l.length === 1)).toBe(true);
+    for (const [slot, name] of [
+      [armSlot, 'arm'],
+      [twinSlot, 'twin'],
+    ] as const)
+      expect(mesh(slot, name).weights!.every((l) => l.length === 1)).toBe(true);
     docStore.undo();
     expect(mesh(armSlot, 'arm').weights!.some((l) => l.length > 1)).toBe(true);
     expect(mesh(twinSlot, 'twin').weights!.some((l) => l.length > 1)).toBe(true);
@@ -103,12 +114,23 @@ describe('the tools on the group', () => {
     M.swapMeshesWeights(armUpper, armLower);
     expect(mesh(twinSlot, 'twin').weights![0].map((e) => e[0])).toEqual(mesh(armSlot, 'arm').weights![0].map((e) => e[0]));
     M.removeBoneFromMeshes(armLower);
-    for (const [slot, name] of [[armSlot, 'arm'], [twinSlot, 'twin']] as const) expect(mesh(slot, name).weights!.flat().some((e) => e[0] === armLower)).toBe(false);
+    for (const [slot, name] of [
+      [armSlot, 'arm'],
+      [twinSlot, 'twin'],
+    ] as const)
+      expect(
+        mesh(slot, name)
+          .weights!.flat()
+          .some((e) => e[0] === armLower),
+      ).toBe(false);
     expect(validateProject(docStore.get())).toEqual([]);
   });
 
   it('the brush paints every mesh that follows its bone, and leaves the ones that do not', () => {
-    uiStore.patch({ selection: { ...uiStore.get().selection, extraSlots: [twinSlot, thirdSlot] }, brush: { size: 800, strength: 1, mode: 'add', bone: armLower, feather: 100, locked: [] } });
+    uiStore.patch({
+      selection: { ...uiStore.get().selection, extraSlots: [twinSlot, thirdSlot] },
+      brush: { size: 800, strength: 1, mode: 'add', bone: armLower, feather: 100, locked: [] },
+    });
     const before = JSON.stringify([mesh(armSlot, 'arm').weights, mesh(twinSlot, 'twin').weights, mesh(thirdSlot, 'third').weights]);
     const { mats, slotMat } = M.setupMats();
     const w = meshWorldPositions(mesh(armSlot, 'arm'), slotMat(armSlot), mats);
@@ -132,7 +154,10 @@ describe('the tools on the group', () => {
 });
 
 describe('tracing several images at once', () => {
-  const regionSlots = () => doc().slots.filter((sl) => doc().skins[0].attachments[sl.id]?.[sl.attachment ?? '']?.type === 'region').map((sl) => sl.id);
+  const regionSlots = () =>
+    doc()
+      .slots.filter((sl) => doc().skins[0].attachments[sl.id]?.[sl.attachment ?? '']?.type === 'region')
+      .map((sl) => sl.id);
 
   it('turns the image of every selected slot into a mesh in one step and keeps the group selected', () => {
     const [a, b] = regionSlots();

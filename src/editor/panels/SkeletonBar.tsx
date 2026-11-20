@@ -11,7 +11,12 @@ export function SkeletonBar() {
   const at = activeIndex(project);
   return (
     <div className="skel-bar">
-      <SelectField wide value={String(at)} options={list.map((d, i) => ({ value: String(i), label: d.name }))} onChange={(v) => switchToSkeleton(Number(v))} />
+      <SelectField
+        wide
+        value={String(at)}
+        options={list.map((d, i) => ({ value: String(i), label: d.name }))}
+        onChange={(v) => switchToSkeleton(Number(v))}
+      />
       <IconButton icon={Plus} small title="New skeleton (the pictures are shared with the others)" onClick={() => createSkeleton()} />
       <IconButton icon={Copy} small title="Duplicate this skeleton" onClick={() => copySkeleton()} />
       <IconButton icon={Trash2} small title="Delete this skeleton" disabled={list.length < 2} onClick={() => deleteSkeletonAt(at)} />

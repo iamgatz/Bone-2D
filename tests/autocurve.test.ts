@@ -10,8 +10,6 @@ import { uiStore } from '../src/store/ui';
 import { buildFixture } from './fixture';
 import { S, exportAndLoad } from './official';
 
- 
-
 const keys = (...pairs: [number, number][]): AutoKey[] => pairs.map(([time, v]) => ({ time, value: [v] }));
 const at = (list: AutoKey[], t: number) => {
   const out: number[] = [];
@@ -105,7 +103,15 @@ describe('the action and the official runtime', () => {
     const doc = project.skeleton;
     const bone = doc.bones[1];
     const anim = newAnimation('swing', 2);
-    anim.bones[bone.id] = { rotate: [{ time: 0, value: [0] }, { time: 0.5, value: [30] }, { time: 1, value: [10] }, { time: 1.5, value: [70] }, { time: 2, value: [70] }] };
+    anim.bones[bone.id] = {
+      rotate: [
+        { time: 0, value: [0] },
+        { time: 0.5, value: [30] },
+        { time: 1, value: [10] },
+        { time: 1.5, value: [70] },
+        { time: 2, value: [70] },
+      ],
+    };
     doc.animations.push(anim);
     docStore.replace(project);
     uiStore.patch({ animationId: anim.id, time: 0, playing: false, selectedKeys: [] });

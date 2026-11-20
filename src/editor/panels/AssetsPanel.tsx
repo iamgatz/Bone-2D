@@ -1,9 +1,31 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { ChevronDown, ChevronRight, Eraser, Film, Folder, FolderUp, Grid3x3, ImagePlus, Pencil, RefreshCw, Trash2, Upload } from 'lucide-react';
+import {
+  ChevronDown,
+  ChevronRight,
+  Eraser,
+  Film,
+  Folder,
+  FolderUp,
+  Grid3x3,
+  ImagePlus,
+  Pencil,
+  RefreshCw,
+  Trash2,
+  Upload,
+} from 'lucide-react';
 import { baseOf, imageGroups, imageUsage } from '@/core/images';
 import { skeletonList } from '@/core/skeletons';
 import type { ImageRef } from '@/core/model';
-import { addImageToScene, importDropped, importFolderFiles, importImageFiles, reimportPsd, removeUnusedImages, renameImageAction, replaceImagePixels } from '@/store/actions';
+import {
+  addImageToScene,
+  importDropped,
+  importFolderFiles,
+  importImageFiles,
+  reimportPsd,
+  removeUnusedImages,
+  renameImageAction,
+  replaceImagePixels,
+} from '@/store/actions';
 import { assets } from '@/store/assets';
 import { docStore, useProject } from '@/store/doc';
 import { canReadGif, importGif } from '@/store/frameImport';
@@ -106,8 +128,18 @@ export function AssetsPanel() {
           {used === 0 ? ' · unused' : ''}
         </span>
         <span className="asset-actions">
-          <IconButton icon={Grid3x3} title="Cut into frames: a sprite sheet becomes numbered pictures that play as a sequence" small onClick={(e) => (e.stopPropagation(), openSliceDialog(img.name))} />
-          <IconButton icon={Pencil} title="Rename image (a / in the name makes a folder)" small onClick={(e) => (e.stopPropagation(), setRenaming(img.name))} />
+          <IconButton
+            icon={Grid3x3}
+            title="Cut into frames: a sprite sheet becomes numbered pictures that play as a sequence"
+            small
+            onClick={(e) => (e.stopPropagation(), openSliceDialog(img.name))}
+          />
+          <IconButton
+            icon={Pencil}
+            title="Rename image (a / in the name makes a folder)"
+            small
+            onClick={(e) => (e.stopPropagation(), setRenaming(img.name))}
+          />
           <IconButton
             icon={Upload}
             title="Replace the picture, keep the name"
@@ -128,9 +160,25 @@ export function AssetsPanel() {
     <div className="panel" style={{ height: 260 }}>
       <div className="panel-head">
         <span className="title">Images</span>
-        <IconButton icon={Eraser} title="Remove the images no attachment shows" small disabled={unused === 0} onClick={() => removeUnusedImages()} />
-        <IconButton icon={ImagePlus} title="Import images (or a PSD file: every layer becomes a picture and a slot)" small onClick={() => fileRef.current?.click()} />
-        <IconButton icon={FolderUp} title="Import a folder of images (its folders become folders of pictures)" small onClick={() => folderRef.current?.click()} />
+        <IconButton
+          icon={Eraser}
+          title="Remove the images no attachment shows"
+          small
+          disabled={unused === 0}
+          onClick={() => removeUnusedImages()}
+        />
+        <IconButton
+          icon={ImagePlus}
+          title="Import images (or a PSD file: every layer becomes a picture and a slot)"
+          small
+          onClick={() => fileRef.current?.click()}
+        />
+        <IconButton
+          icon={FolderUp}
+          title="Import a folder of images (its folders become folders of pictures)"
+          small
+          onClick={() => folderRef.current?.click()}
+        />
         <input
           ref={folderRef}
           type="file"
@@ -144,7 +192,17 @@ export function AssetsPanel() {
             await importFolderFiles(list);
           }}
         />
-        <IconButton icon={Film} title={canReadGif() ? 'Import an animated GIF: every frame becomes a picture, played as a sequence' : 'This browser cannot take a GIF apart: cut a sprite sheet instead'} small disabled={!canReadGif()} onClick={() => gifRef.current?.click()} />
+        <IconButton
+          icon={Film}
+          title={
+            canReadGif()
+              ? 'Import an animated GIF: every frame becomes a picture, played as a sequence'
+              : 'This browser cannot take a GIF apart: cut a sprite sheet instead'
+          }
+          small
+          disabled={!canReadGif()}
+          onClick={() => gifRef.current?.click()}
+        />
         <input
           ref={gifRef}
           type="file"
@@ -156,7 +214,13 @@ export function AssetsPanel() {
             if (file) await importGif(file, { scene: true });
           }}
         />
-        <IconButton icon={RefreshCw} title="Update from PSD: layers with the name of a picture give it new pixels, new layers become slots" small disabled={project.images.length === 0} onClick={() => psdRef.current?.click()} />
+        <IconButton
+          icon={RefreshCw}
+          title="Update from PSD: layers with the name of a picture give it new pixels, new layers become slots"
+          small
+          disabled={project.images.length === 0}
+          onClick={() => psdRef.current?.click()}
+        />
         <input
           ref={psdRef}
           type="file"
@@ -168,7 +232,14 @@ export function AssetsPanel() {
             if (file) await reimportPsd(file);
           }}
         />
-        <input ref={fileRef} type="file" accept="image/*,.psd" multiple hidden onChange={async (e) => (await importImageFiles([...(e.target.files ?? [])]), (e.target.value = ''))} />
+        <input
+          ref={fileRef}
+          type="file"
+          accept="image/*,.psd"
+          multiple
+          hidden
+          onChange={async (e) => (await importImageFiles([...(e.target.files ?? [])]), (e.target.value = ''))}
+        />
         <input
           ref={replaceRef}
           type="file"
@@ -210,7 +281,14 @@ export function AssetsPanel() {
                   <span className="dim row-meta">{names.length}</span>
                 </div>
               )}
-              {!closed[folder] && <div className="asset-grid">{names.map((n) => byName.get(n)).filter((i): i is ImageRef => !!i).map(tile)}</div>}
+              {!closed[folder] && (
+                <div className="asset-grid">
+                  {names
+                    .map((n) => byName.get(n))
+                    .filter((i): i is ImageRef => !!i)
+                    .map(tile)}
+                </div>
+              )}
             </div>
           ))
         )}

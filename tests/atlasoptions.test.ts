@@ -5,15 +5,19 @@ import type { PackInput } from '../src/core/export/atlas';
 import { findAliases } from '../src/core/export/atlasBuild';
 import { S } from './official';
 
- 
-
-const input = (name: string, width: number, height: number, extra: Partial<PackInput> = {}): PackInput => ({ name, width, height, ...extra });
+const input = (name: string, width: number, height: number, extra: Partial<PackInput> = {}): PackInput => ({
+  name,
+  width,
+  height,
+  ...extra,
+});
 const inside = (pages: ReturnType<typeof packAtlas>) => {
-  for (const p of pages) for (const r of p.regions) {
-    const [w, h] = footprint(r);
-    expect(r.x + w).toBeLessThanOrEqual(p.width);
-    expect(r.y + h).toBeLessThanOrEqual(p.height);
-  }
+  for (const p of pages)
+    for (const r of p.regions) {
+      const [w, h] = footprint(r);
+      expect(r.x + w).toBeLessThanOrEqual(p.width);
+      expect(r.y + h).toBeLessThanOrEqual(p.height);
+    }
 };
 
 describe('square pages', () => {
@@ -23,7 +27,12 @@ describe('square pages', () => {
       const pages = packAtlas(inputs, { pot, square: true, padding: 2 });
       for (const p of pages) expect(p.width).toBe(p.height);
       inside(pages);
-      expect(pages.flatMap((p) => p.regions).map((r) => r.name).sort()).toEqual(['a', 'b', 'c', 'd']);
+      expect(
+        pages
+          .flatMap((p) => p.regions)
+          .map((r) => r.name)
+          .sort(),
+      ).toEqual(['a', 'b', 'c', 'd']);
     }
   });
   it('a plain pot page may be a rectangle, a square one never is', () => {

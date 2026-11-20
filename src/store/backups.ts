@@ -39,11 +39,25 @@ export async function refreshBackups(): Promise<BackupMeta[]> {
 }
 
 /** Stores a copy of `text`; resolves to whether one was added. `info` says what the project holds. */
-export function saveBackup(text: string, why: BackupWhy, info: { name: string; bones: number; animations: number }, now = Date.now()): Promise<boolean> {
+export function saveBackup(
+  text: string,
+  why: BackupWhy,
+  info: { name: string; bones: number; animations: number },
+  now = Date.now(),
+): Promise<boolean> {
   return serial(async () => {
     try {
       if (!loaded) await refreshBackups();
-      const meta: BackupMeta = { id: `${now.toString(36)}${Math.random().toString(36).slice(2, 6)}`, time: now, name: info.name, why, bones: info.bones, animations: info.animations, size: text.length, hash: fingerprint(text) };
+      const meta: BackupMeta = {
+        id: `${now.toString(36)}${Math.random().toString(36).slice(2, 6)}`,
+        time: now,
+        name: info.name,
+        why,
+        bones: info.bones,
+        animations: info.animations,
+        size: text.length,
+        hash: fingerprint(text),
+      };
       const res = addBackup(backupStore.get(), meta);
       if (!res.added) return false;
       await storage.set(`backup:${meta.id}`, text);

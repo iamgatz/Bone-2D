@@ -1,5 +1,23 @@
 /** The skeleton as compiled data: index based, immutable, shared by every instance that poses it. */
-import type { Animation, BlendMode, BoundingBoxAttachment, ClippingAttachment, Id, Inherit, MeshAttachment, PathAttachment, PathPositionMode, PathRotateMode, PathSpacingMode, PhysicsParam, PointAttachment, RGB, RGBA, RegionAttachment, TransformProp } from '../model';
+import type {
+  Animation,
+  BlendMode,
+  BoundingBoxAttachment,
+  ClippingAttachment,
+  Id,
+  Inherit,
+  MeshAttachment,
+  PathAttachment,
+  PathPositionMode,
+  PathRotateMode,
+  PathSpacingMode,
+  PhysicsParam,
+  PointAttachment,
+  RGB,
+  RGBA,
+  RegionAttachment,
+  TransformProp,
+} from '../model';
 
 export interface BoneData {
   index: number;

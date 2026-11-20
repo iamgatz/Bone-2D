@@ -8,8 +8,6 @@ import { docStore } from '../src/store/doc';
 import { buildFixture } from './fixture';
 import { exportAndLoad, loadOfficialBinary } from './official';
 
- 
-
 function withAudio() {
   const { project } = buildFixture();
   const doc = project.skeleton;

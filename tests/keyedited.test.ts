@@ -15,9 +15,20 @@ describe('key edited', () => {
     const f = buildFixture();
     docStore.replace(f.project);
     bone = f.project.skeleton.bones[1].id;
-    uiStore.patch({ mode: 'animate', tool: 'select', animationId: walk().id, skinId: null, time: 0.123, selection: { ...emptySelection, bones: [bone] }, overrides: {}, autoKey: false, playing: false });
+    uiStore.patch({
+      mode: 'animate',
+      tool: 'select',
+      animationId: walk().id,
+      skinId: null,
+      time: 0.123,
+      selection: { ...emptySelection, bones: [bone] },
+      overrides: {},
+      autoKey: false,
+      playing: false,
+    });
   });
-  const keysAt = (prop: 'rotate' | 'translate' | 'scale' | 'shear') => (walk().bones[bone]?.[prop] ?? []).filter((k) => Math.abs(k.time - 0.123) < 1e-6);
+  const keysAt = (prop: 'rotate' | 'translate' | 'scale' | 'shear') =>
+    (walk().bones[bone]?.[prop] ?? []).filter((k) => Math.abs(k.time - 0.123) < 1e-6);
 
   it('keys only the rotation after a rotation edit, then clears the pending pose', () => {
     A.setBonePose([{ id: bone, props: { rotation: 33 } }]);

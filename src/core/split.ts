@@ -62,7 +62,10 @@ export function splitBoneInDoc(doc: SkeletonDoc, id: Id, count: number, opts: Sp
     for (const c of doc.constraints) {
       if (c.type !== 'ik' || c.bones.length !== 2 || c.bones[0] !== id) continue;
       const second = originalChildren.find((b) => b.id === c.bones[1]);
-      if (second && offsets.some((o, i) => i > 0 && second.x >= o - 1e-9)) return { error: `"${bone.name}" is the first bone of the IK constraint "${c.name}": the second bone would end up under a later part. Split it side by side, or remove the constraint first` };
+      if (second && offsets.some((o, i) => i > 0 && second.x >= o - 1e-9))
+        return {
+          error: `"${bone.name}" is the first bone of the IK constraint "${c.name}": the second bone would end up under a later part. Split it side by side, or remove the constraint first`,
+        };
     }
   }
   const parts: Bone[] = [];
@@ -70,7 +73,16 @@ export function splitBoneInDoc(doc: SkeletonDoc, id: Id, count: number, opts: Sp
   for (let i = 1; i < n; i++) {
     const name = freshName(`${baseName}${i + 1}`, [...doc.bones, ...parts]);
     if (opts.nested) {
-      parts.push(newBone({ name, parent: i === 1 ? id : parts[i - 2].id, x: lens[i - 1], length: lens[i], color: bone.color, skinRequired: bone.skinRequired }));
+      parts.push(
+        newBone({
+          name,
+          parent: i === 1 ? id : parts[i - 2].id,
+          x: lens[i - 1],
+          length: lens[i],
+          color: bone.color,
+          skinRequired: bone.skinRequired,
+        }),
+      );
     } else {
       // along the bone's own x axis, in the space of its parent
       const ang = (bone.rotation + bone.shearX) * DEG2RAD;
@@ -107,7 +119,8 @@ export function splitBoneInDoc(doc: SkeletonDoc, id: Id, count: number, opts: Sp
   const at0 = doc.bones.findIndex((b) => b.id === id);
   doc.bones.splice(at0 + 1, 0, ...parts);
   normalizeBoneOrder(doc);
-  if (opts.weights === 'split' || opts.weights === 'blend') redistributeWeights(doc, id, [id, ...parts.map((p) => p.id)], offsets, lens, opts.weights === 'blend');
+  if (opts.weights === 'split' || opts.weights === 'blend')
+    redistributeWeights(doc, id, [id, ...parts.map((p) => p.id)], offsets, lens, opts.weights === 'blend');
   return { ids: parts.map((p) => p.id) };
 }
 

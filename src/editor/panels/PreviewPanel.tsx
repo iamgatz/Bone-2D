@@ -135,10 +135,21 @@ export function PreviewPanel() {
         s.updateWorldTransform();
         const b = s.getBounds();
         if (!b) continue;
-        box = box ? [Math.min(box[0], b[0]), Math.min(box[1], b[1]), Math.max(box[0] + box[2], b[0] + b[2]) - Math.min(box[0], b[0]), Math.max(box[1] + box[3], b[1] + b[3]) - Math.min(box[1], b[1])] : b;
+        box = box
+          ? [
+              Math.min(box[0], b[0]),
+              Math.min(box[1], b[1]),
+              Math.max(box[0] + box[2], b[0] + b[2]) - Math.min(box[0], b[0]),
+              Math.max(box[1] + box[3], b[1] + b[3]) - Math.min(box[1], b[1]),
+            ]
+          : b;
       }
       if (!box) return;
-      cam.current = { x: box[0] + box[2] / 2, y: box[1] + box[3] / 2, zoom: Math.min(4, (0.85 * w) / Math.max(box[2], 20), (0.85 * h) / Math.max(box[3], 20)) };
+      cam.current = {
+        x: box[0] + box[2] / 2,
+        y: box[1] + box[3] / 2,
+        zoom: Math.min(4, (0.85 * w) / Math.max(box[2], 20), (0.85 * h) / Math.max(box[3], 20)),
+      };
     };
 
     const tick = (now: number) => {
@@ -175,7 +186,10 @@ export function PreviewPanel() {
       } else s.updateWorldTransform();
       const prefs = settingsStore.get();
       renderer.setSmoothing(prefs.smoothing);
-      renderer.begin({ x: cam.current.x, y: cam.current.y, scale: cam.current.zoom * dpr, width: el.width, height: el.height }, [...prefs.viewportBg, 1]);
+      renderer.begin({ x: cam.current.x, y: cam.current.y, scale: cam.current.zoom * dpr, width: el.width, height: el.height }, [
+        ...prefs.viewportBg,
+        1,
+      ]);
       const hidden = new Set(p.skeleton.slots.filter((x) => x.hidden).map((x) => x.id));
       renderer.drawSkeleton(s, { skip: (slot) => hidden.has(slot.data.id) });
       renderer.end();
@@ -214,7 +228,12 @@ export function PreviewPanel() {
             if (!openPopout([bg[0], bg[1], bg[2]])) toast('The browser blocked the window: allow pop-ups for this site', 'error');
           }}
         />
-        <IconButton icon={soundCount() ? Volume2 : VolumeX} title="Load sound files: an event plays the one with the name of its sound (folders and extension do not count)" small onClick={() => pickSounds(setSounds)} />
+        <IconButton
+          icon={soundCount() ? Volume2 : VolumeX}
+          title="Load sound files: an event plays the one with the name of its sound (folders and extension do not count)"
+          small
+          onClick={() => pickSounds(setSounds)}
+        />
       </div>
       <div className="panel-body" style={{ padding: 8 }}>
         <canvas ref={canvas} style={{ width: '100%', height: HEIGHT, display: 'block', borderRadius: 4 }} />
@@ -225,25 +244,57 @@ export function PreviewPanel() {
           <Toggle on={loop} onChange={setLoop} title="Start again when the animation ends" />
         </Field>
         <Field label="Speed">
-          <NumberField label="×" value={speed} step={0.1} precision={2} min={0.05} max={4} onChange={(v) => setSpeed(Math.max(0.05, Math.min(4, v)))} />
+          <NumberField
+            label="×"
+            value={speed}
+            step={0.1}
+            precision={2}
+            min={0.05}
+            max={4}
+            onChange={(v) => setSpeed(Math.max(0.05, Math.min(4, v)))}
+          />
         </Field>
-        <Field label="Hold previous" title="While the Preview changes from one animation to another, what the new one does not key stays as the old one had it, instead of fading to the setup pose">
+        <Field
+          label="Hold previous"
+          title="While the Preview changes from one animation to another, what the new one does not key stays as the old one had it, instead of fading to the setup pose"
+        >
           <Toggle on={hold} onChange={setHold} title="Hold previous" />
         </Field>
-        <Field label="Mix" title="How long the crossfade lasts when the Preview changes from one animation to another (seconds); the pairs below have their own">
+        <Field
+          label="Mix"
+          title="How long the crossfade lasts when the Preview changes from one animation to another (seconds); the pairs below have their own"
+        >
           <NumberField label="s" value={mixes?.default ?? 0} step={0.05} precision={2} min={0} max={10} onChange={setDefaultMix} />
         </Field>
         {pairs.map((p) => (
           <Field key={`${p.from}|${p.to}`} label={`${nameOf(p.from)} →`} title={`${nameOf(p.from)} → ${nameOf(p.to)}`}>
-            <span className="dim" style={{ flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{nameOf(p.to)}</span>
-            <NumberField label="s" value={p.time} step={0.05} precision={2} min={0} max={10} onChange={(v) => setMixPair(p.from, p.to, v)} />
+            <span className="dim" style={{ flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              {nameOf(p.to)}
+            </span>
+            <NumberField
+              label="s"
+              value={p.time}
+              step={0.05}
+              precision={2}
+              min={0}
+              max={10}
+              onChange={(v) => setMixPair(p.from, p.to, v)}
+            />
           </Field>
         ))}
         {animations.length > 1 && (
           <Field label="Pair" title="A crossfade time for one pair of animations">
             <SelectField value={from} options={animOptions} onChange={setPairFrom} />
             <SelectField value={to} options={animOptions.filter((o) => o.value !== from)} onChange={setPairTo} />
-            <Button icon={Plus} small disabled={!from || !to} onClick={() => setMixPair(from, to, mixes?.pairs.find((p) => p.from === from && p.to === to)?.time ?? (mixes?.default ?? 0) + 0.2)} title="Give this pair a time of its own (then change it in the list)">
+            <Button
+              icon={Plus}
+              small
+              disabled={!from || !to}
+              onClick={() =>
+                setMixPair(from, to, mixes?.pairs.find((p) => p.from === from && p.to === to)?.time ?? (mixes?.default ?? 0) + 0.2)
+              }
+              title="Give this pair a time of its own (then change it in the list)"
+            >
               Add
             </Button>
           </Field>
@@ -255,7 +306,12 @@ export function PreviewPanel() {
               <Button
                 icon={Layers}
                 small
-                onClick={() => setLayers((old) => [...old, { animId: animations.find((a) => a.id !== animId)?.id ?? animations[0].id, alpha: 1, additive: false, loop: true }])}
+                onClick={() =>
+                  setLayers((old) => [
+                    ...old,
+                    { animId: animations.find((a) => a.id !== animId)?.id ?? animations[0].id, alpha: 1, additive: false, loop: true },
+                  ])
+                }
                 title="Play another animation over this one: it moves only what it keys. Full strength replaces, a lower one blends, additive adds its change to the pose"
               >
                 Add layer
@@ -263,11 +319,33 @@ export function PreviewPanel() {
             </div>
             {layers.map((l, i) => (
               <Field key={i} label="Layer">
-                <SelectField value={animations.some((a) => a.id === l.animId) ? l.animId : ''} options={animOptions} onChange={(v) => setLayer(i, { animId: v })} />
-                <NumberField label="α" value={l.alpha} step={0.05} precision={2} min={0} max={1} title="How much of the layer shows (0 to 1)" onChange={(v) => setLayer(i, { alpha: Math.max(0, Math.min(1, v)) })} />
-                <Toggle on={l.additive} onChange={(v) => setLayer(i, { additive: v })} title="Additive: adds the layer's change from the setup pose to the pose below it" />
+                <SelectField
+                  value={animations.some((a) => a.id === l.animId) ? l.animId : ''}
+                  options={animOptions}
+                  onChange={(v) => setLayer(i, { animId: v })}
+                />
+                <NumberField
+                  label="α"
+                  value={l.alpha}
+                  step={0.05}
+                  precision={2}
+                  min={0}
+                  max={1}
+                  title="How much of the layer shows (0 to 1)"
+                  onChange={(v) => setLayer(i, { alpha: Math.max(0, Math.min(1, v)) })}
+                />
+                <Toggle
+                  on={l.additive}
+                  onChange={(v) => setLayer(i, { additive: v })}
+                  title="Additive: adds the layer's change from the setup pose to the pose below it"
+                />
                 <Toggle on={l.loop} onChange={(v) => setLayer(i, { loop: v })} title="Loop this layer" />
-                <IconButton icon={Trash2} title="Remove this layer" small onClick={() => setLayers((old) => old.filter((_, k) => k !== i))} />
+                <IconButton
+                  icon={Trash2}
+                  title="Remove this layer"
+                  small
+                  onClick={() => setLayers((old) => old.filter((_, k) => k !== i))}
+                />
               </Field>
             ))}
           </div>
@@ -282,7 +360,9 @@ export function PreviewPanel() {
           </div>
         )}
         {sounds > 0 && <p className="hint-text">{`${sounds} sounds loaded; an event plays the sound with the name of its audio path`}</p>}
-        {sounds === 0 && doc.events.some((e) => e.audio && !hasSound(e.audio)) && <p className="hint-text">Some events have a sound; load the files with the speaker button to hear them.</p>}
+        {sounds === 0 && doc.events.some((e) => e.audio && !hasSound(e.audio)) && (
+          <p className="hint-text">Some events have a sound; load the files with the speaker button to hear them.</p>
+        )}
       </div>
     </div>
   );

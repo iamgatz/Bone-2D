@@ -28,7 +28,12 @@ export interface Tolerance {
 
 export const DEFAULT_TOLERANCE: Tolerance = { rotate: 0.25, translate: 0.25, scale: 0.005, shear: 0.25 };
 
-export const scaleTolerance = (t: Tolerance, k: number): Tolerance => ({ rotate: t.rotate * k, translate: t.translate * k, scale: t.scale * k, shear: t.shear * k });
+export const scaleTolerance = (t: Tolerance, k: number): Tolerance => ({
+  rotate: t.rotate * k,
+  translate: t.translate * k,
+  scale: t.scale * k,
+  shear: t.shear * k,
+});
 
 type Channel = keyof Tolerance;
 const CHANNELS: Channel[] = ['rotate', 'translate', 'scale', 'shear'];
@@ -148,7 +153,8 @@ export function constrainedBoneIndices(data: SkeletonData): number[] {
  * official runtime, and a local pose cannot say it. The names, one per constraint.
  */
 export function bakeSkips(doc: SkeletonDoc, anim: Animation): string[] {
-  const isPath = (slotId: string, name: string | null | undefined) => name != null && doc.skins[0]?.attachments[slotId]?.[name]?.type === 'path';
+  const isPath = (slotId: string, name: string | null | undefined) =>
+    name != null && doc.skins[0]?.attachments[slotId]?.[name]?.type === 'path';
   const out: string[] = [];
   for (const c of doc.constraints) {
     if (c.type !== 'path') continue;
@@ -207,7 +213,9 @@ export function poseFrames(doc: SkeletonDoc, anim: Animation, skinId: Id | null 
   const data = compileSkeleton(structuredClone(doc));
   const skeleton = createSkeleton(data, skinId);
   const out: number[][][] = [];
-  walkFrames(skeleton, anim, frameTimes(anim.duration, doc.fps), () => out.push(skeleton.bones.map((b) => [b.a, b.b, b.c, b.d, b.worldX, b.worldY])));
+  walkFrames(skeleton, anim, frameTimes(anim.duration, doc.fps), () =>
+    out.push(skeleton.bones.map((b) => [b.a, b.b, b.c, b.d, b.worldX, b.worldY])),
+  );
   return out;
 }
 
@@ -299,4 +307,3 @@ export function muteConstraints(anim: Animation, data: SkeletonData) {
   // the global timeline drives every constraint that follows it, so it has to say the same
   if (physics && anim.physics['*']) anim.physics['*'] = { ...anim.physics['*'], mix: off([0]) };
 }
-

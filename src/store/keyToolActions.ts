@@ -45,7 +45,13 @@ export function favorSelectedKeys(mode: FavorMode, amount: number): number {
       changed += favorKeys(keys, at, mode, amount, mode === 'neutral' ? neutralOf(ref.kind, ref.prop, channels) : undefined);
     }
   });
-  if (!changed) toast(mode === 'neutral' || mode === 'shiftPrevious' || mode === 'shiftNext' ? 'Nothing to move: this works on bone keys' : 'Nothing to move: a key needs a neighbour on that side', 'info');
+  if (!changed)
+    toast(
+      mode === 'neutral' || mode === 'shiftPrevious' || mode === 'shiftNext'
+        ? 'Nothing to move: this works on bone keys'
+        : 'Nothing to move: a key needs a neighbour on that side',
+      'info',
+    );
   return changed;
 }
 

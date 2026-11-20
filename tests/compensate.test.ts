@@ -8,7 +8,7 @@ import { docStore } from '../src/store/doc';
 import { uiStore } from '../src/store/ui';
 import { buildFixture } from './fixture';
 
-const clone = <T,>(v: T): T => JSON.parse(JSON.stringify(v));
+const clone = <T>(v: T): T => JSON.parse(JSON.stringify(v));
 const BOTH: Compensation = { bones: true, images: true };
 
 /** World corners of a region in the setup pose. */
@@ -17,8 +17,15 @@ function corners(doc: Project['skeleton'], slotName: string, attName: string) {
   const att = doc.skins[0].attachments[slot.id][attName] as RegionAttachment;
   const w = setupWorlds(doc).get(slot.bone)!;
   const r = (att.rotation * Math.PI) / 180;
-  const local = (x: number, y: number): [number, number] => [att.x + Math.cos(r) * att.scaleX * x - Math.sin(r) * att.scaleY * y, att.y + Math.sin(r) * att.scaleX * x + Math.cos(r) * att.scaleY * y];
-  return [[0, 0], [att.width, 0], [att.width, att.height]].map(([x, y]) => {
+  const local = (x: number, y: number): [number, number] => [
+    att.x + Math.cos(r) * att.scaleX * x - Math.sin(r) * att.scaleY * y,
+    att.y + Math.sin(r) * att.scaleX * x + Math.cos(r) * att.scaleY * y,
+  ];
+  return [
+    [0, 0],
+    [att.width, 0],
+    [att.width, att.height],
+  ].map(([x, y]) => {
     const [lx, ly] = local(x, y);
     return [w.a * lx + w.b * ly + w.x, w.c * lx + w.d * ly + w.y];
   });
@@ -39,7 +46,9 @@ describe('compensateEdit', () => {
     compensateEdit(before, after, [torso.id], { bones: true, images: false });
     const w0 = setupWorlds(before);
     const w1 = setupWorlds(after);
-    for (const k of kids) for (const key of ['a', 'b', 'c', 'd', 'x', 'y'] as const) expect(w1.get(k.id)![key], `${k.name}.${key}`).toBeCloseTo(w0.get(k.id)![key], 4);
+    for (const k of kids)
+      for (const key of ['a', 'b', 'c', 'd', 'x', 'y'] as const)
+        expect(w1.get(k.id)![key], `${k.name}.${key}`).toBeCloseTo(w0.get(k.id)![key], 4);
     // the bone itself did move
     expect(w1.get(torso.id)!.x).not.toBeCloseTo(w0.get(torso.id)!.x, 3);
   });
@@ -56,7 +65,9 @@ describe('compensateEdit', () => {
   it('pictures on the bone stay where they are in the scene', () => {
     const { project } = buildFixture();
     const before = project.skeleton;
-    const slot = before.slots.find((s) => before.skins[0].attachments[s.id] && Object.values(before.skins[0].attachments[s.id]).some((a) => a.type === 'region'))!;
+    const slot = before.slots.find(
+      (s) => before.skins[0].attachments[s.id] && Object.values(before.skins[0].attachments[s.id]).some((a) => a.type === 'region'),
+    )!;
     const att = Object.values(before.skins[0].attachments[slot.id]).find((a) => a.type === 'region')!;
     const after = clone(before);
     const bone = after.bones.find((b) => b.id === slot.bone)!;

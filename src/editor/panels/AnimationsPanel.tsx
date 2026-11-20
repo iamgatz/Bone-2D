@@ -2,7 +2,15 @@ import { useMemo, useState } from 'react';
 import { Eraser, ChevronDown, ChevronRight, Copy, Film, Folder, Pencil, Plus, Trash2 } from 'lucide-react';
 import { countKeys } from '@/core/stats';
 import type { Animation } from '@/core/model';
-import { cleanUpKeys, createAnimation, deleteAnimation, duplicateAnimation, renameAnimation, selectAnimation, setMode } from '@/store/actions';
+import {
+  cleanUpKeys,
+  createAnimation,
+  deleteAnimation,
+  duplicateAnimation,
+  renameAnimation,
+  selectAnimation,
+  setMode,
+} from '@/store/actions';
 import { useProject } from '@/store/doc';
 import { useUi } from '@/store/ui';
 import { IconButton } from '../ui/controls';
@@ -33,7 +41,13 @@ export function AnimationsPanel() {
   const row = (a: Animation, indent: boolean) => {
     const label = indent ? a.name.slice(a.name.lastIndexOf('/') + 1) : a.name;
     return (
-      <div key={a.id} className={`row${a.id === animationId ? ' selected' : ''}`} style={{ paddingLeft: indent ? 22 : 8 }} onClick={() => selectAnimation(a.id)} onDoubleClick={() => setRenaming(a.id)}>
+      <div
+        key={a.id}
+        className={`row${a.id === animationId ? ' selected' : ''}`}
+        style={{ paddingLeft: indent ? 22 : 8 }}
+        onClick={() => selectAnimation(a.id)}
+        onDoubleClick={() => setRenaming(a.id)}
+      >
         <span className="ico">
           <Film size={13} />
         </span>
@@ -63,7 +77,12 @@ export function AnimationsPanel() {
         </span>
         <span className="actions">
           <IconButton icon={Pencil} title="Rename animation" small onClick={(e) => (e.stopPropagation(), setRenaming(a.id))} />
-          <IconButton icon={Eraser} title="Clean up: remove the keys that change nothing" small onClick={(e) => (e.stopPropagation(), cleanUpKeys(a.id))} />
+          <IconButton
+            icon={Eraser}
+            title="Clean up: remove the keys that change nothing"
+            small
+            onClick={(e) => (e.stopPropagation(), cleanUpKeys(a.id))}
+          />
           <IconButton icon={Copy} title="Duplicate animation" small onClick={(e) => (e.stopPropagation(), duplicateAnimation(a.id))} />
           <IconButton icon={Trash2} title="Delete animation" small onClick={(e) => (e.stopPropagation(), deleteAnimation(a.id))} />
         </span>

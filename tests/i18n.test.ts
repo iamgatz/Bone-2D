@@ -16,11 +16,22 @@ function sources(dir: string, out: string[] = []): string[] {
 const escapeRe = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 const patternRes = Object.keys(RU)
   .filter((k) => /\{#?\}/.test(k))
-  .map((k) => new RegExp('^' + k.split(/(\{#?\})/).map((tok) => (tok === '{}' ? '(.+?)' : tok === '{#}' ? '(\\d+(?:\\.\\d+)?)' : escapeRe(tok))).join('') + '$'));
+  .map(
+    (k) =>
+      new RegExp(
+        '^' +
+          k
+            .split(/(\{#?\})/)
+            .map((tok) => (tok === '{}' ? '(.+?)' : tok === '{#}' ? '(\\d+(?:\\.\\d+)?)' : escapeRe(tok)))
+            .join('') +
+          '$',
+      ),
+  );
 const covered = (text: string) => Object.prototype.hasOwnProperty.call(RU, text) || patternRes.some((re) => re.test(text));
 
 /** Plain English text, not code that happens to sit between angle brackets. */
-const looksLikeText = (t: string) => /^[A-Za-z][A-Za-z0-9 .,:!'"()+\-–—·…→⇄←/&%×−°]*$/.test(t) && /[A-Za-z]{2}/.test(t) && !t.includes('&&');
+const looksLikeText = (t: string) =>
+  /^[A-Za-z][A-Za-z0-9 .,:!'"()+\-–—·…→⇄←/&%×−°]*$/.test(t) && /[A-Za-z]{2}/.test(t) && !t.includes('&&');
 
 /** UI strings written literally in the sources: JSX text, text props, toasts, undo labels, menu items. */
 function staticStrings(): { file: string; text: string }[] {
@@ -86,8 +97,12 @@ describe('interface language', () => {
     expect(tr('Set Rotation key at the playhead')).toBe('Поставить ключ «Поворот» в текущем кадре');
     expect(tr('Undo Move vertices')).toBe('Отменить: Переместить вершины');
     expect(tr('Mesh: 24 vertices, 40 triangles')).toBe('Меш: вершин — 24, треугольников — 40');
-    expect(tr('"leg" is part of the IK constraint "walk" — remove the constraint to move it')).toBe('«leg» входит в IK-констрейнт «walk» — удали констрейнт, чтобы переместить кость');
-    expect(tr('Opened bolt.bone2d (2 problems repaired, 1 image could not be read)')).toBe('Открыто: bolt.bone2d (исправлено проблем: 2, не удалось прочитать картинок: 1)');
+    expect(tr('"leg" is part of the IK constraint "walk" — remove the constraint to move it')).toBe(
+      '«leg» входит в IK-констрейнт «walk» — удали констрейнт, чтобы переместить кость',
+    );
+    expect(tr('Opened bolt.bone2d (2 problems repaired, 1 image could not be read)')).toBe(
+      'Открыто: bolt.bone2d (исправлено проблем: 2, не удалось прочитать картинок: 1)',
+    );
     expect(tr('Opened bolt.bone2d')).toBe('Открыто: bolt.bone2d');
     expect(tr('arm · rotation')).toBe('arm · поворот');
     expect(tr('Interpolation · 3 keys')).toBe('Интерполяция · ключей: 3');

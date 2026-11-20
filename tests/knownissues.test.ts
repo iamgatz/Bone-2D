@@ -23,7 +23,7 @@ describe('found by the random sessions, fixed', () => {
   // seed 226: two sliders apply an animation whose attachment timeline switches a slot to nothing and back. A slot that changes its
   // attachment starts without the deformation of the old one (the official SlotPose.setAttachment); ours kept it, so the path of the
   // slot came out deformed here and in its setup shape in the official runtime.
-  it('a slider that switches a slot\'s attachment drops the deformation of the old one (fuzz seed 226)', () => {
+  it("a slider that switches a slot's attachment drops the deformation of the old one (fuzz seed 226)", () => {
     const p = JSON.parse(readFileSync('tests/fixtures/slider-attachment-deform.json', 'utf8')) as Project;
     expect(parityMismatch(p)).toBeNull();
   });

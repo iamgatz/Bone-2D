@@ -49,17 +49,30 @@ export async function importDropped(dt: DataTransfer): Promise<{ names: string[]
   const loose = [...dt.files];
   if (!entries.some((e) => e.isDirectory)) return { names: await importImageFiles(loose), folder: false };
   const { files } = await readEntries(entries);
-  return { names: await importImageFiles(files.map((f) => f.file), files.map((f) => f.path)), folder: true };
+  return {
+    names: await importImageFiles(
+      files.map((f) => f.file),
+      files.map((f) => f.path),
+    ),
+    folder: true,
+  };
 }
 
 /** Imports the files of a "choose a folder" input. */
 export async function importFolderFiles(list: File[]): Promise<string[]> {
   const files = pathedFromInput(list);
-  return importImageFiles(files.map((f) => f.file), files.map((f) => f.path));
+  return importImageFiles(
+    files.map((f) => f.file),
+    files.map((f) => f.path),
+  );
 }
 
 /** Where an attachment goes on a bone so that it sits at a scene position (and stays upright in the scene). */
-function placeOnBone(live: { worldToLocal(x: number, y: number): [number, number]; a: number; b: number; c: number; d: number } | undefined, wx: number, wy: number): { x: number; y: number; rotation: number } {
+function placeOnBone(
+  live: { worldToLocal(x: number, y: number): [number, number]; a: number; b: number; c: number; d: number } | undefined,
+  wx: number,
+  wy: number,
+): { x: number; y: number; rotation: number } {
   if (!live) return { x: wx, y: wy, rotation: 0 };
   const [x, y] = live.worldToLocal(wx, wy);
   const det = live.a * live.d - live.b * live.c;
@@ -72,7 +85,9 @@ function pixelsToPng(px: PsdPixels): Promise<Blob> {
   canvas.width = px.width;
   canvas.height = px.height;
   canvas.getContext('2d')!.putImageData(new ImageData(new Uint8ClampedArray(px.data), px.width, px.height), 0, 0);
-  return new Promise((resolve, reject) => canvas.toBlob((b) => (b ? resolve(b) : reject(new Error('could not encode the layer'))), 'image/png'));
+  return new Promise((resolve, reject) =>
+    canvas.toBlob((b) => (b ? resolve(b) : reject(new Error('could not encode the layer'))), 'image/png'),
+  );
 }
 
 /**
@@ -115,15 +130,40 @@ export async function importPsd(file: File): Promise<number> {
     for (const { ref, layer } of refs) {
       const center = layerCenter(psd, layer);
       const { x: lx, y: ly, rotation } = placeOnBone(live, center[0], center[1]);
-      const slot = newSlot({ name: freshName(ref.name.split('/').pop() ?? ref.name, d.skeleton.slots), bone: boneId, attachment: ref.name, color: [1, 1, 1, layer.opacity], blend: layer.blend });
+      const slot = newSlot({
+        name: freshName(ref.name.split('/').pop() ?? ref.name, d.skeleton.slots),
+        bone: boneId,
+        attachment: ref.name,
+        color: [1, 1, 1, layer.opacity],
+        blend: layer.blend,
+      });
       d.images.push({ ...ref, psd: center });
       d.skeleton.slots.push(slot);
-      skin.attachments[slot.id] = { [ref.name]: { type: 'region', name: ref.name, path: ref.name, x: lx, y: ly, rotation, scaleX: 1, scaleY: 1, width: ref.width, height: ref.height, color: [1, 1, 1, 1] } };
+      skin.attachments[slot.id] = {
+        [ref.name]: {
+          type: 'region',
+          name: ref.name,
+          path: ref.name,
+          x: lx,
+          y: ly,
+          rotation,
+          scaleX: 1,
+          scaleY: 1,
+          width: ref.width,
+          height: ref.height,
+          color: [1, 1, 1, 1],
+        },
+      };
       slotIds.push(slot.id);
     }
   });
   if (slotIds.length) setSelection({ slot: slotIds[slotIds.length - 1], bones: [boneId] });
-  toast(psd.skipped.hidden ? `Imported layers: ${slotIds.length} from ${file.name} (${psd.skipped.hidden} hidden skipped)` : `Imported layers: ${slotIds.length} from ${file.name}`, 'ok');
+  toast(
+    psd.skipped.hidden
+      ? `Imported layers: ${slotIds.length} from ${file.name} (${psd.skipped.hidden} hidden skipped)`
+      : `Imported layers: ${slotIds.length} from ${file.name}`,
+    'ok',
+  );
   return slotIds.length;
 }
 
@@ -150,7 +190,8 @@ export async function reimportPsd(file: File): Promise<{ updated: number; added:
   const fresh = new Map<string, { asset: ImageAsset; layer: PsdLayer }>();
   const refs = new Map<string, ImageRef>();
   try {
-    for (const { layer, image } of plan.updates) fresh.set(image.name, { asset: await assets.decode(image.name, await pixelsToPng(layer.pixels)), layer });
+    for (const { layer, image } of plan.updates)
+      fresh.set(image.name, { asset: await assets.decode(image.name, await pixelsToPng(layer.pixels)), layer });
     for (const layer of plan.added) refs.set(layer.name, await assets.addFile(await pixelsToPng(layer.pixels), layer.name));
   } catch (e) {
     toast(`Could not read the layers of ${file.name}`, 'error');
@@ -224,11 +265,31 @@ export async function reimportPsd(file: File): Promise<{ updated: number; added:
       }
       const center = layerCenter(psd, layer);
       const at = placeOnBone(live, center[0], center[1]);
-      const slot = newSlot({ name: freshName(ref.name.split('/').pop() ?? ref.name, d.skeleton.slots), bone: boneId, attachment: ref.name, color: [1, 1, 1, layer.opacity], blend: layer.blend });
+      const slot = newSlot({
+        name: freshName(ref.name.split('/').pop() ?? ref.name, d.skeleton.slots),
+        bone: boneId,
+        attachment: ref.name,
+        color: [1, 1, 1, layer.opacity],
+        blend: layer.blend,
+      });
       d.images.push({ ...ref, psd: center });
       const at0 = anchor ? d.skeleton.slots.findIndex((s) => s.id === anchor) + 1 : 0;
       d.skeleton.slots.splice(at0, 0, slot);
-      skin0.attachments[slot.id] = { [ref.name]: { type: 'region', name: ref.name, path: ref.name, x: at.x, y: at.y, rotation: at.rotation, scaleX: 1, scaleY: 1, width: ref.width, height: ref.height, color: [1, 1, 1, 1] } };
+      skin0.attachments[slot.id] = {
+        [ref.name]: {
+          type: 'region',
+          name: ref.name,
+          path: ref.name,
+          x: at.x,
+          y: at.y,
+          rotation: at.rotation,
+          scaleX: 1,
+          scaleY: 1,
+          width: ref.width,
+          height: ref.height,
+          color: [1, 1, 1, 1],
+        },
+      };
       anchor = slot.id;
     }
   });

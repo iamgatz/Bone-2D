@@ -47,7 +47,14 @@ export function Palette() {
         <div className="palette-list" ref={list} role="listbox">
           {shown.length === 0 && <div className="empty">Nothing matches</div>}
           {shown.map((c, i) => (
-            <div key={c.id} role="option" aria-selected={i === at} className={`palette-item${i === at ? ' active' : ''}`} onMouseMove={() => setAt(i)} onClick={() => run(i)}>
+            <div
+              key={c.id}
+              role="option"
+              aria-selected={i === at}
+              className={`palette-item${i === at ? ' active' : ''}`}
+              onMouseMove={() => setAt(i)}
+              onClick={() => run(i)}
+            >
               <span className="palette-title">{tr(c.title)}</span>
               <span className="palette-group">{tr(c.group)}</span>
               {c.keys && <kbd className="kbd">{c.keys}</kbd>}

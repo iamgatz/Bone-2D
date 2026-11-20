@@ -10,7 +10,12 @@ import { uiStore } from '@/store/ui';
 
 const area = (p: ArrayLike<number>, t: number[]) => {
   let s = 0;
-  for (let i = 0; i < t.length; i += 3) s += Math.abs((p[t[i + 1] * 2] - p[t[i] * 2]) * (p[t[i + 2] * 2 + 1] - p[t[i] * 2 + 1]) - (p[t[i + 2] * 2] - p[t[i] * 2]) * (p[t[i + 1] * 2 + 1] - p[t[i] * 2 + 1])) / 2;
+  for (let i = 0; i < t.length; i += 3)
+    s +=
+      Math.abs(
+        (p[t[i + 1] * 2] - p[t[i] * 2]) * (p[t[i + 2] * 2 + 1] - p[t[i] * 2 + 1]) -
+          (p[t[i + 2] * 2] - p[t[i] * 2]) * (p[t[i + 1] * 2 + 1] - p[t[i] * 2 + 1]),
+      ) / 2;
   return s;
 };
 const hasEdge = (t: number[], a: number, b: number) => {
@@ -21,12 +26,13 @@ const hasEdge = (t: number[], a: number, b: number) => {
   return false;
 };
 const noCrossing = (p: ArrayLike<number>, t: number[], a: number, b: number) => {
-  for (let i = 0; i < t.length; i += 3) for (let k = 0; k < 3; k++) if (segmentsCross(p, a, b, t[i + k], t[i + ((k + 1) % 3)])) return false;
+  for (let i = 0; i < t.length; i += 3)
+    for (let k = 0; k < 3; k++) if (segmentsCross(p, a, b, t[i + k], t[i + ((k + 1) % 3)])) return false;
   return true;
 };
 function rng(seed: number) {
   let s = seed;
-  return () => ((s = (s * 1664525 + 1013904223) >>> 0) / 4294967296);
+  return () => (s = (s * 1664525 + 1013904223) >>> 0) / 4294967296;
 }
 
 describe('constrained triangulation', () => {
@@ -42,7 +48,12 @@ describe('constrained triangulation', () => {
     const r = rng(7);
     const pts: number[] = [0, 0, 200, 0, 200, 200, 0, 200];
     for (let i = 0; i < 40; i++) pts.push(10 + r() * 180, 10 + r() * 180);
-    for (const [a, b] of [[4, 30], [0, 2], [5, 20], [1, 3]]) {
+    for (const [a, b] of [
+      [4, 30],
+      [0, 2],
+      [5, 20],
+      [1, 3],
+    ]) {
       const t = triangulate(pts, 4, [a, b]);
       expect(hasEdge(t, a, b)).toBe(true);
       expect(noCrossing(pts, t, a, b)).toBe(true);
@@ -108,7 +119,20 @@ describe('manual edges in the store', () => {
     const slot = newSlot({ name: 's', bone: root.id });
     p.skeleton.slots.push(slot);
     p.skeleton.skins[0].attachments[slot.id] = {
-      img: meshFromRegion({ type: 'region', name: 'img', path: 'img', x: 0, y: 0, rotation: 0, scaleX: 1, scaleY: 1, width: 100, height: 100, color: [1, 1, 1, 1], sequence: null } as never),
+      img: meshFromRegion({
+        type: 'region',
+        name: 'img',
+        path: 'img',
+        x: 0,
+        y: 0,
+        rotation: 0,
+        scaleX: 1,
+        scaleY: 1,
+        width: 100,
+        height: 100,
+        color: [1, 1, 1, 1],
+        sequence: null,
+      } as never),
     };
     slot.attachment = 'img';
     docStore.replace(p);

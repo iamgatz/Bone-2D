@@ -2,7 +2,8 @@
 import { KEY_EPS, sortKeys } from './edit';
 import type { Animation, Curve, Id } from './model';
 
-export type KeyKind = 'bone' | 'slot' | 'ik' | 'deform' | 'sequence' | 'drawOrder' | 'drawOrderFolder' | 'event' | 'slider' | 'transform' | 'path' | 'physics';
+export type KeyKind =
+  'bone' | 'slot' | 'ik' | 'deform' | 'sequence' | 'drawOrder' | 'drawOrderFolder' | 'event' | 'slider' | 'transform' | 'path' | 'physics';
 
 export interface KeyRef {
   kind: KeyKind;
@@ -194,7 +195,12 @@ export function pruneEmpty(anim: Animation) {
  * first copied bone goes to the first selected bone, and so on: the swing of a whole left arm chain onto the right one.
  * When the number of selected bones is another one, or they are the very bones the keys came from, the keys stay where they were.
  */
-export function retargetClip<T extends { kind: KeyKind; target: Id }>(clip: readonly T[], selectedBones: readonly Id[], selectedSlot: Id | null, boneOrder?: readonly Id[]): T[] {
+export function retargetClip<T extends { kind: KeyKind; target: Id }>(
+  clip: readonly T[],
+  selectedBones: readonly Id[],
+  selectedSlot: Id | null,
+  boneOrder?: readonly Id[],
+): T[] {
   let out = [...clip];
   const bones = [...new Set(clip.filter((c) => c.kind === 'bone').map((c) => c.target))];
   if (bones.length === 1 && selectedBones.length && !(selectedBones.length === 1 && selectedBones[0] === bones[0])) {
@@ -210,6 +216,7 @@ export function retargetClip<T extends { kind: KeyKind; target: Id }>(clip: read
     }
   }
   const slots = [...new Set(clip.filter((c) => c.kind === 'slot').map((c) => c.target))];
-  if (slots.length === 1 && selectedSlot && selectedSlot !== slots[0]) out = out.map((c) => (c.kind === 'slot' ? { ...c, target: selectedSlot } : c));
+  if (slots.length === 1 && selectedSlot && selectedSlot !== slots[0])
+    out = out.map((c) => (c.kind === 'slot' ? { ...c, target: selectedSlot } : c));
   return out;
 }

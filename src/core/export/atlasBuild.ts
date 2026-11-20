@@ -24,7 +24,9 @@ export function usedImages(doc: Pick<SkeletonDoc, 'skins'>): { name: string; mes
  * Pictures that are the same: for each picture whose pixels (and size) equal those of an earlier one, the name of that earlier one. Used with
  * the packer's `aliasOf`, so identical pictures (a left hand that is the right one copied) take one place in the atlas.
  */
-export function findAliases(list: { name: string; width: number; height: number; data: ArrayLike<number>; extra?: string }[]): Map<string, string> {
+export function findAliases(
+  list: { name: string; width: number; height: number; data: ArrayLike<number>; extra?: string }[],
+): Map<string, string> {
   const out = new Map<string, string>();
   const seen = new Map<string, typeof list>();
   for (const item of list) {
@@ -42,20 +44,34 @@ export function findAliases(list: { name: string; width: number; height: number;
 }
 
 /** The size a picture has at an export scale (never below one pixel). */
-export const scaledSize = (width: number, height: number, scale: number): [number, number] => [Math.max(1, Math.round(width * scale)), Math.max(1, Math.round(height * scale))];
+export const scaledSize = (width: number, height: number, scale: number): [number, number] => [
+  Math.max(1, Math.round(width * scale)),
+  Math.max(1, Math.round(height * scale)),
+];
 
 /**
  * One picture, already at its export size, as a region: the pixels of the part that is packed (the picture without its empty border when `trim`
  * is on and no mesh uses it) and what the packer is told about it.
  */
-export function makeRegion(name: string, mesh: boolean, width: number, height: number, rgba: Uint8ClampedArray, trim: boolean): { pixels: Uint8ClampedArray; input: PackInput } {
+export function makeRegion(
+  name: string,
+  mesh: boolean,
+  width: number,
+  height: number,
+  rgba: Uint8ClampedArray,
+  trim: boolean,
+): { pixels: Uint8ClampedArray; input: PackInput } {
   const b = trim && !mesh ? trimBounds(rgba, width, height) : { x: 0, y: 0, w: width, h: height };
   let pixels = rgba;
   if (b.w !== width || b.h !== height) {
     pixels = new Uint8ClampedArray(b.w * b.h * 4);
-    for (let y = 0; y < b.h; y++) pixels.set(rgba.subarray(((b.y + y) * width + b.x) * 4, ((b.y + y) * width + b.x + b.w) * 4), y * b.w * 4);
+    for (let y = 0; y < b.h; y++)
+      pixels.set(rgba.subarray(((b.y + y) * width + b.x) * 4, ((b.y + y) * width + b.x + b.w) * 4), y * b.w * 4);
   }
-  return { pixels, input: { name, width: b.w, height: b.h, offsetX: b.x, offsetY: height - (b.y + b.h), originalWidth: width, originalHeight: height } };
+  return {
+    pixels,
+    input: { name, width: b.w, height: b.h, offsetX: b.x, offsetY: height - (b.y + b.h), originalWidth: width, originalHeight: height },
+  };
 }
 
 /** One atlas of an export with an atlas per skin: the file name without its extension, and the pictures packed into it. */
@@ -78,7 +94,9 @@ export function skinAtlasGroups(doc: Pick<SkeletonDoc, 'skins'>, base: string): 
   if (defaultNames.size) out.push({ skinId: first[0].id, stem: base, names: [...defaultNames] });
   const stems = new Set([base]);
   for (const skin of doc.skins.slice(1)) {
-    const names = usedImages({ skins: [skin] }).map((i) => i.name).filter((n) => !defaultNames.has(n));
+    const names = usedImages({ skins: [skin] })
+      .map((i) => i.name)
+      .filter((n) => !defaultNames.has(n));
     if (!names.length) continue;
     let stem = `${base}-${skin.name.replace(/[^\w-]+/g, '_') || 'skin'}`;
     while (stems.has(stem)) stem += '_';

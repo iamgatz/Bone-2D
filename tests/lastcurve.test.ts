@@ -16,7 +16,16 @@ function session() {
   docStore.replace(f.project);
   const anim = f.project.skeleton.animations.find((a) => a.name === 'walk')!;
   const bone = f.project.skeleton.bones[1];
-  uiStore.patch({ mode: 'animate', animationId: anim.id, selection: { ...emptySelection, bones: [bone.id] }, overrides: {}, time: 0, playing: false, autoKey: false, defaultCurve: 'bezier' });
+  uiStore.patch({
+    mode: 'animate',
+    animationId: anim.id,
+    selection: { ...emptySelection, bones: [bone.id] },
+    overrides: {},
+    time: 0,
+    playing: false,
+    autoKey: false,
+    defaultCurve: 'bezier',
+  });
   const rotate = () => docStore.get().skeleton.animations.find((a) => a.id === anim.id)!.bones[bone.id].rotate ?? [];
   const ref = (time: number) => ({ kind: 'bone' as const, target: bone.id, prop: 'rotate', time });
   return { anim, bone, rotate, ref };

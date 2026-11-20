@@ -109,7 +109,10 @@ describe('onion skin times', () => {
   it('are spaced by the gap, before and after the playhead', () => {
     const g = ghostTimes(1, 2, 30, cfg, false);
     expect(g.map((x) => [x.side, x.index, Math.round(x.time * 1000) / 1000])).toEqual([
-      ['before', 1, 0.9], ['before', 2, 0.8], ['after', 1, 1.1], ['after', 2, 1.2],
+      ['before', 1, 0.9],
+      ['before', 2, 0.8],
+      ['after', 1, 1.1],
+      ['after', 2, 1.2],
     ]);
   });
 

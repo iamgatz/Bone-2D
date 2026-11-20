@@ -1,5 +1,30 @@
 import { useCallback, useMemo, useRef, useState } from 'react';
-import { ArrowLeftToLine, ArrowRightFromLine, ChevronDown, ChevronRight, Copy, Diamond, Eraser, Filter, Film, KeyRound, Link2, Maximize, Pause, Pencil, Play, Plus, Repeat, SkipBack, SkipForward, Spline, Trash2, Volume2, VolumeX, ZoomIn } from 'lucide-react';
+import {
+  ArrowLeftToLine,
+  ArrowRightFromLine,
+  ChevronDown,
+  ChevronRight,
+  Copy,
+  Diamond,
+  Eraser,
+  Filter,
+  Film,
+  KeyRound,
+  Link2,
+  Maximize,
+  Pause,
+  Pencil,
+  Play,
+  Plus,
+  Repeat,
+  SkipBack,
+  SkipForward,
+  Spline,
+  Trash2,
+  Volume2,
+  VolumeX,
+  ZoomIn,
+} from 'lucide-react';
 import { GraphEditor } from './GraphEditor';
 import { CURVE_PRESETS } from '@/core/curve';
 import { keyGrid } from '@/core/edit';
@@ -12,7 +37,30 @@ import type { AxisGroup } from '@/core/model';
 import { setAxesSplit } from '@/store/axisActions';
 import { openKeyDialog } from '@/store/keyDialog';
 import { clearMute, toggleMute } from '@/store/muteActions';
-import { cleanUpKeys, copyKeys, createAnimation, currentAnimation, deleteAnimation, deleteKeys, deleteTimeAtPlayhead, saveKeyCurve, insertTimeAtPlayhead, duplicateAnimation, pasteKeys, renameAnimation, selectAnimation, selectBone, selectSlot, setAnimationDuration, setKeysCurve, setMode, setPlay, setSelection, setTime, togglePlay } from '@/store/actions';
+import {
+  cleanUpKeys,
+  copyKeys,
+  createAnimation,
+  currentAnimation,
+  deleteAnimation,
+  deleteKeys,
+  deleteTimeAtPlayhead,
+  saveKeyCurve,
+  insertTimeAtPlayhead,
+  duplicateAnimation,
+  pasteKeys,
+  renameAnimation,
+  selectAnimation,
+  selectBone,
+  selectSlot,
+  setAnimationDuration,
+  setKeysCurve,
+  setMode,
+  setPlay,
+  setSelection,
+  setTime,
+  togglePlay,
+} from '@/store/actions';
 import { useProject } from '@/store/doc';
 import { setSettings, useSettings } from '@/store/settings';
 import { uiStore, useUi } from '@/store/ui';
@@ -57,11 +105,36 @@ function TrackFilterMenu({ at, filter, onClose }: { at: { x: number; y: number }
   const ref = useOutsideClose(true, onClose);
   const set = (p: Partial<TrackFilter>) => uiStore.patch({ trackFilter: { ...uiStore.get().trackFilter, ...p } });
   return (
-    <div ref={ref} className="menu-pop" role="dialog" aria-label="Track filter" style={{ position: 'fixed', left: Math.max(8, Math.min(at.x - 230, window.innerWidth - 240)), top: at.y, width: 226, zIndex: 120, padding: 8 }} onKeyDown={(e) => e.stopPropagation()}>
-      <input autoFocus value={filter.text} placeholder="Track name" aria-label="Track name" style={{ width: '100%' }} onChange={(e) => set({ text: e.target.value })} />
+    <div
+      ref={ref}
+      className="menu-pop"
+      role="dialog"
+      aria-label="Track filter"
+      style={{
+        position: 'fixed',
+        left: Math.max(8, Math.min(at.x - 230, window.innerWidth - 240)),
+        top: at.y,
+        width: 226,
+        zIndex: 120,
+        padding: 8,
+      }}
+      onKeyDown={(e) => e.stopPropagation()}
+    >
+      <input
+        autoFocus
+        value={filter.text}
+        placeholder="Track name"
+        aria-label="Track name"
+        style={{ width: '100%' }}
+        onChange={(e) => set({ text: e.target.value })}
+      />
       {TRACK_GROUPS.map((g) => (
         <label key={g.id} className="hstack" style={{ gap: 6, padding: '3px 0' }}>
-          <input type="checkbox" checked={!filter.hidden.includes(g.id)} onChange={(e) => set({ hidden: e.target.checked ? filter.hidden.filter((h) => h !== g.id) : [...filter.hidden, g.id] })} />
+          <input
+            type="checkbox"
+            checked={!filter.hidden.includes(g.id)}
+            onChange={(e) => set({ hidden: e.target.checked ? filter.hidden.filter((h) => h !== g.id) : [...filter.hidden, g.id] })}
+          />
           <span>{g.label}</span>
         </label>
       ))}
@@ -116,7 +189,12 @@ function TimelineMenu({ menu, onClose }: { menu: TimelineMenuRequest; onClose: (
           onClose();
         } else menuKeys(e);
       }}
-      style={{ position: 'fixed', left: Math.min(menu.x, window.innerWidth - 230), top: Math.min(menu.y, window.innerHeight - 370), zIndex: 120 }}
+      style={{
+        position: 'fixed',
+        left: Math.min(menu.x, window.innerWidth - 230),
+        top: Math.min(menu.y, window.innerHeight - 370),
+        zIndex: 120,
+      }}
     >
       <div className="section-label" style={{ paddingTop: 4 }}>
         {`Interpolation · ${refs.length} key${refs.length === 1 ? '' : 's'}`}
@@ -135,7 +213,9 @@ function TimelineMenu({ menu, onClose }: { menu: TimelineMenuRequest; onClose: (
       {refs.length === 1 && item('Save this curve…', () => saveKeyCurve(refs[0]))}
       <div className="menu-sep" />
       {refs.length === 1 && item('Edit key…', () => openKeyDialog(refs[0]))}
-      {axes.map(({ group, bones, split }) => item(split ? `Merge ${group} X / Y` : `Split ${group} into X / Y`, () => setAxesSplit(bones, group, !split)))}
+      {axes.map(({ group, bones, split }) =>
+        item(split ? `Merge ${group} X / Y` : `Split ${group} into X / Y`, () => setAxesSplit(bones, group, !split)),
+      )}
       {(refs.length === 1 || axes.length > 0) && <div className="menu-sep" />}
       {item('Copy', () => copyKeys(refs), KEYS.copy)}
       {item('Paste at playhead', () => pasteKeys(uiStore.get().time), KEYS.paste)}
@@ -170,7 +250,10 @@ export function Timeline() {
 
   const trackFilter = useUi((s) => s.trackFilter);
   const [filterAt, setFilterAt] = useState<{ x: number; y: number } | null>(null);
-  const rows = useMemo(() => filterRows(buildRows(doc, anim, selection.bones, selection.slot, expanded), trackFilter), [doc, anim, selection.bones, selection.slot, expanded, trackFilter]);
+  const rows = useMemo(
+    () => filterRows(buildRows(doc, anim, selection.bones, selection.slot, expanded), trackFilter),
+    [doc, anim, selection.bones, selection.slot, expanded, trackFilter],
+  );
   const onMenu = useCallback((m: TimelineMenuRequest) => setMenu(m), []);
 
   const toggleRow = (r: Row) => uiStore.patch({ expanded: { ...uiStore.get().expanded, [r.id]: !r.expanded } });
@@ -223,35 +306,82 @@ export function Timeline() {
               }}
             />
           ) : (
-            <SelectField value={animationId ?? ''} options={doc.animations.length ? doc.animations.map((a) => ({ value: a.id, label: a.name })) : [{ value: '', label: 'no animations' }]} onChange={(v) => v && selectAnimation(v)} />
+            <SelectField
+              value={animationId ?? ''}
+              options={
+                doc.animations.length
+                  ? doc.animations.map((a) => ({ value: a.id, label: a.name }))
+                  : [{ value: '', label: 'no animations' }]
+              }
+              onChange={(v) => v && selectAnimation(v)}
+            />
           )}
           <IconButton icon={Plus} title="New animation" small onClick={() => (createAnimation(), setMode('animate'))} />
           <IconButton icon={Pencil} title="Rename animation" small disabled={!anim} onClick={() => setRenaming((r) => !r)} />
-          <IconButton icon={Eraser} title="Clean up: remove the keys that change nothing" small disabled={!anim} onClick={() => anim && cleanUpKeys(anim.id)} />
+          <IconButton
+            icon={Eraser}
+            title="Clean up: remove the keys that change nothing"
+            small
+            disabled={!anim}
+            onClick={() => anim && cleanUpKeys(anim.id)}
+          />
           <IconButton icon={Copy} title="Duplicate animation" small disabled={!anim} onClick={() => anim && duplicateAnimation(anim.id)} />
           <IconButton icon={Trash2} title="Delete animation" small disabled={!anim} onClick={() => anim && deleteAnimation(anim.id)} />
         </div>
         <span className="sep" />
         <IconButton icon={SkipBack} title="Go to start" onClick={() => jump(0)} disabled={!anim} />
-        <IconButton icon={playing ? Pause : Play} title={playing ? 'Pause' : 'Play'} hotkey={KEYS.play} active={playing} animate onClick={() => togglePlay()} disabled={!anim} />
+        <IconButton
+          icon={playing ? Pause : Play}
+          title={playing ? 'Pause' : 'Play'}
+          hotkey={KEYS.play}
+          active={playing}
+          animate
+          onClick={() => togglePlay()}
+          disabled={!anim}
+        />
         <IconButton icon={SkipForward} title="Go to end" onClick={() => anim && jump(anim.duration)} disabled={!anim} />
         <IconButton icon={Repeat} title="Loop" active={loop} onClick={() => setPlay({ loop: !loop })} />
         <FrameField fps={doc.fps} time={time} />
         <span className="sep" />
-        <IconButton icon={KeyRound} title="Auto-key: pose edits create keys at the playhead" active={autoKey} animate onClick={() => uiStore.patch({ autoKey: !autoKey })} />
+        <IconButton
+          icon={KeyRound}
+          title="Auto-key: pose edits create keys at the playhead"
+          active={autoKey}
+          animate
+          onClick={() => uiStore.patch({ autoKey: !autoKey })}
+        />
         <div className="tl-opt" style={{ width: 112 }}>
-          <SelectField value={defaultCurve} options={[{ value: 'bezier', label: 'Smooth keys' }, { value: 'linear', label: 'Linear keys' }, { value: 'stepped', label: 'Stepped keys' }] as { value: CurveKind; label: string }[]} onChange={(v) => uiStore.patch({ defaultCurve: v })} />
+          <SelectField
+            value={defaultCurve}
+            options={
+              [
+                { value: 'bezier', label: 'Smooth keys' },
+                { value: 'linear', label: 'Linear keys' },
+                { value: 'stepped', label: 'Stepped keys' },
+              ] as { value: CurveKind; label: string }[]
+            }
+            onChange={(v) => uiStore.patch({ defaultCurve: v })}
+          />
         </div>
         <span className="spacer" />
         {anim && (
-          <div className="tl-opt" title="Animation length in seconds" style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'var(--muted)' }}>
+          <div
+            className="tl-opt"
+            title="Animation length in seconds"
+            style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'var(--muted)' }}
+          >
             Length
             <LengthField value={anim.duration} onChange={(v) => setAnimationDuration(anim.id, v)} />
           </div>
         )}
         {anim && <TimeGapControls />}
         <IconButton icon={Maximize} title="Fit timeline to the animation" onClick={fit} />
-        <IconButton icon={ZoomIn} title="Zoom to the selected keys (the loop range when none is selected and one is set, else the whole animation)" disabled={!anim} onClick={zoomKeys} />
+        <IconButton
+          icon={ZoomIn}
+          title="Zoom to the selected keys (the loop range when none is selected and one is set, else the whole animation)"
+          disabled={!anim}
+          onClick={zoomKeys}
+        />
         <span className="sep tl-opt2" />
         <IconButton
           icon={Filter}
@@ -263,12 +393,21 @@ export function Timeline() {
             setFilterAt({ x: r.right, y: r.bottom + 4 });
           }}
         />
-        <IconButton icon={Diamond} title="Dopesheet" active={view === 'dopesheet'} onClick={() => uiStore.patch({ timelineView: 'dopesheet' })} />
+        <IconButton
+          icon={Diamond}
+          title="Dopesheet"
+          active={view === 'dopesheet'}
+          onClick={() => uiStore.patch({ timelineView: 'dopesheet' })}
+        />
         <IconButton icon={Spline} title="Curve graph" active={view === 'graph'} onClick={() => uiStore.patch({ timelineView: 'graph' })} />
         {view === 'graph' && (
           <IconButton
             icon={Link2}
-            title={graphSync === 'dopesheet' ? 'The graph shows the timelines of the keys selected in the Dopesheet (click: show the selected bones instead)' : 'The graph shows the timelines of the selected bones (click: follow the keys selected in the Dopesheet)'}
+            title={
+              graphSync === 'dopesheet'
+                ? 'The graph shows the timelines of the keys selected in the Dopesheet (click: show the selected bones instead)'
+                : 'The graph shows the timelines of the selected bones (click: follow the keys selected in the Dopesheet)'
+            }
             active={graphSync === 'dopesheet'}
             onClick={() => setSettings({ graphSync: graphSync === 'dopesheet' ? 'selection' : 'dopesheet' })}
           />
@@ -279,54 +418,94 @@ export function Timeline() {
         {view === 'graph' ? (
           <GraphEditor anim={anim} doc={doc} selection={selection} selectedKeys={selectedKeys} fps={doc.fps} />
         ) : (
-        <>
-        <div className="tl-labels">
-          <div className="tl-labels-head">
-            {anim ? anim.name : 'Timeline'}
-            {muted.length > 0 && (
-              <button type="button" className="tl-unmute" title="Play every timeline again" onClick={clearMute}>
-                Unmute all
-              </button>
-            )}
-          </div>
-          <div className="tl-scroll" id="tl-label-scroll" style={{ scrollbarWidth: 'none' }} onScroll={(e) => {
-            const host = document.querySelector<HTMLElement>('.tl-canvas-host');
-            if (host && host.scrollTop !== e.currentTarget.scrollTop) host.scrollTop = e.currentTarget.scrollTop;
-          }}>
-            {rows.map((r) => (
-              <div
-                key={r.id}
-                className={`tl-label${r.selected ? ' selected' : ''}${r.type === 'prop' ? ' child' : ''}${r.target && muted.includes(r.target.id) ? ' muted' : ''}`}
-                style={{ height: ROW_H, paddingLeft: 8 + r.depth * 12, fontWeight: r.type === 'group' ? 650 : 400, fontSize: r.type === 'group' ? 10.5 : undefined, textTransform: r.type === 'group' ? 'uppercase' : undefined, letterSpacing: r.type === 'group' ? 0.6 : undefined, color: r.type === 'group' ? 'var(--muted)' : undefined }}
-                onClick={(e) => r.type !== 'group' && clickRow(r, e)}
-              >
-                {r.type !== 'group' && (
-                  <span className="chev" onClick={(e) => (e.stopPropagation(), r.expandable && toggleRow(r))} style={{ visibility: r.expandable ? 'visible' : 'hidden' }}>
-                    {r.expanded ? <ChevronDown size={13} /> : <ChevronRight size={13} />}
-                  </span>
-                )}
-                <span className="lbl">{r.label}</span>
-                {r.type === 'entity' && r.target && (
-                  <button
-                    type="button"
-                    className={`tl-mute${muted.includes(r.target.id) ? ' on' : ''}`}
-                    title={muted.includes(r.target.id) ? 'Unmute: play these keys again' : 'Mute: play the animation without these keys (they stay, nothing is exported differently)'}
-                    onClick={(e) => (e.stopPropagation(), toggleMute(r.target!.id))}
-                  >
-                    {muted.includes(r.target.id) ? <VolumeX size={12} /> : <Volume2 size={12} />}
+          <>
+            <div className="tl-labels">
+              <div className="tl-labels-head">
+                {anim ? anim.name : 'Timeline'}
+                {muted.length > 0 && (
+                  <button type="button" className="tl-unmute" title="Play every timeline again" onClick={clearMute}>
+                    Unmute all
                   </button>
                 )}
               </div>
-            ))}
-          </div>
-        </div>
-        <Dopesheet rows={rows} duration={anim?.duration ?? 1} fps={doc.fps} onMenu={onMenu} />
-        </>
+              <div
+                className="tl-scroll"
+                id="tl-label-scroll"
+                style={{ scrollbarWidth: 'none' }}
+                onScroll={(e) => {
+                  const host = document.querySelector<HTMLElement>('.tl-canvas-host');
+                  if (host && host.scrollTop !== e.currentTarget.scrollTop) host.scrollTop = e.currentTarget.scrollTop;
+                }}
+              >
+                {rows.map((r) => (
+                  <div
+                    key={r.id}
+                    className={`tl-label${r.selected ? ' selected' : ''}${r.type === 'prop' ? ' child' : ''}${r.target && muted.includes(r.target.id) ? ' muted' : ''}`}
+                    style={{
+                      height: ROW_H,
+                      paddingLeft: 8 + r.depth * 12,
+                      fontWeight: r.type === 'group' ? 650 : 400,
+                      fontSize: r.type === 'group' ? 10.5 : undefined,
+                      textTransform: r.type === 'group' ? 'uppercase' : undefined,
+                      letterSpacing: r.type === 'group' ? 0.6 : undefined,
+                      color: r.type === 'group' ? 'var(--muted)' : undefined,
+                    }}
+                    onClick={(e) => r.type !== 'group' && clickRow(r, e)}
+                  >
+                    {r.type !== 'group' && (
+                      <span
+                        className="chev"
+                        onClick={(e) => (e.stopPropagation(), r.expandable && toggleRow(r))}
+                        style={{ visibility: r.expandable ? 'visible' : 'hidden' }}
+                      >
+                        {r.expanded ? <ChevronDown size={13} /> : <ChevronRight size={13} />}
+                      </span>
+                    )}
+                    <span className="lbl">{r.label}</span>
+                    {r.type === 'entity' && r.target && (
+                      <button
+                        type="button"
+                        className={`tl-mute${muted.includes(r.target.id) ? ' on' : ''}`}
+                        title={
+                          muted.includes(r.target.id)
+                            ? 'Unmute: play these keys again'
+                            : 'Mute: play the animation without these keys (they stay, nothing is exported differently)'
+                        }
+                        onClick={(e) => (e.stopPropagation(), toggleMute(r.target!.id))}
+                      >
+                        {muted.includes(r.target.id) ? <VolumeX size={12} /> : <Volume2 size={12} />}
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+            <Dopesheet rows={rows} duration={anim?.duration ?? 1} fps={doc.fps} onMenu={onMenu} />
+          </>
         )}
         {view === 'dopesheet' && (!animate || !anim || rows.length === 0) && (
-          <div className="tl-empty" style={{ left: 232, top: 28, pointerEvents: !animate || !anim ? 'auto' : 'none', ...(!animate ? { placeItems: 'start end', padding: 10 } : {}) }}>
+          <div
+            className="tl-empty"
+            style={{
+              left: 232,
+              top: 28,
+              pointerEvents: !animate || !anim ? 'auto' : 'none',
+              ...(!animate ? { placeItems: 'start end', padding: 10 } : {}),
+            }}
+          >
             {!animate ? (
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10, background: 'rgba(20,23,29,0.94)', border: '1px solid var(--border-strong)', borderRadius: 10, padding: '6px 6px 6px 12px', boxShadow: 'var(--shadow)' }}>
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 10,
+                  background: 'rgba(20,23,29,0.94)',
+                  border: '1px solid var(--border-strong)',
+                  borderRadius: 10,
+                  padding: '6px 6px 6px 12px',
+                  boxShadow: 'var(--shadow)',
+                }}
+              >
                 <span>
                   <b>Setup</b> mode · switch to Animate to pose and key
                 </span>
@@ -360,7 +539,11 @@ export function Timeline() {
 function TimeGapControls() {
   const gap = useUi((s) => s.timeGap ?? 6);
   return (
-    <div className="tl-opt tl-gap-group" style={{ display: 'flex', alignItems: 'center', gap: 4 }} title="Cut time at the playhead: Insert pushes every key from the playhead later (a pause), Delete removes the frames after the playhead and closes the gap">
+    <div
+      className="tl-opt tl-gap-group"
+      style={{ display: 'flex', alignItems: 'center', gap: 4 }}
+      title="Cut time at the playhead: Insert pushes every key from the playhead later (a pause), Delete removes the frames after the playhead and closes the gap"
+    >
       <input
         className="tl-gap"
         type="number"
@@ -372,11 +555,21 @@ function TimeGapControls() {
         style={{ width: 46 }}
         onChange={(e) => uiStore.patch({ timeGap: Math.max(1, Math.min(999, Math.round(Number(e.target.value)) || 1)) })}
       />
-      <button className="btn sm" title="Insert the frames at the playhead: every key from there on moves later" aria-label="Insert time" onClick={() => insertTimeAtPlayhead(gap)}>
+      <button
+        className="btn sm"
+        title="Insert the frames at the playhead: every key from there on moves later"
+        aria-label="Insert time"
+        onClick={() => insertTimeAtPlayhead(gap)}
+      >
         <ArrowRightFromLine size={13} />
         <span className="tl-gap-text">Insert time</span>
       </button>
-      <button className="btn sm" title="Delete the frames after the playhead: the keys inside go, the later keys move earlier" aria-label="Delete time" onClick={() => deleteTimeAtPlayhead(gap)}>
+      <button
+        className="btn sm"
+        title="Delete the frames after the playhead: the keys inside go, the later keys move earlier"
+        aria-label="Delete time"
+        onClick={() => deleteTimeAtPlayhead(gap)}
+      >
         <ArrowLeftToLine size={13} />
         <span className="tl-gap-text">Delete time</span>
       </button>

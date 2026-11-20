@@ -100,7 +100,12 @@ export class GLRenderer {
 
   /** `alpha` keeps transparency in the canvas (renders for files); `preserveDrawingBuffer` lets the picture be read after the frame is drawn. */
   constructor(canvas: HTMLCanvasElement, opts: { alpha?: boolean; preserveDrawingBuffer?: boolean } = {}) {
-    const gl = canvas.getContext('webgl2', { alpha: opts.alpha ?? false, antialias: true, stencil: true, preserveDrawingBuffer: opts.preserveDrawingBuffer ?? false });
+    const gl = canvas.getContext('webgl2', {
+      alpha: opts.alpha ?? false,
+      antialias: true,
+      stencil: true,
+      preserveDrawingBuffer: opts.preserveDrawingBuffer ?? false,
+    });
     if (!gl) throw new Error('WebGL2 is not available in this browser');
     this.gl = gl;
     const vs = compile(gl, gl.VERTEX_SHADER, VS);
@@ -245,9 +250,24 @@ export class GLRenderer {
   }
 
   /** Pushes triangles. `world` holds x,y pairs; `uvs` is null for untextured geometry; `dark` is the slot's dark color (two-color tinting). */
-  pushGeometry(world: ArrayLike<number>, uvs: ArrayLike<number> | null, tris: ArrayLike<number>, vertexCount: number, triIndexCount: number, color: RGBA, tex: WebGLTexture | null, blend: BlendMode, dark: RGB | null = null) {
+  pushGeometry(
+    world: ArrayLike<number>,
+    uvs: ArrayLike<number> | null,
+    tris: ArrayLike<number>,
+    vertexCount: number,
+    triIndexCount: number,
+    color: RGBA,
+    tex: WebGLTexture | null,
+    blend: BlendMode,
+    dark: RGB | null = null,
+  ) {
     if (vertexCount > MAX_VERTS) return;
-    if (tex !== this.curTex || blend !== this.curBlend || this.vCount + vertexCount > MAX_VERTS || this.iCount + triIndexCount > this.idx.length) {
+    if (
+      tex !== this.curTex ||
+      blend !== this.curBlend ||
+      this.vCount + vertexCount > MAX_VERTS ||
+      this.iCount + triIndexCount > this.idx.length
+    ) {
       this.flush();
       this.curTex = tex;
       if (blend !== this.curBlend) this.setBlend(blend);
@@ -276,7 +296,12 @@ export class GLRenderer {
   /** Per-vertex colored geometry (weight heat maps etc). `colors` holds r,g,b,a per vertex. */
   pushColored(world: ArrayLike<number>, colors: ArrayLike<number>, tris: ArrayLike<number>, vertexCount: number, triIndexCount: number) {
     if (vertexCount > MAX_VERTS) return;
-    if (this.curTex !== null || this.curBlend !== 'normal' || this.vCount + vertexCount > MAX_VERTS || this.iCount + triIndexCount > this.idx.length) {
+    if (
+      this.curTex !== null ||
+      this.curBlend !== 'normal' ||
+      this.vCount + vertexCount > MAX_VERTS ||
+      this.iCount + triIndexCount > this.idx.length
+    ) {
       this.flush();
       this.curTex = null;
       if (this.curBlend !== 'normal') this.setBlend('normal');
@@ -338,7 +363,10 @@ export class GLRenderer {
    * Draws every visible slot of the skeleton in draw order. `skip` can hide individual slots.
    * Clipping follows Spine's `SkeletonRendererCore` (see `planClipping`).
    */
-  drawSkeleton(skeleton: Skeleton, opts: { skip?: (slot: Slot) => boolean; alpha?: number; tint?: RGBA; flat?: boolean; offset?: [number, number] } = {}) {
+  drawSkeleton(
+    skeleton: Skeleton,
+    opts: { skip?: (slot: Slot) => boolean; alpha?: number; tint?: RGBA; flat?: boolean; offset?: [number, number] } = {},
+  ) {
     this.flush();
     this.flat = !!opts.flat;
     const [dx, dy] = opts.offset ?? [0, 0];

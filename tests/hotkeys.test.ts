@@ -51,7 +51,22 @@ describe('the shortcuts window', () => {
       const parts = combo.split('+');
       const key = parts[parts.length - 1];
       if (BINDINGS.some((b) => !b.fixed && (b.combo === combo || b.aliases?.includes(combo)))) return null; // a movable command: checked below
-      const lower: Record<string, string> = { Tab: 'tab', Space: ' ', Del: 'delete', Backspace: 'backspace', Home: 'home', PgUp: 'pageup', PgDn: 'pagedown', Enter: 'enter', Esc: 'escape', '←': 'arrowleft', '→': 'arrowright', '↑': 'arrowup', '↓': 'arrowdown', '?': '?' };
+      const lower: Record<string, string> = {
+        Tab: 'tab',
+        Space: ' ',
+        Del: 'delete',
+        Backspace: 'backspace',
+        Home: 'home',
+        PgUp: 'pageup',
+        PgDn: 'pagedown',
+        Enter: 'enter',
+        Esc: 'escape',
+        '←': 'arrowleft',
+        '→': 'arrowright',
+        '↑': 'arrowup',
+        '↓': 'arrowdown',
+        '?': '?',
+      };
       const name = lower[key] ?? key.toLowerCase();
       if (parts.includes('Ctrl')) return `key === '${name}'`;
       if (parts.includes('Alt')) return `e.altKey`; // Alt with an arrow: micro-move
@@ -60,10 +75,11 @@ describe('the shortcuts window', () => {
       return `case '${name}'`;
     };
     const missing: string[] = [];
-    for (const r of rows) for (const combo of r.keys) {
-      const needle = handled(combo);
-      if (needle && !app.includes(needle)) missing.push(`${r.label}: ${combo} (App.tsx has no ${needle})`);
-    }
+    for (const r of rows)
+      for (const combo of r.keys) {
+        const needle = handled(combo);
+        if (needle && !app.includes(needle)) missing.push(`${r.label}: ${combo} (App.tsx has no ${needle})`);
+      }
     // every movable command has its action in keyActions.ts, and every action there belongs to a command
     for (const b of BINDINGS) if (!b.fixed && !actions.includes(`  ${b.id}:`)) missing.push(`${b.label}: keyActions.ts has no ${b.id}`);
     expect(missing).toEqual([]);
@@ -71,7 +87,8 @@ describe('the shortcuts window', () => {
 });
 
 describe('movable key combinations', () => {
-  const press = (key: string, mods: Partial<{ ctrlKey: boolean; altKey: boolean; shiftKey: boolean; metaKey: boolean }> = {}) => comboOf({ key, ctrlKey: false, metaKey: false, altKey: false, shiftKey: false, ...mods });
+  const press = (key: string, mods: Partial<{ ctrlKey: boolean; altKey: boolean; shiftKey: boolean; metaKey: boolean }> = {}) =>
+    comboOf({ key, ctrlKey: false, metaKey: false, altKey: false, shiftKey: false, ...mods });
 
   it('are read from a keyboard event the way the table writes them', () => {
     expect(press('z', { ctrlKey: true })).toBe('Ctrl+Z');
@@ -95,7 +112,11 @@ describe('movable key combinations', () => {
     expect(KEYS.undo).toBe('Ctrl+U');
     expect(keyIdOf('Ctrl+U')).toBe('undo');
     expect(keyIdOf('Ctrl+Z')).toBeNull();
-    expect(hotkeyGroups().flatMap((g) => g.rows).find((r) => r.label === 'Undo')?.keys).toEqual(['Ctrl+U']);
+    expect(
+      hotkeyGroups()
+        .flatMap((g) => g.rows)
+        .find((r) => r.label === 'Undo')?.keys,
+    ).toEqual(['Ctrl+U']);
     expect(setBinding('redo', 'Ctrl+Z')).toBeNull(); // the freed one can be used
   });
 
@@ -127,7 +148,15 @@ describe('tooltips', () => {
 });
 
 describe('a non-Latin layout', () => {
-  const press = (key: string, code: string, extra: object = {}) => ({ key, code, ctrlKey: false, metaKey: false, altKey: false, shiftKey: false, ...extra });
+  const press = (key: string, code: string, extra: object = {}) => ({
+    key,
+    code,
+    ctrlKey: false,
+    metaKey: false,
+    altKey: false,
+    shiftKey: false,
+    ...extra,
+  });
 
   it('reads the letter from the position of the key, so Ctrl+Z works on a Russian layout', () => {
     expect(comboOf(press('я', 'KeyZ', { ctrlKey: true }))).toBe('Ctrl+Z');

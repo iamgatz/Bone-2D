@@ -33,7 +33,7 @@ function scaleCurveChannels(curve: number[], channels: number, s: number): numbe
 function scaleVertices(vertices: number[], vertexCount: number, s: number): number[] {
   if (vertices.length === vertexCount * 2) return vertices.map((v) => q(v * s));
   const out: number[] = [];
-  for (let i = 0; i < vertices.length; ) {
+  for (let i = 0; i < vertices.length;) {
     const n = vertices[i++];
     out.push(n);
     for (let k = 0; k < n; k++, i += 4) out.push(vertices[i], q(vertices[i + 1] * s), q(vertices[i + 2] * s), vertices[i + 3]);
@@ -80,7 +80,8 @@ export function scaleSpineJson<T>(json: T, s: number): T {
     }
     if (c.type === 'path') {
       if (c.positionMode === 'fixed' && typeof c.position === 'number') c.position = q(c.position * s);
-      if ((c.spacingMode === 'length' || c.spacingMode === 'fixed' || c.spacingMode === undefined) && typeof c.spacing === 'number') c.spacing = q(c.spacing * s);
+      if ((c.spacingMode === 'length' || c.spacingMode === 'fixed' || c.spacingMode === undefined) && typeof c.spacing === 'number')
+        c.spacing = q(c.spacing * s);
     }
     // a missing limit means 5000, which the loader scales as well
     if (c.type === 'physics') c.limit = q((typeof c.limit === 'number' ? c.limit : 5000) * s);
@@ -126,13 +127,15 @@ export function scaleSpineJson<T>(json: T, s: number): T {
       for (const k of keys as J[]) {
         if (typeof k.softness === 'number') k.softness = q(k.softness * s);
         // the curve of an ik key has two channels (mix, softness): only softness carries a length
-        if (Array.isArray(k.curve)) k.curve = k.curve.map((v: number, i: number) => (i >= 4 && (i % 4 === 1 || i % 4 === 3) ? q(v * s) : v));
+        if (Array.isArray(k.curve))
+          k.curve = k.curve.map((v: number, i: number) => (i >= 4 && (i % 4 === 1 || i % 4 === 3) ? q(v * s) : v));
       }
     }
     for (const [name, tl] of Object.entries<J>(anim.path ?? {})) {
       const c = byName.get(`path:${name}`);
       if (c?.positionMode === 'fixed') scaleKeys(tl.position, ['value'], s);
-      if (c && (c.spacingMode === 'length' || c.spacingMode === 'fixed' || c.spacingMode === undefined)) scaleKeys(tl.spacing, ['value'], s);
+      if (c && (c.spacingMode === 'length' || c.spacingMode === 'fixed' || c.spacingMode === undefined))
+        scaleKeys(tl.spacing, ['value'], s);
     }
     for (const perSkin of Object.values<J>(anim.attachments ?? {})) {
       for (const perSlot of Object.values<J>(perSkin)) {
@@ -146,4 +149,3 @@ export function scaleSpineJson<T>(json: T, s: number): T {
   }
   return out;
 }
-

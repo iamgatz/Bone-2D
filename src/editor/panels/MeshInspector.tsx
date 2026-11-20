@@ -1,9 +1,53 @@
 import { useState } from 'react';
-import { ArrowLeftRight, Brush, ClipboardPaste, Copy, Crosshair, Eraser, Lock, Unlock, FlipHorizontal2, Hexagon, Link2, RefreshCw, Scissors, Sparkles, Spline, Triangle, Unlink2, Waves, X } from 'lucide-react';
+import {
+  ArrowLeftRight,
+  Brush,
+  ClipboardPaste,
+  Copy,
+  Crosshair,
+  Eraser,
+  Lock,
+  Unlock,
+  FlipHorizontal2,
+  Hexagon,
+  Link2,
+  RefreshCw,
+  Scissors,
+  Sparkles,
+  Spline,
+  Triangle,
+  Unlink2,
+  Waves,
+  X,
+} from 'lucide-react';
 import type { Id, MeshAttachment, Project } from '@/core/model';
 import { linkSource } from '@/core/links';
 import { linkMeshTo, setAttachmentProps, setLinkDeform, setTool, unlinkMesh } from '@/store/actions';
-import { autoWeightMeshes, moveMeshTriangle, bindMeshesToBones, clearMeshEdges, toggleMeshEdge, convertToMesh, copyVertexWeights, pasteVertexWeights, mirrorMeshWeights, pruneMeshesWeights, regenerateMesh, removeBoneFromMeshes, retriangulateMesh, smoothMeshesWeights, swapMeshesWeights, unbindMeshesFromBones, updateMeshBindings, weldMeshWeights, weldTargets, weightGroup, traceGroup, convertImagesToMeshes, regenerateMeshes } from '@/store/meshActions';
+import {
+  autoWeightMeshes,
+  moveMeshTriangle,
+  bindMeshesToBones,
+  clearMeshEdges,
+  toggleMeshEdge,
+  convertToMesh,
+  copyVertexWeights,
+  pasteVertexWeights,
+  mirrorMeshWeights,
+  pruneMeshesWeights,
+  regenerateMesh,
+  removeBoneFromMeshes,
+  retriangulateMesh,
+  smoothMeshesWeights,
+  swapMeshesWeights,
+  unbindMeshesFromBones,
+  updateMeshBindings,
+  weldMeshWeights,
+  weldTargets,
+  weightGroup,
+  traceGroup,
+  convertImagesToMeshes,
+  regenerateMeshes,
+} from '@/store/meshActions';
 import { useProject } from '@/store/doc';
 import { useFloats } from '@/store/floats';
 import { uiStore, useUi } from '@/store/ui';
@@ -22,26 +66,63 @@ export function ConvertToMeshGroup({ slotId, name }: { slotId: Id; name: string 
   const images = extraSlots?.length ? traceGroup().length : 1;
   return (
     <Section id="mesh.convert" title="Mesh" icon={Hexagon}>
-      <p className="hint-text mb">Turn this image into a deformable mesh. Tracing follows the opaque pixels and fills the shape with triangles.</p>
+      <p className="hint-text mb">
+        Turn this image into a deformable mesh. Tracing follows the opaque pixels and fills the shape with triangles.
+      </p>
       {images > 1 && (
         <div className="hstack wrap mb">
-          <span className="chip accent" title="Ctrl-click slots in the tree to add or remove them. Trace mesh and Quad turn all these images into meshes">{`${images} images together`}</span>
-          <Button small ghost onClick={() => uiStore.patch({ selection: { ...uiStore.get().selection, extraSlots: [] } })} title="Work on this image alone again">
+          <span
+            className="chip accent"
+            title="Ctrl-click slots in the tree to add or remove them. Trace mesh and Quad turn all these images into meshes"
+          >{`${images} images together`}</span>
+          <Button
+            small
+            ghost
+            onClick={() => uiStore.patch({ selection: { ...uiStore.get().selection, extraSlots: [] } })}
+            title="Work on this image alone again"
+          >
             Only this image
           </Button>
         </div>
       )}
       <Field label="Density">
-        <NumberField label="px" value={spacing} step={1} precision={0} min={8} max={400} onChange={setSpacing} title="Interior vertex spacing in pixels (smaller = more vertices)" />
+        <NumberField
+          label="px"
+          value={spacing}
+          step={1}
+          precision={0}
+          min={8}
+          max={400}
+          onChange={setSpacing}
+          title="Interior vertex spacing in pixels (smaller = more vertices)"
+        />
       </Field>
       <Field label="Padding">
-        <NumberField label="px" value={padding} step={1} precision={0} min={-20} max={40} onChange={setPadding} title="How far the outline sits outside the opaque pixels" />
+        <NumberField
+          label="px"
+          value={padding}
+          step={1}
+          precision={0}
+          min={-20}
+          max={40}
+          onChange={setPadding}
+          title="How far the outline sits outside the opaque pixels"
+        />
       </Field>
       <div className="hstack">
-        <Button primary icon={Sparkles} onClick={() => (images > 1 ? convertImagesToMeshes('trace', { spacing, padding }) : convertToMesh(slotId, name, 'trace', { spacing, padding }))}>
+        <Button
+          primary
+          icon={Sparkles}
+          onClick={() =>
+            images > 1 ? convertImagesToMeshes('trace', { spacing, padding }) : convertToMesh(slotId, name, 'trace', { spacing, padding })
+          }
+        >
           Trace mesh
         </Button>
-        <Button onClick={() => (images > 1 ? convertImagesToMeshes('quad') : convertToMesh(slotId, name, 'quad'))} title="Four corner vertices only">
+        <Button
+          onClick={() => (images > 1 ? convertImagesToMeshes('quad') : convertToMesh(slotId, name, 'quad'))}
+          title="Four corner vertices only"
+        >
           Quad
         </Button>
       </div>
@@ -54,7 +135,8 @@ function shapeSources(doc: Project['skeleton'], slotId: Id, name: string): { val
   const out: { value: string; label: string }[] = [];
   for (const slot of doc.slots) {
     for (const [n, a] of Object.entries(doc.skins[0].attachments[slot.id] ?? {})) {
-      if (a.type === 'mesh' && !a.link && !(slot.id === slotId && n === name)) out.push({ value: `${slot.id}${n}`, label: n === slot.name ? n : `${slot.name} · ${n}` });
+      if (a.type === 'mesh' && !a.link && !(slot.id === slotId && n === name))
+        out.push({ value: `${slot.id}${n}`, label: n === slot.name ? n : `${slot.name} · ${n}` });
     }
   }
   return out;
@@ -81,10 +163,18 @@ export function LinkedMeshFields({ skinId, slotId, name, mesh }: { skinId: Id; s
         </span>
       </Field>
       <Field label="Share deform">
-        <Toggle on={link.deform} onChange={(on) => setLinkDeform(skinId, slotId, name, on)} title="The deform animation of the source mesh moves this one too; off = it has deform timelines of its own" />
+        <Toggle
+          on={link.deform}
+          onChange={(on) => setLinkDeform(skinId, slotId, name, on)}
+          title="The deform animation of the source mesh moves this one too; off = it has deform timelines of its own"
+        />
       </Field>
       <div className="hstack mb">
-        <Button icon={Unlink2} onClick={() => unlinkMesh(skinId, slotId, name)} title="Keep the shape this mesh has now and edit it on its own">
+        <Button
+          icon={Unlink2}
+          onClick={() => unlinkMesh(skinId, slotId, name)}
+          title="Keep the shape this mesh has now and edit it on its own"
+        >
           Unlink
         </Button>
       </div>
@@ -136,118 +226,186 @@ export function MeshGroup({ slotId, att, part }: { slotId: Id; att: MeshAttachme
   const swapFrom = influencing.includes(swapA) ? swapA : (influencing[0] ?? '');
   const swapTo = influencing.includes(swapB) && swapB !== swapFrom ? swapB : (influencing.find((b) => b !== swapFrom) ?? '');
   const welds = weighted && setup && !linked ? weldTargets(slotId, att.name) : [];
-  const bound = weighted ? boundBones(att.weights!, doc.bones.map((b) => b.id)) : [];
+  const bound = weighted
+    ? boundBones(
+        att.weights!,
+        doc.bones.map((b) => b.id),
+      )
+    : [];
   const weld = welds[Number(weldPick)] ?? welds.find((w) => w.shared >= 2) ?? welds[0];
   const weldKey = String(welds.indexOf(weld));
 
   return (
     <>
-      {showMain && <Section id="mesh.main" title={`Mesh · ${att.path}`} icon={Hexagon}>
-        <div className="hstack wrap mb">
-          <span className="chip">{`${att.uvs.length / 2} vertices`}</span>
-          <span className="chip">{`${att.triangles.length / 3} triangles`}</span>
-          <span className={`chip${weighted ? ' accent' : ''}`}>{weighted ? `weighted · ${influencing.length} bones` : 'unweighted'}</span>
-        </div>
-        <div className="hstack mb">
-          <Button primary={tool === 'mesh'} icon={Triangle} disabled={linked && setup} onClick={() => setTool('mesh')} title="Edit vertices (M)">
-            {mode === 'animate' ? 'Deform' : 'Edit mesh'}
-          </Button>
-          <Button primary={tool === 'weights'} icon={Brush} disabled={!setup || linked} onClick={() => setTool('weights')} title="Paint weights (W)">
-            Weights
-          </Button>
-        </div>
-        {(tool === 'mesh' || tool === 'weights') && (
+      {showMain && (
+        <Section id="mesh.main" title={`Mesh · ${att.path}`} icon={Hexagon}>
           <div className="hstack wrap mb">
-            {(
-              [
-                ['wireframe', 'Wireframe', 'Draw the triangle edges (the outline and manual edges always show)'],
-                ['dim', 'Dim', 'Dim everything outside this mesh'],
-                ['isolate', 'Isolate', 'Hide everything outside this mesh'],
-                ['freeze', 'Freeze', 'The vertices cannot be dragged, only selected'],
-                ['hullOnly', 'Outline only', 'Show and pick only the outline vertices (the hull); the inner vertices and edges are out of the way'],
-              ] as const
-            ).map(([key, label, title]) => (
-              <Button key={key} primary={meshView[key]} title={title} onClick={() => uiStore.patch({ meshView: { ...meshView, [key]: !meshView[key] } })}>
-                {label}
-              </Button>
-            ))}
+            <span className="chip">{`${att.uvs.length / 2} vertices`}</span>
+            <span className="chip">{`${att.triangles.length / 3} triangles`}</span>
+            <span className={`chip${weighted ? ' accent' : ''}`}>{weighted ? `weighted · ${influencing.length} bones` : 'unweighted'}</span>
           </div>
-        )}
-        {tool === 'mesh' && <SoftControls />}
-        {tool === 'mesh' && setup && !linked && (
-          <>
-            <Field label="Triangle order">
-              <Toggle on={meshView.pickTriangle} onChange={(v) => uiStore.patch({ meshView: { ...meshView, pickTriangle: v, triangle: v ? meshView.triangle : null } })} title="A click in the viewport picks a triangle (click again to pick the one under it) instead of a vertex" />
-              <span className="chip" title="Triangles are drawn in this order: where they overlap, the later one is on top">
-                {pickedTriangle === null ? `${triangleCount} triangles` : `${pickedTriangle + 1} of ${triangleCount}`}
-              </span>
-            </Field>
-            {pickedTriangle !== null && (
-              <div className="hstack mb">
-                {(
+          <div className="hstack mb">
+            <Button
+              primary={tool === 'mesh'}
+              icon={Triangle}
+              disabled={linked && setup}
+              onClick={() => setTool('mesh')}
+              title="Edit vertices (M)"
+            >
+              {mode === 'animate' ? 'Deform' : 'Edit mesh'}
+            </Button>
+            <Button
+              primary={tool === 'weights'}
+              icon={Brush}
+              disabled={!setup || linked}
+              onClick={() => setTool('weights')}
+              title="Paint weights (W)"
+            >
+              Weights
+            </Button>
+          </div>
+          {(tool === 'mesh' || tool === 'weights') && (
+            <div className="hstack wrap mb">
+              {(
+                [
+                  ['wireframe', 'Wireframe', 'Draw the triangle edges (the outline and manual edges always show)'],
+                  ['dim', 'Dim', 'Dim everything outside this mesh'],
+                  ['isolate', 'Isolate', 'Hide everything outside this mesh'],
+                  ['freeze', 'Freeze', 'The vertices cannot be dragged, only selected'],
                   [
-                    ['first', 'First', 'Draw this triangle first, under all the others'],
-                    ['earlier', 'Earlier', 'One place earlier'],
-                    ['later', 'Later', 'One place later'],
-                    ['last', 'Last', 'Draw this triangle last, over all the others'],
-                  ] as const
-                ).map(([to, label, title]) => (
-                  <Button key={to} small title={title} onClick={() => uiStore.patch({ meshView: { ...uiStore.get().meshView, triangle: moveMeshTriangle(slotId, att.name, pickedTriangle, to) } })}>
-                    {label}
-                  </Button>
-                ))}
+                    'hullOnly',
+                    'Outline only',
+                    'Show and pick only the outline vertices (the hull); the inner vertices and edges are out of the way',
+                  ],
+                ] as const
+              ).map(([key, label, title]) => (
+                <Button
+                  key={key}
+                  primary={meshView[key]}
+                  title={title}
+                  onClick={() => uiStore.patch({ meshView: { ...meshView, [key]: !meshView[key] } })}
+                >
+                  {label}
+                </Button>
+              ))}
+            </div>
+          )}
+          {tool === 'mesh' && <SoftControls />}
+          {tool === 'mesh' && setup && !linked && (
+            <>
+              <Field label="Triangle order">
+                <Toggle
+                  on={meshView.pickTriangle}
+                  onChange={(v) => uiStore.patch({ meshView: { ...meshView, pickTriangle: v, triangle: v ? meshView.triangle : null } })}
+                  title="A click in the viewport picks a triangle (click again to pick the one under it) instead of a vertex"
+                />
+                <span className="chip" title="Triangles are drawn in this order: where they overlap, the later one is on top">
+                  {pickedTriangle === null ? `${triangleCount} triangles` : `${pickedTriangle + 1} of ${triangleCount}`}
+                </span>
+              </Field>
+              {pickedTriangle !== null && (
+                <div className="hstack mb">
+                  {(
+                    [
+                      ['first', 'First', 'Draw this triangle first, under all the others'],
+                      ['earlier', 'Earlier', 'One place earlier'],
+                      ['later', 'Later', 'One place later'],
+                      ['last', 'Last', 'Draw this triangle last, over all the others'],
+                    ] as const
+                  ).map(([to, label, title]) => (
+                    <Button
+                      key={to}
+                      small
+                      title={title}
+                      onClick={() =>
+                        uiStore.patch({
+                          meshView: { ...uiStore.get().meshView, triangle: moveMeshTriangle(slotId, att.name, pickedTriangle, to) },
+                        })
+                      }
+                    >
+                      {label}
+                    </Button>
+                  ))}
+                </div>
+              )}
+            </>
+          )}
+          {linked && att.link && <LinkedMeshFields skinId={project.skeleton.skins[0].id} slotId={slotId} name={att.name} mesh={att} />}
+          {setup && !linked && (
+            <>
+              <Field label="Share shape with">
+                <SelectField
+                  value=""
+                  options={[{ value: '', label: '— none —' }, ...shapeSources(project.skeleton, slotId, att.name)]}
+                  onChange={(v) => {
+                    const [sid, ...rest] = v.split('');
+                    if (sid) linkMeshTo(slotId, att.name, { slotId: sid, name: rest.join('') });
+                  }}
+                />
+              </Field>
+              <Field label="Density">
+                <NumberField label="px" value={spacing} step={1} precision={0} min={8} max={400} onChange={setSpacing} />
+              </Field>
+              <Field label="Padding">
+                <NumberField label="px" value={padding} step={1} precision={0} min={-20} max={40} onChange={setPadding} />
+              </Field>
+              <div className="hstack">
+                <Button
+                  icon={RefreshCw}
+                  onClick={() =>
+                    together > 1 ? regenerateMeshes({ spacing, padding }) : regenerateMesh(slotId, att.name, { spacing, padding })
+                  }
+                  title="Trace the image again (unweighted meshes)"
+                >
+                  Re-trace
+                </Button>
+                <Button onClick={() => retriangulateMesh(slotId, att.name)} title="Rebuild the triangles inside the outline">
+                  Retriangulate
+                </Button>
               </div>
-            )}
-          </>
-        )}
-        {linked && att.link && <LinkedMeshFields skinId={project.skeleton.skins[0].id} slotId={slotId} name={att.name} mesh={att} />}
-        {setup && !linked && (
-          <>
-            <Field label="Share shape with">
-              <SelectField
-                value=""
-                options={[{ value: '', label: '— none —' }, ...shapeSources(project.skeleton, slotId, att.name)]}
-                onChange={(v) => {
-                  const [sid, ...rest] = v.split('');
-                  if (sid) linkMeshTo(slotId, att.name, { slotId: sid, name: rest.join('') });
-                }}
-              />
-            </Field>
-            <Field label="Density">
-              <NumberField label="px" value={spacing} step={1} precision={0} min={8} max={400} onChange={setSpacing} />
-            </Field>
-            <Field label="Padding">
-              <NumberField label="px" value={padding} step={1} precision={0} min={-20} max={40} onChange={setPadding} />
-            </Field>
-            <div className="hstack">
-              <Button icon={RefreshCw} onClick={() => (together > 1 ? regenerateMeshes({ spacing, padding }) : regenerateMesh(slotId, att.name, { spacing, padding }))} title="Trace the image again (unweighted meshes)">
-                Re-trace
-              </Button>
-              <Button onClick={() => retriangulateMesh(slotId, att.name)} title="Rebuild the triangles inside the outline">
-                Retriangulate
-              </Button>
-            </div>
-            <Field label="Edges">
-              <span className="chip" title="Manual edges: the triangles never cross them">{`${(att.edges?.length ?? 0) / 2} manual`}</span>
-            </Field>
-            <div className="hstack mb">
-              <Button icon={Spline} disabled={pickedVertices !== 2} onClick={() => toggleMeshEdge(slotId, att.name, pickedList[0], pickedList[1])} title="Draw an edge between the two selected vertices, or remove the one that is there. Ctrl+drag from one vertex to another does the same in the viewport">
-                Edge
-              </Button>
-              <Button icon={Eraser} disabled={!att.edges?.length} onClick={() => clearMeshEdges(slotId, att.name)} title="Remove every manual edge">
-                Clear
-              </Button>
-            </div>
-          </>
-        )}
-      </Section>}
+              <Field label="Edges">
+                <span
+                  className="chip"
+                  title="Manual edges: the triangles never cross them"
+                >{`${(att.edges?.length ?? 0) / 2} manual`}</span>
+              </Field>
+              <div className="hstack mb">
+                <Button
+                  icon={Spline}
+                  disabled={pickedVertices !== 2}
+                  onClick={() => toggleMeshEdge(slotId, att.name, pickedList[0], pickedList[1])}
+                  title="Draw an edge between the two selected vertices, or remove the one that is there. Ctrl+drag from one vertex to another does the same in the viewport"
+                >
+                  Edge
+                </Button>
+                <Button
+                  icon={Eraser}
+                  disabled={!att.edges?.length}
+                  onClick={() => clearMeshEdges(slotId, att.name)}
+                  title="Remove every manual edge"
+                >
+                  Clear
+                </Button>
+              </div>
+            </>
+          )}
+        </Section>
+      )}
 
       {showWeights && setup && !linked && (
         <Section id="mesh.weights" title="Weights" icon={Link2}>
           {together > 0 && (
             <div className="hstack wrap mb">
-              <span className="chip accent" title="Ctrl-click slots in the tree to add or remove them. Bind, Auto, Smooth, Prune, Swap, Unbind, removing a bone and the brush work on all of these meshes (the brush on the ones that follow its bone)">{`${together} meshes together`}</span>
-              <Button small ghost onClick={() => uiStore.patch({ selection: { ...uiStore.get().selection, extraSlots: [] } })} title="Work on this mesh alone again">
+              <span
+                className="chip accent"
+                title="Ctrl-click slots in the tree to add or remove them. Bind, Auto, Smooth, Prune, Swap, Unbind, removing a bone and the brush work on all of these meshes (the brush on the ones that follow its bone)"
+              >{`${together} meshes together`}</span>
+              <Button
+                small
+                ghost
+                onClick={() => uiStore.patch({ selection: { ...uiStore.get().selection, extraSlots: [] } })}
+                title="Work on this mesh alone again"
+              >
                 Only this mesh
               </Button>
             </div>
@@ -255,14 +413,24 @@ export function MeshGroup({ slotId, att, part }: { slotId: Id; att: MeshAttachme
           {!weighted ? (
             <>
               <p className="hint-text mb">Bind the mesh to bones so it bends with them. Select the bones in the viewport first.</p>
-              <Button primary icon={Link2} onClick={() => bindMeshesToBones(selectedBones)} disabled={!selectedBones.length && !slot} title="Auto-weights to the selected bones">
+              <Button
+                primary
+                icon={Link2}
+                onClick={() => bindMeshesToBones(selectedBones)}
+                disabled={!selectedBones.length && !slot}
+                title="Auto-weights to the selected bones"
+              >
                 {`Bind to ${selectedBones.length || 1} selected bone${selectedBones.length === 1 || !selectedBones.length ? '' : 's'}`}
               </Button>
             </>
           ) : (
             <>
               <div className="hstack wrap mb">
-                <Button icon={Link2} onClick={() => bindMeshesToBones(selectedBones)} title="Add the selected bones as influences (re-computes weights)">
+                <Button
+                  icon={Link2}
+                  onClick={() => bindMeshesToBones(selectedBones)}
+                  title="Add the selected bones as influences (re-computes weights)"
+                >
                   Add bones
                 </Button>
                 <Button icon={Sparkles} onClick={() => autoWeightMeshes()}>
@@ -271,50 +439,120 @@ export function MeshGroup({ slotId, att, part }: { slotId: Id; att: MeshAttachme
                 <Button icon={Waves} onClick={() => smoothMeshesWeights(2)}>
                   Smooth
                 </Button>
-                <Button icon={Scissors} onClick={() => pruneMeshesWeights(pruneBelow / 100, pruneBones)} title="Drop the influences lighter than the threshold and keep at most the given number of bones per vertex">
+                <Button
+                  icon={Scissors}
+                  onClick={() => pruneMeshesWeights(pruneBelow / 100, pruneBones)}
+                  title="Drop the influences lighter than the threshold and keep at most the given number of bones per vertex"
+                >
                   Prune
                 </Button>
-                <Button icon={Crosshair} onClick={() => updateMeshBindings(slotId, att.name)} title="Make the bind pose the pose the bones have now (after moving bones in the setup pose), so weight edits stop shifting the vertices">
+                <Button
+                  icon={Crosshair}
+                  onClick={() => updateMeshBindings(slotId, att.name)}
+                  title="Make the bind pose the pose the bones have now (after moving bones in the setup pose), so weight edits stop shifting the vertices"
+                >
                   Update bindings
                 </Button>
-                <Button icon={FlipHorizontal2} onClick={() => mirrorMeshWeights(slotId, att.name, true)} title="Copy the weights of the left half to the right half (bones swapped for their mirror twins)">
+                <Button
+                  icon={FlipHorizontal2}
+                  onClick={() => mirrorMeshWeights(slotId, att.name, true)}
+                  title="Copy the weights of the left half to the right half (bones swapped for their mirror twins)"
+                >
                   Mirror L→R
                 </Button>
-                <Button icon={FlipHorizontal2} onClick={() => mirrorMeshWeights(slotId, att.name, false)} title="Copy the weights of the right half to the left half (bones swapped for their mirror twins)">
+                <Button
+                  icon={FlipHorizontal2}
+                  onClick={() => mirrorMeshWeights(slotId, att.name, false)}
+                  title="Copy the weights of the right half to the left half (bones swapped for their mirror twins)"
+                >
                   Mirror R→L
                 </Button>
                 <Button icon={Unlink2} danger onClick={() => unbindMeshesFromBones()}>
                   Unbind
                 </Button>
               </div>
-              <p className="hint-text mb">{pickedVertices ? `Auto, Smooth, Prune, Swap, Weld and Update bindings work on the ${pickedVertices} selected vertices.` : 'Select vertices with the mesh tool (M) to limit Auto, Smooth, Prune, Swap, Weld and Update bindings to them; with none selected they work on the whole mesh.'}</p>
+              <p className="hint-text mb">
+                {pickedVertices
+                  ? `Auto, Smooth, Prune, Swap, Weld and Update bindings work on the ${pickedVertices} selected vertices.`
+                  : 'Select vertices with the mesh tool (M) to limit Auto, Smooth, Prune, Swap, Weld and Update bindings to them; with none selected they work on the whole mesh.'}
+              </p>
               <Field label="Prune">
-                <NumberField label="bones" value={pruneBones} step={1} precision={0} min={1} max={4} onChange={(v) => setPruneBones(Math.max(1, Math.min(4, Math.round(v))))} title="Most bones one vertex may keep" />
-                <NumberField label="%" value={pruneBelow} step={1} precision={0} min={0} max={50} onChange={(v) => setPruneBelow(Math.max(0, Math.min(50, v)))} title="Weights lighter than this are removed" />
+                <NumberField
+                  label="bones"
+                  value={pruneBones}
+                  step={1}
+                  precision={0}
+                  min={1}
+                  max={4}
+                  onChange={(v) => setPruneBones(Math.max(1, Math.min(4, Math.round(v))))}
+                  title="Most bones one vertex may keep"
+                />
+                <NumberField
+                  label="%"
+                  value={pruneBelow}
+                  step={1}
+                  precision={0}
+                  min={0}
+                  max={50}
+                  onChange={(v) => setPruneBelow(Math.max(0, Math.min(50, v)))}
+                  title="Weights lighter than this are removed"
+                />
               </Field>
               {influencing.length > 1 && (
                 <Field label="Swap">
-                  <SelectField value={swapFrom} options={influencing.map((id) => ({ value: id, label: boneName(id) }))} onChange={setSwapA} />
+                  <SelectField
+                    value={swapFrom}
+                    options={influencing.map((id) => ({ value: id, label: boneName(id) }))}
+                    onChange={setSwapA}
+                  />
                   <SelectField value={swapTo} options={influencing.map((id) => ({ value: id, label: boneName(id) }))} onChange={setSwapB} />
-                  <Button icon={ArrowLeftRight} onClick={() => swapMeshesWeights(swapFrom, swapTo)} title="The two bones exchange their weights on the selected vertices (or the whole mesh)">
+                  <Button
+                    icon={ArrowLeftRight}
+                    onClick={() => swapMeshesWeights(swapFrom, swapTo)}
+                    title="The two bones exchange their weights on the selected vertices (or the whole mesh)"
+                  >
                     Swap
                   </Button>
                 </Field>
               )}
               {welds.length > 0 && (
                 <Field label="Weld">
-                  <SelectField value={weldKey} options={welds.map((w, i) => ({ value: String(i), label: `${w.label} (${w.shared})` }))} onChange={setWeldPick} />
-                  <SelectField value={weldMode} options={[{ value: 'overlapping', label: 'Overlapping' }, { value: 'all', label: 'All' }]} onChange={(v) => setWeldMode(v)} />
-                  <Button icon={Link2} disabled={!weld || weld.shared < 2} onClick={() => weld && weldMeshWeights(slotId, att.name, weld.slotId, weld.name, weldMode)} title="Take the weights of the other mesh where this one lies over it (both need the same two or more bones; the number in brackets is how many they share)">
+                  <SelectField
+                    value={weldKey}
+                    options={welds.map((w, i) => ({ value: String(i), label: `${w.label} (${w.shared})` }))}
+                    onChange={setWeldPick}
+                  />
+                  <SelectField
+                    value={weldMode}
+                    options={[
+                      { value: 'overlapping', label: 'Overlapping' },
+                      { value: 'all', label: 'All' },
+                    ]}
+                    onChange={(v) => setWeldMode(v)}
+                  />
+                  <Button
+                    icon={Link2}
+                    disabled={!weld || weld.shared < 2}
+                    onClick={() => weld && weldMeshWeights(slotId, att.name, weld.slotId, weld.name, weldMode)}
+                    title="Take the weights of the other mesh where this one lies over it (both need the same two or more bones; the number in brackets is how many they share)"
+                  >
                     Weld
                   </Button>
                 </Field>
               )}
               <div className="hstack wrap mb">
-                <Button icon={Copy} onClick={() => copyVertexWeights(slotId, att.name)} title="Remember the weights of the selected vertices">
+                <Button
+                  icon={Copy}
+                  onClick={() => copyVertexWeights(slotId, att.name)}
+                  title="Remember the weights of the selected vertices"
+                >
                   Copy weights
                 </Button>
-                <Button icon={ClipboardPaste} onClick={() => pasteVertexWeights(slotId, att.name)} title="Give the remembered weights to the same number of selected vertices">
+                <Button
+                  icon={ClipboardPaste}
+                  onClick={() => pasteVertexWeights(slotId, att.name)}
+                  title="Give the remembered weights to the same number of selected vertices"
+                >
                   Paste weights
                 </Button>
               </div>
@@ -325,34 +563,93 @@ export function MeshGroup({ slotId, att, part }: { slotId: Id; att: MeshAttachme
                     return (
                       <div key={id} className="hstack" style={{ gap: 4 }}>
                         <span style={{ width: 10, height: 10, borderRadius: 5, flex: 'none', background: boneCss(bound.indexOf(id)) }} />
-                        <span style={{ flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{boneName(id)}</span>
-                        <IconButton small active={on} icon={on ? Lock : Unlock} title="A locked bone keeps its weights while you paint" onClick={() => uiStore.patch({ brush: { ...brush, locked: on ? brush.locked.filter((x) => x !== id) : [...brush.locked, id] } })} />
-                        <IconButton small icon={X} title="The mesh stops following this bone; its weights go to the other bones of each vertex (or to the parent bone)" onClick={() => void removeBoneFromMeshes(id)} />
+                        <span style={{ flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {boneName(id)}
+                        </span>
+                        <IconButton
+                          small
+                          active={on}
+                          icon={on ? Lock : Unlock}
+                          title="A locked bone keeps its weights while you paint"
+                          onClick={() =>
+                            uiStore.patch({
+                              brush: { ...brush, locked: on ? brush.locked.filter((x) => x !== id) : [...brush.locked, id] },
+                            })
+                          }
+                        />
+                        <IconButton
+                          small
+                          icon={X}
+                          title="The mesh stops following this bone; its weights go to the other bones of each vertex (or to the parent bone)"
+                          onClick={() => void removeBoneFromMeshes(id)}
+                        />
                       </div>
                     );
                   })}
                 </div>
               </Field>
               <Field label="Pies">
-                <Toggle on={weightView.pies} onChange={(v) => uiStore.patch({ weightView: { ...weightView, pies: v } })} title="Draw a pie chart of the weights on every vertex while the Weights tool is on" />
+                <Toggle
+                  on={weightView.pies}
+                  onChange={(v) => uiStore.patch({ weightView: { ...weightView, pies: v } })}
+                  title="Draw a pie chart of the weights on every vertex while the Weights tool is on"
+                />
               </Field>
               <Field label="Overlay">
-                <Toggle on={weightView.overlay} onChange={(v) => uiStore.patch({ weightView: { ...weightView, overlay: v } })} title="Fill the mesh with the colours of its bones instead of the heat map of the brush bone" />
+                <Toggle
+                  on={weightView.overlay}
+                  onChange={(v) => uiStore.patch({ weightView: { ...weightView, overlay: v } })}
+                  title="Fill the mesh with the colours of its bones instead of the heat map of the brush bone"
+                />
               </Field>
               <Field label="Selected">
-                <Toggle on={weightView.selected} onChange={(v) => uiStore.patch({ weightView: { ...weightView, selected: v } })} title="Pies only for the selected vertices and the vertices weighted to selected bones; Overlay shows the other bones black" />
+                <Toggle
+                  on={weightView.selected}
+                  onChange={(v) => uiStore.patch({ weightView: { ...weightView, selected: v } })}
+                  title="Pies only for the selected vertices and the vertices weighted to selected bones; Overlay shows the other bones black"
+                />
               </Field>
               <Field label="Bone">
-                <SelectField value={brush.bone ?? influencing[0]} options={influencing.map((id) => ({ value: id, label: boneName(id) }))} onChange={(v) => uiStore.patch({ brush: { ...brush, bone: v } })} />
+                <SelectField
+                  value={brush.bone ?? influencing[0]}
+                  options={influencing.map((id) => ({ value: id, label: boneName(id) }))}
+                  onChange={(v) => uiStore.patch({ brush: { ...brush, bone: v } })}
+                />
               </Field>
               <Field label="Mode">
-                <SelectField value={brush.mode} options={[{ value: 'add', label: 'Add' }, { value: 'subtract', label: 'Subtract' }, { value: 'replace', label: 'Replace' }, { value: 'smooth', label: 'Smooth' }]} onChange={(v) => uiStore.patch({ brush: { ...brush, mode: v } })} />
+                <SelectField
+                  value={brush.mode}
+                  options={[
+                    { value: 'add', label: 'Add' },
+                    { value: 'subtract', label: 'Subtract' },
+                    { value: 'replace', label: 'Replace' },
+                    { value: 'smooth', label: 'Smooth' },
+                  ]}
+                  onChange={(v) => uiStore.patch({ brush: { ...brush, mode: v } })}
+                />
               </Field>
               <Field label="Size">
-                <NumberField label="px" value={brush.size} step={1} precision={0} min={4} max={400} onChange={(v) => uiStore.patch({ brush: { ...brush, size: v } })} />
+                <NumberField
+                  label="px"
+                  value={brush.size}
+                  step={1}
+                  precision={0}
+                  min={4}
+                  max={400}
+                  onChange={(v) => uiStore.patch({ brush: { ...brush, size: v } })}
+                />
               </Field>
               <Field label="Feather">
-                <NumberField label="%" value={brush.feather} step={5} precision={0} min={0} max={100} onChange={(v) => uiStore.patch({ brush: { ...brush, feather: Math.max(0, Math.min(100, v)) } })} title="How much of the brush size fades out: 100% from the centre, 0% a hard edge" />
+                <NumberField
+                  label="%"
+                  value={brush.feather}
+                  step={5}
+                  precision={0}
+                  min={0}
+                  max={100}
+                  onChange={(v) => uiStore.patch({ brush: { ...brush, feather: Math.max(0, Math.min(100, v)) } })}
+                  title="How much of the brush size fades out: 100% from the centre, 0% a hard edge"
+                />
               </Field>
               <Field label="Fade">
                 <SelectField
@@ -367,7 +664,15 @@ export function MeshGroup({ slotId, att, part }: { slotId: Id; att: MeshAttachme
                 />
               </Field>
               <Field label="Strength">
-                <NumberField label="%" value={brush.strength * 100} step={1} precision={0} min={1} max={100} onChange={(v) => uiStore.patch({ brush: { ...brush, strength: v / 100 } })} />
+                <NumberField
+                  label="%"
+                  value={brush.strength * 100}
+                  step={1}
+                  precision={0}
+                  min={1}
+                  max={100}
+                  onChange={(v) => uiStore.patch({ brush: { ...brush, strength: v / 100 } })}
+                />
               </Field>
               <Field label="Strength curve">
                 <SelectField
@@ -381,7 +686,8 @@ export function MeshGroup({ slotId, att, part }: { slotId: Id; att: MeshAttachme
                 />
               </Field>
               <p className="hint-text">
-                Press <span className="kbd">W</span>, then paint over the mesh. Click an influencing bone in the viewport to switch the brush bone.
+                Press <span className="kbd">W</span>, then paint over the mesh. Click an influencing bone in the viewport to switch the
+                brush bone.
               </p>
             </>
           )}
@@ -391,8 +697,18 @@ export function MeshGroup({ slotId, att, part }: { slotId: Id; att: MeshAttachme
       <div className="group">
         <Field label="Color">
           <div className="hstack">
-            <ColorSwatch value={att.color} onChange={(rgb) => setAttachmentProps(slotId, att.name, { color: [rgb[0], rgb[1], rgb[2], att.color[3]] })} />
-            <NumberField label="A" value={att.color[3]} step={0.01} min={0} max={1} onChange={(v) => setAttachmentProps(slotId, att.name, { color: [att.color[0], att.color[1], att.color[2], v] })} />
+            <ColorSwatch
+              value={att.color}
+              onChange={(rgb) => setAttachmentProps(slotId, att.name, { color: [rgb[0], rgb[1], rgb[2], att.color[3]] })}
+            />
+            <NumberField
+              label="A"
+              value={att.color[3]}
+              step={0.01}
+              min={0}
+              max={1}
+              onChange={(v) => setAttachmentProps(slotId, att.name, { color: [att.color[0], att.color[1], att.color[2], v] })}
+            />
           </div>
         </Field>
       </div>

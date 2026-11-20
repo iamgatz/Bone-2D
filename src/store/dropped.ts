@@ -57,5 +57,7 @@ export async function readEntries(entries: FsEntry[]): Promise<{ files: PathedFi
 
 /** The files of a "choose a folder" input: the browser gives each its path from the folder down. */
 export function pathedFromInput(list: File[]): PathedFile[] {
-  return list.map((file) => ({ file, path: (file as File & { webkitRelativePath?: string }).webkitRelativePath || file.name })).sort((a, b) => natural(a.path, b.path));
+  return list
+    .map((file) => ({ file, path: (file as File & { webkitRelativePath?: string }).webkitRelativePath || file.name }))
+    .sort((a, b) => natural(a.path, b.path));
 }

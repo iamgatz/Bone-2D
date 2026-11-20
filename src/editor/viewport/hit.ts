@@ -38,7 +38,14 @@ export interface AttachmentHit {
 }
 
 /** Topmost slot attachment containing the point. */
-export function hitAttachment(scene: Scene, hiddenSlots: Set<Id>, wx: number, wy: number, zoom = 1, what: { images: boolean; outlines: boolean } = { images: true, outlines: true }): AttachmentHit | null {
+export function hitAttachment(
+  scene: Scene,
+  hiddenSlots: Set<Id>,
+  wx: number,
+  wy: number,
+  zoom = 1,
+  what: { images: boolean; outlines: boolean } = { images: true, outlines: true },
+): AttachmentHit | null {
   const skel = scene.skeleton;
   const order = skel.drawOrder;
   for (let i = order.length - 1; i >= 0; i--) {
@@ -58,7 +65,9 @@ export function hitAttachment(scene: Scene, hiddenSlots: Set<Id>, wx: number, wy
       meshWorldVertices(skel, slot, att, slot.deform.length ? slot.deform : null, v);
       const poly = samplePath(v, Math.floor(att.vertexCount / 3), att.closed, 16);
       const tol2 = (8 / zoom) ** 2;
-      for (let k = 0; k + 3 < poly.length; k += 2) if (distToSegmentSq(wx, wy, poly[k], poly[k + 1], poly[k + 2], poly[k + 3]) <= tol2) return { slotId: slot.data.id, name: att.name };
+      for (let k = 0; k + 3 < poly.length; k += 2)
+        if (distToSegmentSq(wx, wy, poly[k], poly[k + 1], poly[k + 2], poly[k + 3]) <= tol2)
+          return { slotId: slot.data.id, name: att.name };
     } else if (att.kind === 'boundingbox' || att.kind === 'clipping') {
       // only the outline is grabbable: the inside of a clipping polygon or box usually covers the images that should be picked
       const v = new Float32Array(att.vertexCount * 2);
@@ -66,7 +75,8 @@ export function hitAttachment(scene: Scene, hiddenSlots: Set<Id>, wx: number, wy
       const tol2 = (8 / zoom) ** 2;
       for (let i = 0, n = att.vertexCount; i < n; i++) {
         const j = (i + 1) % n;
-        if (distToSegmentSq(wx, wy, v[i * 2], v[i * 2 + 1], v[j * 2], v[j * 2 + 1]) <= tol2) return { slotId: slot.data.id, name: att.name };
+        if (distToSegmentSq(wx, wy, v[i * 2], v[i * 2 + 1], v[j * 2], v[j * 2 + 1]) <= tol2)
+          return { slotId: slot.data.id, name: att.name };
       }
     } else if (att.kind === 'region') {
       const v = new Float32Array(8);
@@ -93,7 +103,10 @@ export function hitAttachment(scene: Scene, hiddenSlots: Set<Id>, wx: number, wy
 }
 
 /** World vertices of the currently shown attachment of a slot (for overlays). */
-export function slotWorldVertices(skel: Skeleton, slotId: Id): { vertices: Float32Array; count: number; kind: 'region' | 'mesh' | 'polygon' } | null {
+export function slotWorldVertices(
+  skel: Skeleton,
+  slotId: Id,
+): { vertices: Float32Array; count: number; kind: 'region' | 'mesh' | 'polygon' } | null {
   const slot = skel.slotById(slotId);
   if (!slot) return null;
   const att = skel.slotAttachment(slot);

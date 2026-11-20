@@ -117,16 +117,43 @@ describe('split bone with a weighted mesh', () => {
     const a = sk.bones.find((b) => b.data.id === arm.id)!;
     // vertices at 0, 25, 50, 75, 100 along the arm, two rows
     const xs = [0, 25, 50, 75, 100];
-    const local = xs.flatMap((x) => [[x, -5], [x, 5]]);
+    const local = xs.flatMap((x) => [
+      [x, -5],
+      [x, 5],
+    ]);
     const weights = local.map(([x, y]) => [[arm.id, x, y, 1]] as [string, number, number, number][]);
     const mesh: MeshAttachment = {
-      type: 'mesh', name: 'strip', path: 'strip', color: [1, 1, 1, 1], width: 100, height: 10,
-      uvs: local.flatMap(([x, y]) => [x / 100, (y + 5) / 10]), triangles: [0, 1, 2, 1, 3, 2], hull: 4, edges: [], vertices: [], weights,
+      type: 'mesh',
+      name: 'strip',
+      path: 'strip',
+      color: [1, 1, 1, 1],
+      width: 100,
+      height: 10,
+      uvs: local.flatMap(([x, y]) => [x / 100, (y + 5) / 10]),
+      triangles: [0, 1, 2, 1, 3, 2],
+      hull: 4,
+      edges: [],
+      vertices: [],
+      weights,
     };
     docStore.update('setup', (d) => {
       d.skeleton.slots.push(slot);
       d.skeleton.skins[0].attachments[slot.id] = { strip: mesh };
-      const anim = { id: 'an', name: 'a', duration: 1, bones: {}, slots: {}, ik: {}, transform: {}, slider: {}, path: {}, physics: {}, deform: { [d.skeleton.skins[0].id]: { [slot.id]: { strip: [{ time: 0, value: new Array(local.length * 2).fill(1) }] } } }, drawOrder: [], events: [] };
+      const anim = {
+        id: 'an',
+        name: 'a',
+        duration: 1,
+        bones: {},
+        slots: {},
+        ik: {},
+        transform: {},
+        slider: {},
+        path: {},
+        physics: {},
+        deform: { [d.skeleton.skins[0].id]: { [slot.id]: { strip: [{ time: 0, value: new Array(local.length * 2).fill(1) }] } } },
+        drawOrder: [],
+        events: [],
+      };
       d.skeleton.animations.push(anim);
     });
     void a;
@@ -199,7 +226,21 @@ describe('split bone and IK', () => {
     const target = newBone({ name: 'target', parent: root.id, x: 50, y: 50 });
     docStore.update('ik', (d) => {
       d.skeleton.bones.push(target);
-      d.skeleton.constraints.push({ id: 'ik1', type: 'ik', name: 'reach', order: 0, bones: [arm.id, hand.id], target: target.id, mix: 1, softness: 0, bendPositive: true, compress: false, stretch: false, uniform: false, skinRequired: false } as unknown as IkConstraint);
+      d.skeleton.constraints.push({
+        id: 'ik1',
+        type: 'ik',
+        name: 'reach',
+        order: 0,
+        bones: [arm.id, hand.id],
+        target: target.id,
+        mix: 1,
+        softness: 0,
+        bendPositive: true,
+        compress: false,
+        stretch: false,
+        uniform: false,
+        skinRequired: false,
+      } as unknown as IkConstraint);
     });
     const undo0 = docStore.canUndo;
     expect(splitBone(arm.id, 3, { nested: true, fibonacci: false })).toEqual([]);

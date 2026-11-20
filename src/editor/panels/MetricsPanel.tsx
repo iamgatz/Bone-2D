@@ -83,10 +83,18 @@ export function MetricsPanel() {
         <div className="metric-grid">
           {(
             [
-              ['Draw calls', pose.drawCalls, 'Batches in the draw order: a new one starts when the texture page (of an export with the default atlas options), the blend mode or the clipping changes'],
+              [
+                'Draw calls',
+                pose.drawCalls,
+                'Batches in the draw order: a new one starts when the texture page (of an export with the default atlas options), the blend mode or the clipping changes',
+              ],
               ['Pictures drawn', pose.drawn, 'Slots that show a picture now'],
               ['Triangles drawn', pose.triangles, 'Triangles of the pictures shown now'],
-              ['Clipped triangles', pose.clippedTriangles, 'Triangles that cross the outline of a clipping polygon: the ones a runtime has to cut'],
+              [
+                'Clipped triangles',
+                pose.clippedTriangles,
+                'Triangles that cross the outline of a clipping polygon: the ones a runtime has to cut',
+              ],
             ] as const
           ).map(([label, value, tip]) => (
             <div key={label} className="metric" title={tip}>
@@ -98,7 +106,12 @@ export function MetricsPanel() {
         <div className="section-label">
           Before export
           {warnings.some(isSafeFix) && (
-            <button className="btn sm" style={{ marginLeft: 8 }} title="Fix every problem that loses nothing: unused images, surplus influences, ignored deform keys" onClick={() => fixAllSafeWarnings()}>
+            <button
+              className="btn sm"
+              style={{ marginLeft: 8 }}
+              title="Fix every problem that loses nothing: unused images, surplus influences, ignored deform keys"
+              onClick={() => fixAllSafeWarnings()}
+            >
               <Wrench size={12} /> Fix all that are safe
             </button>
           )}

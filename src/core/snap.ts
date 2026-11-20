@@ -51,7 +51,9 @@ export function snapPoint(x: number, y: number, o: SnapOptions): { x: number; y:
 export function cleanGuides(raw: unknown): Guides {
   const list = (v: unknown): number[] => {
     if (!Array.isArray(v)) return [];
-    const nums = v.filter((n): n is number => typeof n === 'number' && Number.isFinite(n) && Math.abs(n) < 1e7).map((n) => Math.round(n * 1000) / 1000);
+    const nums = v
+      .filter((n): n is number => typeof n === 'number' && Number.isFinite(n) && Math.abs(n) < 1e7)
+      .map((n) => Math.round(n * 1000) / 1000);
     return [...new Set(nums)].sort((a, b) => a - b).slice(0, 100);
   };
   const o = raw && typeof raw === 'object' ? (raw as Partial<Guides>) : {};

@@ -3,7 +3,10 @@ import { describe, expect, it } from 'vitest';
 import { NO_TRACK_FILTER, TRACK_GROUPS, buildRows, filterRows, isTrackFilter } from '../src/core/timelineRows';
 import { buildFixture } from './fixture';
 
-function rows(pick: (doc: ReturnType<typeof buildFixture>['project']['skeleton']) => string[] = () => [], expanded: Record<string, boolean> = {}) {
+function rows(
+  pick: (doc: ReturnType<typeof buildFixture>['project']['skeleton']) => string[] = () => [],
+  expanded: Record<string, boolean> = {},
+) {
   const { project } = buildFixture();
   const doc = project.skeleton;
   const anim = doc.animations.find((a) => a.name === 'walk')!;

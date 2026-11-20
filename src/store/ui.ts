@@ -10,7 +10,20 @@ import { DEFAULT_VIEWS, loadLayout } from './layout';
 import type { Views } from './layout';
 
 export type Mode = 'setup' | 'animate';
-export type Tool = 'select' | 'create' | 'translate' | 'rotate' | 'scale' | 'shear' | 'mesh' | 'weights' | 'ik' | 'clipping' | 'boundingbox' | 'point' | 'path';
+export type Tool =
+  | 'select'
+  | 'create'
+  | 'translate'
+  | 'rotate'
+  | 'scale'
+  | 'shear'
+  | 'mesh'
+  | 'weights'
+  | 'ik'
+  | 'clipping'
+  | 'boundingbox'
+  | 'point'
+  | 'path';
 /** Tools that draw clipping polygons, bounding boxes and points. */
 export const POLYGON_TOOLS: readonly Tool[] = ['clipping', 'boundingbox', 'point'];
 /** Tools that create attachments in the viewport (Setup mode only). */
@@ -211,7 +224,23 @@ export const uiStore = createStore<UiState>({
   skinId: null,
   skinMix: [],
   skinPins: [],
-  view: { grid: true, images: true, bones: true, meshes: true, names: false, constraints: true, constraintInfo: false, outlines: true, bonesOnTop: true, onion: false, trails: false, rulers: false, snap: false, pixel: false, outline: false },
+  view: {
+    grid: true,
+    images: true,
+    bones: true,
+    meshes: true,
+    names: false,
+    constraints: true,
+    constraintInfo: false,
+    outlines: true,
+    bonesOnTop: true,
+    onion: false,
+    trails: false,
+    rulers: false,
+    snap: false,
+    pixel: false,
+    outline: false,
+  },
   overrides: {},
   timelineView: 'dopesheet',
   trackFilter: NO_TRACK_FILTER,
@@ -224,9 +253,24 @@ export const uiStore = createStore<UiState>({
   compare: null,
   brush: { size: 40, strength: 0.5, mode: 'add', bone: null, feather: 100, locked: [] },
   weightView: { pies: false, overlay: false, selected: false },
-  meshView: { wireframe: true, dim: false, isolate: false, freeze: false, hullOnly: false, pickTriangle: false, triangle: null, soft: false, softRadius: 60, softShape: 'smooth' },
+  meshView: {
+    wireframe: true,
+    dim: false,
+    isolate: false,
+    freeze: false,
+    hullOnly: false,
+    pickTriangle: false,
+    triangle: null,
+    soft: false,
+    softRadius: 60,
+    softShape: 'smooth',
+  },
   toast: null,
-  panel: saved.panel ?? (typeof window !== 'undefined' && window.innerWidth < 1150 ? { left: 210, right: 240, bottom: 250 } : { left: 270, right: 300, bottom: 300 }),
+  panel:
+    saved.panel ??
+    (typeof window !== 'undefined' && window.innerWidth < 1150
+      ? { left: 210, right: 240, bottom: 250 }
+      : { left: 270, right: 300, bottom: 300 }),
   views: saved.views ?? DEFAULT_VIEWS,
   exportOpen: false,
   helpOpen: false,
@@ -248,7 +292,10 @@ let toastId = 1;
 export function toast(text: string, kind: 'info' | 'error' | 'ok' = 'info', ms?: number) {
   const id = toastId++;
   uiStore.patch({ toast: { id, text, kind } });
-  setTimeout(() => {
-    if (uiStore.get().toast?.id === id) uiStore.patch({ toast: null });
-  }, ms ?? (kind === 'error' ? 6000 : 2600));
+  setTimeout(
+    () => {
+      if (uiStore.get().toast?.id === id) uiStore.patch({ toast: null });
+    },
+    ms ?? (kind === 'error' ? 6000 : 2600),
+  );
 }

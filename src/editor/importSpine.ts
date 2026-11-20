@@ -48,7 +48,9 @@ export async function importSpineFiles(files: File[], add = false): Promise<void
   const json = files.find((f) => /\.(json|skel)$/i.test(f.name));
   if (!json) throw new Error('Select a Spine skeleton (.json or .skel) — optionally together with its .atlas and image files');
   const atlasFile = files.find((f) => /\.atlas$/i.test(f.name));
-  const skeleton: unknown = /\.skel$/i.test(json.name) ? binaryToJson(new Uint8Array(await json.arrayBuffer())) : JSON.parse(await json.text());
+  const skeleton: unknown = /\.skel$/i.test(json.name)
+    ? binaryToJson(new Uint8Array(await json.arrayBuffer()))
+    : JSON.parse(await json.text());
   const result = importSpineJson(skeleton, stem(json.name));
   const warnings = [...result.warnings];
 
@@ -79,7 +81,8 @@ export async function importSpineFiles(files: File[], add = false): Promise<void
       }
     }
   } else if (result.project.images.length) warnings.push('no .atlas file was selected: the attachments have no images yet');
-  for (const img of result.project.images) if (!decoded.some((d) => d.name === img.name)) warnings.push(`image "${img.name}" is not in the atlas`);
+  for (const img of result.project.images)
+    if (!decoded.some((d) => d.name === img.name)) warnings.push(`image "${img.name}" is not in the atlas`);
 
   const repaired = repairProject(result.project);
   if (repaired.length) console.warn('imported project repaired:', repaired);
@@ -95,17 +98,38 @@ export async function importSpineFiles(files: File[], add = false): Promise<void
       addSkeleton(d, doc);
       d.images.push(...fresh);
     });
-    uiStore.patch({ mode: 'setup', selection: emptySelection, animationId: docStore.get().skeleton.animations[0]?.id ?? null, skinId: null, time: 0, playing: false, overrides: {}, selectedKeys: [] });
+    uiStore.patch({
+      mode: 'setup',
+      selection: emptySelection,
+      animationId: docStore.get().skeleton.animations[0]?.id ?? null,
+      skinId: null,
+      time: 0,
+      playing: false,
+      overrides: {},
+      selectedKeys: [],
+    });
     const same = decoded.filter((d) => have.has(d.name)).length;
     if (same) warnings.push(`${same} picture${same === 1 ? '' : 's'} already in the project kept the pixels they had`);
   } else {
     assets.replaceAll(decoded);
     docStore.replace(imported);
     const doc = imported.skeleton;
-    uiStore.patch({ mode: 'setup', selection: emptySelection, animationId: doc.animations[0]?.id ?? null, skinId: null, time: 0, playing: false, overrides: {}, selectedKeys: [] });
+    uiStore.patch({
+      mode: 'setup',
+      selection: emptySelection,
+      animationId: doc.animations[0]?.id ?? null,
+      skinId: null,
+      time: 0,
+      playing: false,
+      overrides: {},
+      selectedKeys: [],
+    });
   }
   if (warnings.length) console.warn('Spine import:', warnings);
-  toast(`Imported "${json.name}"${warnings.length ? ` — ${warnings.length} note${warnings.length === 1 ? '' : 's'} (see the console)` : ''}`, warnings.length ? 'info' : 'ok');
+  toast(
+    `Imported "${json.name}"${warnings.length ? ` — ${warnings.length} note${warnings.length === 1 ? '' : 's'} (see the console)` : ''}`,
+    warnings.length ? 'info' : 'ok',
+  );
 }
 
 /** Cuts the pictures out of an .atlas and its pages and adds them to the project's images (with their folders). */
@@ -122,7 +146,10 @@ export async function unpackAtlasFiles(files: File[]): Promise<void> {
   if (!pictures.length) throw new Error('No pictures could be cut out: select the page images together with the .atlas');
   const blobs: File[] = [];
   for (const p of pictures) blobs.push(new File([await pictureBlob(p.picture)], `${baseName(p.name)}.png`, { type: 'image/png' }));
-  await importImageFiles(blobs, pictures.map((p) => `${p.name}.png`));
+  await importImageFiles(
+    blobs,
+    pictures.map((p) => `${p.name}.png`),
+  );
   if (warnings.length) {
     console.warn('Unpack atlas:', warnings);
     toast(`${warnings.length} note${warnings.length === 1 ? '' : 's'} while unpacking (see the console)`, 'info');

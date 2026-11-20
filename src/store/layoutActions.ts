@@ -21,7 +21,12 @@ export function saveLayoutAs(name: string): NamedLayout | null {
   const { views, panel } = uiStore.get();
   const list = namedLayoutsStore.get().list;
   const same = list.find((l) => l.name.toLowerCase() === wanted.toLowerCase());
-  const entry: NamedLayout = { id: same?.id ?? uid(), name: same?.name ?? uniqueLayoutName(list, wanted), views: { ...views }, panel: { ...panel } };
+  const entry: NamedLayout = {
+    id: same?.id ?? uid(),
+    name: same?.name ?? uniqueLayoutName(list, wanted),
+    views: { ...views },
+    panel: { ...panel },
+  };
   commit(same ? list.map((l) => (l === same ? entry : l)) : [...list, entry]);
   return entry;
 }

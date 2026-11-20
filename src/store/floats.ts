@@ -34,7 +34,8 @@ export const DEFAULT_FLOATS: FloatState = {
 const KEY = 'bone2d.floats';
 const IDS = FLOAT_LIST.map((f) => f.id);
 
-const isPos = (p: unknown): p is FloatPos => !!p && typeof p === 'object' && Number.isFinite((p as FloatPos).x) && Number.isFinite((p as FloatPos).y);
+const isPos = (p: unknown): p is FloatPos =>
+  !!p && typeof p === 'object' && Number.isFinite((p as FloatPos).x) && Number.isFinite((p as FloatPos).y);
 
 /** Takes stored text for what it is worth: what is missing or wrong keeps its default. */
 export function readFloats(raw: string | null): FloatState {
@@ -73,7 +74,7 @@ function load(): FloatState {
 }
 
 export const floatStore = createStore<FloatState>(load());
-export const useFloats = <S,>(selector: (s: FloatState) => S) => useStore(floatStore, selector);
+export const useFloats = <S>(selector: (s: FloatState) => S) => useStore(floatStore, selector);
 
 floatStore.subscribe(() => {
   try {

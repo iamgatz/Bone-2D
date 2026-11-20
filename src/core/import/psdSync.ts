@@ -34,7 +34,12 @@ export function planPsdSync(layers: PsdLayer[], images: ImageRef[]): PsdSyncPlan
  * The region attachment after its picture got new pixels. The picture keeps the scale the user gave it (the drawn size follows the pixel
  * size), and the attachment moves by the way the layer moved, `shift` being that movement in the bone's own space.
  */
-export function fitRegion(att: { x: number; y: number; width: number; height: number }, from: { width: number; height: number }, to: { width: number; height: number }, shift: [number, number]): { x: number; y: number; width: number; height: number } {
+export function fitRegion(
+  att: { x: number; y: number; width: number; height: number },
+  from: { width: number; height: number },
+  to: { width: number; height: number },
+  shift: [number, number],
+): { x: number; y: number; width: number; height: number } {
   const sx = from.width > 0 ? to.width / from.width : 1;
   const sy = from.height > 0 ? to.height / from.height : 1;
   return { x: att.x + shift[0], y: att.y + shift[1], width: att.width * sx, height: att.height * sy };

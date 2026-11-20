@@ -3,7 +3,16 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import { BACKUP_INTERVAL_MS, MAX_BACKUPS, addBackup, dueForBackup, fingerprint, readBackupList, removeBackup } from '../src/core/backups';
 import type { BackupMeta } from '../src/core/backups';
 import { emptyProject, newBone } from '../src/core/model';
-import { backupStore, deleteBackup, maybeAutoBackup, readBackupText, refreshBackups, resetAutoBackupClock, saveBackup, useBackupStorage } from '../src/store/backups';
+import {
+  backupStore,
+  deleteBackup,
+  maybeAutoBackup,
+  readBackupText,
+  refreshBackups,
+  resetAutoBackupClock,
+  saveBackup,
+  useBackupStorage,
+} from '../src/store/backups';
 import { docStore } from '../src/store/doc';
 import { loadProjectText, restoreBackup, serializeProject } from '../src/store/project';
 
@@ -12,7 +21,17 @@ const blank = (name: string) => {
   p.skeleton.bones = [];
   return p;
 };
-const meta = (i: number, over: Partial<BackupMeta> = {}): BackupMeta => ({ id: `b${i}`, time: i * 1000, name: 'p', why: 'auto', bones: 1, animations: 0, size: 10, hash: `h${i}`, ...over });
+const meta = (i: number, over: Partial<BackupMeta> = {}): BackupMeta => ({
+  id: `b${i}`,
+  time: i * 1000,
+  name: 'p',
+  why: 'auto',
+  bones: 1,
+  animations: 0,
+  size: 10,
+  hash: `h${i}`,
+  ...over,
+});
 
 describe('helpers', () => {
   it('a copy is due when there is none or the last one is old', () => {
@@ -59,7 +78,11 @@ describe('store over a Map', () => {
   let mem: Map<string, unknown>;
   beforeEach(() => {
     mem = new Map();
-    useBackupStorage({ get: async (k) => mem.get(k), set: async (k, v) => void mem.set(k, structuredClone(v)), del: async (k) => void mem.delete(k) });
+    useBackupStorage({
+      get: async (k) => mem.get(k),
+      set: async (k, v) => void mem.set(k, structuredClone(v)),
+      del: async (k) => void mem.delete(k),
+    });
     backupStore.set([]);
     resetAutoBackupClock();
     docStore.replace(blank('hero'));

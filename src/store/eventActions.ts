@@ -17,12 +17,19 @@ export function createEvent(name?: string): Id {
   return id;
 }
 
-export function updateEvent(id: Id, patch: Partial<{ name: string; int: number; float: number; string: string; audio: string; volume: number; balance: number }>) {
+export function updateEvent(
+  id: Id,
+  patch: Partial<{ name: string; int: number; float: number; string: string; audio: string; volume: number; balance: number }>,
+) {
   const doc = skeletonDoc();
   docStore.update('Edit event', (d) => {
     const e = d.skeleton.events.find((x) => x.id === id);
     if (!e) return;
-    if (patch.name !== undefined) e.name = freshName(patch.name.trim() || e.name, doc.events.filter((x) => x.id !== id));
+    if (patch.name !== undefined)
+      e.name = freshName(
+        patch.name.trim() || e.name,
+        doc.events.filter((x) => x.id !== id),
+      );
     if (patch.int !== undefined) e.int = Math.round(patch.int);
     if (patch.float !== undefined) e.float = patch.float;
     if (patch.string !== undefined) e.string = patch.string;

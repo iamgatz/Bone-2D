@@ -257,7 +257,8 @@ export function triangulate(points: ArrayLike<number>, hullCount: number, edges:
   const out: number[] = [];
   const constraints: [number, number][] = [];
   if (hullCount >= 3) for (let i = 0; i < hullCount; i++) constraints.push([i, (i + 1) % hullCount]);
-  for (let i = 0; i + 1 < edges.length; i += 2) if (edges[i] < n && edges[i + 1] < n && edges[i] !== edges[i + 1]) constraints.push([edges[i], edges[i + 1]]);
+  for (let i = 0; i + 1 < edges.length; i += 2)
+    if (edges[i] < n && edges[i + 1] < n && edges[i] !== edges[i + 1]) constraints.push([edges[i], edges[i + 1]]);
   const t = constraints.length ? constrainTriangles(flat, del.triangles, constraints) : del.triangles;
   for (let i = 0; i < t.length; i += 3) {
     const a = t[i];
@@ -265,7 +266,9 @@ export function triangulate(points: ArrayLike<number>, hullCount: number, edges:
     const c = t[i + 2];
     const cx = (flat[a * 2] + flat[b * 2] + flat[c * 2]) / 3;
     const cy = (flat[a * 2 + 1] + flat[b * 2 + 1] + flat[c * 2 + 1]) / 3;
-    const area = Math.abs((flat[b * 2] - flat[a * 2]) * (flat[c * 2 + 1] - flat[a * 2 + 1]) - (flat[c * 2] - flat[a * 2]) * (flat[b * 2 + 1] - flat[a * 2 + 1]));
+    const area = Math.abs(
+      (flat[b * 2] - flat[a * 2]) * (flat[c * 2 + 1] - flat[a * 2 + 1]) - (flat[c * 2] - flat[a * 2]) * (flat[b * 2 + 1] - flat[a * 2 + 1]),
+    );
     if (area < 1e-6) continue;
     if (hullCount >= 3 && !pointInPolygon(cx, cy, hull)) continue;
     out.push(a, b, c);
@@ -293,7 +296,7 @@ export function remapEdges(edges: readonly number[], from: ArrayLike<number>): n
 
 /** Is `a`-`b` a hull edge (neighbours on the outline)? */
 export function isHullEdge(hull: number, a: number, b: number): boolean {
-  return hull >= 3 && a < hull && b < hull && (((a + 1) % hull === b) || ((b + 1) % hull === a));
+  return hull >= 3 && a < hull && b < hull && ((a + 1) % hull === b || (b + 1) % hull === a);
 }
 
 /** Can a manual edge be drawn from `a` to `b`: inside the outline, not crossing the outline or another manual edge, not there already. Returns an error text or null. */
@@ -308,7 +311,8 @@ export function edgeProblem(points: ArrayLike<number>, hull: number, edges: read
   for (let i = 0; i < hull; i++) if (segmentsCross(points, a, b, i, (i + 1) % hull)) return 'An edge cannot cross the outline';
   const hullPts = new Float64Array(hull * 2);
   for (let i = 0; i < hull * 2; i++) hullPts[i] = points[i];
-  if (hull >= 3 && !pointInPolygon((points[a * 2] + points[b * 2]) / 2, (points[a * 2 + 1] + points[b * 2 + 1]) / 2, hullPts)) return 'An edge has to run inside the outline';
+  if (hull >= 3 && !pointInPolygon((points[a * 2] + points[b * 2]) / 2, (points[a * 2 + 1] + points[b * 2 + 1]) / 2, hullPts))
+    return 'An edge has to run inside the outline';
   return null;
 }
 
@@ -337,7 +341,8 @@ export function interiorPoints(hull: [number, number][], spacing: number): [numb
     for (let x = minX + (row % 2 ? spacing / 2 : 0) + spacing / 2; x < maxX; x += spacing) {
       if (!pointInPolygon(x, y, flat)) continue;
       let near = Infinity;
-      for (let i = 0, j = hull.length - 1; i < hull.length; j = i++) near = Math.min(near, distToSegmentSq(x, y, hull[j][0], hull[j][1], hull[i][0], hull[i][1]));
+      for (let i = 0, j = hull.length - 1; i < hull.length; j = i++)
+        near = Math.min(near, distToSegmentSq(x, y, hull[j][0], hull[j][1], hull[i][0], hull[i][1]));
       if (near >= minEdge2) out.push([x, y]);
     }
   }
@@ -363,7 +368,13 @@ export function subdivideOutline(hull: [number, number][], maxEdge: number): [nu
 }
 
 /** Builds a fully triangulated mesh from the opaque pixels of an image (replaces a region attachment). */
-export function generateMeshFromImage(region: RegionAttachment, rgba: ArrayLike<number>, imgW: number, imgH: number, opts: TraceOptions = {}): MeshAttachment {
+export function generateMeshFromImage(
+  region: RegionAttachment,
+  rgba: ArrayLike<number>,
+  imgW: number,
+  imgH: number,
+  opts: TraceOptions = {},
+): MeshAttachment {
   let outline = traceOutline(rgba, imgW, imgH, opts);
   if (outline.length < 3) return meshFromRegion(region);
   const spacing = opts.spacing ?? Math.max(imgW, imgH) / 5;
@@ -406,7 +417,12 @@ export function meshWorldPositions(mesh: MeshAttachment, slotMat: Mat, bones: Bo
 }
 
 /** Setup-pose world positions of `n` vertices stored like a mesh's (unweighted in the slot bone's space, or weighted). */
-export function vertexWorldPositions(mesh: { vertices: number[]; weights: Influence[][] | null }, n: number, slotMat: Mat, bones: BoneMats): Float64Array {
+export function vertexWorldPositions(
+  mesh: { vertices: number[]; weights: Influence[][] | null },
+  n: number,
+  slotMat: Mat,
+  bones: BoneMats,
+): Float64Array {
   const out = new Float64Array(n * 2);
   if (!mesh.weights) {
     for (let i = 0; i < n; i++) {
@@ -441,7 +457,10 @@ export interface BoneSegment {
 }
 
 export function normalizeInfluences(list: Influence[], maxInfluences = 4): Influence[] {
-  let out = list.filter((i) => i[3] > 1e-4).sort((a, b) => b[3] - a[3]).slice(0, maxInfluences);
+  let out = list
+    .filter((i) => i[3] > 1e-4)
+    .sort((a, b) => b[3] - a[3])
+    .slice(0, maxInfluences);
   const sum = out.reduce((s, i) => s + i[3], 0);
   if (sum <= 0) return out.length ? [[out[0][0], out[0][1], out[0][2], 1]] : [];
   out = out.map((i) => [i[0], i[1], i[2], i[3] / sum] as Influence);
@@ -469,7 +488,13 @@ export function pruneWeights(weights: Influence[][], threshold = 0.05, max = 4, 
  * that followed only that bone goes to `fallback` (the parent of the bone). The vertices stay where they are.
  * Returns the new weights and how many vertices had the bone.
  */
-export function removeBoneWeights(weights: Influence[][], world: ArrayLike<number>, bone: Id, fallback: Id | null, bones: BoneMats): { weights: Influence[][]; changed: number } {
+export function removeBoneWeights(
+  weights: Influence[][],
+  world: ArrayLike<number>,
+  bone: Id,
+  fallback: Id | null,
+  bones: BoneMats,
+): { weights: Influence[][]; changed: number } {
   let changed = 0;
   const fb = fallback && fallback !== bone ? bones.get(fallback) : undefined;
   const out = weights.map((list, i) => {
@@ -493,7 +518,12 @@ export function removeBoneWeights(weights: Influence[][], world: ArrayLike<numbe
  * in the space of each of their bones, so the bind pose is the pose the bones have now. The setup pose does not change.
  * Returns the new weights and how many vertices had a stale binding.
  */
-export function updateBindings(weights: Influence[][], world: ArrayLike<number>, bones: BoneMats, only?: ReadonlySet<number>): { weights: Influence[][]; changed: number } {
+export function updateBindings(
+  weights: Influence[][],
+  world: ArrayLike<number>,
+  bones: BoneMats,
+  only?: ReadonlySet<number>,
+): { weights: Influence[][]; changed: number } {
   const inv = new Map<Id, Mat>();
   for (const [id, m] of bones) inv.set(id, matInvert(m));
   let changed = 0;
@@ -528,7 +558,12 @@ export function weldWeights(
   only?: ReadonlySet<number>,
 ): { weights: Influence[][]; changed: number } {
   const mine = new Set(weights.flat().map((e) => e[0]));
-  const common = new Set(other.weights.flat().map((e) => e[0]).filter((b) => mine.has(b) && bones.has(b)));
+  const common = new Set(
+    other.weights
+      .flat()
+      .map((e) => e[0])
+      .filter((b) => mine.has(b) && bones.has(b)),
+  );
   if (common.size < 2) return { weights, changed: 0 };
   let changed = 0;
   const out = weights.map((list, i) => {
@@ -568,7 +603,14 @@ export function keepOutside<T>(old: readonly T[], next: readonly T[], only: Read
  * it is missing). The vertex stays where it is: the bind position of each moved influence is re-expressed in the other bone's space.
  * Returns the new weights and how many vertices had either bone.
  */
-export function swapBoneWeights(weights: Influence[][], world: ArrayLike<number>, a: Id, b: Id, bones: BoneMats, only?: ReadonlySet<number>): { weights: Influence[][]; changed: number } {
+export function swapBoneWeights(
+  weights: Influence[][],
+  world: ArrayLike<number>,
+  a: Id,
+  b: Id,
+  bones: BoneMats,
+  only?: ReadonlySet<number>,
+): { weights: Influence[][]; changed: number } {
   const ma = bones.get(a);
   const mb = bones.get(b);
   if (a === b || !ma || !mb) return { weights, changed: 0 };
@@ -665,7 +707,11 @@ export function mirrorWeights(
 }
 
 /** Inverse-distance weights from bone segments, limited to `maxInfluences` bones per vertex. */
-export function autoWeights(world: ArrayLike<number>, segs: BoneSegment[], opts: { maxInfluences?: number; falloff?: number } = {}): { bone: Id; w: number }[][] {
+export function autoWeights(
+  world: ArrayLike<number>,
+  segs: BoneSegment[],
+  opts: { maxInfluences?: number; falloff?: number } = {},
+): { bone: Id; w: number }[][] {
   const maxInfl = opts.maxInfluences ?? 4;
   const falloff = opts.falloff ?? 2.2;
   const n = world.length / 2;
@@ -703,7 +749,13 @@ export function adjacency(triangles: ArrayLike<number>, vertexCount: number): nu
 }
 
 /** Blends each vertex's weights with its neighbours' (`amount` 0..1), keeping at most `maxInfluences`. */
-export function smoothWeights(weights: { bone: Id; w: number }[][], adj: number[][], passes: number, amount = 0.5, maxInfluences = 4): { bone: Id; w: number }[][] {
+export function smoothWeights(
+  weights: { bone: Id; w: number }[][],
+  adj: number[][],
+  passes: number,
+  amount = 0.5,
+  maxInfluences = 4,
+): { bone: Id; w: number }[][] {
   let cur = weights;
   for (let p = 0; p < passes; p++) {
     cur = cur.map((own, i) => {
@@ -712,7 +764,10 @@ export function smoothWeights(weights: { bone: Id; w: number }[][], adj: number[
       const acc = new Map<Id, number>();
       for (const e of own) acc.set(e.bone, (acc.get(e.bone) ?? 0) + e.w * (1 - amount));
       for (const j of nb) for (const e of cur[j]) acc.set(e.bone, (acc.get(e.bone) ?? 0) + (e.w * amount) / nb.length);
-      const list = [...acc.entries()].map(([bone, w]) => ({ bone, w })).sort((a, b) => b.w - a.w).slice(0, maxInfluences);
+      const list = [...acc.entries()]
+        .map(([bone, w]) => ({ bone, w }))
+        .sort((a, b) => b.w - a.w)
+        .slice(0, maxInfluences);
       const sum = list.reduce((s, e) => s + e.w, 0) || 1;
       return list.map((e) => ({ bone: e.bone, w: e.w / sum }));
     });
@@ -758,7 +813,14 @@ export function unbindMesh(mesh: MeshAttachment, slotMat: Mat, bones: BoneMats):
  * `bindFor` supplies the bind position when the bone is not yet an influence.
  * `locked` (Spine's weight lock): the weight of a locked bone does not change; the others share what is left, and a locked bone itself cannot be painted.
  */
-export function setBoneWeight(list: Influence[], bone: Id, target: number, bindFor: (bone: Id) => [number, number] | null, maxInfluences = 4, locked?: ReadonlySet<Id>): Influence[] {
+export function setBoneWeight(
+  list: Influence[],
+  bone: Id,
+  target: number,
+  bindFor: (bone: Id) => [number, number] | null,
+  maxInfluences = 4,
+  locked?: ReadonlySet<Id>,
+): Influence[] {
   if (locked?.has(bone)) return list;
   let cur = list.map((i) => [...i] as Influence);
   const held = locked ? cur.filter((i) => locked.has(i[0])) : [];
@@ -782,14 +844,22 @@ export function setBoneWeight(list: Influence[], bone: Id, target: number, bindF
   if (held.length && cur.length > maxInfluences) {
     // a locked bone is never the one that drops out
     const keep = cur.filter((i) => held.includes(i));
-    const free = cur.filter((i) => !held.includes(i)).sort((x, y) => y[3] - x[3]).slice(0, Math.max(0, maxInfluences - keep.length));
+    const free = cur
+      .filter((i) => !held.includes(i))
+      .sort((x, y) => y[3] - x[3])
+      .slice(0, Math.max(0, maxInfluences - keep.length));
     cur = [...keep, ...free];
   }
   return normalizeInfluences(cur, maxInfluences);
 }
 
 /** Barycentric UV + weights for a new point from the triangle that contains it (or the nearest triangle). */
-export function locateInMesh(world: ArrayLike<number>, triangles: ArrayLike<number>, px: number, py: number): { tri: number; bary: [number, number, number] } | null {
+export function locateInMesh(
+  world: ArrayLike<number>,
+  triangles: ArrayLike<number>,
+  px: number,
+  py: number,
+): { tri: number; bary: [number, number, number] } | null {
   let best: { tri: number; bary: [number, number, number]; score: number } | null = null;
   for (let t = 0; t < triangles.length; t += 3) {
     const a = triangles[t] * 2;
@@ -896,7 +966,14 @@ function influenceBones(mesh: MeshAttachment, vertex: number, hasBone: (id: Id) 
  * Values follow their vertex (and, for weighted meshes, their bone); new vertices / influences start at zero.
  * Returns `null` when the old values cannot be carried over (bind / unbind, unknown history) — the caller drops the keys.
  */
-export function remapDeformValues(before: MeshAttachment, after: MeshAttachment, map: VertexMap, hasBone: (id: Id) => boolean, values: ArrayLike<number>, hasBoneBefore: (id: Id) => boolean = hasBone): number[] | null {
+export function remapDeformValues(
+  before: MeshAttachment,
+  after: MeshAttachment,
+  map: VertexMap,
+  hasBone: (id: Id) => boolean,
+  values: ArrayLike<number>,
+  hasBoneBefore: (id: Id) => boolean = hasBone,
+): number[] | null {
   if ((before.weights == null) !== (after.weights == null)) return null;
   if (values.length !== deformLength(before, hasBoneBefore)) return null;
   const nOld = before.uvs.length >> 1;

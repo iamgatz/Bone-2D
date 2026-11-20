@@ -4,7 +4,16 @@ import { diffSkeletons } from '../src/core/checkpoints';
 import { mergeFromFile } from '../src/core/merge';
 import { validateProject } from '../src/core/validate';
 import { deleteAnimation, deleteBones, deleteSlots } from '../src/store/actions';
-import { checkpointStore, checkpointsOfActive, compareWithProjectText, markCheckpoint, restoreCheckpoint, restoreFileCheckpoint, takeFromCheckpoint, takeNow } from '../src/store/checkpoints';
+import {
+  checkpointStore,
+  checkpointsOfActive,
+  compareWithProjectText,
+  markCheckpoint,
+  restoreCheckpoint,
+  restoreFileCheckpoint,
+  takeFromCheckpoint,
+  takeNow,
+} from '../src/store/checkpoints';
 import { docStore } from '../src/store/doc';
 import { emptySelection, uiStore } from '../src/store/ui';
 import { buildFixture } from './fixture';

@@ -173,7 +173,8 @@ describe('boneStages', () => {
     addPhysicsRig(project);
     const sk = createSkeleton(compileSkeleton(project.skeleton), null);
     sk.updateWorldTransform('none');
-    for (const link of constraintLinks(sk).filter((l) => l.kind === 'physics')) for (const bone of link.driven) expect(boneStages(sk, bone.data.id)!.stages.some((s) => s.kind === 'physics')).toBe(false);
+    for (const link of constraintLinks(sk).filter((l) => l.kind === 'physics'))
+      for (const bone of link.driven) expect(boneStages(sk, bone.data.id)!.stages.some((s) => s.kind === 'physics')).toBe(false);
   });
 });
 

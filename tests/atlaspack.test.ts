@@ -42,7 +42,8 @@ const PICTURES = [
 
 function crop(p: Picture, b: { x: number; y: number; w: number; h: number }): Uint8ClampedArray {
   const out = new Uint8ClampedArray(b.w * b.h * 4);
-  for (let y = 0; y < b.h; y++) for (let x = 0; x < b.w; x++) for (let k = 0; k < 4; k++) out[(y * b.w + x) * 4 + k] = p.data[((b.y + y) * p.width + b.x + x) * 4 + k];
+  for (let y = 0; y < b.h; y++)
+    for (let x = 0; x < b.w; x++) for (let k = 0; k < 4; k++) out[(y * b.w + x) * 4 + k] = p.data[((b.y + y) * p.width + b.x + x) * 4 + k];
   return out;
 }
 
@@ -51,7 +52,15 @@ function build(opts: { trim: boolean; rotate: boolean; padding: number; pot?: bo
   const inputs: PackInput[] = PICTURES.map((p) => {
     const b = opts.trim ? trimBounds(p.data, p.width, p.height) : { x: 0, y: 0, w: p.width, h: p.height };
     pixels.set(p.name, crop(p, b));
-    return { name: p.name, width: b.w, height: b.h, offsetX: b.x, offsetY: p.height - (b.y + b.h), originalWidth: p.width, originalHeight: p.height };
+    return {
+      name: p.name,
+      width: b.w,
+      height: b.h,
+      offsetX: b.x,
+      offsetY: p.height - (b.y + b.h),
+      originalWidth: p.width,
+      originalHeight: p.height,
+    };
   });
   const pages = packAtlas(inputs, { maxSize: 256, padding: opts.padding, pot: opts.pot ?? true, rotate: opts.rotate });
   const text = writeAtlas(pages, (i) => `page${i}.png`);
@@ -91,7 +100,12 @@ function checkThroughOfficial(built: ReturnType<typeof build>): number {
         const want = (iy * p.width + ix) * 4;
         const got = (py * page.width + px) * 4;
         expect([ix, iy]).toEqual([ix, Math.min(Math.max(iy, 0), p.height - 1)]); // inside the picture
-        expect([pagePixels[got], pagePixels[got + 1], pagePixels[got + 2], pagePixels[got + 3]], `${p.name} sample ${i},${j}`).toEqual([p.data[want], p.data[want + 1], p.data[want + 2], p.data[want + 3]]);
+        expect([pagePixels[got], pagePixels[got + 1], pagePixels[got + 2], pagePixels[got + 3]], `${p.name} sample ${i},${j}`).toEqual([
+          p.data[want],
+          p.data[want + 1],
+          p.data[want + 2],
+          p.data[want + 3],
+        ]);
         compared++;
       }
     }
@@ -137,7 +151,9 @@ describe('the atlas file as the official runtime reads it', () => {
 
   it('trimming makes the pages smaller or equal', () => {
     const area = (b: ReturnType<typeof build>) => b.pages.reduce((s, p) => s + p.width * p.height, 0);
-    expect(area(build({ trim: true, rotate: false, padding: 2 }))).toBeLessThanOrEqual(area(build({ trim: false, rotate: false, padding: 2 })));
+    expect(area(build({ trim: true, rotate: false, padding: 2 }))).toBeLessThanOrEqual(
+      area(build({ trim: false, rotate: false, padding: 2 })),
+    );
   });
 
   it('keeps regions apart and inside the page, with or without power-of-two sizes', () => {
@@ -155,7 +171,11 @@ describe('the atlas file as the official runtime reads it', () => {
           for (let b = a + 1; b < boxes.length; b++) {
             const A = boxes[a];
             const B = boxes[b];
-            const apart = A.r.x + A.f[0] + 2 <= B.r.x - 2 || B.r.x + B.f[0] + 2 <= A.r.x - 2 || A.r.y + A.f[1] + 2 <= B.r.y - 2 || B.r.y + B.f[1] + 2 <= A.r.y - 2;
+            const apart =
+              A.r.x + A.f[0] + 2 <= B.r.x - 2 ||
+              B.r.x + B.f[0] + 2 <= A.r.x - 2 ||
+              A.r.y + A.f[1] + 2 <= B.r.y - 2 ||
+              B.r.y + B.f[1] + 2 <= A.r.y - 2;
             expect(apart).toBe(true);
           }
       }

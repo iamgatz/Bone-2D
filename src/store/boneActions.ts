@@ -52,7 +52,14 @@ export function createBoneWorld(input: CreateBoneInput): Id | null {
     const wy = pb.c * Math.cos(r) + pb.d * Math.sin(r);
     length = worldLen / Math.max(1e-6, Math.hypot(wx, wy));
   }
-  const b = newBone({ name: input.name?.trim() ? freshName(input.name.trim(), doc.bones) : freshName('bone', doc.bones), parent: parentId, x: lx, y: ly, rotation, length });
+  const b = newBone({
+    name: input.name?.trim() ? freshName(input.name.trim(), doc.bones) : freshName('bone', doc.bones),
+    parent: parentId,
+    x: lx,
+    y: ly,
+    rotation,
+    length,
+  });
   docStore.update('Create bone', (d) => {
     d.skeleton.bones.push(b);
   });
@@ -70,7 +77,10 @@ export function renameBone(id: Id, name: string) {
   const doc = skeletonDoc();
   const clean = name.trim();
   if (!clean) return;
-  const unique = freshName(clean, doc.bones.filter((b) => b.id !== id));
+  const unique = freshName(
+    clean,
+    doc.bones.filter((b) => b.id !== id),
+  );
   setBoneProps(id, { name: unique }, 'Rename bone');
 }
 
@@ -83,7 +93,9 @@ export function deleteBones(ids: Id[]) {
     return;
   }
   // setup-pose placement of every bone, so weighted vertices that lose all their bones stay where they are
-  const bindPose: BoneMats = new Map(getSetupSkeleton().bones.map((b) => [b.data.id, { a: b.a, b: b.b, c: b.c, d: b.d, x: b.worldX, y: b.worldY }] as const));
+  const bindPose: BoneMats = new Map(
+    getSetupSkeleton().bones.map((b) => [b.data.id, { a: b.a, b: b.b, c: b.c, d: b.d, x: b.worldX, y: b.worldY }] as const),
+  );
   docStore.update('Delete bones', (d) => {
     removeBones(d.skeleton, targets, bindPose);
   });
@@ -107,7 +119,8 @@ export function reparentBone(id: Id, newParent: Id | null) {
     toast(`"${bone.name}" is part of the IK constraint "${chain.name}" — remove the constraint to move it`, 'error');
     return;
   }
-  if (newParent === null && doc.bones.some((b) => !b.parent && b.id !== id)) newParent = doc.bones.find((b) => !b.parent && b.id !== id)!.id;
+  if (newParent === null && doc.bones.some((b) => !b.parent && b.id !== id))
+    newParent = doc.bones.find((b) => !b.parent && b.id !== id)!.id;
   // cycles
   if (newParent) {
     let p: Bone | undefined = doc.bones.find((b) => b.id === newParent);
@@ -160,19 +173,40 @@ export function ensureBoneTimelines(a: Draft<Animation>, id: Id) {
 }
 
 /** Writes keys for the given bone pose props at `time` into an animation draft. */
-function keyBoneInDraft(d: Draft<Project>, anim: Draft<Animation>, boneId: Id, pose: Required<PoseProps>, touched: Set<BoneProp>, time: number, curveKind: 'linear' | 'bezier' | 'stepped') {
+function keyBoneInDraft(
+  d: Draft<Project>,
+  anim: Draft<Animation>,
+  boneId: Id,
+  pose: Required<PoseProps>,
+  touched: Set<BoneProp>,
+  time: number,
+  curveKind: 'linear' | 'bezier' | 'stepped',
+) {
   const setup = d.skeleton.bones.find((b) => b.id === boneId);
   if (!setup) return;
   // a bone with a rotation limit is rotated by its control bone: the key goes there (the limited bone's own rotation is overwritten by the constraint)
   const limit = touched.has('rotate') ? rotationLimitOf(d.skeleton, boneId) : null;
   if (limit) {
     const cp = currentPose(limit.control);
-    if (cp) keyBoneInDraft(d, anim, limit.control, { ...cp, ...uiStore.get().overrides[limit.control] }, new Set<BoneProp>(['rotate']), time, curveKind);
+    if (cp)
+      keyBoneInDraft(
+        d,
+        anim,
+        limit.control,
+        { ...cp, ...uiStore.get().overrides[limit.control] },
+        new Set<BoneProp>(['rotate']),
+        time,
+        curveKind,
+      );
     touched = new Set([...touched].filter((t) => t !== 'rotate'));
     if (!touched.size) return;
   }
   const tl = ensureBoneTimelines(anim, boneId);
-  const key = (channels: number, value: number[]) => ({ time, value, ...(makeCurve(curveKind, channels) !== undefined ? { curve: makeCurve(curveKind, channels) } : {}) });
+  const key = (channels: number, value: number[]) => ({
+    time,
+    value,
+    ...(makeCurve(curveKind, channels) !== undefined ? { curve: makeCurve(curveKind, channels) } : {}),
+  });
   const put = (prop: BoneProp, value: number[]) => {
     const keys = (tl[prop] ??= []);
     const k = key(value.length, value);
@@ -247,7 +281,13 @@ export function setBonePose(updates: { id: Id; props: PoseProps }[], label = 'Ed
         if (b) Object.assign(b, u.props);
       }
       // Compensation: the children and the pictures that were asked to stay in place get new local values
-      if (comp.bones || comp.images) compensateEdit(before, d.skeleton, updates.map((u) => u.id), comp);
+      if (comp.bones || comp.images)
+        compensateEdit(
+          before,
+          d.skeleton,
+          updates.map((u) => u.id),
+          comp,
+        );
     });
     return;
   }
@@ -307,7 +347,10 @@ export function keyEditedBones() {
     keySelectedBones();
     return;
   }
-  keyBonesChannels(pending.map((id) => ({ id, channels: editedChannels(ui.overrides[id]) })), 'Key edited');
+  keyBonesChannels(
+    pending.map((id) => ({ id, channels: editedChannels(ui.overrides[id]) })),
+    'Key edited',
+  );
 }
 
 function keyBonesChannels(list: { id: Id; channels: Set<Channel> }[], label: string) {
@@ -359,7 +402,8 @@ export function keyConstrainedBones() {
   docStore.update('Key constrained', (d) => {
     const a = d.skeleton.animations.find((x) => x.id === anim.id);
     if (!a) return;
-    for (const p of prepared) keyBoneInDraft(d, a, p.id, p.pose, new Set<BoneProp>(['rotate', 'translate', 'scale', 'shear']), time, ui.defaultCurve);
+    for (const p of prepared)
+      keyBoneInDraft(d, a, p.id, p.pose, new Set<BoneProp>(['rotate', 'translate', 'scale', 'shear']), time, ui.defaultCurve);
     extendDuration(a, time);
   });
   uiStore.patch({ overrides: {} });

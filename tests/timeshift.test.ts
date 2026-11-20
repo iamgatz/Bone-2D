@@ -14,12 +14,40 @@ function allTimes(anim: object): number[] {
   const out: number[] = [];
   const walk = (v: unknown) => {
     if (Array.isArray(v)) {
-      if (v.length && typeof v[0] === 'object' && v[0] !== null && typeof (v[0] as { time?: unknown }).time === 'number') for (const k of v as { time: number }[]) out.push(k.time);
+      if (v.length && typeof v[0] === 'object' && v[0] !== null && typeof (v[0] as { time?: unknown }).time === 'number')
+        for (const k of v as { time: number }[]) out.push(k.time);
       else v.forEach(walk);
     } else if (v && typeof v === 'object') for (const x of Object.values(v)) walk(x);
   };
-  const a = anim as { bones: unknown; slots: unknown; deform: unknown; sequence: unknown; ik: unknown; transform: unknown; slider: unknown; path: unknown; physics: unknown; drawOrder: unknown; drawOrderFolder: unknown; events: unknown };
-  for (const key of ['bones', 'slots', 'deform', 'sequence', 'ik', 'transform', 'slider', 'path', 'physics', 'drawOrder', 'drawOrderFolder', 'events'] as const) walk(a[key]);
+  const a = anim as {
+    bones: unknown;
+    slots: unknown;
+    deform: unknown;
+    sequence: unknown;
+    ik: unknown;
+    transform: unknown;
+    slider: unknown;
+    path: unknown;
+    physics: unknown;
+    drawOrder: unknown;
+    drawOrderFolder: unknown;
+    events: unknown;
+  };
+  for (const key of [
+    'bones',
+    'slots',
+    'deform',
+    'sequence',
+    'ik',
+    'transform',
+    'slider',
+    'path',
+    'physics',
+    'drawOrder',
+    'drawOrderFolder',
+    'events',
+  ] as const)
+    walk(a[key]);
   return out.sort((x, y) => x - y);
 }
 
@@ -47,7 +75,8 @@ describe('insertTime', () => {
     insertTime(anim, 0.3, 0.4);
     expect(anim.duration).toBeCloseTo(d + 0.4, 6);
     expect(animationEndTime(anim)).toBeLessThanOrEqual(anim.duration + 1e-9);
-    for (const tl of Object.values(anim.bones)) for (const keys of Object.values(tl)) for (let i = 1; i < keys!.length; i++) expect(keys![i].time).toBeGreaterThan(keys![i - 1].time);
+    for (const tl of Object.values(anim.bones))
+      for (const keys of Object.values(tl)) for (let i = 1; i < keys!.length; i++) expect(keys![i].time).toBeGreaterThan(keys![i - 1].time);
     expect(validateProject(project)).toEqual([]);
   });
 
@@ -91,7 +120,10 @@ describe('deleteTime', () => {
     expect(r.removed).toBe(inside);
     const after = allTimes(anim);
     expect(after.length).toBe(before.length - inside);
-    const expected = before.filter((t) => !(t >= at - 1e-4 && t < at + span - 1e-4)).map((t) => (t >= at + span - 1e-4 ? t - span : t)).sort((x, y) => x - y);
+    const expected = before
+      .filter((t) => !(t >= at - 1e-4 && t < at + span - 1e-4))
+      .map((t) => (t >= at + span - 1e-4 ? t - span : t))
+      .sort((x, y) => x - y);
     after.forEach((t, i) => expect(near(t, expected[i])).toBe(true));
     expect(validateProject(project)).toEqual([]);
   });
@@ -184,7 +216,14 @@ describe('the actions', () => {
   beforeEach(() => {
     const f = buildFixture();
     docStore.replace(f.project);
-    uiStore.patch({ mode: 'animate', animationId: f.project.skeleton.animations[0].id, time: 0.5, selection: emptySelection, selectedKeys: ['x'], playing: false });
+    uiStore.patch({
+      mode: 'animate',
+      animationId: f.project.skeleton.animations[0].id,
+      time: 0.5,
+      selection: emptySelection,
+      selectedKeys: ['x'],
+      playing: false,
+    });
   });
 
   it('Insert time works at the playhead, in frames, as one undo step', () => {
