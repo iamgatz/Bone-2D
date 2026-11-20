@@ -24,8 +24,6 @@ export function openPopout(background: [number, number, number]): Window | null 
   return w;
 }
 
-export const popoutOpen = (): boolean => !!win && !win.closed;
-
 /** Copies the frame of `source` into the window's canvas, fitted inside it without stretching. A closed window is forgotten. */
 export function mirrorToPopout(source: HTMLCanvasElement, background: [number, number, number]) {
   if (!win) return;

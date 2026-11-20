@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { ArrowLeftRight, Bone, BoxSelect, Download, Eye, EyeOff, FilePlus2, FolderOpen, Package, Grid3x3, Bell, Search, Home, Layers, ClipboardCopy, ClipboardPaste, Copy, FlipHorizontal2, GitBranch, RotateCcw, SlidersHorizontal, Image as ImageIcon, CircleHelp, MessageSquareText, Link2, Map as MapIcon, Maximize, Play, Redo2, Route, Ruler, Magnet, Trash2, Save, Sparkles, Type, Undo2 } from 'lucide-react';
 import { decodeKey } from '@/core/keyrefs';
 import { selectionBack, selectionForward, startSelectionHistory } from '@/store/selHistory';
-import { clearSelection, copyKeys, flipViewport, deleteBones, deleteKeys, keySelectedBones, pasteKeys, sanitizeSelection, setMode, setSelection, setTime, setTool, togglePlay } from '@/store/actions';
+import { clearSelection, copyKeys, flipViewport, deleteBones, deleteKeys, pasteKeys, sanitizeSelection, setMode, setTime, setTool } from '@/store/actions';
 import { docStore, useProject } from '@/store/doc';
 import { pickReviewFile } from '@/store/reviewActions';
 import { newProject, openProjectFile, packageProject, restoreAutosave, saveProjectFile, startAutosave } from '@/store/project';

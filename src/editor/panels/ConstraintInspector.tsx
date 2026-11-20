@@ -1,5 +1,5 @@
 import { Link2, Trash2 } from 'lucide-react';
-import { findKeyIndex } from '@/core/curve';
+import { hasKey } from '@/core/edit';
 import type { Id } from '@/core/model';
 import { currentAnimation, deleteKeys } from '@/store/actions';
 import { useProject } from '@/store/doc';
@@ -36,10 +36,7 @@ function IkInspector({ id }: { id: Id }) {
   const animate = mode === 'animate';
   const anim = currentAnimation();
   const keys = anim?.ik[id];
-  const keyed = !!keys && (() => {
-    const i = findKeyIndex(keys, time + 1e-4);
-    return i >= 0 && Math.abs(keys[i].time - time) < 1e-4;
-  })();
+  const keyed = hasKey(keys, time);
   const v = (animate ? currentIkValues(id) : null) ?? { mix: c.mix, softness: c.softness, bendPositive: c.bendPositive, compress: c.compress, stretch: c.stretch };
   const boneName = (b: Id) => doc.bones.find((x) => x.id === b)?.name ?? '?';
 

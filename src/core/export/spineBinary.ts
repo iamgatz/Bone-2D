@@ -3,7 +3,6 @@
  * into the binary layout the official `SkeletonBinary` reads: the same structure, but names become indices, numbers become 32-bit
  * floats and most booleans / defaults are folded into flag bytes. Every choice here mirrors the reader, field by field.
  */
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import type { SkeletonDoc } from '../model';
 import { exportSpineJson } from './spineJson';
 import type { SpineExportOptions } from './spineJson';
@@ -127,11 +126,6 @@ function writeCurve(out: Out, key: J, channels: number) {
   for (let i = 0; i < channels * 4; i++) out.float(num(c[i], 0));
 }
 
-export interface BinaryOptions extends SpineExportOptions {
-  /** Which editor-only data to keep; by default whatever the JSON has. */
-  nonessential?: boolean;
-}
-
 /** Converts the exported JSON (see exportSpineJson) to the binary format. */
 export function jsonToBinary(json: J): Uint8Array {
   const skeleton = json.skeleton ?? {};
@@ -187,7 +181,6 @@ export function jsonToBinary(json: J): Uint8Array {
 
   const body = new Out();
 
-  // ----------------------------------------------------------- bones
   body.varint(bones.length, true);
   bones.forEach((b, i) => {
     body.string(b.name);
@@ -211,7 +204,6 @@ export function jsonToBinary(json: J): Uint8Array {
     }
   });
 
-  // ----------------------------------------------------------- slots
   body.varint(slots.length, true);
   for (const s of slots) {
     body.string(s.name);
@@ -223,7 +215,6 @@ export function jsonToBinary(json: J): Uint8Array {
     if (nonessential) body.bool(true);
   }
 
-  // ----------------------------------------------------------- constraints
   body.varint(constraints.length, true);
   for (const c of constraints) {
     body.string(c.name);
@@ -397,7 +388,6 @@ export function jsonToBinary(json: J): Uint8Array {
     }
   }
 
-  // ----------------------------------------------------------- skins
   const defaultSkin = skins.find((s) => s.name === 'default') ?? skins[0];
   const otherSkins = skins.filter((s) => s !== defaultSkin);
   const skinWriter = (skin: J, isDefault: boolean) => {
@@ -626,7 +616,6 @@ export function jsonToBinary(json: J): Uint8Array {
   body.varint(otherSkins.length, true);
   for (const s of otherSkins) skinWriter(s, false);
 
-  // ----------------------------------------------------------- events
   const eventDefs: J = json.events ?? {};
   body.varint(eventNames.length, true);
   for (const name of eventNames) {
@@ -642,7 +631,6 @@ export function jsonToBinary(json: J): Uint8Array {
     }
   }
 
-  // ----------------------------------------------------------- animations
   body.varint(animationNames.length, true);
   for (const name of animationNames) {
     body.string(name);
@@ -970,7 +958,6 @@ export function jsonToBinary(json: J): Uint8Array {
     if (nonessential) out.int32(rgba8888([255, 255, 255, 255]));
   }
 
-  // ----------------------------------------------------------- file
   const head = new Out();
   const hash = decodeHash(skeleton.hash);
   head.int32(hash.low);

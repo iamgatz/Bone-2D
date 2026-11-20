@@ -9,8 +9,6 @@ import { makeCurve } from './edit';
 import { BONE_PROPS } from './model';
 import type { Animation, Id, Key, SkeletonDoc, Timeline } from './model';
 
-// ---------------------------------------------------------------- wiggle
-
 /** A small deterministic random generator (mulberry32): the same seed always gives the same shake. */
 export function seeded(seed: number): () => number {
   let a = seed >>> 0 || 1;
@@ -60,8 +58,6 @@ export function wiggleKeys(keys: Timeline, o: WiggleOptions): Timeline {
     return key;
   });
 }
-
-// ---------------------------------------------------------------- left / right
 
 const PAIRS: [string, string][] = [['near', 'far'], ['left', 'right'], ['l', 'r'], ['lft', 'rgt'], ['front', 'back']];
 
@@ -189,8 +185,6 @@ export function mirrorCycle(doc: SkeletonDoc, anim: Animation, name: string, opt
   return out;
 }
 
-// ---------------------------------------------------------------- foot slide
-
 export interface SlideOptions {
   /** A foot counts as planted while it is within this many units of its lowest point in the animation. */
   ground: number;
@@ -243,8 +237,6 @@ export function footSlides(doc: SkeletonDoc, anim: Animation, boneIds: Id[], opt
   }
   return out;
 }
-
-// ---------------------------------------------------------------- what an animation touches
 
 /** The bones with no key of any kind in an animation. */
 export function unkeyedBones(doc: SkeletonDoc, anim: Animation | null | undefined): Id[] {

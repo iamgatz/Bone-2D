@@ -1,4 +1,5 @@
 /** Curve editor: value-over-time graphs for the selected timelines, with draggable keys and bezier handles. */
+import { drawWhenDirty, localPoint } from '../ui/canvas';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Eye, EyeOff } from 'lucide-react';
 import { segmentProgress } from '@/core/curve';
@@ -144,7 +145,6 @@ export function GraphEditor({ anim, doc, selection, selectedKeys, fps }: { anim:
     const canvas = canvasRef.current!;
     const host = hostRef.current!;
     const ctx = canvas.getContext('2d')!;
-    let raf = 0;
     let w = 0;
     let h = 0;
     const resize = () => {
@@ -196,7 +196,6 @@ export function GraphEditor({ anim, doc, selection, selectedKeys, fps }: { anim:
       ctx.fillStyle = token('--sunken-2');
       ctx.fillRect(0, 0, w, h);
       const ui = uiStore.get();
-      const { fps } = state.current;
       // time grid
       ctx.strokeStyle = token('--tl-grid');
       ctx.beginPath();
@@ -296,7 +295,6 @@ export function GraphEditor({ anim, doc, selection, selectedKeys, fps }: { anim:
       ctx.moveTo(px, 0);
       ctx.lineTo(px, h);
       ctx.stroke();
-      void fps;
       if (!visible().length) {
         ctx.fillStyle = alpha('--muted', 0.9);
         ctx.textAlign = 'center';
@@ -306,23 +304,9 @@ export function GraphEditor({ anim, doc, selection, selectedKeys, fps }: { anim:
       }
     };
 
-    const loop = () => {
-      if (dirty.current) {
-        dirty.current = false;
-        try {
-          draw();
-        } catch (e) {
-          console.error(e);
-        }
-      }
-      raf = requestAnimationFrame(loop);
-    };
-    raf = requestAnimationFrame(loop);
+    const stopLoop = drawWhenDirty(dirty, draw);
 
-    const local = (e: { clientX: number; clientY: number }) => {
-      const r = canvas.getBoundingClientRect();
-      return [e.clientX - r.left, e.clientY - r.top] as const;
-    };
+    const local = (e: { clientX: number; clientY: number }) => localPoint(e, canvas);
 
     const hit = (x: number, y: number): Drag | null => {
       const ui = uiStore.get();
@@ -441,7 +425,7 @@ export function GraphEditor({ anim, doc, selection, selectedKeys, fps }: { anim:
     canvas.addEventListener('pointercancel', onUp);
     canvas.addEventListener('wheel', onWheel, { passive: false });
     return () => {
-      cancelAnimationFrame(raf);
+      stopLoop();
       ro.disconnect();
       unsubs.forEach((u) => u());
       canvas.removeEventListener('pointerdown', onDown);

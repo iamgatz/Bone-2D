@@ -4,7 +4,7 @@
  * timeline (with the author, and a "resolved" mark). Nothing needs a server or an account.
  *
  * The file comes from outside, so it is read strictly: only the fields below, only text of a sane length, a bounded number of comments.
- * Importing the same file twice changes nothing (a comment keeps its id, so it updates its marker instead of making another). No DOM.
+ * Importing the same file twice changes nothing (a comment keeps its id, so it updates its marker instead of making another).
  */
 import type { Id, Marker, SkeletonDoc } from './model';
 

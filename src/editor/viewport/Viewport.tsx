@@ -6,7 +6,7 @@ import { placeSequences } from '@/store/sequenceActions';
 import { assets } from '@/store/assets';
 import { docStore } from '@/store/doc';
 import { toast, uiStore } from '@/store/ui';
-import { getScene, screenToWorld } from '../scene';
+import { getScene, screenToWorld } from '@/store/scene';
 import { checkpointStore } from '@/store/checkpoints';
 import { checkpointGhost, ghostsFor, motionArrows, referenceGhost } from '../ghosts';
 import { ViewportController } from './controller';

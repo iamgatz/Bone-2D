@@ -4,7 +4,6 @@
  * Terms users know from Spine / game dev (IK, mesh, slot, mix, atlas ...) are kept close to the English originals.
  */
 export const RU: Record<string, string> = {
-  // ---------------------------------------------------------------- top bar and menus
   'Bone 2D': 'Bone 2D',
   'New project': 'Новый проект',
   'Open…': 'Открыть…',
@@ -36,7 +35,6 @@ export const RU: Record<string, string> = {
   'Shortcuts & help': 'Горячие клавиши и справка',
   'Language': 'Язык',
 
-  // ---------------------------------------------------------------- toolbox, viewport hints
   'Pose / select': 'Поза / выбор',
   'Create bone': 'Создать кость',
   'Translate': 'Перенос',
@@ -73,7 +71,6 @@ export const RU: Record<string, string> = {
   'Load the demo rig': 'Загрузить демо-риг',
   'a finished character with IK legs and a walk cycle': 'готовый персонаж с IK-ногами и циклом ходьбы',
 
-  // ---------------------------------------------------------------- help dialog
   'Bone 2D — shortcuts': 'Bone 2D — горячие клавиши',
   'Bone 2D is a browser-based 2D skeletal animation editor. Build a rig in': 'Bone 2D — браузерный редактор 2D-скелетной анимации. Собери риг в режиме',
   ', pose and key it in': ', позируй и ставь ключи в режиме',
@@ -124,7 +121,6 @@ export const RU: Record<string, string> = {
   'Ctrl + wheel': 'Ctrl + колесо',
   'Save · Open · Export': 'Сохранить · Открыть · Экспорт',
 
-  // ---------------------------------------------------------------- export dialog
   'Export for Spine 4.3': 'Экспорт для Spine 4.3',
   'Close': 'Закрыть',
   'Download ZIP': 'Скачать ZIP',
@@ -150,7 +146,6 @@ export const RU: Record<string, string> = {
   'KB': 'КБ',
   'px': 'px',
 
-  // ---------------------------------------------------------------- images panel
   'Drop PNG / WebP images, a folder of them or a PSD file here': 'Перетащи сюда PNG / WebP, папку с ними или файл PSD',
   'Import a folder of images (its folders become folders of pictures)': 'Импорт папки с картинками (её папки станут папками картинок)',
   'or click to browse': 'или нажми, чтобы выбрать',
@@ -272,7 +267,6 @@ export const RU: Record<string, string> = {
   '{} — drag into the viewport, or double-click to add at the center': '{} — перетащи во вьюпорт или кликни дважды, чтобы добавить в центр',
   '"{}" is used by an attachment': '«{}» используется аттачментом',
 
-  // ---------------------------------------------------------------- inspector: bone, slot, attachments
   'Inspector': 'Инспектор',
   'Skeleton': 'Скелет',
   'FPS': 'FPS',
@@ -329,7 +323,6 @@ export const RU: Record<string, string> = {
   'Remove {} key at the playhead': 'Убрать ключ «{}» в текущем кадре',
   'Set {} key at the playhead': 'Поставить ключ «{}» в текущем кадре',
 
-  // ---------------------------------------------------------------- inspector: mesh and weights
   'Mesh': 'Меш',
   'Turn this image into a deformable mesh. Tracing follows the opaque pixels and fills the shape with triangles.':
     'Превратить картинку в деформируемый меш. Трассировка идёт по непрозрачным пикселям, форма заполняется треугольниками.',
@@ -362,7 +355,6 @@ export const RU: Record<string, string> = {
   'Bind to {#} selected bone': 'Привязать к выбранным костям ({})',
   'Bind to {#} selected bones': 'Привязать к выбранным костям ({})',
 
-  // ---------------------------------------------------------------- inspector: constraints and sliders
   'Chain': 'Цепочка',
   'Target': 'Цель',
   'Mix': 'Mix',
@@ -436,7 +428,6 @@ export const RU: Record<string, string> = {
   'copy scale': 'копирование масштаба',
   'rotation → x (rolling)': 'поворот → X (качение)',
 
-  // ---------------------------------------------------------------- hierarchy panel
   'Hierarchy': 'Иерархия',
   'Delete selected': 'Удалить выбранное',
   'Delete slot': 'Удалить слот',
@@ -459,7 +450,6 @@ export const RU: Record<string, string> = {
   'and drag in the viewport.': 'и тяни во вьюпорте.',
   'Drop images into the viewport to add parts.': 'Перетащи картинки во вьюпорт, чтобы добавить части.',
 
-  // ---------------------------------------------------------------- timeline, dopesheet, graph
   'Frame · seconds (type a frame number)': 'Кадр · секунды (введи номер кадра)',
   'New animation': 'Новая анимация',
   'Rename animation': 'Переименовать анимацию',
@@ -516,7 +506,6 @@ export const RU: Record<string, string> = {
   'mix': 'mix',
   '{} · {}': '{1} · {2}',
 
-  // ---------------------------------------------------------------- messages
   'IK constraints are created in Setup mode': 'IK-констрейнты создаются в режиме «Риг»',
   'Drag to set the bone length': 'Потяни, чтобы задать длину кости',
   'Bind the mesh to bones first (Inspector → Weights → Bind)': 'Сначала привяжи меш к костям (Инспектор → Веса → Привязать)',
@@ -575,7 +564,6 @@ export const RU: Record<string, string> = {
   'Could not import: {}': 'Не удалось импортировать: {}',
   'Loaded the "Kit" demo rig — switch to Animate and press Space': 'Загружен демо-риг «Kit» — перейди в «Анимация» и нажми пробел',
 
-  // ---------------------------------------------------------------- undo / redo labels
   'Add image': 'Добавить картинку',
   'Add vertex': 'Добавить вершину',
   'Animation length': 'Длина анимации',
@@ -609,7 +597,6 @@ export const RU: Record<string, string> = {
   'Edit event': 'Правка события',
   'Edit key': 'Правка ключа',
   'Edit key value': 'Правка значения ключа',
-  // ---------------------------------------------------------------- markers and animation tools
   'Add a marker at the playhead': 'Поставить маркер в текущем кадре',
   'Go to the next marker': 'К следующему маркеру',
   'Go to the previous marker': 'К предыдущему маркеру',
@@ -675,7 +662,6 @@ export const RU: Record<string, string> = {
   'No marker before the playhead': 'До текущего кадра маркеров нет',
   'Made {#} animations from "{}"': 'Из «{2}» сделано анимаций: {1}',
   'Made "{}": the second half is the first with left and right swapped': 'Сделана «{}»: вторая половина — первая с поменянными левым и правым',
-  // ---------------------------------------------------------------- split axes and the key dialog
   'Position X': 'Позиция X',
   'Position Y': 'Позиция Y',
   'Translate X': 'Перенос X',
@@ -955,7 +941,6 @@ export const RU: Record<string, string> = {
   'Toggle slot': 'Показать / скрыть слот',
   'Unbind mesh': 'Отвязать меш',
   'patch': 'изменение',
-  // ---------------------------------------------------------------- added after the first pass over the UI
   '{#} vertices': 'вершин: {}',
   '{#} triangles': 'треугольников: {}',
   'Clipping': 'Клиппинг',
@@ -984,7 +969,6 @@ export const RU: Record<string, string> = {
   'Bind the mesh to bones so it bends with them. Select the bones in the viewport first.': 'Привяжи меш к костям, чтобы он гнулся вместе с ними. Сначала выбери кости во вьюпорте.',
   '"{}" is {#} s long': '«{1}» длится {2} с',
   'Timeline': 'Таймлайн',
-  // ---------------------------------------------------------------- two-color tint
   'Dark tint': 'Тёмный тинт',
   'Dark color': 'Тёмный цвет',
   'Slot colors': 'Цвета слота',
@@ -992,7 +976,6 @@ export const RU: Record<string, string> = {
   'dark r': 'тёмный r',
   'dark g': 'тёмный g',
   'dark b': 'тёмный b',
-  // ---------------------------------------------------------------- transform constraint mix keys
   'Remove the mix key at the playhead': 'Убрать ключ mix в текущем кадре',
   'Key the mixes at the playhead': 'Поставить ключ на миксы в текущем кадре',
   'Edit transform mix': 'Правка mix transform-констрейнта',
@@ -1000,7 +983,6 @@ export const RU: Record<string, string> = {
   'mix scale x': 'mix масштаб x',
   'mix scale y': 'mix масштаб y',
   'mix shear y': 'mix сдвиг y',
-  // ---------------------------------------------------------------- paths
   'Path': 'Путь',
   'Path constraint': 'Path-констрейнт',
   'Path and bones': 'Путь и кости',
@@ -1143,7 +1125,6 @@ export const RU: Record<string, string> = {
   'Physics {} is global': 'Physics: «{}» — глобальный',
   'Physics {} is its own': 'Physics: «{}» — собственный',
   'Remove the inertia key at the playhead': 'Убрать ключ инерции в текущем кадре',
-  // ---------------------------------------------------------------- the shortcuts window (hotkeys.ts)
   'Tools': 'Инструменты',
   'Edit': 'Правка',
   'Step 10 frames': 'Шаг на 10 кадров',
@@ -1157,7 +1138,6 @@ export const RU: Record<string, string> = {
   'Mid drag': 'Средняя кн.',
   'Right drag': 'Правая кн.',
   'drag': 'мышь',
-  // ---------------------------------------------------------------- updates and feedback
   'Updates': 'Обновления',
   'Updates: what is new and the project activity': 'Обновления: что нового и активность проекта',
   'Send feedback to the author': 'Написать автору',
@@ -1187,7 +1167,6 @@ export const RU: Record<string, string> = {
   'Could not send it from here: opening GitHub instead': 'Отсюда отправить не вышло: открываю GitHub',
   'Copied': 'Скопировано',
   'Could not copy': 'Не удалось скопировать',
-  // ---------------------------------------------------------------- windows, animations, metrics
   'Windows': 'Окна',
   'Metrics': 'Сводка',
   'Animations': 'Анимации',
@@ -1196,7 +1175,6 @@ export const RU: Record<string, string> = {
   'Rigging': 'Риггинг',
   'Viewport only': 'Только вьюпорт',
   'Hide / show all windows': 'Скрыть / показать все окна',
-  // ---------------------------------------------------------------- skins window
   'Duplicate skin': 'Дублировать скин',
   'Motion trails': 'Траектории движения',
   'Motion trails: the path the selected bones travel in the animation, keys marked (Animate mode)': 'Траектории: путь выбранных костей в анимации, ключи отмечены (режим Animate)',
@@ -1377,7 +1355,6 @@ export const RU: Record<string, string> = {
   'Slot has no attachments in any skin': 'У слота нет вложений ни в одном скине',
   'Mesh has vertices with more than {#} bone influences': 'У меша есть вершины с более чем {} влияниями костей',
   'Two attachments use the same image': 'Два вложения используют одну картинку',
-  // ---------------------------------------------------------------- settings
   'Settings': 'Настройки',
   'General': 'Общие',
   'Viewport': 'Вьюпорт',
@@ -1578,7 +1555,6 @@ export const RU: Record<string, string> = {
   'Clean up: remove the keys that change nothing': 'Очистка: убрать ключи, которые ничего не меняют',
   'Removed {} keys that change nothing': 'Убрано ключей, которые ничего не меняли: {}',
   'Nothing to clean up: every key does something': 'Чистить нечего: каждый ключ что-то делает',
-  // ---------------------------------------------------------------- export: animation
   'Spine 4.3 data': 'Данные Spine 4.3',
   'Animation (GIF / PNG / video)': 'Анимация (GIF / PNG / видео)',
   'Skeleton JSON, texture atlas and a preview page': 'JSON скелета, атлас текстур и страница предпросмотра',
@@ -1605,7 +1581,6 @@ export const RU: Record<string, string> = {
   'Preview page': 'Страница предпросмотра',
   'A page that plays the export with the official Spine player': 'Страница, которая играет экспорт официальным плеером Spine',
   'Animations to export': 'Анимации для экспорта',
-  // ---------------------------------------------------------------- welcome
   'Welcome screen': 'Экран приветствия',
   'Welcome to Bone 2D': 'Добро пожаловать в Bone 2D',
   'Welcome window': 'Окно приветствия',

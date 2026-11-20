@@ -34,17 +34,6 @@ export function createStore<T extends object>(initial: T): Store<T> {
   };
 }
 
-export function shallowEqual(a: unknown, b: unknown): boolean {
-  if (Object.is(a, b)) return true;
-  if (typeof a !== 'object' || typeof b !== 'object' || a === null || b === null) return false;
-  if (Array.isArray(a) !== Array.isArray(b)) return false;
-  const ka = Object.keys(a);
-  const kb = Object.keys(b);
-  if (ka.length !== kb.length) return false;
-  for (const k of ka) if (!Object.is((a as Record<string, unknown>)[k], (b as Record<string, unknown>)[k])) return false;
-  return true;
-}
-
 /** Subscribes a component to a slice of the store. The selected value is cached while it is equal (default: identity). */
 export function useStore<T, S>(store: Store<T>, selector: (s: T) => S, equals: (a: S, b: S) => boolean = Object.is): S {
   const cache = useRef<{ state: T; value: S } | null>(null);

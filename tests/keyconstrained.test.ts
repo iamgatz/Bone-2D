@@ -1,6 +1,6 @@
 /** Key Constrained: a key on the pose a bone has after the constraints, so that it holds without them. */
 import { describe, expect, it } from 'vitest';
-import { getScene } from '../src/editor/scene';
+import { getScene } from '../src/store/scene';
 import * as A from '../src/store/actions';
 import { docStore } from '../src/store/doc';
 import { emptySelection, uiStore } from '../src/store/ui';

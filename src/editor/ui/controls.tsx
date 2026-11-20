@@ -5,8 +5,6 @@ import { Check, X } from 'lucide-react';
 import { clamp, parseNumberExpr } from '@/core/math';
 import { docStore } from '@/store/doc';
 
-// ---------------------------------------------------------------- buttons
-
 /** An icon-only button: its title is its accessible name and its tooltip, with the hotkey as a key cap. */
 export function IconButton(props: { icon: LucideIcon; title: string; onClick?: (e: React.MouseEvent) => void; active?: boolean; animate?: boolean; disabled?: boolean; small?: boolean; size?: number; hotkey?: string; tipPlace?: 'top' | 'bottom' | 'left' | 'right'; style?: CSSProperties }) {
   const Icon = props.icon;
@@ -31,8 +29,6 @@ export function Button(props: { children: ReactNode; onClick?: () => void; prima
 export function Toggle({ on, onChange, title }: { on: boolean; onChange: (v: boolean) => void; title?: string }) {
   return <button type="button" className={`toggle${on ? ' on' : ''}`} onClick={() => onChange(!on)} aria-label={title} data-tip={title} role="switch" aria-checked={on} />;
 }
-
-// ---------------------------------------------------------------- number field
 
 function fmt(v: number, precision: number): string {
   if (!Number.isFinite(v)) return '0';
@@ -171,8 +167,6 @@ export function SelectField<T extends string>(props: { label?: string; value: T;
   );
 }
 
-// ---------------------------------------------------------------- color
-
 export function rgbaToHex(c: ArrayLike<number>): string {
   const h = (v: number) => Math.max(0, Math.min(255, Math.round(v * 255))).toString(16).padStart(2, '0');
   return `#${h(c[0])}${h(c[1])}${h(c[2])}`;
@@ -190,8 +184,6 @@ export function ColorSwatch({ value, onChange, title }: { value: ArrayLike<numbe
     </span>
   );
 }
-
-// ---------------------------------------------------------------- menus / dialogs
 
 export function useOutsideClose(open: boolean, close: () => void) {
   const ref = useRef<HTMLDivElement>(null);
@@ -342,8 +334,6 @@ export function Dialog(props: { title: string; onClose: () => void; children: Re
     </div>
   );
 }
-
-// ---------------------------------------------------------------- splitter
 
 export function Splitter(props: { dir: 'v' | 'h'; onDrag: (delta: number) => void }) {
   const [active, setActive] = useState(false);

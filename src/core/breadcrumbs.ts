@@ -1,6 +1,6 @@
 /**
  * Breadcrumbs of the selection (Spine 4.3): where the selected thing sits, from the skeleton down: skeleton › parent bones › bone › slot › attachment.
- * Only the nearest `parents` parent bones are listed; a "…" stands for the ones left out. No DOM.
+ * Only the nearest `parents` parent bones are listed; a "…" stands for the ones left out.
  */
 import type { Id, SkeletonDoc } from './model';
 

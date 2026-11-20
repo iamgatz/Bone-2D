@@ -4,7 +4,7 @@ import { matInvert } from '@/core/math';
 import { vertexWorldPositions } from '@/core/mesh';
 import { DEFAULT_BOUNDING_BOX_COLOR, DEFAULT_CLIPPING_COLOR, DEFAULT_POINT_COLOR, newSlot, polygonVertexCount } from '@/core/model';
 import type { Id, Influence, PointAttachment, PolygonAttachment } from '@/core/model';
-import { getSetupSkeleton } from '@/editor/scene';
+import { getSetupSkeleton } from '@/store/scene';
 import { setSelection } from './actions';
 import { docStore } from './doc';
 import { setupMats } from './meshActions';
@@ -17,11 +17,6 @@ const LABEL: Record<PolygonKind | 'point', string> = { clipping: 'clipping', bou
 export function getPolygon(slotId: Id, name: string): PolygonAttachment | undefined {
   const a = docStore.get().skeleton.skins[0]?.attachments[slotId]?.[name];
   return a && (a.type === 'clipping' || a.type === 'boundingbox') ? a : undefined;
-}
-
-export function getPoint(slotId: Id, name: string): PointAttachment | undefined {
-  const a = docStore.get().skeleton.skins[0]?.attachments[slotId]?.[name];
-  return a && a.type === 'point' ? a : undefined;
 }
 
 /** The bone a new attachment is placed on: the selected bone (or the bone of the selected slot), else the root. */

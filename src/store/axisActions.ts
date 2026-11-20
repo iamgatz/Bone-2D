@@ -47,9 +47,3 @@ export function setAxesSplit(boneIds: Id[], group: AxisGroup, split: boolean): n
   if (!changed) toast(split ? `Nothing to split in ${NAME[group]}` : `Nothing to merge: ${NAME[group]} is not split`);
   return changed;
 }
-
-/** True when any of the bones has the group keyed per axis. */
-export function anySplit(boneIds: Id[], group: AxisGroup): boolean {
-  const anim = currentAnimation();
-  return !!anim && boneIds.some((id) => isSplit(anim.bones[id], group));
-}

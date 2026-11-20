@@ -24,7 +24,7 @@ export function RenameBar() {
   const skinId = useUi((s) => s.skinId);
   const opts = { find, replace, regex, matchCase, firstOnly, kinds, scope: renameScope(where) };
   // `doc` is a dependency on purpose: the count follows the document
-  const plan = useMemo(() => previewRename(opts), [doc, find, replace, regex, matchCase, firstOnly, kinds, where, selection, skinId]); // eslint-disable-line react-hooks/exhaustive-deps
+  const plan = useMemo(() => previewRename(opts), [doc, find, replace, regex, matchCase, firstOnly, kinds, where, selection, skinId]);
   const flip = (k: NameKind) => setKinds((l) => (l.includes(k) ? l.filter((x) => x !== k) : [...l, k]));
   const stop = (e: React.KeyboardEvent) => e.stopPropagation();
   return (

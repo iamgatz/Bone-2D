@@ -3,7 +3,7 @@ import { decodeKey, encodeKey, resolveKeys } from '@/core/keyrefs';
 import type { KeyRef } from '@/core/keyrefs';
 import { arrowSteps, nudgeValue } from '@/core/nudge';
 import type { Id } from '@/core/model';
-import { getScene } from '@/editor/scene';
+import { getScene } from '@/store/scene';
 import { currentAnimation, moveKeysBy, setBonePose } from './actions';
 import { docStore } from './doc';
 import { uiStore } from './ui';

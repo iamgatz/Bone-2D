@@ -3,7 +3,7 @@ import type { Id } from '@/core/model';
 import { samplePath } from '@/core/path';
 import { REGION_TRIANGLES, meshWorldVertices, pointWorld, regionWorldVertices } from '@/core/skeleton';
 import type { Skeleton } from '@/core/skeleton';
-import type { Scene } from '../scene';
+import type { Scene } from '@/store/scene';
 
 export interface BoneHit {
   id: Id;

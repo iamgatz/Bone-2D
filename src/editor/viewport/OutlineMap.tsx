@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react';
 import { boxOf, fitMap, fromMap, toMap, unionBox, viewBox } from '@/core/minimap';
 import { docStore } from '@/store/doc';
 import { uiStore } from '@/store/ui';
-import { getScene } from '../scene';
+import { getScene } from '@/store/scene';
 import { alpha, token } from '../ui/tokens';
 
 const W = 190;

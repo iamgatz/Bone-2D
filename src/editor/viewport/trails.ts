@@ -3,7 +3,7 @@ import { BONE_PROPS } from '@/core/model';
 import { sampleTrails, trailAt } from '@/core/trails';
 import type { Trail } from '@/core/trails';
 import { docStore } from '@/store/doc';
-import { worldToScreen } from '../scene';
+import { worldToScreen } from '@/store/scene';
 import { alpha } from '../ui/tokens';
 import type { OverlayInput } from './overlay';
 

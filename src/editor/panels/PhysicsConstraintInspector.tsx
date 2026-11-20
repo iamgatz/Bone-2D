@@ -1,5 +1,5 @@
 import { RotateCcw, Waves } from 'lucide-react';
-import { findKeyIndex } from '@/core/curve';
+import { hasKey } from '@/core/edit';
 import { GLOBAL_PHYSICS, PHYSICS_PARAMS } from '@/core/model';
 import type { Id, PhysicsParam } from '@/core/model';
 import { currentAnimation, deleteKeys } from '@/store/actions';
@@ -48,9 +48,7 @@ export function PhysicsConstraintInspector({ id }: { id: Id }) {
   const keysOf = (param: PhysicsParam | 'reset') => anim?.physics?.[param !== 'reset' && c.global[param] ? GLOBAL_PHYSICS : id]?.[param];
   const keyedAt = (param: PhysicsParam | 'reset') => {
     const keys = keysOf(param);
-    if (!keys?.length) return false;
-    const i = findKeyIndex(keys, time + 1e-4);
-    return i >= 0 && Math.abs(keys[i].time - time) < 1e-4;
+    return hasKey(keys, time);
   };
   const value = (p: PhysicsParam) => (animate ? currentPhysicsValue(id, p) : null) ?? c[p];
   const shown = (p: PhysicsParam) => (PARAMS[p].percent ? value(p) * 100 : value(p));

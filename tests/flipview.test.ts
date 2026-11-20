@@ -1,7 +1,7 @@
 /** Flip Viewport (Spine 4.3): the view is mirrored left to right; only the way the scene is looked at changes. */
 import { beforeEach, describe, expect, it } from 'vitest';
 import { DEFAULT_REF_VIDEO, videoRect } from '../src/core/refVideo';
-import { flipSign, screenToWorld, worldToScreen } from '../src/editor/scene';
+import { flipSign, screenToWorld, worldToScreen } from '../src/store/scene';
 import { flipViewport } from '../src/store/actions';
 import { docStore } from '../src/store/doc';
 import { uiStore } from '../src/store/ui';

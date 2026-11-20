@@ -5,7 +5,7 @@
  * the fuzz tests use it as the oracle ("after any editor action there is nothing to repair").
  */
 import { animationEndTime } from './animate';
-import { normalizeBoneOrder } from './edit';
+import { KEY_EPS, normalizeBoneOrder } from './edit';
 import { uid, uniqueName } from './ids';
 import { pruneFolders } from './folders';
 import { deformLength } from './mesh';
@@ -32,13 +32,12 @@ import {
   newBone,
   newSkin,
 } from './model';
-import type { Animation, Attachment, Id, Influence, MeshAttachment, Project, SkeletonDoc } from './model';
+import type { Animation, Attachment, Id, Influence, Project, SkeletonDoc } from './model';
 
 type Note = (message: string) => void;
 
 const finite = (v: unknown): v is number => typeof v === 'number' && Number.isFinite(v);
 const isString = (v: unknown): v is string => typeof v === 'string';
-const KEY_EPS = 1e-4;
 
 /** Reports every problem `repairProject` would fix. The project is left untouched. */
 export function validateProject(project: Project): string[] {
@@ -161,8 +160,6 @@ function repairOthers(project: Project, note: Note) {
   }
 }
 
-// ------------------------------------------------------------------ helpers
-
 function dedupeIds(list: { id: Id }[], what: string, note: Note) {
   const seen = new Set<Id>();
   for (const x of list) {
@@ -190,8 +187,6 @@ function dedupeNames(list: { name: string }[], fallback: string, what: string, n
 function validColor(c: unknown, length: 3 | 4): boolean {
   return Array.isArray(c) && c.length >= length && c.slice(0, length).every(finite);
 }
-
-// ------------------------------------------------------------------ bones / slots / skins
 
 function repairBones(doc: SkeletonDoc, note: Note) {
   if (!doc.bones.length) {
@@ -441,8 +436,6 @@ function repairSkins(doc: SkeletonDoc, note: Note) {
   if (synced) note(`linked meshes were brought in line with their source (${synced})`);
 }
 
-// ------------------------------------------------------------------ constraints / events
-
 function repairConstraints(doc: SkeletonDoc, note: Note) {
   dedupeIds(doc.constraints, 'constraint', note);
   const boneById = new Map(doc.bones.map((b) => [b.id, b] as const));
@@ -534,8 +527,6 @@ function repairEvents(doc: SkeletonDoc, note: Note) {
     }
   }
 }
-
-// ------------------------------------------------------------------ animations
 
 interface KeyLike {
   time: number;

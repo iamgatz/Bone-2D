@@ -1,7 +1,7 @@
 /**
  * The words of the player page, in the two languages of the editor. The page is one file that goes to people who never saw the editor, so it
  * chooses its language by itself from the language of the browser that opens it (Russian when that is Russian, English for everything else).
- * Pure: the player script and the tests read the same table. No DOM.
+ * Pure: the player script and the tests read the same table.
  */
 
 export type PlayerLang = 'en' | 'ru';

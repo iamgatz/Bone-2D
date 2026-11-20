@@ -59,13 +59,6 @@ export function soundShape(path: string): Peaks | null {
   return null;
 }
 export const hasSound = (path: string) => urls.has(soundKey(path));
-export function clearSounds() {
-  for (const u of urls.values()) URL.revokeObjectURL(u);
-  urls.clear();
-  soundFiles.clear();
-  shapes.clear();
-  changed();
-}
 
 /** Plays the sound of an event; false when none was loaded for that path. */
 export function playSound(path: string, volume = 1, balance = 0): boolean {

@@ -26,7 +26,7 @@ function build() {
 describe('path constraints vs the official runtime', () => {
   const { project, rig } = build();
   const doc = project.skeleton;
-  const { json, skeletonData: sd } = exportAndLoad(project);
+  const { skeletonData: sd } = exportAndLoad(project);
   const data = compileSkeleton(doc);
   const walk = doc.animations.find((a) => a.name === 'walk')!;
 

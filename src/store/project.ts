@@ -291,8 +291,6 @@ export async function openProjectFile() {
   input.click();
 }
 
-// ------------------------------------------------------------------ autosave
-
 export async function restoreAutosave(): Promise<boolean> {
   try {
     let text = await idbGet<string>('autosave');

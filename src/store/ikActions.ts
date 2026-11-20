@@ -3,7 +3,7 @@ import { freshName, makeCurve, upsertKey } from '@/core/edit';
 import { uid } from '@/core/ids';
 import type { Id, IkConstraint, IkKey } from '@/core/model';
 import { newBone } from '@/core/model';
-import { getScene, getSetupSkeleton } from '@/editor/scene';
+import { getScene, getSetupSkeleton } from '@/store/scene';
 import { setSelection } from './actions';
 import { docStore } from './doc';
 import { toast, uiStore } from './ui';

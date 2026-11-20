@@ -1,5 +1,5 @@
 import { SlidersHorizontal, Trash2 } from 'lucide-react';
-import { findKeyIndex } from '@/core/curve';
+import { hasKey } from '@/core/edit';
 import { TRANSFORM_PROPS } from '@/core/model';
 import type { Id } from '@/core/model';
 import { currentAnimation, deleteKeys } from '@/store/actions';
@@ -27,9 +27,7 @@ export function SliderInspector({ id }: { id: Id }) {
   const anim = currentAnimation();
   const keyedAt = (prop: 'time' | 'mix') => {
     const keys = anim?.slider[id]?.[prop];
-    if (!keys?.length) return false;
-    const i = findKeyIndex(keys, time + 1e-4);
-    return i >= 0 && Math.abs(keys[i].time - time) < 1e-4;
+    return hasKey(keys, time);
   };
   const v = (animate ? currentSliderValues(id) : null) ?? { time: c.time, mix: c.mix };
   const applied = c.animation ? doc.animations.find((a) => a.id === c.animation) : undefined;

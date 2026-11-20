@@ -6,7 +6,7 @@ import type { MeshAttachment } from '@/core/model';
 import { meshWorldPositions } from '@/core/mesh';
 import { partShares, splitLengths } from '@/core/split';
 import { validateProject } from '@/core/validate';
-import { getSetupSkeleton } from '@/editor/scene';
+import { getSetupSkeleton } from '@/store/scene';
 import { docStore } from '@/store/doc';
 import { splitBone } from '@/store/splitActions';
 import { uiStore } from '@/store/ui';

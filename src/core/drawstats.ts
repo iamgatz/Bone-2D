@@ -1,7 +1,7 @@
 /**
  * What drawing the skeleton in its current pose costs, as the Metrics window shows it: the draw calls, the vertices and triangles that are drawn, and the
  * triangles a clipping polygon cuts. The slots are walked as the renderer walks them (`drawSkeleton`): hidden slots, clear colours and clipping
- * attachments are not drawn, and the clip that applies to a slot comes from `planClipping`. No DOM, no GL.
+ * attachments are not drawn, and the clip that applies to a slot comes from `planClipping`.
  */
 import { planClipping } from './clip';
 import { packAtlas } from './export/atlas';

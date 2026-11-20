@@ -1,6 +1,7 @@
 /**
  * What is in a project, in numbers, and what looks forgotten: the Metrics window reads this. No DOM; the checks are cheap and only report, they never change the document.
  */
+import { keyLists } from './keylists';
 import type { Animation, Attachment, Project } from './model';
 import { unusedImages } from './images';
 import { attachmentPictures } from './sequence';
@@ -38,30 +39,10 @@ export interface Warning {
 }
 
 /** Counts the keys of an animation: every array of objects that have a numeric `time`. */
-export function countKeys(anim: Animation): number {
-  let n = 0;
-  const walk = (v: unknown) => {
-    if (Array.isArray(v)) {
-      if (v.length && typeof v[0] === 'object' && v[0] !== null && typeof (v[0] as { time?: unknown }).time === 'number') n += v.length;
-      else v.forEach(walk);
-    } else if (v && typeof v === 'object') for (const x of Object.values(v)) walk(x);
-  };
-  walk({ ...anim, id: undefined, name: undefined });
-  return n;
-}
+export const countKeys = (anim: Animation): number => keyLists(anim).reduce((n, list) => n + list.length, 0);
 
-/** Counts the timelines of an animation: every array of keys. */
-export function countTimelines(anim: Animation): number {
-  let n = 0;
-  const walk = (v: unknown) => {
-    if (Array.isArray(v)) {
-      if (v.length && typeof v[0] === 'object' && v[0] !== null && typeof (v[0] as { time?: unknown }).time === 'number') n++;
-      else v.forEach(walk);
-    } else if (v && typeof v === 'object') for (const x of Object.values(v)) walk(x);
-  };
-  walk({ ...anim, id: undefined, name: undefined });
-  return n;
-}
+/** Counts the timelines of an animation: every list of keys. */
+export const countTimelines = (anim: Animation): number => keyLists(anim).length;
 
 /** The pixels one attachment covers at its own size (0 for what is not a picture). */
 export function attachmentArea(a: Attachment): number {

@@ -9,6 +9,8 @@ export const DEG2RAD = SPINE_PI / 180;
 export const RAD2DEG = 180 / SPINE_PI;
 export const INV_PI2 = 1 / (SPINE_PI * 2);
 export const EPS = 0.00001;
+/** Two times or values closer than this are the same one (keys, markers, loop ends). */
+export const SAME_EPS = 1e-6;
 export const EPS2 = EPS * EPS;
 
 export function clamp(v: number, min: number, max: number): number {
@@ -33,11 +35,6 @@ export function wrapAngle(deg: number): number {
   if (deg > 180) deg -= 360;
   else if (deg <= -180) deg += 360;
   return deg;
-}
-
-/** Shortest signed difference `to - from` in degrees. */
-export function angleDelta(from: number, to: number): number {
-  return wrapAngle(to - from);
 }
 
 export function round(v: number, digits = 3): number {
@@ -90,10 +87,6 @@ export interface Mat {
   d: number;
   x: number;
   y: number;
-}
-
-export function matIdentity(): Mat {
-  return { a: 1, b: 0, c: 0, d: 1, x: 0, y: 0 };
 }
 
 export function matApply(m: Mat, px: number, py: number, out: [number, number] = [0, 0]): [number, number] {

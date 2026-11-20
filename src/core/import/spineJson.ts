@@ -10,30 +10,9 @@ import { uid, uniqueName } from '../ids';
 import { deformLength } from '../mesh';
 import { attachmentPictures, cleanSequence, cleanSequenceKey, sequenceFrameNames } from '../sequence';
 import { isLegacySpineJson, upgradeLegacySpineJson } from './legacy';
-import {
-  BLEND_MODES,
-  DEFAULT_BOUNDING_BOX_COLOR,
-  DEFAULT_CLIPPING_COLOR,
-  DEFAULT_PATH_COLOR,
-  DEFAULT_POINT_COLOR,
-  GLOBAL_PHYSICS,
-  INHERIT_MODES,
-  PATH_POSITION_MODES,
-  PATH_ROTATE_MODES,
-  PATH_SPACING_MODES,
-  PHYSICS_PARAMS,
-  TRANSFORM_PROPS,
-  attachmentImage,
-  emptyProject,
-  newAnimation,
-  newBone,
-  newPhysicsConstraint,
-  newSkin,
-  newSlot,
-} from '../model';
+import { BLEND_MODES, DEFAULT_BOUNDING_BOX_COLOR, DEFAULT_CLIPPING_COLOR, DEFAULT_PATH_COLOR, DEFAULT_POINT_COLOR, GLOBAL_PHYSICS, INHERIT_MODES, PATH_POSITION_MODES, PATH_ROTATE_MODES, PATH_SPACING_MODES, PHYSICS_PARAMS, TRANSFORM_PROPS, emptyProject, newAnimation, newBone, newPhysicsConstraint, newSkin, newSlot } from '../model';
 import type { Animation, Attachment, BlendMode, Bone, Constraint, Curve, EventDef, Id, Influence, Key, MeshAttachment, PathTimelines, PhysicsTimelines, Project, RGB, RGBA, SequenceDef, SequenceMode, SkeletonDoc, Timeline, TransformFrom, TransformProp } from '../model';
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
 type J = Record<string, any>;
 
 export interface SpineImportResult {
@@ -185,7 +164,6 @@ export function importSpineJson(input: unknown, name = 'imported'): SpineImportR
   doc.bones = [];
   doc.skins = [];
 
-  // ----------------------------------------------------------- bones
   const boneByName = new Map<string, Bone>();
   const boneNames = new Set<string>();
   for (const bm of root.bones.map(obj)) {
@@ -215,7 +193,6 @@ export function importSpineJson(input: unknown, name = 'imported'): SpineImportR
   }
   const boneId = (n: unknown): Id | null => (typeof n === 'string' ? (boneByName.get(n)?.id ?? null) : null);
 
-  // ----------------------------------------------------------- slots
   const slotByName = new Map<string, ReturnType<typeof newSlot>>();
   for (const sm of arr(root.slots).map(obj)) {
     const bone = boneId(sm.bone);
@@ -237,7 +214,6 @@ export function importSpineJson(input: unknown, name = 'imported'): SpineImportR
   }
   const slotId = (n: unknown): Id | null => (typeof n === 'string' ? (slotByName.get(n)?.id ?? null) : null);
 
-  // ----------------------------------------------------------- constraints
   const constraintByName = new Map<string, Constraint>();
   const sliderAnimations: { id: Id; animation: string }[] = [];
   for (const cm of arr(root.constraints).map(obj)) {
@@ -381,7 +357,6 @@ export function importSpineJson(input: unknown, name = 'imported'): SpineImportR
     }
   }
 
-  // ----------------------------------------------------------- skins
   const skinList = arr(root.skins).map(obj);
   if (!skinList.some((s) => s.name === 'default')) skinList.unshift({ name: 'default', attachments: {} });
   skinList.sort((a, b) => (a.name === 'default' ? -1 : b.name === 'default' ? 1 : 0));
@@ -458,7 +433,6 @@ export function importSpineJson(input: unknown, name = 'imported'): SpineImportR
     return doc.bones.map((b) => b.id);
   }
 
-  // ----------------------------------------------------------- events
   const eventByName = new Map<string, Id>();
   for (const [en, em] of Object.entries(obj(root.events))) {
     const e = obj(em);
@@ -473,7 +447,6 @@ export function importSpineJson(input: unknown, name = 'imported'): SpineImportR
     doc.events.push(def);
   }
 
-  // ----------------------------------------------------------- animations
   const animationByName = new Map<string, Animation>();
   for (const [an, am] of Object.entries(obj(root.animations))) {
     const a = readAnimation(an, obj(am));
@@ -701,7 +674,6 @@ export function importSpineJson(input: unknown, name = 'imported'): SpineImportR
     return order.map((i) => list[i]);
   }
 
-  // ----------------------------------------------------------- images (sizes come from the attachments)
   const used = new Set<string>();
   for (const skin of doc.skins) for (const slot of Object.values(skin.attachments)) for (const att of Object.values(slot)) {
     for (const picture of attachmentPictures(att)) used.add(picture);

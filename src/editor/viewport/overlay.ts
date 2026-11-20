@@ -1,16 +1,15 @@
 /** Canvas2D overlay drawn above the WebGL image layer: grid, bones, constraints, selection outlines, gizmos. */
 import type { Id } from '@/core/model';
 import type { Bone } from '@/core/skeleton';
-import { REGION_TRIANGLES } from '@/core/skeleton';
 import type { TransformConstraintRT } from '@/core/skeleton';
 import { constraintLinks, focusLinks, linkLabel } from '@/core/constraintInfo';
 import { gridStep } from '@/core/snap';
 import { docStore } from '@/store/doc';
 import { settingsStore } from '@/store/settings';
 import type { Camera, UiState } from '@/store/ui';
-import { worldToScreen } from '../scene';
+import { worldToScreen } from '@/store/scene';
 import type { MotionArrow } from '../ghosts';
-import type { Scene } from '../scene';
+import type { Scene } from '@/store/scene';
 import { slotWorldVertices } from './hit';
 import { fpsMeter } from './fps';
 import { drawTrails } from './trails';
@@ -375,9 +374,7 @@ export function drawConstraints(o: OverlayInput) {
     }
     if (c.kind !== 'ik') continue;
     const t = c.target;
-    const last = c.bones[c.bones.length - 1];
     const [tx, ty] = worldToScreen(cam, w, h, t.worldX, t.worldY);
-    const [ex, ey] = worldToScreen(cam, w, h, last.tipX, last.tipY);
     ctx.save();
     ctx.setLineDash([5, 4]);
     ctx.strokeStyle = COLORS.ik;
@@ -410,8 +407,6 @@ export function drawConstraints(o: OverlayInput) {
     ctx.lineTo(tx, ty + 13);
     ctx.lineWidth = 1.25;
     ctx.stroke();
-    void ex;
-    void ey;
   }
 }
 
@@ -445,7 +440,6 @@ export function drawAttachmentOutline(o: OverlayInput) {
   }
   ctx.stroke();
   ctx.setLineDash([]);
-  void REGION_TRIANGLES;
 }
 
 export function drawOriginCross(o: OverlayInput) {

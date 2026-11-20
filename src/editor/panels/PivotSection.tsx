@@ -1,7 +1,7 @@
 import { Crosshair } from 'lucide-react';
 import type { Id } from '@/core/model';
 import { uiStore, useUi } from '@/store/ui';
-import { getScene } from '../scene';
+import { getScene } from '@/store/scene';
 import { Button, NumberField, SelectField } from '../ui/controls';
 import { Field } from '../ui/Field';
 import { Section } from '../ui/Section';

@@ -6,7 +6,7 @@ import { validateProject } from '@/core/validate';
 import { setBonePose } from '@/store/actions';
 import { addLimit, removeLimit, setLimit } from '@/store/limitActions';
 import { docStore } from '@/store/doc';
-import { getSetupSkeleton } from '@/editor/scene';
+import { getSetupSkeleton } from '@/store/scene';
 import { uiStore } from '@/store/ui';
 import { exportAndLoad } from './official';
 import { parityMismatch } from './fuzzkit';

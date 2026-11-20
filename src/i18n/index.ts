@@ -68,8 +68,6 @@ export function useLang(): Lang {
   return useSyncExternalStore(subscribe, getLang, getLang);
 }
 
-// ---------------------------------------------------------------- dictionary
-
 interface Pattern {
   re: RegExp;
   fill: (parts: string[]) => string;
@@ -107,8 +105,6 @@ function noteMissing(core: string) {
   // dev aid: English-looking text without a translation (user data such as bone names shows up here too)
   if (import.meta.env.DEV && /^[A-Z][a-z]{2,}/.test(core)) missing.add(core);
 }
-/** Dev aid: strings that looked like UI text but had no translation so far. */
-export const missingTranslations = (): string[] => [...missing];
 
 /** "2 problems repaired, 1 image could not be read": a list whose items are known texts. */
 function translateList(core: string): { text: string; all: boolean } | null {
@@ -149,8 +145,6 @@ export function tr(s: string): string {
   state.cache.set(s, out);
   return out;
 }
-
-// ---------------------------------------------------------------- JSX hook
 
 const TEXT_PROPS = ['title', 'label', 'placeholder', 'aria-label', 'alt'] as const;
 

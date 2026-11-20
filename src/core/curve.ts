@@ -123,8 +123,6 @@ export function deformProgress(k: Key, u: number): number {
   return segmentProgress(k.curve, 0, u);
 }
 
-// -------------------------------------------------------------- export helpers
-
 /** Normalized bezier -> absolute control points for one channel (what Spine JSON stores). */
 export function curveToAbsolute(curve: number[], channel: number, t1: number, v1: number, t2: number, v2: number): [number, number, number, number] {
   const i = channel * 4;

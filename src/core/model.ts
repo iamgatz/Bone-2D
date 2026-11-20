@@ -203,12 +203,6 @@ export function pathNodeCount(p: { vertices: number[]; weights: Influence[][] | 
   return Math.floor(polygonVertexCount(p) / 3);
 }
 
-/** Number of Bezier curves of a path: one per node when closed, one less when open. */
-export function pathCurveCount(p: { vertices: number[]; weights: Influence[][] | null; closed: boolean }): number {
-  const n = pathNodeCount(p);
-  return p.closed ? n : Math.max(0, n - 1);
-}
-
 export const DEFAULT_CLIPPING_COLOR: RGBA = [0.808, 0.227, 0.227, 1];
 export const DEFAULT_BOUNDING_BOX_COLOR: RGBA = [0.38, 0.94, 0, 1];
 export const DEFAULT_POINT_COLOR: RGBA = [0.945, 0.945, 0, 1];
@@ -217,11 +211,6 @@ export const DEFAULT_PATH_COLOR: RGBA = [1, 0.5, 0, 1];
 /** Image (atlas region) name of an attachment, or null for attachments that have no image. */
 export function attachmentImage(a: Attachment): string | null {
   return a.type === 'region' || a.type === 'mesh' ? a.path : null;
-}
-
-/** True for attachments that have an outline of vertices but no image. */
-export function isPolygon(a: Attachment): a is PolygonAttachment {
-  return a.type === 'clipping' || a.type === 'boundingbox';
 }
 
 export interface Skin {
@@ -416,8 +405,6 @@ export interface EventDef {
   balance?: number;
 }
 
-// ---------------------------------------------------------------- animation
-
 /** `undefined` = linear, `'stepped'`, or normalized bezier: 4 numbers (x1,y1,x2,y2) per channel, x/y in 0..1 of the segment. */
 export type Curve = 'stepped' | number[];
 
@@ -591,8 +578,6 @@ export interface PlaySettings {
   range: [number, number] | null;
 }
 
-// ---------------------------------------------------------------- project
-
 /** A group of bones kept under a name so that one click selects them (editor data, not exported; see core/selsets.ts). */
 export interface SelectionSet {
   id: Id;
@@ -667,8 +652,6 @@ export interface Project {
   /** Crossfade times between animations for the Preview window (not part of the Spine export; see core/preview.ts). */
   mixes?: { default: number; pairs: { from: Id; to: Id; time: number }[] };
 }
-
-// ---------------------------------------------------------------- factories
 
 import { uid } from './ids';
 
@@ -823,12 +806,4 @@ export function emptyProject(name = 'untitled'): Project {
     },
     images: [],
   };
-}
-
-export function isMeshWeighted(m: MeshAttachment): boolean {
-  return m.weights != null;
-}
-
-export function meshVertexCount(m: MeshAttachment): number {
-  return m.uvs.length >> 1;
 }

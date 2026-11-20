@@ -3,12 +3,12 @@
  * Every timeline of numbers with two keys or more gets the value of its first key on its last key (or the other way round); a timeline
  * whose last key is before the end of the animation gets a key at the end. Keys that are not numbers (attachments, events, draw order) stay.
  */
+import { keyListsIn } from './keylists';
+import { SAME_EPS } from './math';
 import type { Animation, Id, Key } from './model';
 
-const EPS = 1e-6;
-
 const isNumberKey = (k: unknown): k is Key => !!k && typeof k === 'object' && typeof (k as Key).time === 'number' && Array.isArray((k as Key).value);
-const same = (a: number[], b: number[]) => a.length === b.length && a.every((v, i) => Math.abs(v - b[i]) <= EPS);
+const same = (a: number[], b: number[]) => a.length === b.length && a.every((v, i) => Math.abs(v - b[i]) <= SAME_EPS);
 
 export interface CloseLoopOptions {
   /** Which end is the one to keep: the first key's value is copied to the end (default), or the last key's value to the start. */
@@ -27,7 +27,7 @@ function closeTimeline(keys: Key[], duration: number, keep: 'first' | 'last'): b
     first.value = [...last.value];
     return true;
   }
-  if (last.time < duration - EPS) {
+  if (last.time < duration - SAME_EPS) {
     if (same(first.value, last.value)) return false; // already at rest on the value of the start
     keys.push({ time: duration, value: [...first.value] });
     return true;
@@ -40,25 +40,9 @@ function closeTimeline(keys: Key[], duration: number, keep: 'first' | 'last'): b
 /** Closes the loop of an animation in place. Returns how many timelines were changed. */
 export function closeLoop(anim: Animation, options: CloseLoopOptions = {}): number {
   const keep = options.keep ?? 'first';
+  const scope = options.bones ? options.bones.map((id) => anim.bones[id]) : [anim.bones, anim.slots, anim.deform, anim.transform, anim.slider, anim.path, anim.physics];
   let changed = 0;
-  const walk = (v: unknown) => {
-    if (Array.isArray(v)) {
-      if (v.length && v.every(isNumberKey)) {
-        if (closeTimeline(v as Key[], anim.duration, keep)) changed++;
-      } else v.forEach(walk);
-    } else if (v && typeof v === 'object') for (const x of Object.values(v)) walk(x);
-  };
-  if (options.bones) {
-    for (const id of options.bones) walk(anim.bones[id]);
-    return changed;
-  }
-  walk(anim.bones);
-  walk(anim.slots);
-  walk(anim.deform);
-  walk(anim.transform);
-  walk(anim.slider);
-  walk(anim.path);
-  walk(anim.physics);
+  for (const list of keyListsIn(scope)) if (list.every(isNumberKey) && closeTimeline(list as Key[], anim.duration, keep)) changed++;
   return changed;
 }
 

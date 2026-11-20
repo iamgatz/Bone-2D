@@ -8,7 +8,6 @@ import { drawOrderOffsets, folderSlotsInOrder } from '../folders';
 import { deformLength } from '../mesh';
 import type { Animation, Attachment, Id, IkKey, Influence, Key, SequenceDef, SkeletonDoc, Timeline } from '../model';
 import { GLOBAL_PHYSICS, PHYSICS_PARAMS, polygonVertexCount } from '../model';
-import { animationEndTime } from '../animate';
 import { compileSkeleton, createSkeleton } from '../skeleton';
 
 export const SPINE_VERSION = '4.3.13';
@@ -94,7 +93,6 @@ export function exportSpineJson(doc: SkeletonDoc, options: SpineExportOptions = 
   const boneName = (id: Id) => boneById.get(id)?.name ?? '';
   const slotName = (id: Id) => slotById.get(id)?.name ?? '';
 
-  // ----------------------------------------------------------- skeleton header
   const setup = createSkeleton(data);
   setup.setToSetupPose();
   setup.updateWorldTransform();
@@ -113,7 +111,6 @@ export function exportSpineJson(doc: SkeletonDoc, options: SpineExportOptions = 
     skeleton.images = options.imagesPath ?? './images/';
   }
 
-  // ----------------------------------------------------------- bones
   const bones: Json[] = data.bones.map((bd) => {
     const b = boneById.get(bd.id)!;
     const o: Json = { name: b.name };
@@ -135,7 +132,6 @@ export function exportSpineJson(doc: SkeletonDoc, options: SpineExportOptions = 
     return o;
   });
 
-  // ----------------------------------------------------------- slots
   const slots: Json[] = doc.slots.map((s) => {
     const o: Json = { name: s.name, bone: boneName(s.bone) };
     const col = hexColor(s.color, true);
@@ -146,7 +142,6 @@ export function exportSpineJson(doc: SkeletonDoc, options: SpineExportOptions = 
     return o;
   });
 
-  // ----------------------------------------------------------- constraints
   const constraints: Json[] = [];
   /** Sliders that make it into the file (a slider without an animation does nothing and the official loader rejects it). */
   const exportedSliders = new Set<Id>();
@@ -264,7 +259,6 @@ export function exportSpineJson(doc: SkeletonDoc, options: SpineExportOptions = 
     }
   }
 
-  // ----------------------------------------------------------- skins
   const skins: Json[] = doc.skins.map((s) => {
     const o: Json = { name: s.name };
     if (s.bones.length) o.bones = s.bones.map(boneName);
@@ -295,7 +289,6 @@ export function exportSpineJson(doc: SkeletonDoc, options: SpineExportOptions = 
     return o;
   });
 
-  // ----------------------------------------------------------- events
   const events: Json = {};
   for (const e of doc.events) {
     const o: Json = {};
@@ -310,7 +303,6 @@ export function exportSpineJson(doc: SkeletonDoc, options: SpineExportOptions = 
     events[e.name] = o;
   }
 
-  // ----------------------------------------------------------- animations
   const animations: Json = {};
   const rootBone = data.bones.length ? data.bones[0].name : 'root';
   for (const a of doc.animations) animations[a.name] = exportAnimation(doc, a, { boneName, slotName, skinById, rootBone, exportedSliders, splitColor: options.splitColor, sliderAnimations });

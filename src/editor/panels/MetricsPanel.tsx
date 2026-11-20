@@ -7,7 +7,7 @@ import type { Warning } from '@/core/stats';
 import { fixAllSafeWarnings, fixWarning, revealWarning } from '@/store/problemActions';
 import { useProject } from '@/store/doc';
 import { useUi } from '@/store/ui';
-import { getScene } from '../scene';
+import { getScene } from '@/store/scene';
 
 const WARNING_TEXT: Record<Warning['kind'], string> = {
   unusedImage: 'Image is not used by any attachment',
@@ -37,7 +37,7 @@ export function MetricsPanel() {
   const time = useUi((s) => s.time);
   const mode = useUi((s) => s.mode);
   const animationId = useUi((s) => s.animationId);
-  const pageOf = useMemo(() => estimatePages(project), [project.images, project.skeleton.skins]); // eslint-disable-line react-hooks/exhaustive-deps
+  const pageOf = useMemo(() => estimatePages(project), [project.images, project.skeleton.skins]);
   const pose = useMemo(() => {
     const scene = getScene();
     const hidden = new Set(project.skeleton.slots.filter((s) => s.hidden).map((s) => s.id));

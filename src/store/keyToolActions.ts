@@ -98,8 +98,6 @@ export function scaleSelectedKeyTimes(factor: number): number {
   return moved;
 }
 
-// ---------------------------------------------------------------- Store / Swap: set the values of some keys aside, then trade them with what the keys hold now
-
 export interface StoredKey {
   ref: KeyRef;
   value: number[];

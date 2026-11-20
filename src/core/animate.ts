@@ -128,6 +128,25 @@ function applyDrawOrderFolders(skeleton: Skeleton, anim: Animation, time: number
   }
 }
 
+/** The draw order of the last draw-order key at or before `time`, then the order inside the draw-order folders. */
+function applyDrawOrder(skeleton: Skeleton, anim: Animation, time: number) {
+  const i = anim.drawOrder.length ? findKeyIndex(anim.drawOrder, time) : -1;
+  if (i >= 0) {
+    const order: Slot[] = [];
+    const seen = new Set<Slot>();
+    for (const sid of anim.drawOrder[i].order) {
+      const s = skeleton.slotById(sid);
+      if (s && !seen.has(s)) {
+        order.push(s);
+        seen.add(s);
+      }
+    }
+    for (const s of skeleton.slots) if (!seen.has(s)) order.push(s);
+    skeleton.drawOrder = order;
+  }
+  applyDrawOrderFolders(skeleton, anim, time);
+}
+
 /** Poses `skeleton` for `anim` at `time` starting from the setup pose. Does not compute world transforms. */
 export function applyAnimation(skeleton: Skeleton, anim: Animation | null, time: number) {
   skeleton.setToSetupPose();
@@ -224,23 +243,7 @@ export function applyAnimation(skeleton: Skeleton, anim: Animation | null, time:
     }
   }
 
-  if (anim.drawOrder.length) {
-    const i = findKeyIndex(anim.drawOrder, time);
-    if (i >= 0) {
-      const order: Slot[] = [];
-      const seen = new Set<Slot>();
-      for (const sid of anim.drawOrder[i].order) {
-        const s = skeleton.slotById(sid);
-        if (s && !seen.has(s)) {
-          order.push(s);
-          seen.add(s);
-        }
-      }
-      for (const s of skeleton.slots) if (!seen.has(s)) order.push(s);
-      skeleton.drawOrder = order;
-    }
-  }
-  applyDrawOrderFolders(skeleton, anim, time);
+  applyDrawOrder(skeleton, anim, time);
 
   for (const skinId in anim.deform) {
     const skin = skeleton.data.skinById.get(skinId);
@@ -401,23 +404,7 @@ export function applyAnimationOnto(skeleton: Skeleton, anim: Animation, time: nu
     }
   }
 
-  if (anim.drawOrder.length) {
-    const i = findKeyIndex(anim.drawOrder, time);
-    if (i >= 0) {
-      const order: Slot[] = [];
-      const seen = new Set<Slot>();
-      for (const sid of anim.drawOrder[i].order) {
-        const s = skeleton.slotById(sid);
-        if (s && !seen.has(s)) {
-          order.push(s);
-          seen.add(s);
-        }
-      }
-      for (const s of skeleton.slots) if (!seen.has(s)) order.push(s);
-      skeleton.drawOrder = order;
-    }
-  }
-  applyDrawOrderFolders(skeleton, anim, time);
+  applyDrawOrder(skeleton, anim, time);
 
   for (const skinId in anim.deform) {
     const skin = skeleton.data.skinById.get(skinId);

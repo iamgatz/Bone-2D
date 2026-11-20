@@ -3,7 +3,6 @@
  * reads (and Bone 2D's importSpineJson understands), so every feature of the JSON import — conversions, warnings, linked meshes —
  * applies to binary files too. The layout is read field by field in the order of the official `SkeletonBinary`.
  */
-/* eslint-disable @typescript-eslint/no-explicit-any */
 
 type J = any;
 
@@ -156,7 +155,6 @@ export function binaryToJson(data: Uint8Array): J {
     input.strings.push(s);
   }
 
-  // ----------------------------------------------------------- bones
   const bones: J[] = [];
   const boneCount = input.varint(true);
   for (let i = 0; i < boneCount; i++) {
@@ -187,7 +185,6 @@ export function binaryToJson(data: Uint8Array): J {
     bones.push(b);
   }
 
-  // ----------------------------------------------------------- slots
   const slots: J[] = [];
   const slotCount = input.varint(true);
   for (let i = 0; i < slotCount; i++) {
@@ -204,7 +201,6 @@ export function binaryToJson(data: Uint8Array): J {
     slots.push(s);
   }
 
-  // ----------------------------------------------------------- constraints
   const constraints: J[] = [];
   const constraintCount = input.varint(true);
   for (let i = 0; i < constraintCount; i++) {
@@ -341,7 +337,6 @@ export function binaryToJson(data: Uint8Array): J {
     }
   }
 
-  // ----------------------------------------------------------- skins
   interface Linked {
     mesh: J;
     skin: number;
@@ -559,7 +554,6 @@ export function binaryToJson(data: Uint8Array): J {
     if (!l.inherit) att.timelines = false;
   }
 
-  // ----------------------------------------------------------- events
   const events: J = {};
   const eventList: { name: string; audio: boolean }[] = [];
   for (let n = input.varint(true); n > 0; n--) {
@@ -580,7 +574,6 @@ export function binaryToJson(data: Uint8Array): J {
     eventList.push({ name, audio: !!audio });
   }
 
-  // ----------------------------------------------------------- animations
   const animations: J = {};
   const animationNames: string[] = [];
 

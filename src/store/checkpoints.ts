@@ -118,7 +118,6 @@ export function toggleCompare(id: string | null) {
   uiStore.patch({ compare: id === null || id === now ? null : id });
 }
 
-
 /** Puts the skeleton back as it was at the checkpoint. One step of the history, so Undo brings the work back. Returns whether anything changed. A project file is restored with `restoreFileCheckpoint`. */
 export function restoreCheckpoint(id: string): boolean {
   const cp = checkpointStore.get().list.find((c) => c.id === id);

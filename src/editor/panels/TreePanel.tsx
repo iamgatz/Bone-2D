@@ -12,7 +12,7 @@ import { createSlider } from '@/store/sliderActions';
 import { applyParent } from '@/store/parentActions';
 import { uiStore, useUi } from '@/store/ui';
 import { showAll } from '@/store/visibilityActions';
-import { getScene } from '../scene';
+import { getScene } from '@/store/scene';
 import { IconButton, NumberField, TextField } from '../ui/controls';
 import { Field } from '../ui/Field';
 import { RenameBar } from './RenameBar';

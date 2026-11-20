@@ -8,7 +8,7 @@ import { applyAnimation, applyPhysicsResets } from '../src/core/animate';
 import { exportSpineJson } from '../src/core/export/spineJson';
 import { importSpineJson } from '../src/core/import/spineJson';
 import { GLOBAL_PHYSICS, emptyProject, newAnimation, newBone, newPhysicsConstraint, newSkin } from '../src/core/model';
-import type { Id, PhysicsConstraint, Project, Timeline } from '../src/core/model';
+import type { Id, PhysicsConstraint, Project } from '../src/core/model';
 import { compileSkeleton, createSkeleton } from '../src/core/skeleton';
 import { S, exportAndLoad } from './official';
 

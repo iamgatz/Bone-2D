@@ -7,7 +7,7 @@ import { applyAnimation } from '../src/core/animate';
 import { pathCurveLengths, samplePath } from '../src/core/path';
 import { meshWorldVertices } from '../src/core/skeleton';
 import { validateProject } from '../src/core/validate';
-import { getScene } from '../src/editor/scene';
+import { getScene } from '../src/store/scene';
 import * as A from '../src/store/actions';
 import { docStore } from '../src/store/doc';
 import * as M from '../src/store/meshActions';
