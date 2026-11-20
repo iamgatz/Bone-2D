@@ -25,7 +25,13 @@ describe('project stats', () => {
     const a = newAnimation('x', 1);
     expect(countKeys(a)).toBe(0);
     const bone = project.skeleton.bones[0].id;
-    a.bones[bone] = { rotate: [{ time: 0, value: [0] }, { time: 1, value: [10] }], translate: [{ time: 0.5, value: [1, 2] }] };
+    a.bones[bone] = {
+      rotate: [
+        { time: 0, value: [0] },
+        { time: 1, value: [10] },
+      ],
+      translate: [{ time: 0.5, value: [1, 2] }],
+    };
     expect(countKeys(a)).toBe(3);
   });
 
@@ -36,7 +42,11 @@ describe('project stats', () => {
     withExtra.skeleton.animations.push(newAnimation('empty', 1));
     const w = projectWarnings(withExtra);
     expect(w).toContainEqual({ kind: 'unusedImage', subject: 'never-used' });
-    expect(w).toContainEqual({ kind: 'emptyAnimation', subject: 'empty', ref: { animation: withExtra.skeleton.animations.find((x) => x.name === 'empty')!.id } });
+    expect(w).toContainEqual({
+      kind: 'emptyAnimation',
+      subject: 'empty',
+      ref: { animation: withExtra.skeleton.animations.find((x) => x.name === 'empty')!.id },
+    });
     expect(JSON.stringify(project)).toBe(before);
   });
 });
@@ -45,7 +55,9 @@ describe('window layout', () => {
   it('keeps what is valid and falls back to the defaults for the rest', () => {
     expect(readLayout(null)).toEqual({});
     expect(readLayout('not json')).toEqual({});
-    const odd = readLayout(JSON.stringify({ views: { tree: false, timeline: 'yes', ghost: true }, panel: { left: 5, right: 300, bottom: 300 } }));
+    const odd = readLayout(
+      JSON.stringify({ views: { tree: false, timeline: 'yes', ghost: true }, panel: { left: 5, right: 300, bottom: 300 } }),
+    );
     expect(odd.views).toEqual({ ...DEFAULT_VIEWS, tree: false });
     expect(odd.panel).toBeUndefined(); // 5 px wide would hide the window for good
     const ok = readLayout(JSON.stringify({ views: DEFAULT_VIEWS, panel: { left: 270, right: 300, bottom: 300 } }));

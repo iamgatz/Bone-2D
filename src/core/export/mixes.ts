@@ -13,8 +13,21 @@ export interface MixTable {
 export function mixesToText(animations: readonly Pick<Animation, 'id' | 'name'>[], mixes: MixTable | undefined | null): string | null {
   if (!mixes) return null;
   const name = new Map(animations.map((a) => [a.id, a.name] as const));
-  const list = mixes.pairs.filter((p) => name.has(p.from) && name.has(p.to) && Number.isFinite(p.time)).map((p) => ({ from: name.get(p.from)!, to: name.get(p.to)!, duration: Math.round(p.time * 1e5) / 1e5 }));
+  const list = mixes.pairs
+    .filter((p) => name.has(p.from) && name.has(p.to) && Number.isFinite(p.time))
+    .map((p) => ({ from: name.get(p.from)!, to: name.get(p.to)!, duration: Math.round(p.time * 1e5) / 1e5 }));
   const defaultMix = Number.isFinite(mixes.default) ? Math.round(mixes.default * 1e5) / 1e5 : 0;
   if (!list.length && defaultMix === 0) return null;
-  return JSON.stringify({ kind: 'bone2d-mixes', note: 'For the runtime: AnimationStateData.defaultMix and setMix(from, to, duration).', defaultMix, mixes: list }, null, 2) + '\n';
+  return (
+    JSON.stringify(
+      {
+        kind: 'bone2d-mixes',
+        note: 'For the runtime: AnimationStateData.defaultMix and setMix(from, to, duration).',
+        defaultMix,
+        mixes: list,
+      },
+      null,
+      2,
+    ) + '\n'
+  );
 }

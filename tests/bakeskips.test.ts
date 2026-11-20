@@ -32,7 +32,13 @@ describe('bakeSkips', () => {
     const slot = doc.slots.find((s) => s.id === c.target)!;
     const keep = slot.attachment!;
     slot.attachment = keep;
-    anim.slots[c.target] = { ...(anim.slots[c.target] ?? {}), attachment: [{ time: 0, name: keep }, { time: 0.5, name: null }] };
+    anim.slots[c.target] = {
+      ...(anim.slots[c.target] ?? {}),
+      attachment: [
+        { time: 0, name: keep },
+        { time: 0.5, name: null },
+      ],
+    };
     expect(bakeSkips(doc, anim)).toContain(c.name);
   });
 

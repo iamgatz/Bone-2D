@@ -33,7 +33,12 @@ export function boneCss(index: number, alpha = 1): string {
  * Per-vertex colour for Overlay: the colours of the bones weighted by their weights. With `only` (Selected) the bones outside it are black.
  * Returns r, g, b, a per vertex.
  */
-export function overlayColors(weights: readonly (readonly Influence[])[], bound: readonly Id[], only: ReadonlySet<Id> | null, alpha = 0.62): number[] {
+export function overlayColors(
+  weights: readonly (readonly Influence[])[],
+  bound: readonly Id[],
+  only: ReadonlySet<Id> | null,
+  alpha = 0.62,
+): number[] {
   const index = new Map(bound.map((b, i) => [b, i] as const));
   const out = new Array<number>(weights.length * 4);
   for (let v = 0; v < weights.length; v++) {
@@ -56,7 +61,12 @@ export function overlayColors(weights: readonly (readonly Influence[])[], bound:
 }
 
 /** Which vertices a pie is drawn for: all of them, or with Selected only the picked vertices and those weighted to a picked bone. */
-export function pieVertices(weights: readonly (readonly Influence[])[], pickedVertices: ReadonlySet<number>, pickedBones: ReadonlySet<Id>, selectedOnly: boolean): number[] {
+export function pieVertices(
+  weights: readonly (readonly Influence[])[],
+  pickedVertices: ReadonlySet<number>,
+  pickedBones: ReadonlySet<Id>,
+  selectedOnly: boolean,
+): number[] {
   const out: number[] = [];
   for (let v = 0; v < weights.length; v++) {
     if (!selectedOnly || pickedVertices.has(v) || weights[v].some((e) => e[3] > 0 && pickedBones.has(e[0]))) out.push(v);

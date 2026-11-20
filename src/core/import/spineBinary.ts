@@ -83,7 +83,7 @@ class In {
     if (count === 1) return '';
     count--;
     let out = '';
-    for (let i = 0; i < count; ) {
+    for (let i = 0; i < count;) {
       const b = this.ubyte();
       switch (b >> 4) {
         case 12:
@@ -134,7 +134,9 @@ export function binaryToJson(data: Uint8Array): J {
   const high = input.int32();
   const version = input.string() ?? '';
   if (!/^4\.3(\.|$)/.test(version)) {
-    throw new Error(`This binary file is Spine ${version || '(unknown version)'}; only 4.3 binary files can be read. Export JSON from Spine, or save the file as 4.3.`);
+    throw new Error(
+      `This binary file is Spine ${version || '(unknown version)'}; only 4.3 binary files can be read. Export JSON from Spine, or save the file as 4.3.`,
+    );
   }
   const skeleton: J = { hash: low === 0 && high === 0 ? '' : high.toString(16) + low.toString(16), spine: version };
   skeleton.x = f(input.float());
@@ -365,7 +367,7 @@ export function binaryToJson(data: Uint8Array): J {
       return { vertexCount, vertices };
     }
     const entries = input.varint(true);
-    for (let b = 0; b < entries; ) {
+    for (let b = 0; b < entries;) {
       const n = input.varint(true);
       vertices.push(n);
       b++;
@@ -457,7 +459,7 @@ export function binaryToJson(data: Uint8Array): J {
         if (!source) throw new Error('A linked mesh has no source');
         linked.push({ mesh: out, skin: skinIndex, slot: slotIndex, sourceSlot, source, inherit, placeholder });
         // (the skin of the source is a number here; it becomes a name once every skin is read)
-        (out).__skin = skin;
+        out.__skin = skin;
         return out;
       }
       case 4: {
@@ -657,7 +659,9 @@ export function binaryToJson(data: Uint8Array): J {
             break;
           case 3:
             input.varint(true);
-            tl.rgba2 = keyed(frameCount, 7, bytesN(7), (time, v) => t({ light: hexBytes(v.slice(0, 4)), dark: hexBytes(v.slice(4)) }, time));
+            tl.rgba2 = keyed(frameCount, 7, bytesN(7), (time, v) =>
+              t({ light: hexBytes(v.slice(0, 4)), dark: hexBytes(v.slice(4)) }, time),
+            );
             break;
           case 4:
             input.varint(true);
@@ -747,7 +751,16 @@ export function binaryToJson(data: Uint8Array): J {
       let mix = flags & 1 ? (flags & 2 ? input.float() : 1) : 0;
       let softness = flags & 4 ? input.float() : 0;
       for (let frame = 0; ; frame++) {
-        const key = t({ mix: f(mix), softness: f(softness), bendPositive: (flags & 8) !== 0, compress: (flags & 16) !== 0, stretch: (flags & 32) !== 0 }, time);
+        const key = t(
+          {
+            mix: f(mix),
+            softness: f(softness),
+            bendPositive: (flags & 8) !== 0,
+            compress: (flags & 16) !== 0,
+            stretch: (flags & 32) !== 0,
+          },
+          time,
+        );
         keys.push(key);
         if (frame === frameCount - 1) break;
         flags = input.byte() & 255;
@@ -769,7 +782,9 @@ export function binaryToJson(data: Uint8Array): J {
       if (!c) throw new Error('An animation refers to a constraint that does not exist');
       const frameCount = input.varint(true);
       input.varint(true);
-      (out.transform ??= {})[c.name] = keyed(frameCount, 6, floats(6), (time, v) => t({ mixRotate: f(v[0]), mixX: f(v[1]), mixY: f(v[2]), mixScaleX: f(v[3]), mixScaleY: f(v[4]), mixShearY: f(v[5]) }, time));
+      (out.transform ??= {})[c.name] = keyed(frameCount, 6, floats(6), (time, v) =>
+        t({ mixRotate: f(v[0]), mixX: f(v[1]), mixY: f(v[2]), mixScaleX: f(v[3]), mixScaleY: f(v[4]), mixShearY: f(v[5]) }, time),
+      );
     }
 
     // path
@@ -781,8 +796,10 @@ export function binaryToJson(data: Uint8Array): J {
         const type = input.byte();
         const frameCount = input.varint(true);
         input.varint(true);
-        if (type === 2) tl.mix = keyed(frameCount, 3, floats(3), (time, v) => t({ mixRotate: f(v[0]), mixX: f(v[1]), mixY: f(v[2]) }, time));
-        else if (type === 0 || type === 1) tl[type === 0 ? 'position' : 'spacing'] = keyed(frameCount, 1, floats(1), (time, v) => t({ value: f(v[0]) }, time));
+        if (type === 2)
+          tl.mix = keyed(frameCount, 3, floats(3), (time, v) => t({ mixRotate: f(v[0]), mixX: f(v[1]), mixY: f(v[2]) }, time));
+        else if (type === 0 || type === 1)
+          tl[type === 0 ? 'position' : 'spacing'] = keyed(frameCount, 1, floats(1), (time, v) => t({ value: f(v[0]) }, time));
         else throw new Error(`Unknown path timeline type ${type} in the binary file`);
       }
     }

@@ -13,7 +13,7 @@ export interface AutoKey {
 /** The slope of a channel at key `i`: from both neighbours, zero at a peak, never steeper than 3x either side. */
 export function autoSlope(times: readonly number[], values: readonly number[], i: number): number {
   const last = values.length - 1;
-  const seg = (a: number, b: number) => ((values[b] - values[a]) / (times[b] - times[a] || 1));
+  const seg = (a: number, b: number) => (values[b] - values[a]) / (times[b] - times[a] || 1);
   if (last < 1) return 0;
   if (i === 0) return seg(0, 1);
   if (i === last) return seg(last - 1, last);

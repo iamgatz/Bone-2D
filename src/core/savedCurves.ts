@@ -19,7 +19,17 @@ const finite = (v: unknown): v is number => typeof v === 'number' && Number.isFi
 
 /** A handle's x lies between the keys (0 to 1), its y may leave the range a little (overshoot, anticipation) but not run away. */
 export function validCurve(c: unknown): c is CurveNumbers {
-  return Array.isArray(c) && c.length === 4 && c.every(finite) && c[0] >= 0 && c[0] <= 1 && c[2] >= 0 && c[2] <= 1 && Math.abs(c[1]) <= 5 && Math.abs(c[3]) <= 5;
+  return (
+    Array.isArray(c) &&
+    c.length === 4 &&
+    c.every(finite) &&
+    c[0] >= 0 &&
+    c[0] <= 1 &&
+    c[2] >= 0 &&
+    c[2] <= 1 &&
+    Math.abs(c[1]) <= 5 &&
+    Math.abs(c[3]) <= 5
+  );
 }
 
 /** The curve of the first channel of a key's `curve` field, when it is a bezier; null for linear (no curve), stepped or a malformed value. */

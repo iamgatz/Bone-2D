@@ -32,7 +32,10 @@ export interface OnionConfig {
 
 /** The distinct times at which an animation has a key (of the given bones and their slots only, when `bones` is given), sorted. */
 export function keyTimes(anim: Animation, only?: { bones: readonly string[]; slots?: readonly string[] } | null): number[] {
-  const scope = only && (only.bones.length || only.slots?.length) ? [...only.bones.map((id) => anim.bones[id]), ...(only.slots ?? []).map((id) => anim.slots[id])] : keyLists(anim);
+  const scope =
+    only && (only.bones.length || only.slots?.length)
+      ? [...only.bones.map((id) => anim.bones[id]), ...(only.slots ?? []).map((id) => anim.slots[id])]
+      : keyLists(anim);
   const times = new Set<number>();
   for (const list of keyListsIn(scope)) for (const k of list) times.add(k.time);
   return [...times].sort((a, b) => a - b);
@@ -97,7 +100,16 @@ const TINT_AFTER: Ghost['tint'] = [0.55, 0.82, 1, 1];
 let pool: { data: Scene['data']; skinId: string | null; skeletons: Skeleton[] } | null = null;
 
 /** Skeletons posed at the ghost times (kept between frames, they are only re-posed). */
-export function ghostsFor(scene: Scene, anim: Animation, time: number, fps: number, cfg: OnionConfig, loop: boolean, skinId: string | null, only?: { bones: readonly string[]; slots?: readonly string[] } | null): Ghost[] {
+export function ghostsFor(
+  scene: Scene,
+  anim: Animation,
+  time: number,
+  fps: number,
+  cfg: OnionConfig,
+  loop: boolean,
+  skinId: string | null,
+  only?: { bones: readonly string[]; slots?: readonly string[] } | null,
+): Ghost[] {
   const times = cfg.mode === 'keys' ? keyGhostTimes(time, keyTimes(anim, only), cfg) : ghostTimes(time, anim.duration, fps, cfg, loop);
   const style = cfg.style ?? 'image';
   const flat = style !== 'image';
@@ -111,9 +123,19 @@ export function ghostsFor(scene: Scene, anim: Animation, time: number, fps: numb
     const reach = g.side === 'before' ? cfg.before : cfg.after;
     const rgb = (g.side === 'before' ? cfg.colorBefore : cfg.colorAfter) ?? (g.side === 'before' ? TINT_BEFORE : TINT_AFTER).slice(0, 3);
     const sign = g.side === 'before' ? -1 : 1;
-    const offset: [number, number] | undefined = cfg.offsetX || cfg.offsetY ? [sign * g.index * (cfg.offsetX ?? 0), sign * g.index * (cfg.offsetY ?? 0)] : undefined;
+    const offset: [number, number] | undefined =
+      cfg.offsetX || cfg.offsetY ? [sign * g.index * (cfg.offsetX ?? 0), sign * g.index * (cfg.offsetY ?? 0)] : undefined;
     // the nearest ghost is the strongest
-    return { skeleton, alpha: 0.42 * (1 - (g.index - 1) / Math.max(1, reach + 0.5)), tint: [rgb[0], rgb[1], rgb[2], 1], offset, flat, top, side: g.side, index: g.index };
+    return {
+      skeleton,
+      alpha: 0.42 * (1 - (g.index - 1) / Math.max(1, reach + 0.5)),
+      tint: [rgb[0], rgb[1], rgb[2], 1],
+      offset,
+      flat,
+      top,
+      side: g.side,
+      index: g.index,
+    };
   });
 }
 
@@ -168,7 +190,8 @@ let refPool: { data: Scene['data']; skinId: string | null; skeleton: Skeleton } 
 
 /** The skeleton posed as the reference animation is at the moment that goes with the playhead (`anim` null: the setup pose), faded and tinted green. */
 export function referenceGhost(scene: Scene, anim: Animation | null, time: number, loop: boolean, skinId: string | null): Ghost {
-  if (!refPool || refPool.data !== scene.data || refPool.skinId !== skinId) refPool = { data: scene.data, skinId, skeleton: createSkeleton(scene.data, skinId) };
+  if (!refPool || refPool.data !== scene.data || refPool.skinId !== skinId)
+    refPool = { data: scene.data, skinId, skeleton: createSkeleton(scene.data, skinId) };
   const skeleton = refPool.skeleton;
   skeleton.setToSetupPose();
   if (anim) applyAnimation(skeleton, anim, referenceTime(time, anim.duration, loop));
@@ -184,7 +207,13 @@ let cpPool: { doc: SkeletonDoc; skinId: string | null; data: SkeletonData; skele
  * The checkpoint's skeleton posed like the one being edited: the animation with the same id at the same time (the setup pose when the animation
  * is not in the checkpoint, or in Setup mode), faded and tinted violet. Null when the checkpoint cannot be posed.
  */
-export function checkpointGhost(doc: SkeletonDoc, animationId: string | null, time: number, loop: boolean, skinId: string | null): Ghost | null {
+export function checkpointGhost(
+  doc: SkeletonDoc,
+  animationId: string | null,
+  time: number,
+  loop: boolean,
+  skinId: string | null,
+): Ghost | null {
   const skin = skinId && doc.skins.some((s) => s.id === skinId) ? skinId : null;
   if (!cpPool || cpPool.doc !== doc || cpPool.skinId !== skin) {
     const data = compileSkeleton(doc);

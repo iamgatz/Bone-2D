@@ -31,7 +31,19 @@ export function addImageToScene(imageName: string, worldX: number, worldY: numbe
     else d.skeleton.slots.push(slot);
     const skin = d.skeleton.skins[0];
     skin.attachments[slot.id] = {
-      [img.name]: { type: 'region', name: img.name, path: img.name, x: lx, y: ly, rotation: det < 0 ? -rot : rot, scaleX: 1, scaleY: 1, width: img.width, height: img.height, color: [1, 1, 1, 1] },
+      [img.name]: {
+        type: 'region',
+        name: img.name,
+        path: img.name,
+        x: lx,
+        y: ly,
+        rotation: det < 0 ? -rot : rot,
+        scaleX: 1,
+        scaleY: 1,
+        width: img.width,
+        height: img.height,
+        color: [1, 1, 1, 1],
+      },
     };
   });
   setSelection({ slot: slot.id, attachment: img.name, bones: [bone.data.id] });
@@ -50,7 +62,16 @@ export function setSlotProps(id: Id, patch: Partial<Slot>, label = 'Edit slot') 
 export function renameSlot(id: Id, name: string) {
   const clean = name.trim();
   if (!clean) return;
-  setSlotProps(id, { name: freshName(clean, skeletonDoc().slots.filter((s) => s.id !== id)) }, 'Rename slot');
+  setSlotProps(
+    id,
+    {
+      name: freshName(
+        clean,
+        skeletonDoc().slots.filter((s) => s.id !== id),
+      ),
+    },
+    'Rename slot',
+  );
 }
 
 export function deleteSlots(ids: Id[]) {
@@ -74,7 +95,7 @@ function keyDrawOrder(id: Id, toIndex: number) {
     docStore.update('Key draw order', (d) => {
       const a = d.skeleton.animations.find((x) => x.id === anim.id);
       if (!a) return;
-      upsertKey((a.drawOrderFolder ??= {})[inFolder.folder.id] ??= [], { time: ui.time, order: inFolder.order });
+      upsertKey(((a.drawOrderFolder ??= {})[inFolder.folder.id] ??= []), { time: ui.time, order: inFolder.order });
       extendDuration(a, ui.time);
     });
     return;

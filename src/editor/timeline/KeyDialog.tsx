@@ -14,7 +14,8 @@ type AnyKey = { time: number; value?: number[]; curve?: 'stepped' | number[] };
 /** The kinds whose keys carry numbers to edit (the others have a time only). */
 const NUMERIC = new Set<KeyRef['kind']>(['bone', 'slot', 'ik', 'transform', 'slider', 'path', 'physics']);
 
-const kindOf = (k: AnyKey): 'linear' | 'stepped' | 'bezier' => (k.curve === 'stepped' ? 'stepped' : Array.isArray(k.curve) ? 'bezier' : 'linear');
+const kindOf = (k: AnyKey): 'linear' | 'stepped' | 'bezier' =>
+  k.curve === 'stepped' ? 'stepped' : Array.isArray(k.curve) ? 'bezier' : 'linear';
 
 /** Where the key dialog is mounted: renders nothing while no key is being edited. */
 export function KeyDialogHost() {
@@ -25,10 +26,15 @@ export function KeyDialogHost() {
 function KeyDialog({ refKey }: { refKey: KeyRef }) {
   const fps = useProject().skeleton.fps; // also follows every edit of the document
   const anim = currentAnimation();
-  const keys = anim ? (resolveKeys(anim, refKey)) : undefined;
+  const keys = anim ? resolveKeys(anim, refKey) : undefined;
   const key = keyAtTime(keys, refKey.time);
   const index = key && keys ? keys.indexOf(key) : -1;
-  if (!anim || !keys || !key) return <Dialog title="Edit key" onClose={closeKeyDialog}><p className="hint-text">This key no longer exists.</p></Dialog>;
+  if (!anim || !keys || !key)
+    return (
+      <Dialog title="Edit key" onClose={closeKeyDialog}>
+        <p className="hint-text">This key no longer exists.</p>
+      </Dialog>
+    );
 
   const numeric = NUMERIC.has(refKey.kind) && !!key.value && refKey.prop !== 'reset';
   const names = channelNames(refKey.kind, refKey.prop);
@@ -104,12 +110,40 @@ function KeyDialog({ refKey }: { refKey: KeyRef }) {
               return (
                 <div key={c}>
                   <Field label={`${names[c] ?? c + 1} handle 1`} title={tip}>
-                    <NumberField label="t" value={at(0)} step={0.05} precision={3} min={0} max={1} onChange={(v) => setKeyCurveHandle(refKey, c, 1, v, at(1))} />
-                    <NumberField label="v" value={at(1)} step={0.05} precision={3} onChange={(v) => setKeyCurveHandle(refKey, c, 1, at(0), v)} />
+                    <NumberField
+                      label="t"
+                      value={at(0)}
+                      step={0.05}
+                      precision={3}
+                      min={0}
+                      max={1}
+                      onChange={(v) => setKeyCurveHandle(refKey, c, 1, v, at(1))}
+                    />
+                    <NumberField
+                      label="v"
+                      value={at(1)}
+                      step={0.05}
+                      precision={3}
+                      onChange={(v) => setKeyCurveHandle(refKey, c, 1, at(0), v)}
+                    />
                   </Field>
                   <Field label={`${names[c] ?? c + 1} handle 2`} title={tip}>
-                    <NumberField label="t" value={at(2)} step={0.05} precision={3} min={0} max={1} onChange={(v) => setKeyCurveHandle(refKey, c, 2, v, at(3))} />
-                    <NumberField label="v" value={at(3)} step={0.05} precision={3} onChange={(v) => setKeyCurveHandle(refKey, c, 2, at(2), v)} />
+                    <NumberField
+                      label="t"
+                      value={at(2)}
+                      step={0.05}
+                      precision={3}
+                      min={0}
+                      max={1}
+                      onChange={(v) => setKeyCurveHandle(refKey, c, 2, v, at(3))}
+                    />
+                    <NumberField
+                      label="v"
+                      value={at(3)}
+                      step={0.05}
+                      precision={3}
+                      onChange={(v) => setKeyCurveHandle(refKey, c, 2, at(2), v)}
+                    />
                   </Field>
                 </div>
               );

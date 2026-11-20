@@ -36,7 +36,7 @@ export function sequenceIndexAt(keys: readonly SequenceKey[], time: number, coun
   let index = key.index;
   if (key.mode === 'hold') return index;
   // the official loader truncates with `| 0`: a delay of 0 gives infinity or NaN there, which is 0
-  index += (((time - key.time) / key.delay + 0.00001) | 0);
+  index += ((time - key.time) / key.delay + 0.00001) | 0;
   switch (key.mode) {
     case 'once':
       return Math.min(count - 1, index);
@@ -104,7 +104,8 @@ export function sequenceSpans(keys: readonly SequenceKey[], count: number, end: 
 }
 
 /** The sequence of an attachment, if it has one (only a region or a mesh can). */
-export const sequenceOf = (a: Attachment | undefined | null): SequenceDef | undefined => (a && (a.type === 'region' || a.type === 'mesh') ? a.sequence : undefined);
+export const sequenceOf = (a: Attachment | undefined | null): SequenceDef | undefined =>
+  a && (a.type === 'region' || a.type === 'mesh') ? a.sequence : undefined;
 
 /** The pictures an attachment is drawn with: every frame of its sequence, or its one picture, or none. */
 export function attachmentPictures(a: Attachment): string[] {
@@ -123,12 +124,18 @@ export const isSequenceMode = (v: unknown): v is SequenceMode => (SEQUENCE_MODES
 /** A sequence key from anything: a mode that is not known is hold, a negative or fractional index is made whole, a delay is never negative. */
 export function cleanSequenceKey(k: Partial<SequenceKey>): SequenceKey {
   const num = (v: unknown, fallback: number) => (typeof v === 'number' && Number.isFinite(v) ? v : fallback);
-  return { time: Math.max(0, num(k.time, 0)), mode: isSequenceMode(k.mode) ? k.mode : 'hold', index: Math.max(0, Math.trunc(num(k.index, 0))), delay: Math.max(0, num(k.delay, 0)) };
+  return {
+    time: Math.max(0, num(k.time, 0)),
+    mode: isSequenceMode(k.mode) ? k.mode : 'hold',
+    index: Math.max(0, Math.trunc(num(k.index, 0))),
+    delay: Math.max(0, num(k.delay, 0)),
+  };
 }
 
 /** A whole, in-range sequence from anything (a count of at least 1, a setup frame inside it). */
 export function cleanSequence(s: Partial<SequenceDef> | undefined): SequenceDef {
-  const int = (v: unknown, fallback: number, min: number, max: number) => (typeof v === 'number' && Number.isFinite(v) ? Math.min(max, Math.max(min, Math.trunc(v))) : fallback);
+  const int = (v: unknown, fallback: number, min: number, max: number) =>
+    typeof v === 'number' && Number.isFinite(v) ? Math.min(max, Math.max(min, Math.trunc(v))) : fallback;
   const count = int(s?.count, 1, 1, 10000);
   return { count, start: int(s?.start, 1, 0, 1000000), digits: int(s?.digits, 0, 0, 9), setupIndex: int(s?.setupIndex, 0, 0, count - 1) };
 }
@@ -157,7 +164,7 @@ export function detectSequence(imageNames: readonly string[], path: string): { p
   for (const digits of digitOptions) {
     const nameOf = (k: number) => base + '0'.repeat(Math.max(0, digits - String(k).length)) + k;
     const ks = [...new Set(tails.map((t) => t.k))].filter((k) => names.has(nameOf(k))).sort((a, b) => a - b);
-    for (let i = 0; i < ks.length; ) {
+    for (let i = 0; i < ks.length;) {
       let j = i;
       while (j + 1 < ks.length && ks[j + 1] === ks[j] + 1) j++;
       const run = { start: ks[i], count: j - i + 1, digits, has: own !== null && own >= ks[i] && own <= ks[j] };

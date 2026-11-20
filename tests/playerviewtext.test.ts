@@ -11,7 +11,8 @@ describe('the words of the page', () => {
   it('every text exists in both languages and none is empty', () => {
     const en = Object.keys(PLAYER_TEXTS.en).sort();
     expect(Object.keys(PLAYER_TEXTS.ru).sort()).toEqual(en);
-    for (const lang of ['en', 'ru'] as const) for (const key of en as PlayerKey[]) expect(PLAYER_TEXTS[lang][key].trim().length, `${lang}.${key}`).toBeGreaterThan(0);
+    for (const lang of ['en', 'ru'] as const)
+      for (const key of en as PlayerKey[]) expect(PLAYER_TEXTS[lang][key].trim().length, `${lang}.${key}`).toBeGreaterThan(0);
   });
 
   it('a Russian text is not the English one, except where a word is the same in both', () => {
@@ -21,7 +22,8 @@ describe('the words of the page', () => {
 
   it('the places to fill have the same names in both languages', () => {
     const slots = (s: string) => (s.match(/\{\w+\}/g) ?? []).sort().join();
-    for (const key of Object.keys(PLAYER_TEXTS.en) as PlayerKey[]) expect(slots(PLAYER_TEXTS.ru[key]), key).toBe(slots(PLAYER_TEXTS.en[key]));
+    for (const key of Object.keys(PLAYER_TEXTS.en) as PlayerKey[])
+      expect(slots(PLAYER_TEXTS.ru[key]), key).toBe(slots(PLAYER_TEXTS.en[key]));
   });
 
   it('is Russian for a Russian browser and English for the rest', () => {
@@ -40,7 +42,23 @@ describe('the words of the page', () => {
     expect(playerScript).toContain('Отправить комментарии');
     expect(playerScript).toContain('Щёлкните кость');
     const html = playerPageHtml({ title: 'Hero', skeleton: buildFixture().project.skeleton, images: {}, smooth: true }, 'x');
-    for (const id of ['over', 'bonehint', 'bonerow', 'bone', 'bonex', 'note', 'send', 'dlg', 'who', 'what', 'mine', 'dsave', 'dcancel', 'dlgbox']) expect(html, id).toContain(`id="${id}"`);
+    for (const id of [
+      'over',
+      'bonehint',
+      'bonerow',
+      'bone',
+      'bonex',
+      'note',
+      'send',
+      'dlg',
+      'who',
+      'what',
+      'mine',
+      'dsave',
+      'dcancel',
+      'dlgbox',
+    ])
+      expect(html, id).toContain(`id="${id}"`);
   });
 });
 
@@ -54,7 +72,12 @@ describe('the view', () => {
   });
 
   it('canvasToWorld undoes worldToCanvas', () => {
-    for (const [x, y] of [[0, 0], [40, 90], [-120, 300], [500, -40]]) {
+    for (const [x, y] of [
+      [0, 0],
+      [40, 90],
+      [-120, 300],
+      [500, -40],
+    ]) {
       const [px, py] = worldToCanvas(x, y, 800, 600, fit, view);
       const [wx, wy] = canvasToWorld(px, py, 800, 600, fit, view);
       expect(wx).toBeCloseTo(x, 9);

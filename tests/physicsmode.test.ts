@@ -13,8 +13,6 @@ import { compileSkeleton, createSkeleton } from '../src/core/skeleton';
 import type { PhysicsMode } from '../src/core/skeleton';
 import { S, exportAndLoad, startLikeOfficial } from './official';
 
- 
-
 const MODES: [PhysicsMode, number][] = [
   ['none', S.Physics.none],
   ['update', S.Physics.update],
@@ -31,8 +29,18 @@ function rig(sliderFirst = false): Project {
   const hand = newBone({ name: 'hand', parent: arm.id, x: 60, rotation: 20, length: 50 });
   doc.bones.push(arm, hand);
   const walk = newAnimation('walk', 1);
-  walk.bones[arm.id] = { rotate: [{ time: 0, value: [25] }, { time: 1, value: [60] }] };
-  walk.bones[hand.id] = { rotate: [{ time: 0, value: [-15] }, { time: 1, value: [30] }] };
+  walk.bones[arm.id] = {
+    rotate: [
+      { time: 0, value: [25] },
+      { time: 1, value: [60] },
+    ],
+  };
+  walk.bones[hand.id] = {
+    rotate: [
+      { time: 0, value: [-15] },
+      { time: 1, value: [30] },
+    ],
+  };
   doc.animations.push(walk);
   const physics = newPhysicsConstraint({ name: 'arm physics', bone: arm.id, rotate: 1 });
   const slider = newSliderConstraint({ name: 'slider', animation: walk.id, time: 0 });

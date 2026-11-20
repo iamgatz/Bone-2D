@@ -5,7 +5,6 @@ import { exportSpineJson } from '../src/core/export/spineJson';
 import { attachmentPictures } from '../src/core/sequence';
 import type { Project } from '../src/core/model';
 
- 
 export const S = spine as any;
 
 class FakeTexture extends S.Texture {

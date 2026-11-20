@@ -9,7 +9,8 @@ import type { Animation, Key } from './model';
 
 const sameValue = (a: number[], b: number[]) => a.length === b.length && a.every((v, i) => Math.abs(v - b[i]) <= SAME_EPS);
 
-const isNumberKey = (k: unknown): k is Key => !!k && typeof k === 'object' && typeof (k as Key).time === 'number' && Array.isArray((k as Key).value);
+const isNumberKey = (k: unknown): k is Key =>
+  !!k && typeof k === 'object' && typeof (k as Key).time === 'number' && Array.isArray((k as Key).value);
 
 /** Removes the middle key of every run of three or more equal keys. Returns how many were removed. */
 export function dropFlatKeys(keys: Key[]): number {
@@ -25,16 +26,20 @@ export function dropFlatKeys(keys: Key[]): number {
 
 /** The document with every animation cleaned up, for an export: the document itself is not touched (the animations are copies). */
 export function withCleanAnimations<T extends { animations: Animation[] }>(doc: T): T {
-  return { ...doc, animations: doc.animations.map((a) => {
-    const copy = JSON.parse(JSON.stringify(a)) as Animation;
-    cleanUpAnimation(copy);
-    return copy;
-  }) };
+  return {
+    ...doc,
+    animations: doc.animations.map((a) => {
+      const copy = JSON.parse(JSON.stringify(a)) as Animation;
+      cleanUpAnimation(copy);
+      return copy;
+    }),
+  };
 }
 
 /** Cleans an animation in place; returns the number of keys removed. */
 export function cleanUpAnimation(anim: Animation): number {
   let removed = 0;
-  for (const list of keyListsIn([anim.bones, anim.slots, anim.deform, anim.transform, anim.slider, anim.path, anim.physics])) if (list.every(isNumberKey)) removed += dropFlatKeys(list);
+  for (const list of keyListsIn([anim.bones, anim.slots, anim.deform, anim.transform, anim.slider, anim.path, anim.physics]))
+    if (list.every(isNumberKey)) removed += dropFlatKeys(list);
   return removed;
 }

@@ -71,7 +71,8 @@ describe('demo rig Kit', () => {
     const names = new Set(p.images.map((i) => i.name));
     const used = (skin: string) => {
       const out = new Set<string>();
-      for (const slot of Object.values(p.skeleton.skins.find((s) => s.name === skin)!.attachments)) for (const a of Object.values(slot)) if ('path' in a) out.add(a.path);
+      for (const slot of Object.values(p.skeleton.skins.find((s) => s.name === skin)!.attachments))
+        for (const a of Object.values(slot)) if ('path' in a) out.add(a.path);
       return out;
     };
     for (const n of [...used('default'), ...used('arctic')]) expect(names.has(n)).toBe(true);

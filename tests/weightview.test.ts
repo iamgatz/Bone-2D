@@ -9,7 +9,11 @@ describe('weights view', () => {
   it('bound bones follow the skeleton order and bone colours differ', () => {
     const w = [[I('c', 1)], [I('a', 0.5), I('c', 0.5)]];
     expect(boundBones(w, ['a', 'b', 'c'])).toEqual(['a', 'c']);
-    const cols = [0, 1, 2, 3, 4, 5].map((i) => boneRgb(i).map((x) => x.toFixed(2)).join());
+    const cols = [0, 1, 2, 3, 4, 5].map((i) =>
+      boneRgb(i)
+        .map((x) => x.toFixed(2))
+        .join(),
+    );
     expect(new Set(cols).size).toBe(6);
     for (const i of [0, 1, 2, 3]) for (const x of boneRgb(i)) expect(x >= 0 && x <= 1).toBe(true);
   });

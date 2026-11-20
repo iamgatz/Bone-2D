@@ -179,20 +179,37 @@ describe('constraint presets', () => {
 
   it('a path preset keeps the modes and leaves the bones and target', () => {
     const { spine, tail } = rig();
-    const one = newPathConstraint({ name: 'a', bones: [spine.id], target: 's1', positionMode: 'percent', spacingMode: 'proportional', rotateMode: 'chainScale', offsetRotation: 12 });
+    const one = newPathConstraint({
+      name: 'a',
+      bones: [spine.id],
+      target: 's1',
+      positionMode: 'percent',
+      spacingMode: 'proportional',
+      rotateMode: 'chainScale',
+      offsetRotation: 12,
+    });
     const two = newPathConstraint({ name: 'b', bones: [tail.id], target: 's2' });
     docStore.update('add', (d) => void d.skeleton.constraints.push(one, two));
     const preset = savePreset(one.id, 'ribbon')!;
     applyPreset(two.id, preset.id);
     const got = docStore.get().skeleton.constraints.find((c) => c.id === two.id)!;
-    expect(got).toMatchObject({ positionMode: 'percent', spacingMode: 'proportional', rotateMode: 'chainScale', offsetRotation: 12, bones: [tail.id], target: 's2' });
+    expect(got).toMatchObject({
+      positionMode: 'percent',
+      spacingMode: 'proportional',
+      rotateMode: 'chainScale',
+      offsetRotation: 12,
+      bones: [tail.id],
+      target: 's2',
+    });
   });
 
   it('a damaged setting is skipped and physics values stay in their limits', () => {
     const { b } = physics();
     const c = structuredClone(b);
     const before = c.strength;
-    const changed = applyPresetSettings(c, { strength: 'strong', damping: 7, mass: -4, bone: 'x', global: { inertia: true } }, (p, v) => (p === 'damping' ? Math.min(1, v) : p === 'mass' ? Math.max(0.01, v) : v));
+    const changed = applyPresetSettings(c, { strength: 'strong', damping: 7, mass: -4, bone: 'x', global: { inertia: true } }, (p, v) =>
+      p === 'damping' ? Math.min(1, v) : p === 'mass' ? Math.max(0.01, v) : v,
+    );
     expect(c.strength).toBe(before);
     expect(c.damping).toBe(1);
     expect(c.mass).toBe(0.01);
@@ -308,7 +325,16 @@ describe('micro-move', () => {
   it('keys: Alt+arrows move the selected keys by a frame and nudge their values', () => {
     const { armL } = rig();
     const a = newAnimation('a', 2);
-    a.bones[armL.id] = { rotate: [{ time: 0, value: [0] }, { time: 1, value: [40] }], translate: [{ time: 0, value: [0, 0] }, { time: 1, value: [5, 5] }] };
+    a.bones[armL.id] = {
+      rotate: [
+        { time: 0, value: [0] },
+        { time: 1, value: [40] },
+      ],
+      translate: [
+        { time: 0, value: [0, 0] },
+        { time: 1, value: [5, 5] },
+      ],
+    };
     docStore.update('anim', (d) => void d.skeleton.animations.push(a));
     const fps = docStore.get().skeleton.fps;
     uiStore.patch({ mode: 'animate', animationId: a.id, time: 0 });

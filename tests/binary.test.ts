@@ -119,7 +119,9 @@ describe('reading a binary file back', () => {
       }
     }
     expect(changed).toBeGreaterThan(0);
-    const json = exportSpineJson(p.skeleton) as { skins: { attachments: Record<string, Record<string, { type?: string; rotation?: number; x?: number }>> }[] };
+    const json = exportSpineJson(p.skeleton) as {
+      skins: { attachments: Record<string, Record<string, { type?: string; rotation?: number; x?: number }>> }[];
+    };
     const back = binaryToJson(exportSpineBinary(p.skeleton)) as typeof json;
     let checked = 0;
     json.skins.forEach((skin, si) => {

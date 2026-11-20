@@ -6,20 +6,59 @@ import { clamp, parseNumberExpr } from '@/core/math';
 import { docStore } from '@/store/doc';
 
 /** An icon-only button: its title is its accessible name and its tooltip, with the hotkey as a key cap. */
-export function IconButton(props: { icon: LucideIcon; title: string; onClick?: (e: React.MouseEvent) => void; active?: boolean; animate?: boolean; disabled?: boolean; small?: boolean; size?: number; hotkey?: string; tipPlace?: 'top' | 'bottom' | 'left' | 'right'; style?: CSSProperties }) {
+export function IconButton(props: {
+  icon: LucideIcon;
+  title: string;
+  onClick?: (e: React.MouseEvent) => void;
+  active?: boolean;
+  animate?: boolean;
+  disabled?: boolean;
+  small?: boolean;
+  size?: number;
+  hotkey?: string;
+  tipPlace?: 'top' | 'bottom' | 'left' | 'right';
+  style?: CSSProperties;
+}) {
   const Icon = props.icon;
   return (
-    <button type="button" className={`icon-btn${props.active ? ' on' : ''}${props.animate ? ' animate' : ''}${props.small ? ' sm' : ''}`} aria-label={props.title} aria-pressed={props.active} data-tip={props.title} data-tip-key={props.hotkey} data-tip-place={props.tipPlace} onClick={props.onClick} disabled={props.disabled} style={props.style}>
+    <button
+      type="button"
+      className={`icon-btn${props.active ? ' on' : ''}${props.animate ? ' animate' : ''}${props.small ? ' sm' : ''}`}
+      aria-label={props.title}
+      aria-pressed={props.active}
+      data-tip={props.title}
+      data-tip-key={props.hotkey}
+      data-tip-place={props.tipPlace}
+      onClick={props.onClick}
+      disabled={props.disabled}
+      style={props.style}
+    >
       <Icon size={props.size ?? (props.small ? 14 : 17)} strokeWidth={1.9} />
       {props.hotkey && <span className="kbd-tip">{props.hotkey}</span>}
     </button>
   );
 }
 
-export function Button(props: { children: ReactNode; onClick?: () => void; primary?: boolean; ghost?: boolean; danger?: boolean; small?: boolean; disabled?: boolean; title?: string; icon?: LucideIcon }) {
+export function Button(props: {
+  children: ReactNode;
+  onClick?: () => void;
+  primary?: boolean;
+  ghost?: boolean;
+  danger?: boolean;
+  small?: boolean;
+  disabled?: boolean;
+  title?: string;
+  icon?: LucideIcon;
+}) {
   const Icon = props.icon;
   return (
-    <button type="button" className={`btn${props.primary ? ' primary' : ''}${props.ghost ? ' ghost' : ''}${props.danger ? ' danger' : ''}${props.small ? ' sm' : ''}`} onClick={props.onClick} disabled={props.disabled} data-tip={props.title}>
+    <button
+      type="button"
+      className={`btn${props.primary ? ' primary' : ''}${props.ghost ? ' ghost' : ''}${props.danger ? ' danger' : ''}${props.small ? ' sm' : ''}`}
+      onClick={props.onClick}
+      disabled={props.disabled}
+      data-tip={props.title}
+    >
       {Icon && <Icon size={15} strokeWidth={1.9} />}
       {props.children}
     </button>
@@ -27,7 +66,17 @@ export function Button(props: { children: ReactNode; onClick?: () => void; prima
 }
 
 export function Toggle({ on, onChange, title }: { on: boolean; onChange: (v: boolean) => void; title?: string }) {
-  return <button type="button" className={`toggle${on ? ' on' : ''}`} onClick={() => onChange(!on)} aria-label={title} data-tip={title} role="switch" aria-checked={on} />;
+  return (
+    <button
+      type="button"
+      className={`toggle${on ? ' on' : ''}`}
+      onClick={() => onChange(!on)}
+      aria-label={title}
+      data-tip={title}
+      role="switch"
+      aria-checked={on}
+    />
+  );
 }
 
 function fmt(v: number, precision: number): string {
@@ -85,7 +134,11 @@ export function NumberField(props: {
   };
 
   return (
-    <div className={`field${props.keyed ? ' keyed' : ''}${props.wide ? ' wide' : ''}${props.disabled ? ' disabled' : ''}`} data-tip={props.title} data-tip-place="top">
+    <div
+      className={`field${props.keyed ? ' keyed' : ''}${props.wide ? ' wide' : ''}${props.disabled ? ' disabled' : ''}`}
+      data-tip={props.title}
+      data-tip-place="top"
+    >
       <span className="flabel" onPointerDown={onDown} onPointerMove={onMove} onPointerUp={onUp} onPointerCancel={onUp}>
         {props.label}
       </span>
@@ -125,7 +178,11 @@ export function TextField(props: { label?: string; value: string; onCommit: (v: 
   const [text, setText] = useState<string | null>(null);
   return (
     <div className={`field${props.wide ? ' wide' : ''}`}>
-      {props.label && <span className="flabel" style={{ cursor: 'default' }}>{props.label}</span>}
+      {props.label && (
+        <span className="flabel" style={{ cursor: 'default' }}>
+          {props.label}
+        </span>
+      )}
       <input
         type="text"
         spellCheck={false}
@@ -152,10 +209,20 @@ export function TextField(props: { label?: string; value: string; onCommit: (v: 
   );
 }
 
-export function SelectField<T extends string>(props: { label?: string; value: T; options: { value: T; label: string }[]; onChange: (v: T) => void; wide?: boolean }) {
+export function SelectField<T extends string>(props: {
+  label?: string;
+  value: T;
+  options: { value: T; label: string }[];
+  onChange: (v: T) => void;
+  wide?: boolean;
+}) {
   return (
     <div className={`field${props.wide ? ' wide' : ''}`}>
-      {props.label && <span className="flabel" style={{ cursor: 'default' }}>{props.label}</span>}
+      {props.label && (
+        <span className="flabel" style={{ cursor: 'default' }}>
+          {props.label}
+        </span>
+      )}
       <select value={props.value} onChange={(e) => props.onChange(e.target.value as T)}>
         {props.options.map((o) => (
           <option key={o.value} value={o.value}>
@@ -168,7 +235,10 @@ export function SelectField<T extends string>(props: { label?: string; value: T;
 }
 
 export function rgbaToHex(c: ArrayLike<number>): string {
-  const h = (v: number) => Math.max(0, Math.min(255, Math.round(v * 255))).toString(16).padStart(2, '0');
+  const h = (v: number) =>
+    Math.max(0, Math.min(255, Math.round(v * 255)))
+      .toString(16)
+      .padStart(2, '0');
   return `#${h(c[0])}${h(c[1])}${h(c[2])}`;
 }
 export function hexToRgb(hex: string): [number, number, number] {
@@ -177,7 +247,15 @@ export function hexToRgb(hex: string): [number, number, number] {
   return [parseInt(m[1], 16) / 255, parseInt(m[2], 16) / 255, parseInt(m[3], 16) / 255];
 }
 
-export function ColorSwatch({ value, onChange, title }: { value: ArrayLike<number>; onChange: (rgb: [number, number, number]) => void; title?: string }) {
+export function ColorSwatch({
+  value,
+  onChange,
+  title,
+}: {
+  value: ArrayLike<number>;
+  onChange: (rgb: [number, number, number]) => void;
+  title?: string;
+}) {
   return (
     <span className="swatch" data-tip={title} style={{ background: rgbaToHex(value) }}>
       <input type="color" aria-label={title ?? 'Color'} value={rgbaToHex(value)} onChange={(e) => onChange(hexToRgb(e.target.value))} />
@@ -208,7 +286,18 @@ export function menuKeys(e: React.KeyboardEvent<HTMLElement>) {
   const items = [...e.currentTarget.querySelectorAll<HTMLElement>('[role^=menuitem]:not(:disabled)')];
   if (!items.length) return;
   const i = items.indexOf(document.activeElement as HTMLElement);
-  const next = e.key === 'ArrowDown' ? (i + 1) % items.length : e.key === 'ArrowUp' ? (i <= 0 ? items.length - 1 : i - 1) : e.key === 'Home' ? 0 : e.key === 'End' ? items.length - 1 : -1;
+  const next =
+    e.key === 'ArrowDown'
+      ? (i + 1) % items.length
+      : e.key === 'ArrowUp'
+        ? i <= 0
+          ? items.length - 1
+          : i - 1
+        : e.key === 'Home'
+          ? 0
+          : e.key === 'End'
+            ? items.length - 1
+            : -1;
   if (next < 0) return;
   e.preventDefault();
   items[next].focus();
@@ -264,7 +353,15 @@ export function Menu(props: { label: ReactNode; children: (close: () => void) =>
 }
 
 /** One item of a menu. With `checked` it is a switch (a tick at the right while it is on). */
-export function MenuItem(props: { icon?: LucideIcon; children: ReactNode; onClick: () => void; hotkey?: string; disabled?: boolean; checked?: boolean; close: () => void }) {
+export function MenuItem(props: {
+  icon?: LucideIcon;
+  children: ReactNode;
+  onClick: () => void;
+  hotkey?: string;
+  disabled?: boolean;
+  checked?: boolean;
+  close: () => void;
+}) {
   const Icon = props.icon;
   const checkable = props.checked !== undefined;
   return (
@@ -307,7 +404,11 @@ export function Dialog(props: { title: string; onClose: () => void; children: Re
       return;
     }
     if (e.key !== 'Tab' || !box.current) return;
-    const focusable = [...box.current.querySelectorAll<HTMLElement>('button:not(:disabled), input:not(:disabled), select:not(:disabled), textarea:not(:disabled), [tabindex]:not([tabindex="-1"])')];
+    const focusable = [
+      ...box.current.querySelectorAll<HTMLElement>(
+        'button:not(:disabled), input:not(:disabled), select:not(:disabled), textarea:not(:disabled), [tabindex]:not([tabindex="-1"])',
+      ),
+    ];
     if (!focusable.length) return;
     const first = focusable[0];
     const last = focusable[focusable.length - 1];
@@ -322,7 +423,16 @@ export function Dialog(props: { title: string; onClose: () => void; children: Re
   };
   return (
     <div className="overlay" onMouseDown={(e) => e.target === e.currentTarget && props.onClose()}>
-      <div ref={box} className="dialog" role="dialog" aria-modal="true" aria-label={props.title} tabIndex={-1} onKeyDown={keys} style={props.width ? { width: props.width } : undefined}>
+      <div
+        ref={box}
+        className="dialog"
+        role="dialog"
+        aria-modal="true"
+        aria-label={props.title}
+        tabIndex={-1}
+        onKeyDown={keys}
+        style={props.width ? { width: props.width } : undefined}
+      >
         <div className="dialog-head">
           <span>{props.title}</span>
           <span className="spacer" />

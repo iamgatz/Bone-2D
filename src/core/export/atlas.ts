@@ -72,7 +72,13 @@ class MaxRects {
     let best: (Rect & { turned: boolean }) | null = null;
     let bestShort = Infinity;
     let bestLong = Infinity;
-    const sizes: [number, number, boolean][] = turn && w !== h ? [[w, h, false], [h, w, true]] : [[w, h, false]];
+    const sizes: [number, number, boolean][] =
+      turn && w !== h
+        ? [
+            [w, h, false],
+            [h, w, true],
+          ]
+        : [[w, h, false]];
     for (const [rw, rh, turned] of sizes) {
       for (const f of this.free) {
         if (f.w >= rw && f.h >= rh) {
@@ -106,7 +112,18 @@ class MaxRects {
       if (r.y + r.h < f.y + f.h) next.push({ x: f.x, y: r.y + r.h, w: f.w, h: f.y + f.h - (r.y + r.h) });
     }
     // prune contained rects
-    this.free = next.filter((a, i) => !next.some((b, j) => i !== j && a.x >= b.x && a.y >= b.y && a.x + a.w <= b.x + b.w && a.y + a.h <= b.y + b.h && (a.x !== b.x || a.y !== b.y || a.w !== b.w || a.h !== b.h || i > j)));
+    this.free = next.filter(
+      (a, i) =>
+        !next.some(
+          (b, j) =>
+            i !== j &&
+            a.x >= b.x &&
+            a.y >= b.y &&
+            a.x + a.w <= b.x + b.w &&
+            a.y + a.h <= b.y + b.h &&
+            (a.x !== b.x || a.y !== b.y || a.w !== b.w || a.h !== b.h || i > j),
+        ),
+    );
   }
 }
 
@@ -117,7 +134,8 @@ function nextPow2(v: number): number {
 }
 
 /** The width and height a region takes on its page. */
-export const footprint = (r: Pick<PackedRegion, 'width' | 'height' | 'rotated'>): [number, number] => (r.rotated ? [r.height, r.width] : [r.width, r.height]);
+export const footprint = (r: Pick<PackedRegion, 'width' | 'height' | 'rotated'>): [number, number] =>
+  r.rotated ? [r.height, r.width] : [r.width, r.height];
 
 function tryPack(items: PackInput[], size: [number, number], pad: number, rotate: boolean): { placed: PackedRegion[]; rest: PackInput[] } {
   const packer = new MaxRects(size[0], size[1]);
@@ -173,12 +191,13 @@ export function packAtlas(inputs: PackInput[], options: PackOptions = {}): Atlas
     let w = 0;
     let h = 0;
     while (true) {
-      const sizes: [number, number][] = pot && !square
-        ? [
-            [side, side >> 1 >= Math.max(1, nextPow2(tallest)) ? side >> 1 : side],
-            [side, side],
-          ]
-        : [[side, side]];
+      const sizes: [number, number][] =
+        pot && !square
+          ? [
+              [side, side >> 1 >= Math.max(1, nextPow2(tallest)) ? side >> 1 : side],
+              [side, side],
+            ]
+          : [[side, side]];
       let done = false;
       for (const s of sizes) {
         const r = tryPack(remaining, s, pad, rotate);
@@ -246,7 +265,11 @@ export function premultiplyAlpha(rgba: Uint8ClampedArray): void {
 export type AtlasFilter = 'Linear' | 'Nearest';
 
 /** Spine 4.x atlas text for the given pages. `pageFile(i)` supplies each page's image file name. */
-export function writeAtlas(pages: AtlasPage[], pageFile: (index: number) => string, opts: { pma?: boolean; filter?: AtlasFilter } = {}): string {
+export function writeAtlas(
+  pages: AtlasPage[],
+  pageFile: (index: number) => string,
+  opts: { pma?: boolean; filter?: AtlasFilter } = {},
+): string {
   const lines: string[] = [];
   const filter = opts.filter ?? 'Linear';
   for (const p of pages) {
@@ -257,7 +280,8 @@ export function writeAtlas(pages: AtlasPage[], pageFile: (index: number) => stri
     for (const r of p.regions) {
       lines.push(r.name);
       lines.push(`bounds:${r.x},${r.y},${r.width},${r.height}`);
-      if (r.offsetX || r.offsetY || r.originalWidth !== r.width || r.originalHeight !== r.height) lines.push(`offsets:${r.offsetX},${r.offsetY},${r.originalWidth},${r.originalHeight}`);
+      if (r.offsetX || r.offsetY || r.originalWidth !== r.width || r.originalHeight !== r.height)
+        lines.push(`offsets:${r.offsetX},${r.offsetY},${r.originalWidth},${r.originalHeight}`);
       if (r.rotated) lines.push('rotate:90');
     }
     lines.push('');

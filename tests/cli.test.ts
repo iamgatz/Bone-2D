@@ -27,7 +27,12 @@ function sample(extra: Record<string, string> = {}) {
   const root = newBone({ name: 'root', length: 50 });
   p.skeleton.bones.push(root, newBone({ name: 'arm', parent: root.id, x: 50, length: 30 }));
   const a = newAnimation('idle', 1);
-  a.bones[root.id] = { rotate: [{ time: 0, value: [0] }, { time: 1, value: [10] }] };
+  a.bones[root.id] = {
+    rotate: [
+      { time: 0, value: [0] },
+      { time: 1, value: [10] },
+    ],
+  };
   p.skeleton.animations.push(a);
   const path = join(dir, 'hero.bone2d');
   writeFileSync(path, JSON.stringify({ bone2d: 1, project: p, images: { head: PNG, 'parts/hand': PNG, ...extra } }));
@@ -77,7 +82,10 @@ describe('cli export', () => {
     writeFileSync(path, JSON.stringify(file));
     const out = join(dir, 'mix');
     expect(run(['export', path, out, '--no-images'], io())).toBe(0);
-    expect(JSON.parse(readFileSync(join(out, 'hero.mixes.json'), 'utf8'))).toMatchObject({ defaultMix: 0.1, mixes: [{ from: 'idle', to: 'run', duration: 0.4 }] });
+    expect(JSON.parse(readFileSync(join(out, 'hero.mixes.json'), 'utf8'))).toMatchObject({
+      defaultMix: 0.1,
+      mixes: [{ from: 'idle', to: 'run', duration: 0.4 }],
+    });
     const out2 = join(dir, 'nomix');
     run(['export', path, out2, '--no-images', '--no-mixes'], io());
     expect(existsSync(join(out2, 'hero.mixes.json'))).toBe(false);
@@ -116,7 +124,14 @@ describe('cli info and check', () => {
   it('check is quiet for a healthy project and lists the damage of a broken one', () => {
     const { path, project } = sample();
     expect(run(['check', path], io())).toBe(0);
-    project.skeleton.slots.push({ id: 's1', name: 'slot', bone: 'missing', color: [1, 1, 1, 1], attachment: null, blend: 'normal' } as never);
+    project.skeleton.slots.push({
+      id: 's1',
+      name: 'slot',
+      bone: 'missing',
+      color: [1, 1, 1, 1],
+      attachment: null,
+      blend: 'normal',
+    } as never);
     const broken = join(dir, 'broken.bone2d');
     writeFileSync(broken, JSON.stringify({ bone2d: 1, project, images: {} }));
     const r = io();
@@ -156,7 +171,21 @@ describe('cli atlas', () => {
     for (const [i, name] of Object.keys(images).entries()) {
       const slot = newSlot({ name: `s${i}`, bone: root.id });
       p.skeleton.slots.push(slot);
-      p.skeleton.skins[0].attachments[slot.id] = { [name]: { type: 'region', name, path: name, x: 0, y: 0, rotation: 0, scaleX: 1, scaleY: 1, width: 10, height: 10, color: [1, 1, 1, 1] } };
+      p.skeleton.skins[0].attachments[slot.id] = {
+        [name]: {
+          type: 'region',
+          name,
+          path: name,
+          x: 0,
+          y: 0,
+          rotation: 0,
+          scaleX: 1,
+          scaleY: 1,
+          width: 10,
+          height: 10,
+          color: [1, 1, 1, 1],
+        },
+      };
     }
     const path = join(dir, 'rig.bone2d');
     writeFileSync(path, JSON.stringify({ bone2d: 1, project: p, images }));
@@ -260,7 +289,9 @@ describe('cli with several skeletons', () => {
     const out = join(dir, 'm1');
     const r = io();
     expect(run(['export', path, out, '--no-images'], r)).toBe(0);
-    expect(JSON.parse(readFileSync(join(out, 'hero.json'), 'utf8'))).toEqual(JSON.parse(JSON.stringify(exportSpineJson(project.skeleton, { nonessential: true, imagesPath: './images/' }))));
+    expect(JSON.parse(readFileSync(join(out, 'hero.json'), 'utf8'))).toEqual(
+      JSON.parse(JSON.stringify(exportSpineJson(project.skeleton, { nonessential: true, imagesPath: './images/' }))),
+    );
     const second = JSON.parse(readFileSync(join(out, 'second.json'), 'utf8'));
     expect(Object.keys(second.animations)).toEqual(['run']);
     expect(r.o.join('')).toContain('second.json');
@@ -297,7 +328,9 @@ describe('cli with several skeletons', () => {
 describe('cli unpack, import and clean', () => {
   function picture(seed: number, w: number, h: number) {
     const data = new Uint8ClampedArray(w * h * 4);
-    for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) data.set(x > 1 && y > 1 ? [(x * 9 + seed) % 256, (y * 5 + seed) % 256, seed * 20, 255] : [0, 0, 0, 0], (y * w + x) * 4);
+    for (let y = 0; y < h; y++)
+      for (let x = 0; x < w; x++)
+        data.set(x > 1 && y > 1 ? [(x * 9 + seed) % 256, (y * 5 + seed) % 256, seed * 20, 255] : [0, 0, 0, 0], (y * w + x) * 4);
     return { data, w, h, url: `data:image/png;base64,${encodePng(w, h, data).toString('base64')}` };
   }
   function project(images: Record<string, string>) {
@@ -309,11 +342,31 @@ describe('cli unpack, import and clean', () => {
     for (const [i, name] of Object.keys(images).entries()) {
       const slot = newSlot({ name: `s${i}`, bone: root.id });
       p.skeleton.slots.push(slot);
-      p.skeleton.skins[0].attachments[slot.id] = { [name]: { type: 'region', name, path: name, x: 0, y: 0, rotation: 0, scaleX: 1, scaleY: 1, width: 10, height: 10, color: [1, 1, 1, 1] } };
+      p.skeleton.skins[0].attachments[slot.id] = {
+        [name]: {
+          type: 'region',
+          name,
+          path: name,
+          x: 0,
+          y: 0,
+          rotation: 0,
+          scaleX: 1,
+          scaleY: 1,
+          width: 10,
+          height: 10,
+          color: [1, 1, 1, 1],
+        },
+      };
     }
     const a = newAnimation('idle', 1);
     // a key in the middle that changes nothing
-    a.bones[root.id] = { rotate: [{ time: 0, value: [5] }, { time: 0.5, value: [5] }, { time: 1, value: [5] }] };
+    a.bones[root.id] = {
+      rotate: [
+        { time: 0, value: [5] },
+        { time: 0.5, value: [5] },
+        { time: 1, value: [5] },
+      ],
+    };
     p.skeleton.animations.push(a);
     const path = join(dir, 'hero.bone2d');
     writeFileSync(path, JSON.stringify({ bone2d: 1, project: p, images }));
@@ -330,7 +383,10 @@ describe('cli unpack, import and clean', () => {
     const r = io();
     expect(run(['unpack', join(out, 'hero.atlas'), un], r)).toBe(0);
     expect(r.o.join('')).toContain('2 pictures');
-    for (const [name, src] of [['head', a], ['parts/hand', b]] as const) {
+    for (const [name, src] of [
+      ['head', a],
+      ['parts/hand', b],
+    ] as const) {
       const png = decodePng(readFileSync(join(un, `${name}.png`)))!;
       expect([png.width, png.height]).toEqual([src.w, src.h]);
       expect(Array.from(png.data)).toEqual(Array.from(src.data));
@@ -379,7 +435,13 @@ describe('cli export --clean', () => {
     const root = newBone({ name: 'root', length: 50 });
     p.skeleton.bones.push(root);
     const a = newAnimation('idle', 1);
-    a.bones[root.id] = { rotate: [{ time: 0, value: [5] }, { time: 0.5, value: [5] }, { time: 1, value: [5] }] };
+    a.bones[root.id] = {
+      rotate: [
+        { time: 0, value: [5] },
+        { time: 0.5, value: [5] },
+        { time: 1, value: [5] },
+      ],
+    };
     p.skeleton.animations.push(a);
     const path = join(dir, 'c.bone2d');
     writeFileSync(path, JSON.stringify({ bone2d: 1, project: p, images: {} }));

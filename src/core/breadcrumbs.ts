@@ -34,7 +34,7 @@ export function breadcrumbs(doc: SkeletonDoc, sel: CrumbSelection, parents = 3):
 
   const out: Crumb[] = [{ kind: 'skeleton', label: doc.name || 'skeleton' }];
   if (bone) {
-    const chain: typeof bone[] = [];
+    const chain: (typeof bone)[] = [];
     let cur = bone.parent ? bones.get(bone.parent) : undefined;
     for (let guard = 0; cur && guard < doc.bones.length; guard++) {
       chain.push(cur);

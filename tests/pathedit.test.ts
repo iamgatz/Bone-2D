@@ -29,7 +29,18 @@ function load(mode: 'setup' | 'animate' = 'setup') {
   const f = buildFixture();
   rig = addPathRig(f.project);
   docStore.replace(f.project);
-  uiStore.patch({ mode, tool: 'select', animationId: walk().id, skinId: null, time: 0, selection: emptySelection, overrides: {}, autoKey: true, playing: false, defaultCurve: 'bezier' });
+  uiStore.patch({
+    mode,
+    tool: 'select',
+    animationId: walk().id,
+    skinId: null,
+    time: 0,
+    selection: emptySelection,
+    overrides: {},
+    autoKey: true,
+    playing: false,
+    defaultCurve: 'bezier',
+  });
 }
 
 function healthy(label: string) {
@@ -90,7 +101,10 @@ describe('path nodes', () => {
   });
 
   it('moving a point moves exactly that point in world space (also for a weighted path)', () => {
-    for (const [slot, name] of [['ropePath', 'ropeA'], ['wPath', 'wpath']] as const) {
+    for (const [slot, name] of [
+      ['ropePath', 'ropeA'],
+      ['wPath', 'wpath'],
+    ] as const) {
       const before = worldPoints(rig.slotId[slot]);
       P.movePolygonVertices(rig.slotId[slot], name, [{ index: 4, x: 11, y: -22 }]);
       const after = worldPoints(rig.slotId[slot]);
@@ -110,7 +124,7 @@ describe('path nodes', () => {
     healthy('open again');
   });
 
-  it('the path tool\'s result: a path created from world nodes becomes a slot with a path and keeps its shape', () => {
+  it("the path tool's result: a path created from world nodes becomes a slot with a path and keeps its shape", () => {
     A.selectBone(doc().bones[0].id);
     const nodes = [
       { x: -100, y: 0, inX: -100, inY: 0, outX: -60, outY: 40 },

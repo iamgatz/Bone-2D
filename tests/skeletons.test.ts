@@ -4,7 +4,19 @@ import { exportSpineBinary } from '../src/core/export/spineBinary';
 import { exportSpineJson } from '../src/core/export/spineJson';
 import { emptyProject, migrateProject, newAnimation, newBone, newSlot } from '../src/core/model';
 import type { Project } from '../src/core/model';
-import { activeIndex, addSkeleton, blankSkeleton, copyOfSkeleton, duplicateSkeleton, newSkeletonName, removeSkeleton, renameSkeleton, skeletonCount, skeletonList, switchSkeleton } from '../src/core/skeletons';
+import {
+  activeIndex,
+  addSkeleton,
+  blankSkeleton,
+  copyOfSkeleton,
+  duplicateSkeleton,
+  newSkeletonName,
+  removeSkeleton,
+  renameSkeleton,
+  skeletonCount,
+  skeletonList,
+  switchSkeleton,
+} from '../src/core/skeletons';
 import { repairProject, validateProject } from '../src/core/validate';
 import { docStore } from '../src/store/doc';
 import { copySkeleton, createSkeleton, deleteSkeletonAt, renameSkeletonAt, switchToSkeleton } from '../src/store/skeletonActions';
@@ -155,7 +167,16 @@ describe('editor actions', () => {
   beforeEach(() => {
     const p = project();
     docStore.replace(p);
-    uiStore.patch({ mode: 'animate', selection: emptySelection, animationId: 'stale', skinId: null, time: 0.4, playing: false, overrides: {}, selectedKeys: [] });
+    uiStore.patch({
+      mode: 'animate',
+      selection: emptySelection,
+      animationId: 'stale',
+      skinId: null,
+      time: 0.4,
+      playing: false,
+      overrides: {},
+      selectedKeys: [],
+    });
   });
 
   it('create, switch, copy, rename and delete are one history step each, and the view starts again', () => {
@@ -202,7 +223,21 @@ describe('the pictures are shared', () => {
     p.images.push({ id: 'i1', name: 'head', width: 8, height: 8 }, { id: 'i2', name: 'spare', width: 8, height: 8 });
     const slot = newSlot({ name: 's', bone: p.skeleton.bones[0].id });
     p.skeleton.slots.push(slot);
-    p.skeleton.skins[0].attachments[slot.id] = { head: { type: 'region', name: 'head', path: 'head', x: 0, y: 0, rotation: 0, scaleX: 1, scaleY: 1, width: 8, height: 8, color: [1, 1, 1, 1] } };
+    p.skeleton.skins[0].attachments[slot.id] = {
+      head: {
+        type: 'region',
+        name: 'head',
+        path: 'head',
+        x: 0,
+        y: 0,
+        rotation: 0,
+        scaleX: 1,
+        scaleY: 1,
+        width: 8,
+        height: 8,
+        color: [1, 1, 1, 1],
+      },
+    };
     return apply(p, (d) => void addSkeleton(d, blankSkeleton('b')));
   }
   it('an image only the other skeleton shows is still in use, and a rename follows it there', async () => {

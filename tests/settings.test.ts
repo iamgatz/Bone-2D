@@ -41,7 +41,9 @@ describe('settings', () => {
 
 describe('key combinations of the commands', () => {
   it('drop a combination that is not written the way the editor writes it or that two commands share', () => {
-    const s = readSettings(JSON.stringify({ keyMap: { undo: 'Ctrl+U', redo: 'Ctrl+U', save: 'Ctrl+Shift+Alt+S', open: 'ctrl+o', export: 5, frame: 'G' } }));
+    const s = readSettings(
+      JSON.stringify({ keyMap: { undo: 'Ctrl+U', redo: 'Ctrl+U', save: 'Ctrl+Shift+Alt+S', open: 'ctrl+o', export: 5, frame: 'G' } }),
+    );
     expect(s.keyMap).toEqual({ undo: 'Ctrl+U', frame: 'G' });
   });
 

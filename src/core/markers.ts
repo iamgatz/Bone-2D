@@ -9,7 +9,8 @@ import { MARKER_COLORS, newAnimation } from './model';
 import type { Animation, Id, Marker } from './model';
 
 /** The markers of an animation, in time order. */
-export const markersOf = (anim: Pick<Animation, 'markers'> | null | undefined): Marker[] => [...(anim?.markers ?? [])].sort((a, b) => a.time - b.time);
+export const markersOf = (anim: Pick<Animation, 'markers'> | null | undefined): Marker[] =>
+  [...(anim?.markers ?? [])].sort((a, b) => a.time - b.time);
 
 /** Markers from anything: only well-formed ones, times inside the animation, a palette colour, text where text belongs. */
 export function cleanMarkers(raw: unknown, duration: number): Marker[] {
@@ -24,7 +25,13 @@ export function cleanMarkers(raw: unknown, duration: number): Marker[] {
     if (seen.has(id)) id = uid();
     seen.add(id);
     const color = Number.isInteger(r.color) ? Math.min(Math.max(0, r.color as number), MARKER_COLORS - 1) : 0;
-    const marker: Marker = { id, time: Math.min(Math.max(0, r.time as number), Math.max(0, duration)), name: typeof r.name === 'string' ? r.name : '', color, text: typeof r.text === 'string' ? r.text : '' };
+    const marker: Marker = {
+      id,
+      time: Math.min(Math.max(0, r.time as number), Math.max(0, duration)),
+      name: typeof r.name === 'string' ? r.name : '',
+      color,
+      text: typeof r.text === 'string' ? r.text : '',
+    };
     if (r.review === true) {
       marker.review = true;
       if (typeof r.author === 'string') marker.author = r.author;
@@ -59,7 +66,8 @@ export function removeMarker(anim: Animation, id: Id): boolean {
 /** The marker within `tolerance` seconds of a time (the closest one), or undefined. */
 export function markerNear(anim: Pick<Animation, 'markers'> | null | undefined, time: number, tolerance: number): Marker | undefined {
   let best: Marker | undefined;
-  for (const m of anim?.markers ?? []) if (Math.abs(m.time - time) <= tolerance && (!best || Math.abs(m.time - time) < Math.abs(best.time - time))) best = m;
+  for (const m of anim?.markers ?? [])
+    if (Math.abs(m.time - time) <= tolerance && (!best || Math.abs(m.time - time) < Math.abs(best.time - time))) best = m;
   return best;
 }
 
@@ -76,8 +84,16 @@ type AnyKey = { time: number; value?: number[]; curve?: unknown };
  * the original passes through them), so the piece moves like the original did. A timeline of states (attachment, draw order, sequence) starts with
  * the state in force at t0. `events` are only the ones inside: [t0, t1) (the end belongs to the next piece unless it is the last one).
  */
-function cutKeys<T extends AnyKey>(keys: T[], t0: number, t1: number, kind: 'number' | 'colour' | 'state' | 'event', lastPiece: boolean): T[] {
-  const inside = keys.filter((k) => k.time >= t0 - SAME_EPS && (kind === 'event' && !lastPiece ? k.time < t1 - SAME_EPS : k.time <= t1 + SAME_EPS));
+function cutKeys<T extends AnyKey>(
+  keys: T[],
+  t0: number,
+  t1: number,
+  kind: 'number' | 'colour' | 'state' | 'event',
+  lastPiece: boolean,
+): T[] {
+  const inside = keys.filter(
+    (k) => k.time >= t0 - SAME_EPS && (kind === 'event' && !lastPiece ? k.time < t1 - SAME_EPS : k.time <= t1 + SAME_EPS),
+  );
   const shifted = inside.map((k) => ({ ...structuredClone(k), time: Math.max(0, k.time - t0) }));
   if (kind === 'event' || !keys.length) return shifted;
   const active = [...keys].reverse().find((k) => k.time <= t0 + SAME_EPS);
@@ -122,7 +138,7 @@ export function cutAnimation(anim: Animation, t0: number, t1: number, name: stri
   const out = newAnimation(name, Math.max(0, t1 - t0));
   const nums = (k: AnyKey[] | undefined) => (k?.length ? cutKeys(k, t0, t1, 'number', lastPiece) : []);
   const states = (k: AnyKey[] | undefined) => (k?.length ? cutKeys(k, t0, t1, 'state', lastPiece) : []);
-  const keep = <T,>(v: T[]): T[] | undefined => (v.length ? v : undefined);
+  const keep = <T>(v: T[]): T[] | undefined => (v.length ? v : undefined);
 
   for (const [id, tl] of Object.entries(anim.bones)) {
     const piece: Record<string, AnyKey[]> = {};
@@ -164,7 +180,7 @@ export function cutAnimation(anim: Animation, t0: number, t1: number, name: stri
     for (const [slot, perAtt] of Object.entries(perSlot)) {
       for (const [att, keys] of Object.entries(perAtt)) {
         const cut = nums(keys);
-        if (cut.length) (((out.deform[skin] ??= {})[slot] ??= {})[att] = cut as never);
+        if (cut.length) ((out.deform[skin] ??= {})[slot] ??= {})[att] = cut as never;
       }
     }
   }
@@ -172,14 +188,14 @@ export function cutAnimation(anim: Animation, t0: number, t1: number, name: stri
     for (const [slot, perAtt] of Object.entries(perSlot)) {
       for (const [att, keys] of Object.entries(perAtt)) {
         const cut = states(keys);
-        if (cut.length) ((((out.sequence ??= {})[skin] ??= {})[slot] ??= {})[att] = cut as never);
+        if (cut.length) (((out.sequence ??= {})[skin] ??= {})[slot] ??= {})[att] = cut as never;
       }
     }
   }
   out.drawOrder = (keep(states(anim.drawOrder as unknown as AnyKey[])) ?? []) as never;
   for (const [id, keys] of Object.entries(anim.drawOrderFolder ?? {})) {
     const cut = states(keys);
-    if (cut.length) ((out.drawOrderFolder ??= {})[id] = cut as never);
+    if (cut.length) (out.drawOrderFolder ??= {})[id] = cut as never;
   }
   out.events = cutKeys(anim.events as unknown as AnyKey[], t0, t1, 'event', lastPiece) as never;
   return out;
@@ -197,7 +213,11 @@ export interface SplitPiece {
  */
 export function splitPieces(anim: Animation, minLength = 1e-3): SplitPiece[] {
   const marks = markersOf(anim).filter((m) => m.time > SAME_EPS && m.time < anim.duration - SAME_EPS);
-  const edges = [{ time: 0, name: anim.name }, ...marks.map((m, i) => ({ time: m.time, name: m.name.trim() || `${anim.name} ${i + 2}` })), { time: anim.duration, name: '' }];
+  const edges = [
+    { time: 0, name: anim.name },
+    ...marks.map((m, i) => ({ time: m.time, name: m.name.trim() || `${anim.name} ${i + 2}` })),
+    { time: anim.duration, name: '' },
+  ];
   const pieces: SplitPiece[] = [];
   for (let i = 0; i < edges.length - 1; i++) {
     if (edges[i + 1].time - edges[i].time >= minLength) pieces.push({ from: edges[i].time, to: edges[i + 1].time, name: edges[i].name });

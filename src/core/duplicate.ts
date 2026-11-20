@@ -62,12 +62,26 @@ export function duplicateBones(doc: SkeletonDoc, mats: Map<Id, Mat>, ids: Id[], 
     const world = mats.get(src.id) ?? IDENTITY;
     const w2: Mat = mirror ? { a: -world.a, b: -world.b, c: world.c, d: world.d, x: -world.x, y: world.y } : world;
     const parentCopy = src.parent ? clones.get(src.parent) : undefined;
-    const clone: Bone = { ...src, id: uid(), parent: parentCopy ? parentCopy.id : src.parent, name: freshName(mirror ? mirrorName(src.name) : `${src.name} copy`, [...doc.bones, ...added]) };
+    const clone: Bone = {
+      ...src,
+      id: uid(),
+      parent: parentCopy ? parentCopy.id : src.parent,
+      name: freshName(mirror ? mirrorName(src.name) : `${src.name} copy`, [...doc.bones, ...added]),
+    };
     if (mirror) {
       const parentWorld = parentCopy ? newWorld.get(src.parent!)! : (src.parent && mats.get(src.parent)) || IDENTITY;
       const local = matMul(matInvert(parentWorld), w2);
       const dec = decompose(local.a, local.b, local.c, local.d);
-      Object.assign(clone, { x: local.x, y: local.y, rotation: dec.rotation, scaleX: dec.scaleX, scaleY: dec.scaleY, shearX: dec.shearX, shearY: dec.shearY, inherit: 'normal' });
+      Object.assign(clone, {
+        x: local.x,
+        y: local.y,
+        rotation: dec.rotation,
+        scaleX: dec.scaleX,
+        scaleY: dec.scaleY,
+        shearX: dec.shearX,
+        shearY: dec.shearY,
+        inherit: 'normal',
+      });
     }
     clones.set(src.id, clone);
     newWorld.set(src.id, w2);
@@ -83,7 +97,12 @@ export function duplicateBones(doc: SkeletonDoc, mats: Map<Id, Mat>, ids: Id[], 
   for (const slot of slotsBefore) {
     const bone = clones.get(slot.bone);
     if (!bone) continue;
-    const s: Slot = { ...slot, id: uid(), bone: bone.id, name: freshName(mirror ? mirrorName(slot.name) : `${slot.name} copy`, [...doc.slots, ...newSlots]) };
+    const s: Slot = {
+      ...slot,
+      id: uid(),
+      bone: bone.id,
+      name: freshName(mirror ? mirrorName(slot.name) : `${slot.name} copy`, [...doc.slots, ...newSlots]),
+    };
     slotClone.set(slot.id, s);
     newSlots.push(s);
   }
@@ -100,7 +119,10 @@ export function duplicateBones(doc: SkeletonDoc, mats: Map<Id, Mat>, ids: Id[], 
     if (c.type === 'slider') continue;
     const constrained = c.type === 'physics' ? [c.bone] : c.bones;
     if (!constrained.length || !constrained.every((b) => clones.has(b))) continue;
-    const base = { id: uid(), name: freshName(mirror ? mirrorName(c.name) : `${c.name} copy`, [...doc.constraints, ...consClones.values()]) };
+    const base = {
+      id: uid(),
+      name: freshName(mirror ? mirrorName(c.name) : `${c.name} copy`, [...doc.constraints, ...consClones.values()]),
+    };
     const n = JSON.parse(JSON.stringify(c)) as Exclude<Constraint, { type: 'slider' }>;
     Object.assign(n, base);
     if (n.type === 'physics') n.bone = boneOf(n.bone);
@@ -122,7 +144,8 @@ export function duplicateBones(doc: SkeletonDoc, mats: Map<Id, Mat>, ids: Id[], 
       const copied: Record<string, Attachment> = {};
       for (const [name, a] of Object.entries(atts)) {
         const n = JSON.parse(JSON.stringify(a)) as Attachment; // a plain copy (the document may be an immer draft)
-        if ('weights' in n && n.weights) n.weights = n.weights.map((vertex) => vertex.map(([b, x, y, w]) => [boneOf(b), x, y, w] as [Id, number, number, number]));
+        if ('weights' in n && n.weights)
+          n.weights = n.weights.map((vertex) => vertex.map(([b, x, y, w]) => [boneOf(b), x, y, w] as [Id, number, number, number]));
         copied[name] = n;
       }
       skin.attachments[c.id] = copied;

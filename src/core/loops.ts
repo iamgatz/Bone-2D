@@ -7,7 +7,8 @@ import { keyListsIn } from './keylists';
 import { SAME_EPS } from './math';
 import type { Animation, Id, Key } from './model';
 
-const isNumberKey = (k: unknown): k is Key => !!k && typeof k === 'object' && typeof (k as Key).time === 'number' && Array.isArray((k as Key).value);
+const isNumberKey = (k: unknown): k is Key =>
+  !!k && typeof k === 'object' && typeof (k as Key).time === 'number' && Array.isArray((k as Key).value);
 const same = (a: number[], b: number[]) => a.length === b.length && a.every((v, i) => Math.abs(v - b[i]) <= SAME_EPS);
 
 export interface CloseLoopOptions {
@@ -40,7 +41,9 @@ function closeTimeline(keys: Key[], duration: number, keep: 'first' | 'last'): b
 /** Closes the loop of an animation in place. Returns how many timelines were changed. */
 export function closeLoop(anim: Animation, options: CloseLoopOptions = {}): number {
   const keep = options.keep ?? 'first';
-  const scope = options.bones ? options.bones.map((id) => anim.bones[id]) : [anim.bones, anim.slots, anim.deform, anim.transform, anim.slider, anim.path, anim.physics];
+  const scope = options.bones
+    ? options.bones.map((id) => anim.bones[id])
+    : [anim.bones, anim.slots, anim.deform, anim.transform, anim.slider, anim.path, anim.physics];
   let changed = 0;
   for (const list of keyListsIn(scope)) if (list.every(isNumberKey) && closeTimeline(list, anim.duration, keep)) changed++;
   return changed;

@@ -9,7 +9,19 @@ import { newSkin } from '../src/core/model';
 import type { RegionAttachment, SkeletonDoc } from '../src/core/model';
 import { buildFixture } from './fixture';
 
-const region = (name: string, path: string): RegionAttachment => ({ type: 'region', name, path, x: 0, y: 0, rotation: 0, scaleX: 1, scaleY: 1, width: 10, height: 10, color: [1, 1, 1, 1] });
+const region = (name: string, path: string): RegionAttachment => ({
+  type: 'region',
+  name,
+  path,
+  x: 0,
+  y: 0,
+  rotation: 0,
+  scaleX: 1,
+  scaleY: 1,
+  width: 10,
+  height: 10,
+  color: [1, 1, 1, 1],
+});
 
 /** The fixture with two more skins: `red` (a picture of its own and one the default skin uses) and `blue` (a picture of its own and the one red has). */
 function rig(): { doc: SkeletonDoc; slot: string } {
@@ -95,14 +107,20 @@ describe('the setting and the engine note', () => {
 
 describe('the atlases as the official runtime reads them', () => {
   const pack = (names: string[], stem: string) => {
-    const pages = packAtlas(names.map((name) => ({ name, width: 20, height: 12 })), { padding: 1, pot: true });
+    const pages = packAtlas(
+      names.map((name) => ({ name, width: 20, height: 12 })),
+      { padding: 1, pot: true },
+    );
     return writeAtlas(pages, (i) => (pages.length === 1 ? `${stem}.png` : `${stem}-${i + 1}.png`), { pma: false, filter: 'Linear' });
   };
 
   it('each atlas file is a valid atlas, and the atlases glued together (the preview) hold every region', () => {
     const base = pack(['a', 'b'], 'hero');
     const red = pack(['red_only', 'shared_skins'], 'hero-red');
-    for (const [text, regions] of [[base, ['a', 'b']], [red, ['red_only', 'shared_skins']]] as const) {
+    for (const [text, regions] of [
+      [base, ['a', 'b']],
+      [red, ['red_only', 'shared_skins']],
+    ] as const) {
       const atlas = new spine.TextureAtlas(text);
       expect(atlas.regions.map((r) => r.name).sort()).toEqual([...regions].sort());
     }

@@ -18,7 +18,10 @@ function pictureUri(name: string): string | null {
 }
 
 /** The page for `doc`; `missing` lists the pictures the editor could not find (their slots stay empty). */
-export function buildPlayerPage(doc: Project['skeleton'], opts: { smooth?: boolean } = {}): { html: string; missing: string[]; bytes: number } {
+export function buildPlayerPage(
+  doc: Project['skeleton'],
+  opts: { smooth?: boolean } = {},
+): { html: string; missing: string[]; bytes: number } {
   const images: Record<string, string> = {};
   const missing: string[] = [];
   for (const { name } of usedImages(doc)) {

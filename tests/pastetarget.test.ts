@@ -37,7 +37,11 @@ describe('retargetClip', () => {
 
   it('leaves the keys that are not bone keys alone when it moves the bone keys', () => {
     const ik = { kind: 'ik' as const, target: 'ik1', prop: '', time: 0 };
-    expect(retargetClip([bone('a'), ik, bone('b')], ['c', 'd'], null, ['a', 'b', 'c', 'd']).map((c) => c.target)).toEqual(['c', 'ik1', 'd']);
+    expect(retargetClip([bone('a'), ik, bone('b')], ['c', 'd'], null, ['a', 'b', 'c', 'd']).map((c) => c.target)).toEqual([
+      'c',
+      'ik1',
+      'd',
+    ]);
   });
 
   it('does the same for the keys of one slot', () => {
@@ -51,7 +55,17 @@ describe('pasting keys', () => {
   beforeEach(() => {
     const f = buildFixture();
     docStore.replace(f.project);
-    uiStore.patch({ mode: 'animate', tool: 'select', animationId: f.project.skeleton.animations[0].id, skinId: null, time: 0, selection: emptySelection, overrides: {}, autoKey: true, playing: false });
+    uiStore.patch({
+      mode: 'animate',
+      tool: 'select',
+      animationId: f.project.skeleton.animations[0].id,
+      skinId: null,
+      time: 0,
+      selection: emptySelection,
+      overrides: {},
+      autoKey: true,
+      playing: false,
+    });
   });
 
   it('puts the keys of one arm on the other bone, shifted to the playhead', () => {
@@ -81,7 +95,10 @@ describe('pasting keys', () => {
     const bones = doc().bones;
     const [a, b, c, d] = [bones[1], bones[2], bones[3], bones[4]];
     A.setTime(0.2);
-    A.setBonePose([{ id: a.id, props: { rotation: 30 } }, { id: b.id, props: { rotation: -40 } }]);
+    A.setBonePose([
+      { id: a.id, props: { rotation: 30 } },
+      { id: b.id, props: { rotation: -40 } },
+    ]);
     A.copyKeys([
       { kind: 'bone', target: b.id, prop: 'rotate', time: 0.2 },
       { kind: 'bone', target: a.id, prop: 'rotate', time: 0.2 },
@@ -171,7 +188,17 @@ describe('pasting with hold', () => {
   beforeEach(() => {
     const f = buildFixture();
     docStore.replace(f.project);
-    uiStore.patch({ mode: 'animate', tool: 'select', animationId: f.project.skeleton.animations[0].id, skinId: null, time: 0, selection: emptySelection, overrides: {}, autoKey: true, playing: false });
+    uiStore.patch({
+      mode: 'animate',
+      tool: 'select',
+      animationId: f.project.skeleton.animations[0].id,
+      skinId: null,
+      time: 0,
+      selection: emptySelection,
+      overrides: {},
+      autoKey: true,
+      playing: false,
+    });
   });
 
   it('pasted keys that hold one value get no curve; a plain paste keeps the curves it copied', () => {

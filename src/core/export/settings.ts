@@ -59,7 +59,7 @@ export const DEFAULT_EXPORT_SETTINGS: ExportSettings = {
   atlasPerSkin: false,
 };
 
-const oneOf = <T,>(v: unknown, list: readonly T[], fallback: T): T => (list.includes(v as T) ? (v as T) : fallback);
+const oneOf = <T>(v: unknown, list: readonly T[], fallback: T): T => (list.includes(v as T) ? (v as T) : fallback);
 const flag = (v: unknown, fallback: boolean) => (typeof v === 'boolean' ? v : fallback);
 
 /** Settings from anything: each field that is not a valid value takes its default, unknown fields are dropped. */

@@ -4,7 +4,15 @@ import { diffSkeletons, MAX_CHECKPOINTS, nextCheckpointName, restoredImages, sum
 import { emptyProject, newAnimation, newBone, newSkin, newSlot } from '../src/core/model';
 import type { Project } from '../src/core/model';
 import { checkpointGhost } from '../src/editor/ghosts';
-import { checkpointStore, checkpointsOfActive, deleteCheckpoint, markCheckpoint, renameCheckpoint, restoreCheckpoint, toggleCompare } from '../src/store/checkpoints';
+import {
+  checkpointStore,
+  checkpointsOfActive,
+  deleteCheckpoint,
+  markCheckpoint,
+  renameCheckpoint,
+  restoreCheckpoint,
+  toggleCompare,
+} from '../src/store/checkpoints';
 import { docStore } from '../src/store/doc';
 import { emptySelection, uiStore } from '../src/store/ui';
 
@@ -16,7 +24,13 @@ function rig(): Project {
   doc.bones.push(arm);
   doc.slots.push(newSlot({ name: 'hand', bone: arm.id }));
   const walk = newAnimation('walk', 1);
-  walk.bones[arm.id] = { rotate: [{ time: 0, value: [0] }, { time: 0.5, value: [30] }, { time: 1, value: [0] }] };
+  walk.bones[arm.id] = {
+    rotate: [
+      { time: 0, value: [0] },
+      { time: 0.5, value: [30] },
+      { time: 1, value: [0] },
+    ],
+  };
   doc.animations.push(walk);
   return p;
 }
@@ -41,7 +55,9 @@ describe('diffSkeletons', () => {
       d.skeleton.bones[1].length = 50;
     });
     const changes = diffSkeletons(before, docStore.get().skeleton);
-    expect(changes).toEqual([{ area: 'bone', kind: 'changed', name: 'arm', id: expect.any(String), fields: ['position', 'rotation', 'length'] }]);
+    expect(changes).toEqual([
+      { area: 'bone', kind: 'changed', name: 'arm', id: expect.any(String), fields: ['position', 'rotation', 'length'] },
+    ]);
   });
 
   it('lists added and removed bones and slots, and renames', () => {
@@ -98,7 +114,9 @@ describe('diffSkeletons', () => {
   it('the settings of the skeleton itself', () => {
     const before = docStore.get().skeleton;
     docStore.update('t', (d) => void (d.skeleton.fps = 24));
-    expect(diffSkeletons(before, docStore.get().skeleton)).toEqual([{ area: 'skeleton', kind: 'changed', name: docStore.get().skeleton.name, fields: ['frame rate'] }]);
+    expect(diffSkeletons(before, docStore.get().skeleton)).toEqual([
+      { area: 'skeleton', kind: 'changed', name: docStore.get().skeleton.name, fields: ['frame rate'] },
+    ]);
   });
 });
 
@@ -147,7 +165,12 @@ describe('checkpoint store', () => {
       a.id = id;
       d.skeleton.animations.push(a);
     });
-    uiStore.patch({ mode: 'animate', animationId: id, selection: { ...emptySelection, bones: [docStore.get().skeleton.bones[1].id] }, reference: id });
+    uiStore.patch({
+      mode: 'animate',
+      animationId: id,
+      selection: { ...emptySelection, bones: [docStore.get().skeleton.bones[1].id] },
+      reference: id,
+    });
     restoreCheckpoint(cp.id);
     const ui = uiStore.get();
     expect(ui.animationId).toBe(docStore.get().skeleton.animations[0].id);

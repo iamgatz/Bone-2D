@@ -13,7 +13,7 @@ import { compileSkeleton, createSkeleton } from '../src/core/skeleton';
 import { buildFixture } from './fixture';
 import { S, exportAndLoad, loadOfficialBinary } from './official';
 
-type J = Record<string, any>;  
+type J = Record<string, any>;
 
 const SETUP: [number, number, number, number] = [0.5, 0.6, 0.7, 0.8];
 
@@ -53,9 +53,13 @@ function expectSameColors(p: Project, options: { splitColor?: boolean }, times: 
     const ours = createSkeleton(data);
     applyAnimation(ours, anim, t);
     const mine = Array.from(ours.slotById(p.skeleton.slots[0].id)!.color);
-    for (const [label, sd] of [['json', skeletonData], ['binary', binary]] as const) {
+    for (const [label, sd] of [
+      ['json', skeletonData],
+      ['binary', binary],
+    ] as const) {
       const theirs = officialColor(sd, 'walk', t, p.skeleton.slots[0].name);
-      for (let c = 0; c < 4; c++) expect(Math.abs(mine[c] - theirs[c]), `${label} channel ${c} at ${t}: ${mine} vs ${theirs}`).toBeLessThan(1.6e-2);
+      for (let c = 0; c < 4; c++)
+        expect(Math.abs(mine[c] - theirs[c]), `${label} channel ${c} at ${t}: ${mine} vs ${theirs}`).toBeLessThan(1.6e-2);
     }
   }
   return json;
@@ -67,7 +71,12 @@ describe('the exporter', () => {
   const times = [0, 0.13, 0.4, 0.55, 0.7, 1, 1.2];
 
   it('writes an alpha timeline for keys that only change the alpha', () => {
-    const { p, slot } = rig([at(0.2, [0.5, 0.6, 0.7, 0], BEZIER), at(0.9, [0.5, 0.6, 0.7, 1]), at(1.3, [0.5, 0.6, 0.7, 0.25], 'stepped'), at(1.5, [0.5, 0.6, 0.7, 0.9])]);
+    const { p, slot } = rig([
+      at(0.2, [0.5, 0.6, 0.7, 0], BEZIER),
+      at(0.9, [0.5, 0.6, 0.7, 1]),
+      at(1.3, [0.5, 0.6, 0.7, 0.25], 'stepped'),
+      at(1.5, [0.5, 0.6, 0.7, 0.9]),
+    ]);
     const json = expectSameColors(p, { splitColor: true }, times);
     const s = slotJson(json, slot.name);
     expect(s.rgba).toBeUndefined();
@@ -144,8 +153,14 @@ describe('the importer', () => {
   it('merges rgb and alpha timelines that are keyed together, with the curve of each part', () => {
     const r = importSpineJson(
       file({
-        rgb: [{ color: 'ff0000', curve: [0.25, 0, 0.75, 1, 0.25, 0, 0.75, 1, 0.25, 0, 0.75, 1] }, { time: 1, color: '00ff00' }],
-        alpha: [{ value: 1, curve: [0.4, 1, 0.6, 0.5] }, { time: 1, value: 0.5 }],
+        rgb: [
+          { color: 'ff0000', curve: [0.25, 0, 0.75, 1, 0.25, 0, 0.75, 1, 0.25, 0, 0.75, 1] },
+          { time: 1, color: '00ff00' },
+        ],
+        alpha: [
+          { value: 1, curve: [0.4, 1, 0.6, 0.5] },
+          { time: 1, value: 0.5 },
+        ],
       }),
     );
     const slot = r.project.skeleton.slots[0];
@@ -158,7 +173,18 @@ describe('the importer', () => {
   });
 
   it('keeps stepped keys stepped when both parts are', () => {
-    const k = keysOf(file({ rgb: [{ color: 'ff0000', curve: 'stepped' }, { time: 1, color: '00ff00' }], alpha: [{ value: 1, curve: 'stepped' }, { time: 1, value: 0 }] }));
+    const k = keysOf(
+      file({
+        rgb: [
+          { color: 'ff0000', curve: 'stepped' },
+          { time: 1, color: '00ff00' },
+        ],
+        alpha: [
+          { value: 1, curve: 'stepped' },
+          { time: 1, value: 0 },
+        ],
+      }),
+    );
     expect(k[0].curve).toBe('stepped');
   });
 
@@ -186,14 +212,18 @@ describe('the importer', () => {
     const back = importSpineJson(json).project.skeleton;
     const k = back.animations.find((a) => a.name === 'walk')!.slots[back.slots[0].id].rgba!;
     expect(k).toHaveLength(2);
-    for (let c = 0; c < 4; c++) expect(k[0].value[c]).toBeCloseTo(p.skeleton.animations.find((a) => a.name === 'walk')!.slots[slot.id].rgba![0].value[c], 2);
+    for (let c = 0; c < 4; c++)
+      expect(k[0].value[c]).toBeCloseTo(p.skeleton.animations.find((a) => a.name === 'walk')!.slots[slot.id].rgba![0].value[c], 2);
   });
 });
 
 describe('mergeRgbAlpha', () => {
   it('without rgb it holds the setup colour, without alpha the setup alpha', () => {
     const a = mergeRgbAlpha(null, [at(0, [1]), at(1, [0])], SETUP);
-    expect(a.keys.map((k) => k.value)).toEqual([[0.5, 0.6, 0.7, 1], [0.5, 0.6, 0.7, 0]]);
+    expect(a.keys.map((k) => k.value)).toEqual([
+      [0.5, 0.6, 0.7, 1],
+      [0.5, 0.6, 0.7, 0],
+    ]);
     const c = mergeRgbAlpha([at(0, [1, 1, 1])], null, SETUP);
     expect(c.keys[0].value).toEqual([1, 1, 1, 0.8]);
   });
@@ -202,7 +232,7 @@ describe('mergeRgbAlpha', () => {
 describe('a random alpha / colour animation agrees with the official runtime', () => {
   it('for 40 random slots, split or not', () => {
     let s = 12345;
-    const r = () => ((s = (s * 1664525 + 1013904223) >>> 0) / 4294967296);
+    const r = () => (s = (s * 1664525 + 1013904223) >>> 0) / 4294967296;
     for (let n = 0; n < 40; n++) {
       const count = 2 + Math.floor(r() * 3);
       const mode = n % 3; // 0 alpha only, 1 colour only, 2 both
@@ -210,7 +240,14 @@ describe('a random alpha / colour animation agrees with the official runtime', (
       for (let i = 0; i < count; i++) {
         const value = mode === 0 ? [SETUP[0], SETUP[1], SETUP[2], r()] : mode === 1 ? [r(), r(), r(), SETUP[3]] : [r(), r(), r(), r()];
         const kind = r();
-        const curve: Key['curve'] | undefined = i === count - 1 ? undefined : kind < 0.4 ? undefined : kind < 0.6 ? 'stepped' : Array.from({ length: 16 }, (_, j) => (j % 4 === 0 || j % 4 === 2 ? 0.1 + 0.8 * r() : 0.9 * r() - 0.05));
+        const curve: Key['curve'] | undefined =
+          i === count - 1
+            ? undefined
+            : kind < 0.4
+              ? undefined
+              : kind < 0.6
+                ? 'stepped'
+                : Array.from({ length: 16 }, (_, j) => (j % 4 === 0 || j % 4 === 2 ? 0.1 + 0.8 * r() : 0.9 * r() - 0.05));
         keys.push(at(i * 0.4 + 0.1, value, curve));
       }
       const { p, slot } = rig(keys);

@@ -7,7 +7,15 @@ import type { RenameWhere } from '@/store/renameActions';
 import { useUi } from '@/store/ui';
 import { Button, SelectField } from '../ui/controls';
 
-const KIND_LABEL: Record<NameKind, string> = { bone: 'Bones', slot: 'Slots', skin: 'Skins', event: 'Events', constraint: 'Constraints', animation: 'Animations', image: 'Pictures' };
+const KIND_LABEL: Record<NameKind, string> = {
+  bone: 'Bones',
+  slot: 'Slots',
+  skin: 'Skins',
+  event: 'Events',
+  constraint: 'Constraints',
+  animation: 'Animations',
+  image: 'Pictures',
+};
 
 /** Find and replace for names, under the Hierarchy filter: the count of what would change shows while typing, Replace does it as one step. */
 export function RenameBar() {
@@ -63,8 +71,20 @@ export function RenameBar() {
         />
       </div>
       <div className="rename-go">
-        <span className="hint-text">{plan.invalid ? 'Not a valid expression' : find ? `${plan.changes.length} to rename${plan.skipped.length ? `, ${plan.skipped.length} skipped` : ''}` : ' '}</span>
-        <Button small primary disabled={!plan.changes.length} title="Rename every name that matches, as one step of the history" onClick={() => void findReplaceNames(opts)}>
+        <span className="hint-text">
+          {plan.invalid
+            ? 'Not a valid expression'
+            : find
+              ? `${plan.changes.length} to rename${plan.skipped.length ? `, ${plan.skipped.length} skipped` : ''}`
+              : ' '}
+        </span>
+        <Button
+          small
+          primary
+          disabled={!plan.changes.length}
+          title="Rename every name that matches, as one step of the history"
+          onClick={() => void findReplaceNames(opts)}
+        >
           Replace
         </Button>
       </div>

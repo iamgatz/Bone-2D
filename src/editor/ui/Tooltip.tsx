@@ -25,7 +25,12 @@ const GAP = 8;
 const MARGIN = 8;
 
 /** Where a tooltip of this size goes next to the element, kept inside the window. */
-export function placeTip(rect: { left: number; top: number; right: number; bottom: number }, size: { width: number; height: number }, place: Place, view: { width: number; height: number }): { x: number; y: number } {
+export function placeTip(
+  rect: { left: number; top: number; right: number; bottom: number },
+  size: { width: number; height: number },
+  place: Place,
+  view: { width: number; height: number },
+): { x: number; y: number } {
   let where = place;
   // not enough room on the wanted side: take the opposite one
   if (where === 'bottom' && rect.bottom + GAP + size.height > view.height - MARGIN) where = 'top';
@@ -67,7 +72,12 @@ export function TooltipHost() {
       if (!text || !el.isConnected) return;
       if (el.dataset.tipClipped !== undefined && el.scrollWidth <= el.clientWidth) return;
       setPos(null);
-      setTip({ text, hotkey: el.dataset.tipKey, rect: el.getBoundingClientRect(), place: (el.dataset.tipPlace as Place | undefined) ?? 'bottom' });
+      setTip({
+        text,
+        hotkey: el.dataset.tipKey,
+        rect: el.getBoundingClientRect(),
+        place: (el.dataset.tipPlace as Place | undefined) ?? 'bottom',
+      });
     };
     const onOver = (e: PointerEvent) => {
       if (e.pointerType === 'touch' || !settingsStore.get().tooltips) return;
@@ -114,7 +124,12 @@ export function TooltipHost() {
 
   if (!tip) return null;
   return createPortal(
-    <div ref={box} className="tooltip" role="tooltip" style={{ left: pos?.x ?? 0, top: pos?.y ?? 0, visibility: pos ? 'visible' : 'hidden' }}>
+    <div
+      ref={box}
+      className="tooltip"
+      role="tooltip"
+      style={{ left: pos?.x ?? 0, top: pos?.y ?? 0, visibility: pos ? 'visible' : 'hidden' }}
+    >
       <span>{tip.text}</span>
       {tip.hotkey && <kbd className="kbd">{tip.hotkey}</kbd>}
     </div>,

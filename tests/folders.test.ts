@@ -26,9 +26,9 @@ function build(n = 7) {
 const ids = (d: SkeletonDoc) => d.slots.map((s) => s.id);
 function rng(seed: number) {
   let s = seed;
-  return () => ((s = (s * 1664525 + 1013904223) >>> 0) / 4294967296);
+  return () => (s = (s * 1664525 + 1013904223) >>> 0) / 4294967296;
 }
-const shuffled = <T,>(a: T[], r: () => number) => {
+const shuffled = <T>(a: T[], r: () => number) => {
   const o = [...a];
   for (let i = o.length - 1; i > 0; i--) {
     const j = Math.floor(r() * (i + 1));
@@ -123,7 +123,9 @@ describe('against the official runtime', () => {
           official.updateWorldTransform(S.Physics.update);
           const ours = createSkeleton(data);
           applyAnimation(ours, d.animations[0], t);
-          expect(names(p, ours.drawOrder), `t=${t.toFixed(2)}`).toEqual(official.drawOrder.appliedPose.map((s: { data: { name: string } }) => s.data.name));
+          expect(names(p, ours.drawOrder), `t=${t.toFixed(2)}`).toEqual(
+            official.drawOrder.appliedPose.map((s: { data: { name: string } }) => s.data.name),
+          );
         }
       }
     });
@@ -213,7 +215,10 @@ describe('editor actions', () => {
 
   it('a damaged folder table is repaired when a project opens', () => {
     const p = structuredClone(docStore.get());
-    p.skeleton.drawOrderFolders = [{ id: 'X', name: 'x', slots: [slots[0], slots[0], 'nope'] }, { id: 'Y', name: 'y', slots: [slots[0]] }];
+    p.skeleton.drawOrderFolders = [
+      { id: 'X', name: 'x', slots: [slots[0], slots[0], 'nope'] },
+      { id: 'Y', name: 'y', slots: [slots[0]] },
+    ];
     const notes = validateProject(p);
     expect(notes.join(' ')).toMatch(/draw order folders repaired/);
   });

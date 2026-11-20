@@ -5,7 +5,16 @@ import { useUi } from '@/store/ui';
 /** The diamond that keys a property at the playhead; lit when there is a key at the playhead. */
 export function KeyButton(props: { on: boolean; onClick: () => void; title: string; disabled?: boolean }) {
   return (
-    <button type="button" className={`key-btn${props.on ? ' on' : ''}`} aria-pressed={props.on} aria-label={props.title} data-tip={props.title} data-tip-place="left" onClick={props.onClick} disabled={props.disabled}>
+    <button
+      type="button"
+      className={`key-btn${props.on ? ' on' : ''}`}
+      aria-pressed={props.on}
+      aria-label={props.title}
+      data-tip={props.title}
+      data-tip-place="left"
+      onClick={props.onClick}
+      disabled={props.disabled}
+    >
       <Diamond size={11} fill={props.on ? 'currentColor' : 'none'} strokeWidth={2.2} />
     </button>
   );
@@ -20,7 +29,12 @@ export function Field(props: { label: string; title?: string; children: ReactNod
   const animate = useUi((s) => s.mode === 'animate');
   return (
     <div className={`frow${animate ? ' keys' : ''}`}>
-      <span className="frow-label" data-tip={props.title ?? props.label} data-tip-clipped={props.title ? undefined : ''} data-tip-place="top">
+      <span
+        className="frow-label"
+        data-tip={props.title ?? props.label}
+        data-tip-clipped={props.title ? undefined : ''}
+        data-tip-place="top"
+      >
         {props.label}
       </span>
       <div className="frow-body">{props.children}</div>

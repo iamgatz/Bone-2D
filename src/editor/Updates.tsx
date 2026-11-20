@@ -41,12 +41,20 @@ function useActivity(enabled: boolean): Activity {
     if (!enabled) return;
     const ctl = new AbortController();
     setActivity({ state: 'loading' });
-    fetch(`https://api.github.com/repos/${REPO}/commits?per_page=25`, { signal: ctl.signal, headers: { Accept: 'application/vnd.github+json' } })
+    fetch(`https://api.github.com/repos/${REPO}/commits?per_page=25`, {
+      signal: ctl.signal,
+      headers: { Accept: 'application/vnd.github+json' },
+    })
       .then((r) => (r.ok ? r.json() : Promise.reject(new Error(String(r.status)))))
       .then((rows: { sha: string; html_url: string; commit: { message: string; author?: { date?: string } } }[]) => {
         setActivity({
           state: 'ok',
-          commits: rows.map((r) => ({ sha: r.sha.slice(0, 7), url: r.html_url, message: r.commit.message.split('\n')[0], date: (r.commit.author?.date ?? '').slice(0, 10) })),
+          commits: rows.map((r) => ({
+            sha: r.sha.slice(0, 7),
+            url: r.html_url,
+            message: r.commit.message.split('\n')[0],
+            date: (r.commit.author?.date ?? '').slice(0, 10),
+          })),
         });
       })
       .catch(() => {
@@ -108,7 +116,12 @@ export function UpdatesDialog() {
       ) : (
         <div className="updates">
           {activity.state === 'loading' && <p className="hint-text">Loading…</p>}
-          {activity.state === 'error' && <p className="hint-text">The activity feed could not be loaded (offline, or the GitHub limit for anonymous requests). Open the commits on GitHub with the button below.</p>}
+          {activity.state === 'error' && (
+            <p className="hint-text">
+              The activity feed could not be loaded (offline, or the GitHub limit for anonymous requests). Open the commits on GitHub with
+              the button below.
+            </p>
+          )}
           {activity.state === 'ok' && (
             <ul className="commits">
               {activity.commits.map((c) => (

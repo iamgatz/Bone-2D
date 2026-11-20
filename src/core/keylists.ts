@@ -4,7 +4,20 @@ import type { Animation } from './model';
 export type KeyList = { time: number }[];
 
 /** The parts of an animation that hold keys. Its name, length, play settings and markers do not. */
-const KEYED_PARTS = ['bones', 'slots', 'deform', 'sequence', 'ik', 'transform', 'slider', 'path', 'physics', 'drawOrder', 'drawOrderFolder', 'events'] as const;
+const KEYED_PARTS = [
+  'bones',
+  'slots',
+  'deform',
+  'sequence',
+  'ik',
+  'transform',
+  'slider',
+  'path',
+  'physics',
+  'drawOrder',
+  'drawOrderFolder',
+  'events',
+] as const;
 
 /** Every key list inside `value` (records and arrays are walked; the list of keys itself is not). */
 export function keyListsIn(value: unknown, out: KeyList[] = []): KeyList[] {

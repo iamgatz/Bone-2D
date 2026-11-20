@@ -62,6 +62,12 @@ describe('cleanRefVideoView', () => {
     expect(cleanRefVideoView({})).toEqual(DEFAULT_REF_VIDEO);
     expect(cleanRefVideoView({ opacity: 7, scale: -5, offset: NaN, x: Infinity })).toEqual({ ...DEFAULT_REF_VIDEO, opacity: 1, scale: 1 });
     expect(cleanRefVideoView({ opacity: -1, scale: 99999 })).toMatchObject({ opacity: 0, scale: 2000 });
-    expect(cleanRefVideoView({ offset: -2.5, x: 4, y: -9, scale: 60, opacity: 0.3 })).toEqual({ offset: -2.5, x: 4, y: -9, scale: 60, opacity: 0.3 });
+    expect(cleanRefVideoView({ offset: -2.5, x: 4, y: -9, scale: 60, opacity: 0.3 })).toEqual({
+      offset: -2.5,
+      x: 4,
+      y: -9,
+      scale: 60,
+      opacity: 0.3,
+    });
   });
 });

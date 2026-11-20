@@ -32,8 +32,15 @@ export function SequenceSection({ slotId, att }: { slotId: Id; att: RegionAttach
     if (animate) return null;
     return (
       <Section id="slot.sequence" title="Sequence" icon={Film}>
-        <p className="hint-text mb">Show a different picture over time: smoke, fire, a blink drawn frame by frame. Number the pictures (flame01, flame02…) and press the button.</p>
-        <Button icon={Film} onClick={() => makeSequence(slotId, att.name)} title="Use the numbered pictures that go with this one as the frames">
+        <p className="hint-text mb">
+          Show a different picture over time: smoke, fire, a blink drawn frame by frame. Number the pictures (flame01, flame02…) and press
+          the button.
+        </p>
+        <Button
+          icon={Film}
+          onClick={() => makeSequence(slotId, att.name)}
+          title="Use the numbered pictures that go with this one as the frames"
+        >
           Make a sequence
         </Button>
       </Section>
@@ -52,28 +59,58 @@ export function SequenceSection({ slotId, att }: { slotId: Id; att: RegionAttach
       <div className="hstack wrap mb">
         <span className="chip">{`${seq.count} frames`}</span>
         <span className="chip">{`frame ${shown + 1} of ${seq.count}`}</span>
-        {missing.length > 0 && <span className="chip warn" title={missing.slice(0, 8).join(', ')}>{`${missing.length} pictures missing`}</span>}
+        {missing.length > 0 && (
+          <span className="chip warn" title={missing.slice(0, 8).join(', ')}>{`${missing.length} pictures missing`}</span>
+        )}
       </div>
       {!animate && (
         <>
           <Field label="Frames" title="How many pictures the sequence has">
-            <NumberField label="n" value={seq.count} step={1} precision={0} min={1} max={9999} onChange={(v) => set({ count: Math.round(v), setupIndex: Math.min(seq.setupIndex, Math.max(0, Math.round(v) - 1)) })} />
+            <NumberField
+              label="n"
+              value={seq.count}
+              step={1}
+              precision={0}
+              min={1}
+              max={9999}
+              onChange={(v) => set({ count: Math.round(v), setupIndex: Math.min(seq.setupIndex, Math.max(0, Math.round(v) - 1)) })}
+            />
           </Field>
           <Field label="First number" title="The number in the name of the first picture">
             <NumberField label="#" value={seq.start} step={1} precision={0} min={0} onChange={(v) => set({ start: Math.round(v) })} />
           </Field>
           <Field label="Digits" title="Zero padding of the number: 2 gives 01, 02 … (0 for none)">
-            <NumberField label="d" value={seq.digits} step={1} precision={0} min={0} max={9} onChange={(v) => set({ digits: Math.round(v) })} />
+            <NumberField
+              label="d"
+              value={seq.digits}
+              step={1}
+              precision={0}
+              min={0}
+              max={9}
+              onChange={(v) => set({ digits: Math.round(v) })}
+            />
           </Field>
           <Field label="Setup frame" title="The frame that shows while no sequence key plays (0 is the first)">
-            <NumberField label="i" value={seq.setupIndex} step={1} precision={0} min={0} max={seq.count - 1} onChange={(v) => set({ setupIndex: Math.round(v) })} />
+            <NumberField
+              label="i"
+              value={seq.setupIndex}
+              step={1}
+              precision={0}
+              min={0}
+              max={seq.count - 1}
+              onChange={(v) => set({ setupIndex: Math.round(v) })}
+            />
           </Field>
           <p className="hint-text">{`Pictures: ${sequenceFramePath(att.path, seq, 0)}, …`}</p>
           <div className="hstack">
             <Button icon={Search} onClick={() => findFrames(slotId, att.name)} title="Look for the numbered pictures again">
               Find frames
             </Button>
-            <Button icon={Trash2} onClick={() => setSequence(slotId, att.name, null)} title="Show one picture again; the sequence keys of this attachment go too">
+            <Button
+              icon={Trash2}
+              onClick={() => setSequence(slotId, att.name, null)}
+              title="Show one picture again; the sequence keys of this attachment go too"
+            >
               Remove
             </Button>
           </div>
@@ -81,14 +118,43 @@ export function SequenceSection({ slotId, att }: { slotId: Id; att: RegionAttach
       )}
       {animate && (
         <>
-          <Field label="Mode" title="How the frames advance after this key" keyButton={<KeyButton on={!!key && Math.abs(key.time - time) < 1e-3} title="Key the sequence" onClick={() => keySequence(slotId, att.name)} />}>
-            <SelectField<SequenceMode> value={key?.mode ?? 'hold'} options={SEQUENCE_MODES.map((m) => ({ value: m, label: MODE_LABEL[m] }))} onChange={(m) => keySequence(slotId, att.name, { mode: m })} />
+          <Field
+            label="Mode"
+            title="How the frames advance after this key"
+            keyButton={
+              <KeyButton
+                on={!!key && Math.abs(key.time - time) < 1e-3}
+                title="Key the sequence"
+                onClick={() => keySequence(slotId, att.name)}
+              />
+            }
+          >
+            <SelectField<SequenceMode>
+              value={key?.mode ?? 'hold'}
+              options={SEQUENCE_MODES.map((m) => ({ value: m, label: MODE_LABEL[m] }))}
+              onChange={(m) => keySequence(slotId, att.name, { mode: m })}
+            />
           </Field>
           <Field label="Frame" title="The frame this key starts from (0 is the first)">
-            <NumberField label="i" value={key?.index ?? 0} step={1} precision={0} min={0} max={seq.count - 1} onChange={(v) => keySequence(slotId, att.name, { index: Math.round(v) })} />
+            <NumberField
+              label="i"
+              value={key?.index ?? 0}
+              step={1}
+              precision={0}
+              min={0}
+              max={seq.count - 1}
+              onChange={(v) => keySequence(slotId, att.name, { index: Math.round(v) })}
+            />
           </Field>
           <Field label="Delay" title="Seconds each frame stays (hold ignores it)">
-            <NumberField label="s" value={key?.delay ?? 0} step={0.01} precision={3} min={0} onChange={(v) => keySequence(slotId, att.name, { delay: v })} />
+            <NumberField
+              label="s"
+              value={key?.delay ?? 0}
+              step={0.01}
+              precision={3}
+              min={0}
+              onChange={(v) => keySequence(slotId, att.name, { delay: v })}
+            />
           </Field>
         </>
       )}

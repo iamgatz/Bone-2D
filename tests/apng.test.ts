@@ -14,7 +14,10 @@ const u32 = (b: Uint8Array, at: number) => ((b[at] << 24) | (b[at + 1] << 16) | 
 
 describe('encodeApng', () => {
   const frames = [frame(1), frame(2), frame(3)];
-  const apng = encodeApng(frames.map((f) => f.png), { delayNum: 1000, delayDen: 30000, plays: 0 });
+  const apng = encodeApng(
+    frames.map((f) => f.png),
+    { delayNum: 1000, delayDen: 30000, plays: 0 },
+  );
   const chunks = pngChunks(apng);
 
   it('has the animation chunks in the order the format wants, with valid checksums', () => {
@@ -23,7 +26,7 @@ describe('encodeApng', () => {
     expect(u32(act, 0)).toBe(3);
     expect(u32(act, 4)).toBe(0);
     // every checksum is the crc of type + data
-    for (let at = 8; at < apng.length; ) {
+    for (let at = 8; at < apng.length;) {
       const len = u32(apng, at);
       expect(u32(apng, at + 8 + len)).toBe(crc32(apng.subarray(at + 4, at + 8 + len)));
       at += 12 + len;
@@ -46,11 +49,17 @@ describe('encodeApng', () => {
       const parts: number[] = [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a];
       const add = (type: string, body: Uint8Array) => {
         const buf = new Uint8Array(12 + body.length);
-        buf[0] = (body.length >>> 24) & 255; buf[1] = (body.length >>> 16) & 255; buf[2] = (body.length >>> 8) & 255; buf[3] = body.length & 255;
+        buf[0] = (body.length >>> 24) & 255;
+        buf[1] = (body.length >>> 16) & 255;
+        buf[2] = (body.length >>> 8) & 255;
+        buf[3] = body.length & 255;
         for (let i = 0; i < 4; i++) buf[4 + i] = type.charCodeAt(i);
         buf.set(body, 8);
         const c = crc32(buf.subarray(4, 8 + body.length));
-        buf[8 + body.length] = (c >>> 24) & 255; buf[9 + body.length] = (c >>> 16) & 255; buf[10 + body.length] = (c >>> 8) & 255; buf[11 + body.length] = c & 255;
+        buf[8 + body.length] = (c >>> 24) & 255;
+        buf[9 + body.length] = (c >>> 16) & 255;
+        buf[10 + body.length] = (c >>> 8) & 255;
+        buf[11 + body.length] = c & 255;
         parts.push(...buf);
       };
       add('IHDR', header.data);

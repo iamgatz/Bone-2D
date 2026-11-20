@@ -14,14 +14,28 @@ function chunk(type: string, data: Uint8Array): Buffer {
 const SIG = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
 
 /** A PNG made by hand: header fields, optional chunks, and raw scanline bytes (each row already starting with its filter byte). */
-function png(width: number, height: number, depth: number, colour: number, raw: number[], extra: [string, number[]][] = [], interlace = 0): Uint8Array {
+function png(
+  width: number,
+  height: number,
+  depth: number,
+  colour: number,
+  raw: number[],
+  extra: [string, number[]][] = [],
+  interlace = 0,
+): Uint8Array {
   const head = Buffer.alloc(13);
   head.writeUInt32BE(width, 0);
   head.writeUInt32BE(height, 4);
   head[8] = depth;
   head[9] = colour;
   head[12] = interlace;
-  return Buffer.concat([SIG, chunk('IHDR', head), ...extra.map(([t, d]) => chunk(t, Uint8Array.from(d))), chunk('IDAT', deflateSync(Buffer.from(raw))), chunk('IEND', new Uint8Array(0))]);
+  return Buffer.concat([
+    SIG,
+    chunk('IHDR', head),
+    ...extra.map(([t, d]) => chunk(t, Uint8Array.from(d))),
+    chunk('IDAT', deflateSync(Buffer.from(raw))),
+    chunk('IEND', new Uint8Array(0)),
+  ]);
 }
 
 const pixelsOf = (p: ReturnType<typeof decodePng>) => Array.from(p!.data);
@@ -55,7 +69,21 @@ describe('colour types and depths', () => {
   });
   it('palette with 4-bit indices and a tRNS table', () => {
     const plte = [255, 0, 0, 0, 255, 0, 0, 0, 255];
-    const out = pixelsOf(decodePng(png(3, 1, 4, 3, [0, 0x01, 0x20], [['PLTE', plte], ['tRNS', [128]]])));
+    const out = pixelsOf(
+      decodePng(
+        png(
+          3,
+          1,
+          4,
+          3,
+          [0, 0x01, 0x20],
+          [
+            ['PLTE', plte],
+            ['tRNS', [128]],
+          ],
+        ),
+      ),
+    );
     expect(out).toEqual([255, 0, 0, 128, 0, 255, 0, 255, 0, 0, 255, 255]);
   });
   it('16-bit keeps the high byte', () => {
@@ -97,7 +125,15 @@ describe('filters and interlacing', () => {
     const w = 5;
     const h = 5;
     const grey = (x: number, y: number) => y * 10 + x;
-    const passes = [[0, 0, 8, 8], [4, 0, 8, 8], [0, 4, 4, 8], [2, 0, 4, 4], [0, 2, 2, 4], [1, 0, 2, 2], [0, 1, 1, 2]];
+    const passes = [
+      [0, 0, 8, 8],
+      [4, 0, 8, 8],
+      [0, 4, 4, 8],
+      [2, 0, 4, 4],
+      [0, 2, 2, 4],
+      [1, 0, 2, 2],
+      [0, 1, 1, 2],
+    ];
     const raw: number[] = [];
     for (const [x0, y0, dx, dy] of passes) {
       const pw = Math.ceil((w - x0) / dx);
@@ -114,11 +150,20 @@ describe('filters and interlacing', () => {
 });
 
 describe('resizePixels', () => {
-  const solid = (w: number, h: number, c: [number, number, number, number]) => ({ width: w, height: h, data: new Uint8ClampedArray(Array.from({ length: w * h }, () => c).flat()) });
+  const solid = (w: number, h: number, c: [number, number, number, number]) => ({
+    width: w,
+    height: h,
+    data: new Uint8ClampedArray(Array.from({ length: w * h }, () => c).flat()),
+  });
   it('keeps the size it is given and a flat colour when it shrinks or grows', () => {
     const p = solid(8, 6, [10, 200, 30, 255]);
     expect(resizePixels(p, 8, 6)).toBe(p);
-    for (const [w, h] of [[4, 3], [3, 2], [16, 12], [5, 7]] as const) {
+    for (const [w, h] of [
+      [4, 3],
+      [3, 2],
+      [16, 12],
+      [5, 7],
+    ] as const) {
       const r = resizePixels(p, w, h);
       expect([r.width, r.height]).toEqual([w, h]);
       for (let i = 0; i < w * h; i++) expect(Array.from(r.data.subarray(i * 4, i * 4 + 4))).toEqual([10, 200, 30, 255]);

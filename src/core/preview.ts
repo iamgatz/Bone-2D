@@ -46,7 +46,9 @@ export function cleanMixes(raw: unknown, animIds: ReadonlySet<Id>): MixTable | u
 
 /** The table with the time of one pair set; a time equal to the default removes the entry. */
 export function withMix(m: MixTable | undefined, from: Id, to: Id, time: number): MixTable {
-  const base: MixTable = m ? { default: m.default, pairs: m.pairs.filter((p) => !(p.from === from && p.to === to)) } : { default: 0, pairs: [] };
+  const base: MixTable = m
+    ? { default: m.default, pairs: m.pairs.filter((p) => !(p.from === from && p.to === to)) }
+    : { default: 0, pairs: [] };
   const t = clampTime(time);
   if (t !== base.default) base.pairs.push({ from, to, time: t });
   return base;
@@ -86,7 +88,13 @@ export function keyedChannels(tl: BoneTimelines | undefined) {
  * follow `to`. Rotation takes the short way round, as the Spine runtime does. Does not compute world transforms.
  * `hold` is Spine's Hold Previous: a value `to` does not key stays as `from` has it, instead of fading to the setup pose.
  */
-export function poseMixed(sk: Skeleton, from: { anim: Animation | null; time: number } | null, to: { anim: Animation | null; time: number }, alpha: number, hold = false) {
+export function poseMixed(
+  sk: Skeleton,
+  from: { anim: Animation | null; time: number } | null,
+  to: { anim: Animation | null; time: number },
+  alpha: number,
+  hold = false,
+) {
   if (!from || alpha >= 1) {
     applyAnimation(sk, to.anim, to.time);
     return;
@@ -99,7 +107,8 @@ export function poseMixed(sk: Skeleton, from: { anim: Animation | null; time: nu
     const f = was[i];
     // a value the new animation does not key is held where the old one had it (Hold Previous), not faded to the setup pose
     const k = hold ? keyedChannels(to.anim?.bones[b.data.id]) : null;
-    const mix = (key: keyof ReturnType<typeof keyedChannels>, from: number, now: number, turn = false) => (k && !k[key] ? from : from + (turn ? wrap180(now - from) : now - from) * a);
+    const mix = (key: keyof ReturnType<typeof keyedChannels>, from: number, now: number, turn = false) =>
+      k && !k[key] ? from : from + (turn ? wrap180(now - from) : now - from) * a;
     b.x = mix('x', f[0], b.x);
     b.y = mix('y', f[1], b.y);
     b.rotation = mix('rotation', f[2], b.rotation, true);
@@ -146,7 +155,8 @@ export function poseLayers(sk: Skeleton, scratch: Skeleton, layers: readonly Pre
       if (!b || !s || !b.active) continue;
       const k = keyedChannels(anim.bones[id]);
       const d = b.data;
-      const put = (cur: number, now: number, setup: number, turn = false) => (l.additive ? cur + (now - setup) * a : cur + (turn ? wrap180(now - cur) : now - cur) * a);
+      const put = (cur: number, now: number, setup: number, turn = false) =>
+        l.additive ? cur + (now - setup) * a : cur + (turn ? wrap180(now - cur) : now - cur) * a;
       if (k.rotation) b.rotation = put(b.rotation, s.rotation, d.rotation, true);
       if (k.x) b.x = put(b.x, s.x, d.x);
       if (k.y) b.y = put(b.y, s.y, d.y);
@@ -166,7 +176,9 @@ export function poseLayers(sk: Skeleton, scratch: Skeleton, layers: readonly Pre
         slot.deform = [];
       }
       if (tl.rgba?.length || tl.rgba2?.length) {
-        slot.color = slot.color.map((c, i) => (l.additive ? c + (from.color[i] - slot.data.color[i]) * a : c + (from.color[i] - c) * a)) as typeof slot.color;
+        slot.color = slot.color.map((c, i) =>
+          l.additive ? c + (from.color[i] - slot.data.color[i]) * a : c + (from.color[i] - c) * a,
+        ) as typeof slot.color;
       }
     }
   }

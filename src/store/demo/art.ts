@@ -18,8 +18,24 @@ interface Palette {
 }
 
 const PALETTES: Record<SkinName, Palette> = {
-  fox: { body: '#f08a3c', bodyShade: '#c9622a', belly: '#fff0d8', dark: '#4a312c', darkShade: '#2f1f1c', inner: '#f2a1a1', line: '#3a211a' },
-  arctic: { body: '#eef5fa', bodyShade: '#b9cddd', belly: '#ffffff', dark: '#7f98ad', darkShade: '#586f84', inner: '#f4c6d4', line: '#2c3d4d' },
+  fox: {
+    body: '#f08a3c',
+    bodyShade: '#c9622a',
+    belly: '#fff0d8',
+    dark: '#4a312c',
+    darkShade: '#2f1f1c',
+    inner: '#f2a1a1',
+    line: '#3a211a',
+  },
+  arctic: {
+    body: '#eef5fa',
+    bodyShade: '#b9cddd',
+    belly: '#ffffff',
+    dark: '#7f98ad',
+    darkShade: '#586f84',
+    inner: '#f4c6d4',
+    line: '#2c3d4d',
+  },
 };
 
 const SCARF = { a: '#35d9ae', b: '#1d9c7e', stripe: '#fff3c4', line: '#124a3d' };

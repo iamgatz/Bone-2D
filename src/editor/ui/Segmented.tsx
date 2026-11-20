@@ -15,7 +15,13 @@ export interface SegmentedOption<T extends string> {
  * A switch with a few exclusive options (Setup / Animate, EN / RU). One tab stop; the arrow keys move between the options.
  * The labels are children of elements made here, so the language runtime translates them; the titles (tooltips) are translated here.
  */
-export function Segmented<T extends string>(props: { value: T; options: SegmentedOption<T>[]; onChange: (v: T) => void; label: string; className?: string }) {
+export function Segmented<T extends string>(props: {
+  value: T;
+  options: SegmentedOption<T>[];
+  onChange: (v: T) => void;
+  label: string;
+  className?: string;
+}) {
   const group = useRef<HTMLDivElement>(null);
   const move = (e: React.KeyboardEvent, i: number) => {
     const step = e.key === 'ArrowRight' || e.key === 'ArrowDown' ? 1 : e.key === 'ArrowLeft' || e.key === 'ArrowUp' ? -1 : 0;
@@ -31,7 +37,17 @@ export function Segmented<T extends string>(props: { value: T; options: Segmente
         const Icon = o.icon;
         const active = o.value === props.value;
         return (
-          <button key={o.value} type="button" role="radio" aria-checked={active} tabIndex={active ? 0 : -1} className={active ? `active ${o.tone ?? 'plain'}` : o.tone ?? 'plain'} data-tip={o.title && tr(o.title)} onClick={() => props.onChange(o.value)} onKeyDown={(e) => move(e, i)}>
+          <button
+            key={o.value}
+            type="button"
+            role="radio"
+            aria-checked={active}
+            tabIndex={active ? 0 : -1}
+            className={active ? `active ${o.tone ?? 'plain'}` : (o.tone ?? 'plain')}
+            data-tip={o.title && tr(o.title)}
+            onClick={() => props.onChange(o.value)}
+            onKeyDown={(e) => move(e, i)}
+          >
             {Icon && <Icon size={14} />}
             {o.label}
           </button>

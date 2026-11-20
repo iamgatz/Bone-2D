@@ -26,7 +26,13 @@ export function FloatingPanels() {
       )}
       {open.meshTools && (
         <FloatingWindow id="meshTools" title={FLOAT_LIST[1].label} icon={Hexagon}>
-          {slot && mesh ? <MeshGroup slotId={slot.id} att={mesh} part="main" /> : slot && att?.type === 'region' && mode === 'setup' ? <ConvertToMeshGroup slotId={slot.id} name={att.name} /> : none('Select a mesh or an image to see its mesh tools.')}
+          {slot && mesh ? (
+            <MeshGroup slotId={slot.id} att={mesh} part="main" />
+          ) : slot && att?.type === 'region' && mode === 'setup' ? (
+            <ConvertToMeshGroup slotId={slot.id} name={att.name} />
+          ) : (
+            none('Select a mesh or an image to see its mesh tools.')
+          )}
         </FloatingWindow>
       )}
       {open.weights && (

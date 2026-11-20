@@ -64,7 +64,10 @@ export function simplifyCurrentAnimation(strength: number, selectedOnly: boolean
     if (a) removed = simplifyAnimation(a, scaleTolerance(DEFAULT_TOLERANCE, strength), d.skeleton.fps, bones);
   });
   uiStore.patch({ selectedKeys: [] });
-  toast(removed ? `Removed ${removed} keys, the curves stay within the tolerance` : 'No key can go without changing the motion', removed ? 'ok' : 'info');
+  toast(
+    removed ? `Removed ${removed} keys, the curves stay within the tolerance` : 'No key can go without changing the motion',
+    removed ? 'ok' : 'info',
+  );
   return removed;
 }
 
@@ -80,7 +83,12 @@ export function bakeCurrentAnimation(options: Partial<BakeOptions>): Id | null {
   });
   selectAnimation(baked.id);
   const skipped = bakeSkips(doc, anim);
-  if (skipped.length) toast(`Baked into "${baked.name}", but path constraint "${skipped.join('", "')}" has no path on some frames: its bones are not baked`, 'info', 7000);
+  if (skipped.length)
+    toast(
+      `Baked into "${baked.name}", but path constraint "${skipped.join('", "')}" has no path on some frames: its bones are not baked`,
+      'info',
+      7000,
+    );
   else toast(`Baked into "${baked.name}": ${Object.keys(baked.bones).length} bones carry keys`, 'ok');
   return baked.id;
 }
@@ -120,7 +128,13 @@ export function crossfadeSlot(slotId: Id, seconds: number): Id | null {
   const why = fadeRefusal(doc, slot, anim);
   if (why) {
     toast(
-      why === 'no-keys' ? 'This animation changes no picture of the slot' : why === 'two-color' ? 'A slot with a dark color cannot fade' : why === 'color-keys' ? 'The slot already has color keys in this animation' : 'This slot changes no picture',
+      why === 'no-keys'
+        ? 'This animation changes no picture of the slot'
+        : why === 'two-color'
+          ? 'A slot with a dark color cannot fade'
+          : why === 'color-keys'
+            ? 'The slot already has color keys in this animation'
+            : 'This slot changes no picture',
       'info',
     );
     return null;
@@ -136,7 +150,10 @@ export function crossfadeSlot(slotId: Id, seconds: number): Id | null {
   const got = made as Crossfade | null;
   if (!got) return null;
   uiStore.patch({ selectedKeys: [] });
-  toast(`Faded ${got.fades} changes of picture; "${skeletonDoc().slots.find((s) => s.id === got.partner)?.name ?? ''}" shows the old pictures`, 'ok');
+  toast(
+    `Faded ${got.fades} changes of picture; "${skeletonDoc().slots.find((s) => s.id === got.partner)?.name ?? ''}" shows the old pictures`,
+    'ok',
+  );
   return got.partner;
 }
 
@@ -150,7 +167,11 @@ export function renameAnimation(id: Id, name: string) {
   const doc = skeletonDoc();
   docStore.update('Rename animation', (d) => {
     const a = d.skeleton.animations.find((x) => x.id === id);
-    if (a) a.name = freshName(clean, doc.animations.filter((x) => x.id !== id));
+    if (a)
+      a.name = freshName(
+        clean,
+        doc.animations.filter((x) => x.id !== id),
+      );
   });
 }
 

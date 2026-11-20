@@ -10,8 +10,6 @@ import { uiStore } from '../src/store/ui';
 import { buildFixture } from './fixture';
 import { S, exportAndLoad } from './official';
 
- 
-
 const clone = (p: Project): Project => JSON.parse(JSON.stringify(p));
 
 function without(project: Project, id: string): Project {
@@ -26,7 +24,12 @@ function worlds(project: Project) {
   const sk = new S.Skeleton(skeletonData);
   sk.setupPose();
   sk.updateWorldTransform(S.Physics.update);
-  return new Map(sk.bones.map((b: any) => [b.data.name, [b.appliedPose.a, b.appliedPose.b, b.appliedPose.c, b.appliedPose.d, b.appliedPose.worldX, b.appliedPose.worldY]]));
+  return new Map(
+    sk.bones.map((b: any) => [
+      b.data.name,
+      [b.appliedPose.a, b.appliedPose.b, b.appliedPose.c, b.appliedPose.d, b.appliedPose.worldX, b.appliedPose.worldY],
+    ]),
+  );
 }
 
 /** The fixture with one more constraint of every flavour the matcher has to handle. */
@@ -35,9 +38,34 @@ function rig() {
   const doc = project.skeleton;
   const id = (n: string) => doc.bones.find((b) => b.name === n)!.id;
   doc.constraints.push(
-    newTransformConstraint({ name: 'pos to rot', bones: [id('tail')], source: id('handTarget'), properties: [{ prop: 'x', offset: 5, to: [{ prop: 'rotate', offset: 0, max: 1, scale: 0.3 }] }] }),
-    newTransformConstraint({ name: 'wide clamp', bones: [id('legLower')], source: id('footTarget'), clamp: true, properties: [{ prop: 'y', offset: 0, to: [{ prop: 'rotate', offset: 10, max: 12, scale: 5 }] }] }),
-    newTransformConstraint({ name: 'two bones', bones: [id('hand'), id('head')], source: id('tailTarget'), properties: [{ prop: 'rotate', offset: 3, to: [{ prop: 'rotate', offset: 0, max: 1, scale: 1 }, { prop: 'shearY', offset: 0, max: 1, scale: 0.5 }] }] }),
+    newTransformConstraint({
+      name: 'pos to rot',
+      bones: [id('tail')],
+      source: id('handTarget'),
+      properties: [{ prop: 'x', offset: 5, to: [{ prop: 'rotate', offset: 0, max: 1, scale: 0.3 }] }],
+    }),
+    newTransformConstraint({
+      name: 'wide clamp',
+      bones: [id('legLower')],
+      source: id('footTarget'),
+      clamp: true,
+      properties: [{ prop: 'y', offset: 0, to: [{ prop: 'rotate', offset: 10, max: 12, scale: 5 }] }],
+    }),
+    newTransformConstraint({
+      name: 'two bones',
+      bones: [id('hand'), id('head')],
+      source: id('tailTarget'),
+      properties: [
+        {
+          prop: 'rotate',
+          offset: 3,
+          to: [
+            { prop: 'rotate', offset: 0, max: 1, scale: 1 },
+            { prop: 'shearY', offset: 0, max: 1, scale: 0.5 },
+          ],
+        },
+      ],
+    }),
   );
   return { project, doc };
 }

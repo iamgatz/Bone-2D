@@ -279,9 +279,22 @@ export function exportSpineJson(doc: SkeletonDoc, options: SpineExportOptions = 
         const source = att.type === 'mesh' && att.link ? linkSource(doc, slotId, att) : null;
         const linked: LinkJson | null =
           source && att.type === 'mesh' && att.link
-            ? { source: att.link.source, slot: source.slotId !== slotId ? slotName(source.slotId) : '', skin: source.skin !== doc.skins[0] ? source.skin.name : '', deform: att.link.deform }
+            ? {
+                source: att.link.source,
+                slot: source.slotId !== slotId ? slotName(source.slotId) : '',
+                skin: source.skin !== doc.skins[0] ? source.skin.name : '',
+                deform: att.link.deform,
+              }
             : null;
-        perSlot[key] = exportAttachment(att, key, data.boneIndex, slotName, compiled?.kind === 'path' ? compiled.lengths : [], linked, options.nonessential !== false);
+        perSlot[key] = exportAttachment(
+          att,
+          key,
+          data.boneIndex,
+          slotName,
+          compiled?.kind === 'path' ? compiled.lengths : [],
+          linked,
+          options.nonessential !== false,
+        );
       }
       attachments[sn] = perSlot;
     }
@@ -305,7 +318,16 @@ export function exportSpineJson(doc: SkeletonDoc, options: SpineExportOptions = 
 
   const animations: Json = {};
   const rootBone = data.bones.length ? data.bones[0].name : 'root';
-  for (const a of doc.animations) animations[a.name] = exportAnimation(doc, a, { boneName, slotName, skinById, rootBone, exportedSliders, splitColor: options.splitColor, sliderAnimations });
+  for (const a of doc.animations)
+    animations[a.name] = exportAnimation(doc, a, {
+      boneName,
+      slotName,
+      skinById,
+      rootBone,
+      exportedSliders,
+      splitColor: options.splitColor,
+      sliderAnimations,
+    });
 
   const out: Json = { skeleton, bones };
   if (slots.length) out.slots = slots;
@@ -341,7 +363,15 @@ interface LinkJson {
   deform: boolean;
 }
 
-function exportAttachment(att: Attachment, key: string, boneIndex: Map<Id, number>, slotName: (id: Id) => string, pathLengths: number[], linked: LinkJson | null, nonessential = true): Json {
+function exportAttachment(
+  att: Attachment,
+  key: string,
+  boneIndex: Map<Id, number>,
+  slotName: (id: Id) => string,
+  pathLengths: number[],
+  linked: LinkJson | null,
+  nonessential = true,
+): Json {
   const o: Json = {};
   if (att.name !== key) o.name = att.name;
   if (att.type === 'path') {
@@ -758,7 +788,10 @@ function exportAnimation(doc: SkeletonDoc, a: Animation, n: Names): Json {
     out.drawOrder = a.drawOrder.map((k) => {
       const e: Json = {};
       withTime(e, k.time);
-      const offsets = drawOrderOffsets(doc.slots.map((s) => s.id), k.order.filter((id) => setupIndex.has(id)));
+      const offsets = drawOrderOffsets(
+        doc.slots.map((s) => s.id),
+        k.order.filter((id) => setupIndex.has(id)),
+      );
       if (offsets.length) e.offsets = offsets.map((o) => ({ slot: n.slotName(o.id), offset: o.offset }));
       return e;
     });
@@ -864,13 +897,23 @@ function padDuration(out: Json, duration: number, _names: Names) {
   };
   const deformKeys = (): Json[] | null => {
     for (const skin of Object.values((out.attachments ?? {}) as Json))
-      for (const slot of Object.values(skin as Json)) for (const att of Object.values(slot as Json)) {
-        const keys = (att as Json).deform;
-        if (Array.isArray(keys) && keys.length) return keys as Json[];
-      }
+      for (const slot of Object.values(skin as Json))
+        for (const att of Object.values(slot as Json)) {
+          const keys = (att as Json).deform;
+          if (Array.isArray(keys) && keys.length) return keys as Json[];
+        }
     return null;
   };
-  const keys = firstKeys(out.bones as Json | undefined) ?? firstKeys(out.slots as Json | undefined) ?? firstKeys(out.ik as Json | undefined) ?? firstKeys(out.transform as Json | undefined) ?? firstKeys(out.slider as Json | undefined) ?? firstKeys(out.path as Json | undefined) ?? physicsKeys() ?? deformKeys() ?? (Array.isArray(out.drawOrder) && out.drawOrder.length ? (out.drawOrder as Json[]) : null);
+  const keys =
+    firstKeys(out.bones as Json | undefined) ??
+    firstKeys(out.slots as Json | undefined) ??
+    firstKeys(out.ik as Json | undefined) ??
+    firstKeys(out.transform as Json | undefined) ??
+    firstKeys(out.slider as Json | undefined) ??
+    firstKeys(out.path as Json | undefined) ??
+    physicsKeys() ??
+    deformKeys() ??
+    (Array.isArray(out.drawOrder) && out.drawOrder.length ? (out.drawOrder as Json[]) : null);
   if (!keys) return;
   const last = { ...keys[keys.length - 1] };
   delete last.curve;

@@ -85,7 +85,8 @@ export function animationEndTime(anim: Animation): number {
     scan(t.rgba);
     scan(t.rgba2);
   }
-  for (const skin of Object.values(anim.sequence ?? {})) for (const slot of Object.values(skin)) for (const keys of Object.values(slot)) scan(keys);
+  for (const skin of Object.values(anim.sequence ?? {}))
+    for (const slot of Object.values(skin)) for (const keys of Object.values(slot)) scan(keys);
   for (const id in anim.ik) scan(anim.ik[id]);
   for (const id in anim.transform ?? {}) scan(anim.transform[id]);
   for (const id in anim.slider ?? {}) {
@@ -98,7 +99,8 @@ export function animationEndTime(anim: Animation): number {
     scan(anim.path[id].mix);
   }
   for (const id in anim.physics ?? {}) for (const p of [...PHYSICS_PARAMS, 'reset'] as const) scan(anim.physics[id][p]);
-  for (const skin in anim.deform) for (const slot in anim.deform[skin]) for (const att in anim.deform[skin][slot]) scan(anim.deform[skin][slot][att]);
+  for (const skin in anim.deform)
+    for (const slot in anim.deform[skin]) for (const att in anim.deform[skin][slot]) scan(anim.deform[skin][slot][att]);
   scan(anim.drawOrder);
   for (const id in anim.drawOrderFolder ?? {}) scan(anim.drawOrderFolder![id]);
   scan(anim.events);
@@ -117,7 +119,13 @@ function applyDrawOrderFolders(skeleton: Skeleton, anim: Animation, time: number
     if (!keys?.length) continue;
     const members = f.slots.map((i) => skeleton.slots[i]);
     const i = findKeyIndex(keys, time);
-    const arrangement = i < 0 ? members : completeFolderOrder(members.map((m) => m.data.id), keys[i].order).map((id) => skeleton.slotById(id)!);
+    const arrangement =
+      i < 0
+        ? members
+        : completeFolderOrder(
+            members.map((m) => m.data.id),
+            keys[i].order,
+          ).map((id) => skeleton.slotById(id)!);
     const seats = new Set(members);
     let next = 0;
     const out = skeleton.drawOrder.slice();
@@ -282,7 +290,14 @@ function applySequences(skeleton: Skeleton, anim: Animation, time: number, onto:
       for (const attName in perAtt) {
         const keys = perAtt[attName];
         const att = skin.attachments[slot.data.index]?.get(attName);
-        if (!keys.length || !att || att !== skeleton.slotAttachment(slot) || (att.kind !== 'region' && att.kind !== 'mesh') || !att.src.sequence) continue;
+        if (
+          !keys.length ||
+          !att ||
+          att !== skeleton.slotAttachment(slot) ||
+          (att.kind !== 'region' && att.kind !== 'mesh') ||
+          !att.src.sequence
+        )
+          continue;
         const i = sequenceIndexAt(keys, time, att.src.sequence.count);
         if (i >= 0 || !onto) slot.sequenceIndex = i;
       }
@@ -303,7 +318,8 @@ export function applyAnimationOnto(skeleton: Skeleton, anim: Animation, time: nu
     if (!bone || !bone.active) continue;
     const tl = anim.bones[boneId];
     const d = bone.data;
-    if (tl.rotate?.length && sampleKeys(tl.rotate, time, tmp)) bone.arotation += (additive ? tmp[0] : tmp[0] + d.rotation - bone.arotation) * alpha;
+    if (tl.rotate?.length && sampleKeys(tl.rotate, time, tmp))
+      bone.arotation += (additive ? tmp[0] : tmp[0] + d.rotation - bone.arotation) * alpha;
     if (tl.translate?.length && sampleKeys(tl.translate, time, tmp)) {
       bone.ax += (additive ? tmp[0] : d.x + tmp[0] - bone.ax) * alpha;
       bone.ay += (additive ? tmp[1] : d.y + tmp[1] - bone.ay) * alpha;
@@ -327,8 +343,10 @@ export function applyAnimationOnto(skeleton: Skeleton, anim: Animation, time: nu
     if (tl.translatey?.length && sampleKeys(tl.translatey, time, tmp)) bone.ay += (additive ? tmp[0] : d.y + tmp[0] - bone.ay) * alpha;
     if (tl.scalex?.length && sampleKeys(tl.scalex, time, tmp)) bone.ascaleX = scaled(bone.ascaleX, d.scaleX, tmp[0] * d.scaleX);
     if (tl.scaley?.length && sampleKeys(tl.scaley, time, tmp)) bone.ascaleY = scaled(bone.ascaleY, d.scaleY, tmp[0] * d.scaleY);
-    if (tl.shearx?.length && sampleKeys(tl.shearx, time, tmp)) bone.ashearX += (additive ? tmp[0] : d.shearX + tmp[0] - bone.ashearX) * alpha;
-    if (tl.sheary?.length && sampleKeys(tl.sheary, time, tmp)) bone.ashearY += (additive ? tmp[0] : d.shearY + tmp[0] - bone.ashearY) * alpha;
+    if (tl.shearx?.length && sampleKeys(tl.shearx, time, tmp))
+      bone.ashearX += (additive ? tmp[0] : d.shearX + tmp[0] - bone.ashearX) * alpha;
+    if (tl.sheary?.length && sampleKeys(tl.sheary, time, tmp))
+      bone.ashearY += (additive ? tmp[0] : d.shearY + tmp[0] - bone.ashearY) * alpha;
   }
 
   for (const slotId in anim.slots) {
@@ -387,7 +405,8 @@ export function applyAnimationOnto(skeleton: Skeleton, anim: Animation, time: nu
     const tl = anim.path[cid];
     if (tl.position?.length && sampleKeys(tl.position, time, tmp)) c.position += (additive ? tmp[0] : tmp[0] - c.position) * alpha;
     if (tl.spacing?.length && sampleKeys(tl.spacing, time, tmp)) c.spacing += (tmp[0] - c.spacing) * alpha; // Spine never adds spacing
-    if (tl.mix?.length && sampleKeys(tl.mix, time, tmp)) for (let j = 0; j < 3; j++) c.mix[j] += (additive ? tmp[j] : tmp[j] - c.mix[j]) * alpha;
+    if (tl.mix?.length && sampleKeys(tl.mix, time, tmp))
+      for (let j = 0; j < 3; j++) c.mix[j] += (additive ? tmp[j] : tmp[j] - c.mix[j]) * alpha;
   }
 
   for (const cid in anim.physics ?? {}) {

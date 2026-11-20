@@ -19,7 +19,17 @@ const constraint = (name: string) => doc().constraints.find((c) => c.name === na
 function load(mode: 'setup' | 'animate') {
   const f = buildFixture();
   docStore.replace(f.project);
-  uiStore.patch({ mode, tool: 'select', animationId: f.project.skeleton.animations[0].id, skinId: null, time: 0, selection: emptySelection, overrides: {}, autoKey: true, playing: false });
+  uiStore.patch({
+    mode,
+    tool: 'select',
+    animationId: f.project.skeleton.animations[0].id,
+    skinId: null,
+    time: 0,
+    selection: emptySelection,
+    overrides: {},
+    autoKey: true,
+    playing: false,
+  });
 }
 
 function healthy(label: string) {

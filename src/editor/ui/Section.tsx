@@ -50,7 +50,15 @@ export type SectionKind = 'ik' | 'transform' | 'slider' | 'path' | 'physics';
  * A titled group of an inspector that folds. `id` names it for the memory of what is folded (`bone.transform`);
  * `actions` sit at the right of the title and stay visible when it is folded.
  */
-export function Section(props: { id: string; title: string; icon?: LucideIcon; kind?: SectionKind; actions?: ReactNode; collapsible?: boolean; children: ReactNode }) {
+export function Section(props: {
+  id: string;
+  title: string;
+  icon?: LucideIcon;
+  kind?: SectionKind;
+  actions?: ReactNode;
+  collapsible?: boolean;
+  children: ReactNode;
+}) {
   const open = useSectionOpen(props.id);
   const collapsible = props.collapsible !== false;
   const shown = !collapsible || open;

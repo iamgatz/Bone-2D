@@ -11,7 +11,12 @@ import { setDefaultMix, setMixPair } from '@/store/mixActions';
 import { hasSound, playEventSound } from '@/store/sounds';
 
 const rot = (anim: Animation, bone: string, a: number, b: number) => {
-  anim.bones[bone] = { rotate: [{ time: 0, value: [a] }, { time: anim.duration, value: [b] }] };
+  anim.bones[bone] = {
+    rotate: [
+      { time: 0, value: [a] },
+      { time: anim.duration, value: [b] },
+    ],
+  };
 };
 
 function build() {
@@ -44,7 +49,19 @@ describe('mix table', () => {
   });
   it('cleaning keeps known animations, one entry per pair, times in range, and nothing when nothing is left', () => {
     const ids = new Set(['a', 'b']);
-    const m = cleanMixes({ default: -4, pairs: [{ from: 'a', to: 'b', time: 99 }, { from: 'a', to: 'b', time: 1 }, { from: 'a', to: 'zz', time: 1 }, { from: 5, to: 'b', time: 1 }, null] }, ids);
+    const m = cleanMixes(
+      {
+        default: -4,
+        pairs: [
+          { from: 'a', to: 'b', time: 99 },
+          { from: 'a', to: 'b', time: 1 },
+          { from: 'a', to: 'zz', time: 1 },
+          { from: 5, to: 'b', time: 1 },
+          null,
+        ],
+      },
+      ids,
+    );
     expect(m).toEqual({ default: 0, pairs: [{ from: 'a', to: 'b', time: 10 }] });
     expect(cleanMixes({ default: 0, pairs: [] }, ids)).toBeUndefined();
     expect(cleanMixes('x', ids)).toBeUndefined();

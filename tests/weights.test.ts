@@ -42,7 +42,10 @@ describe('mirror weights', () => {
     const m = bones.get(bone)!;
     return [x - m.x, y - m.y];
   };
-  const left = (wx: number, wy: number, a: number): Influence[] => [[...['L', ...local('L', wx, wy)], a] as Influence, [...['C', ...local('C', wx, wy)], 1 - a] as Influence];
+  const left = (wx: number, wy: number, a: number): Influence[] => [
+    [...['L', ...local('L', wx, wy)], a] as Influence,
+    [...['C', ...local('C', wx, wy)], 1 - a] as Influence,
+  ];
 
   it('copies the left weights to the mirrored vertices on the right, with the bones swapped', () => {
     const weights = [left(-40, 10, 0.9), left(-20, 10, 0.6), [I('C', 20, 10, 1)], [I('C', 40, 10, 1)]];
@@ -65,7 +68,15 @@ describe('mirror weights', () => {
 
   it('works the other way round, and leaves vertices without a partner alone', () => {
     const weights = [[I('C', -40, 10, 1)], [I('C', -20, 10, 1)], left(20, 10, 0.5), left(40, 10, 0.8)];
-    const r = mirrorWeights(weights, world.map((v, i) => (i === 2 ? v - 30 : v)), 0, false, twin, bones, 3);
+    const r = mirrorWeights(
+      weights,
+      world.map((v, i) => (i === 2 ? v - 30 : v)),
+      0,
+      false,
+      twin,
+      bones,
+      3,
+    );
     // vertex 1 moved to x = -50: its mirror x = 50 has no vertex within 3 px, so only vertex 0 gets weights
     expect(r.changed).toBe(1);
     expect(r.weights[1]).toEqual(weights[1]);

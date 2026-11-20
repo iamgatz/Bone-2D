@@ -147,7 +147,13 @@ function byId<T extends { id: Id }>(list: readonly T[]): Map<Id, T> {
 }
 
 /** Compares two lists of things with ids: what was added, removed, or changed (`describe` returns what differs, or null for "same"). */
-function listChanges<T extends { id: Id; name: string }>(area: ChangeArea, before: readonly T[], after: readonly T[], describe: (a: T, b: T) => Partial<Change> | null, out: Change[]) {
+function listChanges<T extends { id: Id; name: string }>(
+  area: ChangeArea,
+  before: readonly T[],
+  after: readonly T[],
+  describe: (a: T, b: T) => Partial<Change> | null,
+  out: Change[],
+) {
   if (before === after) return;
   const old = byId(before);
   const now = byId(after);
@@ -206,7 +212,15 @@ export function diffSkeletons(before: SkeletonDoc, after: SkeletonDoc): Change[]
   return out;
 }
 
-const AREA_NAME: Record<ChangeArea, string> = { bone: 'Bone', slot: 'Slot', skin: 'Skin', constraint: 'Constraint', event: 'Event', animation: 'Animation', skeleton: 'Skeleton' };
+const AREA_NAME: Record<ChangeArea, string> = {
+  bone: 'Bone',
+  slot: 'Slot',
+  skin: 'Skin',
+  constraint: 'Constraint',
+  event: 'Event',
+  animation: 'Animation',
+  skeleton: 'Skeleton',
+};
 
 /** The list of changes as plain text, one line each, to paste into a message or a review ("+ Bone arm", "~ Animation walk (12 keys: +2 -0 ~10)"). */
 export function changesToText(changes: readonly Change[]): string {

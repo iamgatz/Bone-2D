@@ -30,7 +30,13 @@ export function tweenValue(prev: number[], next: number[], amount: number): numb
 }
 
 /** The values a bone gets at time `t`, per channel it has keys on: its previous and next key blended by `amount`. A channel with no neighbours is left out. */
-export function tweenBone(anim: Animation, bone: Id, t: number, amount: number, rotateFrom: Id = bone): Partial<Record<BoneProp, number[]>> {
+export function tweenBone(
+  anim: Animation,
+  bone: Id,
+  t: number,
+  amount: number,
+  rotateFrom: Id = bone,
+): Partial<Record<BoneProp, number[]>> {
   const out: Partial<Record<BoneProp, number[]>> = {};
   for (const prop of BONE_PROPS) {
     const tl = (prop === 'rotate' ? anim.bones[rotateFrom] : anim.bones[bone])?.[prop];

@@ -52,13 +52,20 @@ describe('sequenceSpans', () => {
 
   it('shows at every moment what sequenceIndexAt says, for every mode, with several keys', () => {
     let seed = 12345;
-    const rnd = () => ((seed = (seed * 1664525 + 1013904223) >>> 0) / 4294967296);
+    const rnd = () => (seed = (seed * 1664525 + 1013904223) >>> 0) / 4294967296;
     for (let round = 0; round < 60; round++) {
       const count = 1 + Math.floor(rnd() * 8);
       const end = 1 + rnd() * 3;
       const n = 1 + Math.floor(rnd() * 4);
       const times = Array.from({ length: n }, () => Math.round(rnd() * end * 20) / 20).sort((a, b) => a - b);
-      const keys = times.map((t, i) => key(i && t === times[i - 1] ? t + 0.01 : t, SEQUENCE_MODES[Math.floor(rnd() * SEQUENCE_MODES.length)], Math.floor(rnd() * (count + 2)), rnd() < 0.15 ? 0 : 0.03 + rnd() * 0.3));
+      const keys = times.map((t, i) =>
+        key(
+          i && t === times[i - 1] ? t + 0.01 : t,
+          SEQUENCE_MODES[Math.floor(rnd() * SEQUENCE_MODES.length)],
+          Math.floor(rnd() * (count + 2)),
+          rnd() < 0.15 ? 0 : 0.03 + rnd() * 0.3,
+        ),
+      );
       const spans = sequenceSpans(keys, count, end);
       for (const s of spans) {
         expect(s.index).toBeGreaterThanOrEqual(0);
@@ -73,7 +80,11 @@ describe('sequenceSpans', () => {
       }
       // nothing in the middle of the animation is left without a frame
       const first = keys[0].time;
-      for (let t = first + 0.0049; t < end - 0.002; t += 0.0317) expect(spans.some((x) => t >= x.start - 1e-6 && t <= x.end + 1e-6), `round ${round} gap at ${t}`).toBe(true);
+      for (let t = first + 0.0049; t < end - 0.002; t += 0.0317)
+        expect(
+          spans.some((x) => t >= x.start - 1e-6 && t <= x.end + 1e-6),
+          `round ${round} gap at ${t}`,
+        ).toBe(true);
     }
   });
 });

@@ -42,7 +42,12 @@ export function softWeights(points: ArrayLike<number>, picked: readonly number[]
 }
 
 /** The new position of each weighted vertex after a drag of (dx, dy) from the positions in `start` (x, y pairs). */
-export function softMoves(start: ArrayLike<number>, weights: ReadonlyMap<number, number>, dx: number, dy: number): { index: number; x: number; y: number }[] {
+export function softMoves(
+  start: ArrayLike<number>,
+  weights: ReadonlyMap<number, number>,
+  dx: number,
+  dy: number,
+): { index: number; x: number; y: number }[] {
   const moves: { index: number; x: number; y: number }[] = [];
   for (const [index, w] of weights) moves.push({ index, x: start[index * 2] + dx * w, y: start[index * 2 + 1] + dy * w });
   return moves;

@@ -13,11 +13,26 @@ function build() {
   p.skeleton.bones.push(a, b);
   // the main animation turns bone a by 60 and moves b by 20 along x
   const main = newAnimation('main', 1);
-  main.bones[a.id] = { rotate: [{ time: 0, value: [0] }, { time: 1, value: [60] }] };
-  main.bones[b.id] = { translate: [{ time: 0, value: [0, 0] }, { time: 1, value: [20, 0] }] };
+  main.bones[a.id] = {
+    rotate: [
+      { time: 0, value: [0] },
+      { time: 1, value: [60] },
+    ],
+  };
+  main.bones[b.id] = {
+    translate: [
+      { time: 0, value: [0, 0] },
+      { time: 1, value: [20, 0] },
+    ],
+  };
   // the layer turns bone a by 40 and nothing else
   const over = newAnimation('over', 1);
-  over.bones[a.id] = { rotate: [{ time: 0, value: [0] }, { time: 1, value: [40] }] };
+  over.bones[a.id] = {
+    rotate: [
+      { time: 0, value: [0] },
+      { time: 1, value: [40] },
+    ],
+  };
   p.skeleton.animations.push(main, over);
   const data = compileSkeleton(p.skeleton);
   return { p, a, b, main, over, sk: createSkeleton(data), scratch: createSkeleton(data) };

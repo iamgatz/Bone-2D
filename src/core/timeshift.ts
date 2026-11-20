@@ -27,23 +27,23 @@ export function insertTime(anim: Animation, at: number, seconds: number): TimeSh
   for (const keys of keyLists(anim)) {
     for (const k of keys) {
       if (k.time >= at - KEY_EPS) {
-        k.time = (k.time + seconds);
+        k.time = k.time + seconds;
         moved++;
       }
     }
   }
   for (const m of anim.markers ?? []) {
     if (m.time >= at - KEY_EPS) {
-      m.time = (m.time + seconds);
+      m.time = m.time + seconds;
       moved++;
     }
   }
   const range = anim.play?.range;
   if (range) {
     // a play range that spans the cut gets longer; one that starts after it moves
-    anim.play!.range = [range[0] >= at - KEY_EPS ? (range[0] + seconds) : range[0], range[1] >= at - KEY_EPS ? (range[1] + seconds) : range[1]];
+    anim.play!.range = [range[0] >= at - KEY_EPS ? range[0] + seconds : range[0], range[1] >= at - KEY_EPS ? range[1] + seconds : range[1]];
   }
-  anim.duration = (anim.duration + seconds);
+  anim.duration = anim.duration + seconds;
   return { moved, removed: 0, duration: anim.duration };
 }
 
@@ -65,27 +65,27 @@ export function deleteTime(anim: Animation, at: number, seconds: number, minDura
         keys.splice(i, 1);
         removed++;
       } else if (t >= end - KEY_EPS) {
-        keys[i].time = (Math.max(at, t - span));
+        keys[i].time = Math.max(at, t - span);
         moved++;
       }
     }
   }
   for (const m of anim.markers ?? []) {
     if (m.time >= end - KEY_EPS) {
-      m.time = (m.time - span);
+      m.time = m.time - span;
       moved++;
     } else if (m.time > at) {
-      m.time = (at);
+      m.time = at;
       moved++;
     }
   }
   const range = anim.play?.range;
   if (range) {
-    const pull = (t: number) => (t >= end - KEY_EPS ? (t - span) : t > at ? (at) : t);
+    const pull = (t: number) => (t >= end - KEY_EPS ? t - span : t > at ? at : t);
     const next: [number, number] = [pull(range[0]), pull(range[1])];
     anim.play!.range = next[1] - next[0] > KEY_EPS ? next : null;
   }
-  anim.duration = (Math.max(minDuration, anim.duration - span));
+  anim.duration = Math.max(minDuration, anim.duration - span);
   // nothing lies beyond the end (float noise in the sums could leave a time a hair past it)
   for (const m of anim.markers ?? []) m.time = Math.min(m.time, anim.duration);
   if (anim.play?.range) {

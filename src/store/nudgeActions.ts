@@ -46,7 +46,10 @@ export function nudgeKeysTime(frames: number): number {
 /** Adds `steps` steps to the values of the selected bone keys (see core/nudge for what a step is). Returns how many keys changed. */
 export function nudgeKeyValues(steps: number): number {
   const anim = currentAnimation();
-  const refs = uiStore.get().selectedKeys.map(decodeKey).filter((r): r is KeyRef => r.kind === 'bone');
+  const refs = uiStore
+    .get()
+    .selectedKeys.map(decodeKey)
+    .filter((r): r is KeyRef => r.kind === 'bone');
   if (!anim || !refs.length || !steps) return 0;
   let changed = 0;
   docStore.update('Nudge key values', (d) => {

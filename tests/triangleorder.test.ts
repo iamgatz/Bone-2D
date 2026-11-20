@@ -70,7 +70,9 @@ describe('moving the triangles of a mesh', () => {
     expect(at).toBe(before.length - 1);
     const now = getMesh(slotId, 'head')!;
     expect(tris(now.triangles)).toEqual([...before.slice(1), before[0]]);
-    const json = exportSpineJson(docStore.get().skeleton) as { skins: { name: string; attachments: Record<string, Record<string, { triangles?: number[] }>> }[] };
+    const json = exportSpineJson(docStore.get().skeleton) as {
+      skins: { name: string; attachments: Record<string, Record<string, { triangles?: number[] }>> }[];
+    };
     const exported = json.skins[0].attachments[docStore.get().skeleton.slots.find((s) => s.id === slotId)!.name].head.triangles!;
     expect(tris(exported)).toEqual(tris(now.triangles));
     expect(() => exportAndLoad(docStore.get())).not.toThrow();

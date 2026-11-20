@@ -72,7 +72,8 @@ describe('design tokens', () => {
         .split('\n')
         .forEach((line, i) => {
           if (/^\s*(\/\/|\*|\/\*)/.test(line)) return;
-          if (/['"`]#(?:[0-9a-fA-F]{8}|[0-9a-fA-F]{6}|[0-9a-fA-F]{3})['"`]/.test(line)) found.push(`${f}:${i + 1}: ${line.trim().slice(0, 100)}`);
+          if (/['"`]#(?:[0-9a-fA-F]{8}|[0-9a-fA-F]{6}|[0-9a-fA-F]{3})['"`]/.test(line))
+            found.push(`${f}:${i + 1}: ${line.trim().slice(0, 100)}`);
         });
     }
     for (const f of files('src/styles', /\.css$/)) {
@@ -80,7 +81,8 @@ describe('design tokens', () => {
       withoutComments(read(f))
         .split('\n')
         .forEach((line, i) => {
-          if (/#(?:[0-9a-fA-F]{8}|[0-9a-fA-F]{6}|[0-9a-fA-F]{3})\b/.test(line) || /rgba?\(/.test(line)) found.push(`${f}:${i + 1}: ${line.trim().slice(0, 100)}`);
+          if (/#(?:[0-9a-fA-F]{8}|[0-9a-fA-F]{6}|[0-9a-fA-F]{3})\b/.test(line) || /rgba?\(/.test(line))
+            found.push(`${f}:${i + 1}: ${line.trim().slice(0, 100)}`);
         });
     }
     expect(found).toEqual([]);
@@ -88,11 +90,29 @@ describe('design tokens', () => {
 
   it('has AA contrast (4.5 : 1) for text on every surface', () => {
     const surfaces = ['--bg', '--sunken', '--sunken-2', '--viewport', '--panel', '--panel-2', '--panel-3'];
-    const texts = ['--text', '--text-dim', '--muted', '--accent', '--animate', '--danger', '--kind-ik', '--kind-transform', '--kind-slider', '--kind-path', '--kind-physics'];
+    const texts = [
+      '--text',
+      '--text-dim',
+      '--muted',
+      '--accent',
+      '--animate',
+      '--danger',
+      '--kind-ik',
+      '--kind-transform',
+      '--kind-slider',
+      '--kind-path',
+      '--kind-physics',
+    ];
     const low: string[] = [];
     for (const t of texts) for (const s of surfaces) if (contrast(t, s) < 4.5) low.push(`${t} on ${s}: ${contrast(t, s).toFixed(2)}`);
     // text that sits on a fill of its own
-    for (const [fg, bg] of [['--accent-ink', '--accent'], ['--animate-ink', '--animate'], ['--danger-ink', '--panel-3'], ['--tl-label', '--tl-ruler'], ['--tl-label-strong', '--tl-ruler']] as const) {
+    for (const [fg, bg] of [
+      ['--accent-ink', '--accent'],
+      ['--animate-ink', '--animate'],
+      ['--danger-ink', '--panel-3'],
+      ['--tl-label', '--tl-ruler'],
+      ['--tl-label-strong', '--tl-ruler'],
+    ] as const) {
       if (contrast(fg, bg) < 4.5) low.push(`${fg} on ${bg}: ${contrast(fg, bg).toFixed(2)}`);
     }
     expect(low).toEqual([]);

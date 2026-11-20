@@ -9,14 +9,26 @@ export function SoftControls() {
   return (
     <>
       <div className="hstack wrap mb">
-        <Button primary={meshView.soft} title="Soft selection: dragging the selected vertices also pulls the ones near them, less and less with the distance" onClick={() => patch({ soft: !meshView.soft })}>
+        <Button
+          primary={meshView.soft}
+          title="Soft selection: dragging the selected vertices also pulls the ones near them, less and less with the distance"
+          onClick={() => patch({ soft: !meshView.soft })}
+        >
           Soft
         </Button>
       </div>
       {meshView.soft && (
         <>
           <Field label="Soft radius">
-            <NumberField label="px" value={meshView.softRadius} step={5} precision={0} min={1} max={2000} onChange={(v) => patch({ softRadius: v })} />
+            <NumberField
+              label="px"
+              value={meshView.softRadius}
+              step={5}
+              precision={0}
+              min={1}
+              max={2000}
+              onChange={(v) => patch({ softRadius: v })}
+            />
           </Field>
           <Field label="Soft falloff">
             <SelectField

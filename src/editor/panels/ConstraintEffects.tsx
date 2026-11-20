@@ -31,7 +31,9 @@ export function ConstraintEffects({ id }: { id: Id }) {
   if (!result || !result.stages.length) return null;
   return (
     <Section id="bone.effects" title="Constraint effects" icon={Route}>
-      <p className="hint-text mb">What the constraints do to this bone, in the order they run: its pose from the animation, the change each one makes, and the result.</p>
+      <p className="hint-text mb">
+        What the constraints do to this bone, in the order they run: its pose from the animation, the change each one makes, and the result.
+      </p>
       <div className="effects">
         <div className="effect-row">
           <span className="effect-name dim">From the animation</span>
@@ -53,7 +55,9 @@ export function ConstraintEffects({ id }: { id: Id }) {
                   <>
                     {Math.abs(d.rotation) >= 0.05 && <span>{`${signed(d.rotation, 1)}°  `}</span>}
                     {(Math.abs(d.x) >= 0.05 || Math.abs(d.y) >= 0.05) && <span>{`(${signed(d.x, 1)}, ${signed(d.y, 1)})  `}</span>}
-                    {(Math.abs(d.scaleX) >= 0.005 || Math.abs(d.scaleY) >= 0.005) && <span>{`×${signed(d.scaleX, 2)}, ${signed(d.scaleY, 2)}  `}</span>}
+                    {(Math.abs(d.scaleX) >= 0.005 || Math.abs(d.scaleY) >= 0.005) && (
+                      <span>{`×${signed(d.scaleX, 2)}, ${signed(d.scaleY, 2)}  `}</span>
+                    )}
                     {Math.abs(d.shearY) >= 0.05 && <span>{`shear ${signed(d.shearY, 1)}°`}</span>}
                   </>
                 )}

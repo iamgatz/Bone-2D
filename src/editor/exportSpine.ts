@@ -102,7 +102,15 @@ function bytesToBase64(bytes: Uint8Array): string {
 }
 
 /** A single-file preview page using the official Spine 4.3 web player (script from a CDN, data embedded as data URIs). */
-function previewHtml(base: string, skeleton: { file: string; data: Uint8Array; binary: boolean }, atlas: string, pngs: { name: string; data: Uint8Array }[], animation: string | null, title: string, pma = false): string {
+function previewHtml(
+  base: string,
+  skeleton: { file: string; data: Uint8Array; binary: boolean },
+  atlas: string,
+  pngs: { name: string; data: Uint8Array }[],
+  animation: string | null,
+  title: string,
+  pma = false,
+): string {
   const utf8 = (s: string) => bytesToBase64(new TextEncoder().encode(s));
   const uris: Record<string, string> = {
     [skeleton.file]: `data:${skeleton.binary ? 'application/octet-stream' : 'application/json'};base64,${bytesToBase64(skeleton.data)}`,
@@ -135,7 +143,9 @@ export async function buildSpineExport(opts: ExportOptions): Promise<ExportResul
   const project = docStore.get();
   const full = skeletonList(project)[opts.skeletonIndex ?? activeIndex(project)] ?? project.skeleton;
   const keep = new Set(full.constraints.flatMap((c) => (c.type === 'slider' && c.animation ? [c.animation] : [])));
-  const doc = opts.excludeAnimations?.length ? { ...full, animations: full.animations.filter((a) => keep.has(a.id) || !opts.excludeAnimations!.includes(a.id)) } : full;
+  const doc = opts.excludeAnimations?.length
+    ? { ...full, animations: full.animations.filter((a) => keep.has(a.id) || !opts.excludeAnimations!.includes(a.id)) }
+    : full;
   const base = (opts.baseName ?? doc.name ?? 'skeleton').replace(/[^\w-]+/g, '_') || 'skeleton';
   const images = usedImages(full);
   const missing = images.filter((i) => !assets.has(i.name)).map((i) => i.name);
@@ -155,7 +165,14 @@ export async function buildSpineExport(opts: ExportOptions): Promise<ExportResul
   const enc = new TextEncoder();
   const files: ZipEntry[] = [];
   const binary = opts.format === 'binary';
-  const json = scaleSpineJson(exportSpineJson(opts.cleanUp ? withCleanAnimations(doc) : doc, { nonessential: opts.nonessential, imagesPath: './images/', splitColor: opts.splitColor }), scale);
+  const json = scaleSpineJson(
+    exportSpineJson(opts.cleanUp ? withCleanAnimations(doc) : doc, {
+      nonessential: opts.nonessential,
+      imagesPath: './images/',
+      splitColor: opts.splitColor,
+    }),
+    scale,
+  );
   const skeletonFile = binary ? `${base}.skel` : `${base}.json`;
   const skeletonData = binary ? jsonToBinary(json) : enc.encode(JSON.stringify(json, null, opts.pretty ? 2 : 0));
   files.push({ name: skeletonFile, data: skeletonData });
@@ -174,10 +191,25 @@ export async function buildSpineExport(opts: ExportOptions): Promise<ExportResul
       const part = inputs.filter((i) => wanted.has(i.name));
       if (!part.length) continue;
       if (opts.alias) {
-        const aliases = findAliases(part.map((i) => ({ name: i.name, width: i.width, height: i.height, data: pixels.get(i.name)!, extra: `${i.offsetX ?? 0},${i.offsetY ?? 0},${i.originalWidth ?? i.width},${i.originalHeight ?? i.height}` })));
+        const aliases = findAliases(
+          part.map((i) => ({
+            name: i.name,
+            width: i.width,
+            height: i.height,
+            data: pixels.get(i.name)!,
+            extra: `${i.offsetX ?? 0},${i.offsetY ?? 0},${i.originalWidth ?? i.width},${i.originalHeight ?? i.height}`,
+          })),
+        );
         for (const i of part) if (aliases.has(i.name)) i.aliasOf = aliases.get(i.name);
       }
-      const groupPages = packAtlas(part, { maxSize: opts.maxSize, padding: opts.padding, pot: opts.pot ?? true, rotate: opts.rotate ?? false, square: opts.square ?? false, multipleOf4: opts.multipleOf4 ?? false });
+      const groupPages = packAtlas(part, {
+        maxSize: opts.maxSize,
+        padding: opts.padding,
+        pot: opts.pot ?? true,
+        rotate: opts.rotate ?? false,
+        square: opts.square ?? false,
+        multipleOf4: opts.multipleOf4 ?? false,
+      });
       pages = pages.concat(groupPages);
       const pageFile = (i: number) => (groupPages.length === 1 ? `${group.stem}.png` : `${group.stem}-${i + 1}.png`);
       const text = writeAtlas(groupPages, pageFile, { pma: !!opts.pma, filter: opts.filter ?? 'Linear' });
@@ -194,19 +226,38 @@ export async function buildSpineExport(opts: ExportOptions): Promise<ExportResul
     const atlasText = atlasTexts.join('\n');
     if (opts.includePreview ?? true) {
       const firstAnim = doc.animations[0]?.name ?? null;
-      preview = previewHtml(base, { file: skeletonFile, data: skeletonData, binary }, atlasText, pngs, firstAnim, doc.name || base, !!opts.pma);
+      preview = previewHtml(
+        base,
+        { file: skeletonFile, data: skeletonData, binary },
+        atlasText,
+        pngs,
+        firstAnim,
+        doc.name || base,
+        !!opts.pma,
+      );
       files.push({ name: `${base}-preview.html`, data: enc.encode(preview) });
     }
   }
   // the mix table belongs to the edited skeleton (project.mixes) or waits in the aside of another one
-  const mixText = opts.includeMixes === false ? null : mixesToText(doc.animations, full === project.skeleton ? project.mixes : full.aside?.mixes);
+  const mixText =
+    opts.includeMixes === false ? null : mixesToText(doc.animations, full === project.skeleton ? project.mixes : full.aside?.mixes);
   if (mixText) files.push({ name: `${base}.mixes.json`, data: enc.encode(mixText) });
   files.push({
     name: 'README.txt',
-    data: enc.encode(`Exported from Bone 2D.\n\n${skeletonFile.padEnd(base.length + 5)}  Spine 4.3 skeleton data (${binary ? 'binary' : 'JSON'})\n${atlasFiles.length > 1 ? `${atlasFiles.join(', ')}  texture atlases, one for the default skin and one for each other skin (load the default one and the one of the skin you show; ${opts.pma ? 'premultiplied alpha, pma:true' : 'straight alpha, pma:false'})` : `${base}.atlas         texture atlas (${opts.pma ? 'premultiplied alpha, pma:true' : 'straight alpha, pma:false'})`}\n${base}-preview.html  open in a browser: plays the animations with the official Spine 4.3 web player (needs internet for the player script)\n${mixText ? `${base}.mixes.json  crossfade times between animations (defaultMix and setMix of AnimationStateData)\n` : ''}\nLoad with the official Spine 4.3 runtimes (spine-ts, Unity, Godot, ...).\n`),
+    data: enc.encode(
+      `Exported from Bone 2D.\n\n${skeletonFile.padEnd(base.length + 5)}  Spine 4.3 skeleton data (${binary ? 'binary' : 'JSON'})\n${atlasFiles.length > 1 ? `${atlasFiles.join(', ')}  texture atlases, one for the default skin and one for each other skin (load the default one and the one of the skin you show; ${opts.pma ? 'premultiplied alpha, pma:true' : 'straight alpha, pma:false'})` : `${base}.atlas         texture atlas (${opts.pma ? 'premultiplied alpha, pma:true' : 'straight alpha, pma:false'})`}\n${base}-preview.html  open in a browser: plays the animations with the official Spine 4.3 web player (needs internet for the player script)\n${mixText ? `${base}.mixes.json  crossfade times between animations (defaultMix and setMix of AnimationStateData)\n` : ''}\nLoad with the official Spine 4.3 runtimes (spine-ts, Unity, Godot, ...).\n`,
+    ),
   });
   const zip = createZip(files);
-  return { zip, files: files.map((f) => ({ name: f.name, size: f.data.length })), entries: files, pages: pages.length, missing, json, preview };
+  return {
+    zip,
+    files: files.map((f) => ({ name: f.name, size: f.data.length })),
+    entries: files,
+    pages: pages.length,
+    missing,
+    json,
+    preview,
+  };
 }
 
 /** Every skeleton of the project in one zip, each in a folder of its own (named like the skeleton). The pictures are packed separately for each. */
@@ -227,6 +278,18 @@ export async function buildAllSkeletonsExport(opts: ExportOptions): Promise<Expo
     r.missing.forEach((m) => missing.add(m));
     for (const e of r.entries) if (e.name !== 'README.txt') entries.push({ ...e, name: `${folder}/${e.name}` });
   }
-  entries.push({ name: 'README.txt', data: new TextEncoder().encode(`Exported from Bone 2D: ${list.length} skeletons, one folder each. Every folder holds Spine 4.3 skeleton data, its texture atlas and a preview page.\n`) });
-  return { zip: createZip(entries), files: entries.map((e) => ({ name: e.name, size: e.data.length })), entries, pages, missing: [...missing], json };
+  entries.push({
+    name: 'README.txt',
+    data: new TextEncoder().encode(
+      `Exported from Bone 2D: ${list.length} skeletons, one folder each. Every folder holds Spine 4.3 skeleton data, its texture atlas and a preview page.\n`,
+    ),
+  });
+  return {
+    zip: createZip(entries),
+    files: entries.map((e) => ({ name: e.name, size: e.data.length })),
+    entries,
+    pages,
+    missing: [...missing],
+    json,
+  };
 }

@@ -2,7 +2,20 @@
  * Every action of the editor by name, for the command palette (Ctrl+K): type a few letters of what you want. Spine has no such thing.
  * The titles are English strings like the rest of the interface and get translated where they are shown.
  */
-import { closeCurrentLoop, deleteTimeAtPlayhead, flipViewport, insertTimeAtPlayhead, keyConstrainedBones, keyEditedBones, keySelectedBones, pasteKeys, selectAnimation, setMode, setTool, togglePlay } from '@/store/actions';
+import {
+  closeCurrentLoop,
+  deleteTimeAtPlayhead,
+  flipViewport,
+  insertTimeAtPlayhead,
+  keyConstrainedBones,
+  keyEditedBones,
+  keySelectedBones,
+  pasteKeys,
+  selectAnimation,
+  setMode,
+  setTool,
+  togglePlay,
+} from '@/store/actions';
 import { setAxesSplit } from '@/store/axisActions';
 import { selectionBack, selectionForward } from '@/store/selHistory';
 import { hideUnkeyedBones, mirrorCurrentCycle } from '@/store/animToolActions';
@@ -45,7 +58,8 @@ function editSelectedKey() {
   else toast('Select a key in the timeline first');
 }
 
-const open = (key:'exportOpen' | 'helpOpen' | 'updatesOpen' | 'feedbackOpen' | 'settingsOpen' | 'welcomeOpen') => () => uiStore.patch({ [key]: true });
+const open = (key: 'exportOpen' | 'helpOpen' | 'updatesOpen' | 'feedbackOpen' | 'settingsOpen' | 'welcomeOpen') => () =>
+  uiStore.patch({ [key]: true });
 
 export function buildCommands(): Command[] {
   const doc = docStore.get().skeleton;
@@ -81,55 +95,169 @@ export function buildCommands(): Command[] {
     { id: 'edit.copypose', group: 'Edit', title: 'Copy pose', run: () => copyPose() },
     { id: 'edit.swapsides', group: 'Edit', title: 'Swap left and right pose', run: () => swapSides() },
     { id: 'edit.pastepose', group: 'Edit', title: 'Paste pose', run: () => pastePose() },
-    { id: 'mode.toggle', group: 'Animation', title: 'Setup ⇄ Animate', keys: KEYS.mode, run: () => setMode(uiStore.get().mode === 'setup' ? 'animate' : 'setup') },
+    {
+      id: 'mode.toggle',
+      group: 'Animation',
+      title: 'Setup ⇄ Animate',
+      keys: KEYS.mode,
+      run: () => setMode(uiStore.get().mode === 'setup' ? 'animate' : 'setup'),
+    },
     { id: 'anim.keyedited', group: 'Animation', title: 'Key edited channels', keys: KEYS.key, run: () => keyEditedBones() },
-    { id: 'anim.keyshown', group: 'Animation', title: 'Key all channels of the selected bones', keys: KEYS.keyShown, run: () => keySelectedBones() },
-    { id: 'anim.inserttime', group: 'Animation', title: 'Insert time at the playhead (the frames set next to Length)', run: () => void insertTimeAtPlayhead(uiStore.get().timeGap ?? 6) },
-    { id: 'anim.deletetime', group: 'Animation', title: 'Delete time after the playhead (the frames set next to Length)', run: () => void deleteTimeAtPlayhead(uiStore.get().timeGap ?? 6) },
-    { id: 'anim.pastehold', group: 'Animation', title: 'Paste keys at the playhead, hold (linear between keys of the same value)', keys: KEYS.pasteHold, run: () => void pasteKeys(uiStore.get().time, true) },
+    {
+      id: 'anim.keyshown',
+      group: 'Animation',
+      title: 'Key all channels of the selected bones',
+      keys: KEYS.keyShown,
+      run: () => keySelectedBones(),
+    },
+    {
+      id: 'anim.inserttime',
+      group: 'Animation',
+      title: 'Insert time at the playhead (the frames set next to Length)',
+      run: () => void insertTimeAtPlayhead(uiStore.get().timeGap ?? 6),
+    },
+    {
+      id: 'anim.deletetime',
+      group: 'Animation',
+      title: 'Delete time after the playhead (the frames set next to Length)',
+      run: () => void deleteTimeAtPlayhead(uiStore.get().timeGap ?? 6),
+    },
+    {
+      id: 'anim.pastehold',
+      group: 'Animation',
+      title: 'Paste keys at the playhead, hold (linear between keys of the same value)',
+      keys: KEYS.pasteHold,
+      run: () => void pasteKeys(uiStore.get().time, true),
+    },
     { id: 'anim.keyconstrained', group: 'Animation', title: 'Key the pose after the constraints', run: () => keyConstrainedBones() },
     { id: 'anim.marker.add', group: 'Animation', title: 'Add a marker at the playhead', run: () => void addMarkerAtPlayhead() },
     { id: 'anim.marker.next', group: 'Animation', title: 'Go to the next marker', run: () => goToMarker(1) },
     { id: 'anim.marker.prev', group: 'Animation', title: 'Go to the previous marker', run: () => goToMarker(-1) },
     { id: 'anim.marker.split', group: 'Animation', title: 'Split the animation at its markers', run: () => void splitAtMarkersAction() },
-    { id: 'anim.mirrorcycle', group: 'Animation', title: 'Make a full cycle from the half cycle (swap left and right)', run: () => void mirrorCurrentCycle({ flipCentre: true }) },
+    {
+      id: 'anim.mirrorcycle',
+      group: 'Animation',
+      title: 'Make a full cycle from the half cycle (swap left and right)',
+      run: () => void mirrorCurrentCycle({ flipCentre: true }),
+    },
     { id: 'anim.hideunkeyed', group: 'Animation', title: 'Hide bones without keys in this animation', run: () => void hideUnkeyedBones() },
     { id: 'anim.editkey', group: 'Animation', title: 'Edit the selected key…', run: () => editSelectedKey() },
-    { id: 'anim.split.translate', group: 'Animation', title: 'Split position keys of the selected bones into X / Y', run: () => setAxesSplit(uiStore.get().selection.bones, 'translate', true) },
-    { id: 'anim.merge.translate', group: 'Animation', title: 'Merge position X / Y keys of the selected bones', run: () => setAxesSplit(uiStore.get().selection.bones, 'translate', false) },
-    { id: 'anim.split.scale', group: 'Animation', title: 'Split scale keys of the selected bones into X / Y', run: () => setAxesSplit(uiStore.get().selection.bones, 'scale', true) },
-    { id: 'anim.merge.scale', group: 'Animation', title: 'Merge scale X / Y keys of the selected bones', run: () => setAxesSplit(uiStore.get().selection.bones, 'scale', false) },
-    { id: 'anim.split.shear', group: 'Animation', title: 'Split shear keys of the selected bones into X / Y', run: () => setAxesSplit(uiStore.get().selection.bones, 'shear', true) },
-    { id: 'anim.merge.shear', group: 'Animation', title: 'Merge shear X / Y keys of the selected bones', run: () => setAxesSplit(uiStore.get().selection.bones, 'shear', false) },
+    {
+      id: 'anim.split.translate',
+      group: 'Animation',
+      title: 'Split position keys of the selected bones into X / Y',
+      run: () => setAxesSplit(uiStore.get().selection.bones, 'translate', true),
+    },
+    {
+      id: 'anim.merge.translate',
+      group: 'Animation',
+      title: 'Merge position X / Y keys of the selected bones',
+      run: () => setAxesSplit(uiStore.get().selection.bones, 'translate', false),
+    },
+    {
+      id: 'anim.split.scale',
+      group: 'Animation',
+      title: 'Split scale keys of the selected bones into X / Y',
+      run: () => setAxesSplit(uiStore.get().selection.bones, 'scale', true),
+    },
+    {
+      id: 'anim.merge.scale',
+      group: 'Animation',
+      title: 'Merge scale X / Y keys of the selected bones',
+      run: () => setAxesSplit(uiStore.get().selection.bones, 'scale', false),
+    },
+    {
+      id: 'anim.split.shear',
+      group: 'Animation',
+      title: 'Split shear keys of the selected bones into X / Y',
+      run: () => setAxesSplit(uiStore.get().selection.bones, 'shear', true),
+    },
+    {
+      id: 'anim.merge.shear',
+      group: 'Animation',
+      title: 'Merge shear X / Y keys of the selected bones',
+      run: () => setAxesSplit(uiStore.get().selection.bones, 'shear', false),
+    },
     { id: 'anim.play', group: 'Animation', title: 'Play / pause', keys: KEYS.play, run: () => togglePlay() },
     { id: 'view.frame', group: 'View', title: 'Frame skeleton', keys: KEYS.frame, run: () => viewportApi.frame() },
-    { id: 'view.frameselection', group: 'View', title: 'Frame the selection', keys: KEYS.frameSelection, run: () => viewportApi.frameSelection() },
+    {
+      id: 'view.frameselection',
+      group: 'View',
+      title: 'Frame the selection',
+      keys: KEYS.frameSelection,
+      run: () => viewportApi.frameSelection(),
+    },
     { id: 'view.flip', group: 'View', title: 'Flip the viewport', keys: KEYS.flipView, run: () => flipViewport() },
     { id: 'view.zoom100', group: 'View', title: 'Zoom to 100%', keys: KEYS.zoom100, run: () => viewportApi.zoom100() },
-    { id: 'view.trails', group: 'View', title: 'Motion trails', run: () => uiStore.patch({ view: { ...uiStore.get().view, trails: !uiStore.get().view.trails } }) },
-    { id: 'view.onion', group: 'View', title: 'Onion skin', run: () => uiStore.patch({ view: { ...uiStore.get().view, onion: !uiStore.get().view.onion } }) },
-    { id: 'view.rulers', group: 'View', title: 'Rulers and guides', run: () => uiStore.patch({ view: { ...uiStore.get().view, rulers: !uiStore.get().view.rulers } }) },
-    { id: 'view.snap', group: 'View', title: 'Snap to grid and guides', run: () => uiStore.patch({ view: { ...uiStore.get().view, snap: !uiStore.get().view.snap } }) },
-    { id: 'view.pixel', group: 'View', title: 'Snap to whole pixels', run: () => uiStore.patch({ view: { ...uiStore.get().view, pixel: !uiStore.get().view.pixel } }) },
-    { id: 'view.outline', group: 'View', title: 'Outline map', run: () => uiStore.patch({ view: { ...uiStore.get().view, outline: !uiStore.get().view.outline } }) },
+    {
+      id: 'view.trails',
+      group: 'View',
+      title: 'Motion trails',
+      run: () => uiStore.patch({ view: { ...uiStore.get().view, trails: !uiStore.get().view.trails } }),
+    },
+    {
+      id: 'view.onion',
+      group: 'View',
+      title: 'Onion skin',
+      run: () => uiStore.patch({ view: { ...uiStore.get().view, onion: !uiStore.get().view.onion } }),
+    },
+    {
+      id: 'view.rulers',
+      group: 'View',
+      title: 'Rulers and guides',
+      run: () => uiStore.patch({ view: { ...uiStore.get().view, rulers: !uiStore.get().view.rulers } }),
+    },
+    {
+      id: 'view.snap',
+      group: 'View',
+      title: 'Snap to grid and guides',
+      run: () => uiStore.patch({ view: { ...uiStore.get().view, snap: !uiStore.get().view.snap } }),
+    },
+    {
+      id: 'view.pixel',
+      group: 'View',
+      title: 'Snap to whole pixels',
+      run: () => uiStore.patch({ view: { ...uiStore.get().view, pixel: !uiStore.get().view.pixel } }),
+    },
+    {
+      id: 'view.outline',
+      group: 'View',
+      title: 'Outline map',
+      run: () => uiStore.patch({ view: { ...uiStore.get().view, outline: !uiStore.get().view.outline } }),
+    },
     { id: 'view.clearguides', group: 'View', title: 'Clear guides', run: () => void clearGuides() },
-    { id: 'view.grid', group: 'View', title: 'Grid', run: () => uiStore.patch({ view: { ...uiStore.get().view, grid: !uiStore.get().view.grid } }) },
-    { id: 'view.names', group: 'View', title: 'Bone names', run: () => uiStore.patch({ view: { ...uiStore.get().view, names: !uiStore.get().view.names } }) },
+    {
+      id: 'view.grid',
+      group: 'View',
+      title: 'Grid',
+      run: () => uiStore.patch({ view: { ...uiStore.get().view, grid: !uiStore.get().view.grid } }),
+    },
+    {
+      id: 'view.names',
+      group: 'View',
+      title: 'Bone names',
+      run: () => uiStore.patch({ view: { ...uiStore.get().view, names: !uiStore.get().view.names } }),
+    },
     { id: 'view.hide', group: 'Windows', title: 'Hide / show all windows', keys: KEYS.hideViews, run: () => toggleAllViews() },
     { id: 'app.settings', group: 'Help', title: 'Settings', keys: KEYS.settings, run: open('settingsOpen') },
     { id: 'app.shortcuts', group: 'Help', title: 'Shortcuts & help', keys: KEYS.help, run: open('helpOpen') },
     { id: 'app.updates', group: 'Help', title: 'Updates: what is new and the project activity', run: open('updatesOpen') },
     { id: 'app.feedback', group: 'Help', title: 'Send feedback to the author', run: open('feedbackOpen') },
   ];
-  for (const t of TOOLS) list.push({ id: `tool.${t.tool}`, group: 'Tools', title: t.title, keys: hotkeyOf(t.tool), run: () => setTool(t.tool) });
+  for (const t of TOOLS)
+    list.push({ id: `tool.${t.tool}`, group: 'Tools', title: t.title, keys: hotkeyOf(t.tool), run: () => setTool(t.tool) });
   for (const v of VIEW_LIST) list.push({ id: `win.${v.id}`, group: 'Windows', title: v.label, run: () => toggleView(v.id) });
-  for (const w of FLOAT_LIST) list.push({ id: `float.${w.id}`, group: 'Windows', title: `Floating: ${w.label}`, run: () => toggleFloat(w.id) });
+  for (const w of FLOAT_LIST)
+    list.push({ id: `float.${w.id}`, group: 'Windows', title: `Floating: ${w.label}`, run: () => toggleFloat(w.id) });
   for (const l of LAYOUTS) list.push({ id: `layout.${l.id}`, group: 'Windows', title: `Layout: ${l.label}`, run: () => applyLayout(l.id) });
   list.push({ id: 'layout.save', group: 'Windows', title: 'Save layout as…', run: () => void saveLayoutDialog() });
-  for (const l of namedLayoutsStore.get().list) list.push({ id: `layout.saved.${l.id}`, group: 'Windows', title: `Layout: ${l.name}`, run: () => applySavedLayout(l.id) });
+  for (const l of namedLayoutsStore.get().list)
+    list.push({ id: `layout.saved.${l.id}`, group: 'Windows', title: `Layout: ${l.name}`, run: () => applySavedLayout(l.id) });
   list.push({ id: 'edit.saveset', group: 'Edit', title: 'Keep the selected bones as a selection set', run: () => void saveSelectionSet() });
-  for (const s of doc.selectionSets ?? []) list.push({ id: `set.${s.id}`, group: 'Selection sets', title: `Select set: ${s.name}`, run: () => selectSet(s.id) });
-  for (const a of doc.animations) list.push({ id: `anim.${a.id}`, group: 'Animations', title: a.name, run: () => (selectAnimation(a.id), setMode('animate')) });
+  for (const s of doc.selectionSets ?? [])
+    list.push({ id: `set.${s.id}`, group: 'Selection sets', title: `Select set: ${s.name}`, run: () => selectSet(s.id) });
+  for (const a of doc.animations)
+    list.push({ id: `anim.${a.id}`, group: 'Animations', title: a.name, run: () => (selectAnimation(a.id), setMode('animate')) });
   return list;
 }
 

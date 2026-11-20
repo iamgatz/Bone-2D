@@ -28,10 +28,23 @@ function splitProject() {
   const a = walk(p);
   a.duration = Math.max(a.duration, 1);
   a.bones[bone] = {
-    translatex: [{ time: 0, value: [0], curve: [0.25, 0, 0.75, 20] }, { time: 0.5, value: [20] }, { time: 1, value: [5] }],
-    translatey: [{ time: 0.2, value: [3], curve: 'stepped' }, { time: 0.8, value: [-7] }],
-    scalex: [{ time: 0, value: [1] }, { time: 1, value: [1.5] }],
-    sheary: [{ time: 0.1, value: [0] }, { time: 0.9, value: [12], curve: [0.3, 0, 0.6, 10] }],
+    translatex: [
+      { time: 0, value: [0], curve: [0.25, 0, 0.75, 20] },
+      { time: 0.5, value: [20] },
+      { time: 1, value: [5] },
+    ],
+    translatey: [
+      { time: 0.2, value: [3], curve: 'stepped' },
+      { time: 0.8, value: [-7] },
+    ],
+    scalex: [
+      { time: 0, value: [1] },
+      { time: 1, value: [1.5] },
+    ],
+    sheary: [
+      { time: 0.1, value: [0] },
+      { time: 0.9, value: [12], curve: [0.3, 0, 0.6, 10] },
+    ],
   };
   return { p, bone };
 }
@@ -62,7 +75,7 @@ describe('the solver', () => {
 describe('export', () => {
   it('writes one JSON timeline per axis, with the keys and curves it has', () => {
     const { p, bone } = splitProject();
-     
+
     const json = exportSpineJson(p.skeleton) as any;
     const t = json.animations.walk.bones[p.skeleton.bones[1].name];
     expect(bone).toBeTruthy();
@@ -98,12 +111,25 @@ describe('import', () => {
       skeleton: { spine: '4.3.0' },
       bones: [{ name: 'root' }, { name: 'hip', parent: 'root', x: 10 }],
       animations: {
-        a: { bones: { hip: { translatex: [{ value: 1 }, { time: 1, value: 4 }], translatey: [{ time: 0.5, value: 2 }, { time: 1, value: 9, curve: 'stepped' }] } } },
+        a: {
+          bones: {
+            hip: {
+              translatex: [{ value: 1 }, { time: 1, value: 4 }],
+              translatey: [
+                { time: 0.5, value: 2 },
+                { time: 1, value: 9, curve: 'stepped' },
+              ],
+            },
+          },
+        },
       },
     };
     const r = importSpineJson(spine, 'x');
     const tl = r.project.skeleton.animations[0].bones[r.project.skeleton.bones[1].id];
-    expect(tl.translatex).toEqual([{ time: 0, value: [1] }, { time: 1, value: [4] }]);
+    expect(tl.translatex).toEqual([
+      { time: 0, value: [1] },
+      { time: 1, value: [4] },
+    ]);
     expect(tl.translatey?.map((k) => k.time)).toEqual([0.5, 1]);
     expect(tl.translate).toBeUndefined();
     expect(r.warnings.join('\n')).not.toMatch(/translate/);
@@ -113,7 +139,11 @@ describe('import', () => {
 
 describe('split and merge', () => {
   const combined = (): BoneTimelines => ({
-    translate: [{ time: 0, value: [0, 0], curve: [0.2, 0.1, 0.7, 0.9, 0.4, 0, 0.6, 1] }, { time: 1, value: [10, -4], curve: 'stepped' }, { time: 2, value: [10, -4] }],
+    translate: [
+      { time: 0, value: [0, 0], curve: [0.2, 0.1, 0.7, 0.9, 0.4, 0, 0.6, 1] },
+      { time: 1, value: [10, -4], curve: 'stepped' },
+      { time: 2, value: [10, -4] },
+    ],
   });
 
   it('splitting keeps the motion exactly', () => {
@@ -145,7 +175,13 @@ describe('split and merge', () => {
   });
 
   it('merging axes with different key times samples both at every time', () => {
-    const tl: BoneTimelines = { scalex: [{ time: 0, value: [1] }, { time: 1, value: [3] }], scaley: [{ time: 0.5, value: [2] }] };
+    const tl: BoneTimelines = {
+      scalex: [
+        { time: 0, value: [1] },
+        { time: 1, value: [3] },
+      ],
+      scaley: [{ time: 0.5, value: [2] }],
+    };
     mergeGroup(tl, 'scale');
     expect(tl.scale!.map((k) => k.time)).toEqual([0, 0.5, 1]);
     expect(tl.scale![0].value).toEqual([1, 1]); // scaley has no key yet: its neutral value
@@ -160,7 +196,17 @@ describe('keying per axis', () => {
     const f = buildFixture();
     docStore.replace(f.project);
     bone = f.project.skeleton.bones[1].id;
-    uiStore.patch({ mode: 'animate', tool: 'select', animationId: walk(f.project).id, skinId: null, time: 0.25, selection: { ...emptySelection, bones: [bone] }, overrides: {}, autoKey: true, playing: false });
+    uiStore.patch({
+      mode: 'animate',
+      tool: 'select',
+      animationId: walk(f.project).id,
+      skinId: null,
+      time: 0.25,
+      selection: { ...emptySelection, bones: [bone] },
+      overrides: {},
+      autoKey: true,
+      playing: false,
+    });
   });
   const tl = () => docStore.get().skeleton.animations.find((a) => a.name === 'walk')!.bones[bone] ?? {};
 
@@ -174,7 +220,11 @@ describe('keying per axis', () => {
     expect(setAxesSplit([bone], 'translate', true)).toBe(1);
     const before = tl().translatey?.length;
     A.setBonePose([{ id: bone, props: { x: 17 } }]);
-    expect(tl().translatex?.some((k) => Math.abs(k.time - 0.25) < 1e-6 && Math.abs(k.value[0] - (17 - docStore.get().skeleton.bones[1].x)) < 1e-6)).toBe(true);
+    expect(
+      tl().translatex?.some(
+        (k) => Math.abs(k.time - 0.25) < 1e-6 && Math.abs(k.value[0] - (17 - docStore.get().skeleton.bones[1].x)) < 1e-6,
+      ),
+    ).toBe(true);
     expect(tl().translatey?.length).toBe(before);
     expect(validateProject(docStore.get())).toEqual([]);
   });

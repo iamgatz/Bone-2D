@@ -4,7 +4,16 @@ import type { Id, MeshAttachment } from '@/core/model';
 import { trianglesAt } from '@/core/mesh';
 import { softMoves, softWeights } from '@/core/soft';
 import type { GLRenderer } from '@/render/gl';
-import { addMeshVertex, toggleMeshEdge, currentDeform, deleteMeshVertices, getMesh, moveMeshVertices, paintWeightsGroup, setDeformKey } from '@/store/meshActions';
+import {
+  addMeshVertex,
+  toggleMeshEdge,
+  currentDeform,
+  deleteMeshVertices,
+  getMesh,
+  moveMeshVertices,
+  paintWeightsGroup,
+  setDeformKey,
+} from '@/store/meshActions';
 import { docStore } from '@/store/doc';
 import { setSelection } from '@/store/actions';
 import { toast, uiStore } from '@/store/ui';
@@ -175,7 +184,10 @@ export class MeshTool {
     if (!geo) return false;
     const d = this.drag;
     if (!d) {
-      const h = ui.tool === 'mesh' && !ui.meshView.pickTriangle ? hitVertex(geo.vertices, ui.meshView.hullOnly ? Math.min(geo.count, am.mesh.hull) : geo.count, wx, wy, ui.camera.zoom) : -1;
+      const h =
+        ui.tool === 'mesh' && !ui.meshView.pickTriangle
+          ? hitVertex(geo.vertices, ui.meshView.hullOnly ? Math.min(geo.count, am.mesh.hull) : geo.count, wx, wy, ui.camera.zoom)
+          : -1;
       if (h !== this.hoverVertex || ui.tool === 'weights') {
         this.hoverVertex = h;
         this.invalidate();
@@ -186,7 +198,13 @@ export class MeshTool {
       const dx = wx - d.p0[0];
       const dy = wy - d.p0[1];
       if (ui.mode === 'setup') moveMeshVertices(am.slotId, am.name, softMoves(d.start, d.weights, dx, dy));
-      else if (d.base) setDeformKey(am.slotId, am.name, d.base, [...d.weights].map(([index, w]) => ({ index, dx: dx * w, dy: dy * w })));
+      else if (d.base)
+        setDeformKey(
+          am.slotId,
+          am.name,
+          d.base,
+          [...d.weights].map(([index, w]) => ({ index, dx: dx * w, dy: dy * w })),
+        );
     } else if (d.kind === 'marquee') {
       const [x0, y0, x1, y1] = dragMarquee(d, wx, wy);
       const picked = new Set(d.base);
@@ -200,7 +218,13 @@ export class MeshTool {
     } else if (d.kind === 'edge') {
       d.x = wx;
       d.y = wy;
-      this.hoverVertex = hitVertex(geo.vertices, ui.meshView.hullOnly ? Math.min(geo.count, am.mesh.hull) : geo.count, wx, wy, ui.camera.zoom);
+      this.hoverVertex = hitVertex(
+        geo.vertices,
+        ui.meshView.hullOnly ? Math.min(geo.count, am.mesh.hull) : geo.count,
+        wx,
+        wy,
+        ui.camera.zoom,
+      );
       this.invalidate();
     } else if (d.kind === 'paint') {
       const bone = ui.brush.bone;
@@ -349,18 +373,31 @@ export class MeshTool {
     const sel = new Set(ui.selection.vertices);
     // soft selection: the vertices that follow the selected ones, tinted by how much (the weights are those of the drag while one is going)
     const dragging = this.drag?.kind === 'vertices' ? this.drag : null;
-    const soft = dragging ? dragging.weights : ui.meshView.soft && sel.size ? softWeights(v, ui.selection.vertices, ui.meshView.softRadius, ui.meshView.softShape) : null;
+    const soft = dragging
+      ? dragging.weights
+      : ui.meshView.soft && sel.size
+        ? softWeights(v, ui.selection.vertices, ui.meshView.softRadius, ui.meshView.softShape)
+        : null;
     // in Animate mode the vertices the current pose deforms stand out
     const slot = scene.skeleton.slotById(am.slotId);
     const shown = slot ? scene.skeleton.slotAttachment(slot) : null;
-    const moved = ui.mode === 'animate' && slot && shown && shown.kind === 'mesh' && slot.deform.length ? deformedVertices(shown, slot.deform) : null;
+    const moved =
+      ui.mode === 'animate' && slot && shown && shown.kind === 'mesh' && slot.deform.length ? deformedVertices(shown, slot.deform) : null;
     for (let i = 0; i < (hullOnly ? Math.min(geo.count, am.mesh.hull) : geo.count); i++) {
       const [x, y] = P(i);
       const selected = sel.has(i);
       const hovered = i === this.hoverVertex;
       const hullV = i < am.mesh.hull;
       const r = selected || hovered ? 5 : hullV ? 4 : 3.6;
-      ctx.fillStyle = selected ? COLORS.accent : hovered ? token('--handle-hover') : moved?.[i] ? token('--vertex-deformed') : hullV ? token('--accent-glow') : token('--text');
+      ctx.fillStyle = selected
+        ? COLORS.accent
+        : hovered
+          ? token('--handle-hover')
+          : moved?.[i]
+            ? token('--vertex-deformed')
+            : hullV
+              ? token('--accent-glow')
+              : token('--text');
       ctx.strokeStyle = token('--handle-outline');
       ctx.lineWidth = 1.3;
       ctx.beginPath();
@@ -421,7 +458,10 @@ export class MeshTool {
     const n = geo.count;
     let colors = new Array<number>(n * 4);
     if (ui.weightView.overlay) {
-      const bound = boundBones(am.mesh.weights, docStore.get().skeleton.bones.map((b) => b.id));
+      const bound = boundBones(
+        am.mesh.weights,
+        docStore.get().skeleton.bones.map((b) => b.id),
+      );
       colors = overlayColors(am.mesh.weights, bound, ui.weightView.selected ? new Set(ui.selection.bones) : null);
     } else for (let i = 0; i < n; i++) heatColor(am.mesh.weights[i]?.find((e) => e[0] === ui.brush.bone)?.[3] ?? 0, colors, i * 4);
     renderer.pushColored(geo.vertices, colors, am.mesh.triangles, n, am.mesh.triangles.length);

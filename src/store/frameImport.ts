@@ -78,7 +78,7 @@ function keyLoop(delay: number) {
     const skin = d.skeleton.skins[0];
     const att = skin?.attachments[slotId]?.[name];
     if (!a || !skin || !att || (att.type !== 'region' && att.type !== 'mesh') || !att.sequence) return;
-    const keys = (((a.sequence ??= {})[skin.id] ??= {})[slotId] ??= {})[name] ??= [];
+    const keys = ((((a.sequence ??= {})[skin.id] ??= {})[slotId] ??= {})[name] ??= []);
     upsertKey(keys, cleanSequenceKey({ time: 0, mode: 'loop', index: 0, delay }));
   });
 }
@@ -98,7 +98,8 @@ function canvasOf(w: number, h: number): HTMLCanvasElement {
   return c;
 }
 
-const toPng = (c: HTMLCanvasElement) => new Promise<Blob>((resolve, reject) => c.toBlob((b) => (b ? resolve(b) : reject(new Error('could not encode a frame'))), 'image/png'));
+const toPng = (c: HTMLCanvasElement) =>
+  new Promise<Blob>((resolve, reject) => c.toBlob((b) => (b ? resolve(b) : reject(new Error('could not encode a frame'))), 'image/png'));
 
 /** Cuts a picture of the project into the cells of a grid, each a picture of its own. Returns the number of frames made. */
 export async function sliceSpriteSheet(sheet: string, o: SliceOptions): Promise<number> {
@@ -166,7 +167,11 @@ export async function importGif(file: File, opts: { base?: string; scene: boolea
       image.close();
       blobs.push(await toPng(c));
     }
-    return await addFrames(blobs, { base: opts.base ?? file.name.replace(/\.[^.]+$/, ''), scene: opts.scene, delay: Math.round((total / count) * 1000) / 1000 });
+    return await addFrames(blobs, {
+      base: opts.base ?? file.name.replace(/\.[^.]+$/, ''),
+      scene: opts.scene,
+      delay: Math.round((total / count) * 1000) / 1000,
+    });
   } finally {
     decoder.close();
   }

@@ -22,11 +22,21 @@ export interface TreeMatch {
  */
 export function filterTree(doc: SkeletonDoc, query: string): TreeMatch {
   const has = nameMatcher(query);
-  const out: TreeMatch = { active: has !== null, bones: new Set(), slots: new Set(), constraints: new Set(), skins: new Set(), events: new Set(), matchedBones: [], matchedSlots: [] };
+  const out: TreeMatch = {
+    active: has !== null,
+    bones: new Set(),
+    slots: new Set(),
+    constraints: new Set(),
+    skins: new Set(),
+    events: new Set(),
+    matchedBones: [],
+    matchedSlots: [],
+  };
   if (!has) return out;
   const byId = new Map(doc.bones.map((b) => [b.id, b]));
   const showWithAncestors = (id: Id | null) => {
-    for (let at = id ? byId.get(id) : undefined; at && !out.bones.has(at.id); at = at.parent ? byId.get(at.parent) : undefined) out.bones.add(at.id);
+    for (let at = id ? byId.get(id) : undefined; at && !out.bones.has(at.id); at = at.parent ? byId.get(at.parent) : undefined)
+      out.bones.add(at.id);
   };
   for (const b of doc.bones) {
     if (!has(b.name)) continue;
@@ -67,16 +77,21 @@ export function hiddenOf(doc: SkeletonDoc): { bones: Id[]; slots: Id[] } {
  * children goes (bones and the slots on them). Nothing selected: nothing to isolate (null).
  */
 export function isolation(doc: SkeletonDoc, bones: readonly Id[], slot: Id | null): { bones: Set<Id>; slots: Set<Id> } | null {
-  if (slot && doc.slots.some((s) => s.id === slot)) return { bones: new Set(), slots: new Set(doc.slots.filter((s) => s.id !== slot).map((s) => s.id)) };
+  if (slot && doc.slots.some((s) => s.id === slot))
+    return { bones: new Set(), slots: new Set(doc.slots.filter((s) => s.id !== slot).map((s) => s.id)) };
   const picked = bones.filter((id) => doc.bones.some((b) => b.id === id));
   if (!picked.length) return null;
   const keep = new Set<Id>(picked);
-  for (let grew = true; grew; ) {
+  for (let grew = true; grew;) {
     grew = false;
-    for (const b of doc.bones) if (b.parent && keep.has(b.parent) && !keep.has(b.id)) {
+    for (const b of doc.bones)
+      if (b.parent && keep.has(b.parent) && !keep.has(b.id)) {
         keep.add(b.id);
         grew = true;
       }
   }
-  return { bones: new Set(doc.bones.filter((b) => !keep.has(b.id)).map((b) => b.id)), slots: new Set(doc.slots.filter((s) => !keep.has(s.bone)).map((s) => s.id)) };
+  return {
+    bones: new Set(doc.bones.filter((b) => !keep.has(b.id)).map((b) => b.id)),
+    slots: new Set(doc.slots.filter((s) => !keep.has(s.bone)).map((s) => s.id)),
+  };
 }

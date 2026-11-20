@@ -43,7 +43,15 @@ function SliceDialog({ image }: { image: string }) {
     return () => URL.revokeObjectURL(u);
   }, [image]);
 
-  const grid = useMemo(() => (ref ? (by === 'count' ? gridByCount(ref.width, ref.height, cols, rows, margin, spacing) : gridByCell(ref.width, ref.height, cellW, cellH, margin, spacing)) : null), [ref, by, cols, rows, cellW, cellH, margin, spacing]);
+  const grid = useMemo(
+    () =>
+      ref
+        ? by === 'count'
+          ? gridByCount(ref.width, ref.height, cols, rows, margin, spacing)
+          : gridByCell(ref.width, ref.height, cellW, cellH, margin, spacing)
+        : null,
+    [ref, by, cols, rows, cellW, cellH, margin, spacing],
+  );
   if (!ref) {
     return (
       <Dialog title="Cut into frames" onClose={closeSliceDialog}>
@@ -90,11 +98,19 @@ function SliceDialog({ image }: { image: string }) {
         </>
       }
     >
-      <p className="hint-text mb">A picture with the frames of an animation in a grid is cut into numbered pictures that play as a sequence.</p>
+      <p className="hint-text mb">
+        A picture with the frames of an animation in a grid is cut into numbered pictures that play as a sequence.
+      </p>
       <div className="slice-preview" style={{ position: 'relative', marginBottom: 8, maxHeight: 180, overflow: 'hidden' }}>
-        {url && <img src={url} alt={image} draggable={false} style={{ display: 'block', maxWidth: '100%', maxHeight: 180, margin: '0 auto' }} />}
+        {url && (
+          <img src={url} alt={image} draggable={false} style={{ display: 'block', maxWidth: '100%', maxHeight: 180, margin: '0 auto' }} />
+        )}
         {url && grid && (
-          <svg viewBox={`0 0 ${ref.width} ${ref.height}`} preserveAspectRatio="xMidYMid meet" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: 'none' }}>
+          <svg
+            viewBox={`0 0 ${ref.width} ${ref.height}`}
+            preserveAspectRatio="xMidYMid meet"
+            style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: 'none' }}
+          >
             {lines.map((l, i) => (
               <line key={i} x1={l[0]} y1={l[1]} x2={l[2]} y2={l[3]} stroke="var(--accent)" strokeWidth={Math.max(1, ref.width / 300)} />
             ))}
@@ -160,7 +176,9 @@ function SliceDialog({ image }: { image: string }) {
           <NumberField label="fps" value={fps} step={1} precision={0} min={1} max={240} onChange={(v) => setFps(Math.round(v))} />
         </Field>
       )}
-      <p className="hint-text">{grid ? `${grid.cols}×${grid.rows} cells of ${grid.cellW}×${grid.cellH} px` : 'The cells do not fit in the picture'}</p>
+      <p className="hint-text">
+        {grid ? `${grid.cols}×${grid.rows} cells of ${grid.cellW}×${grid.cellH} px` : 'The cells do not fit in the picture'}
+      </p>
     </Dialog>
   );
 }

@@ -2,7 +2,34 @@ import { settingsStore, setSettings } from '@/store/settings';
 import { TOOLS, hotkeyOf, setToolKey } from './tools';
 
 export type KeyId =
-  | 'undo' | 'redo' | 'save' | 'saveAs' | 'open' | 'export' | 'copy' | 'paste' | 'pasteHold' | 'flipView' | 'selectAll' | 'frame' | 'mode' | 'play' | 'key' | 'delete' | 'help' | 'hideViews' | 'settings' | 'duplicate' | 'palette' | 'mirror' | 'showAll' | 'isolate' | 'frameSelection' | 'zoom100' | 'parent' | 'keyShown';
+  | 'undo'
+  | 'redo'
+  | 'save'
+  | 'saveAs'
+  | 'open'
+  | 'export'
+  | 'copy'
+  | 'paste'
+  | 'pasteHold'
+  | 'flipView'
+  | 'selectAll'
+  | 'frame'
+  | 'mode'
+  | 'play'
+  | 'key'
+  | 'delete'
+  | 'help'
+  | 'hideViews'
+  | 'settings'
+  | 'duplicate'
+  | 'palette'
+  | 'mirror'
+  | 'showAll'
+  | 'isolate'
+  | 'frameSelection'
+  | 'zoom100'
+  | 'parent'
+  | 'keyShown';
 
 export interface Binding {
   id: KeyId;
@@ -65,7 +92,19 @@ for (const b of BINDINGS) Object.defineProperty(KEYS, b.id, { get: () => binding
 
 /** The combination of a keyboard event in the form the editor writes it, or null for a key that cannot be bound (a modifier on its own, the arrows…). */
 /** The punctuation keys by position: with a layout that has no Latin letters on them a shortcut still means the key where it is on a US keyboard. */
-const CODE_CHARS: Record<string, string> = { Backquote: '`', Minus: '-', Equal: '=', BracketLeft: '[', BracketRight: ']', Backslash: '\\', Semicolon: ';', Quote: "'", Comma: ',', Period: '.', Slash: '/' };
+const CODE_CHARS: Record<string, string> = {
+  Backquote: '`',
+  Minus: '-',
+  Equal: '=',
+  BracketLeft: '[',
+  BracketRight: ']',
+  Backslash: '\\',
+  Semicolon: ';',
+  Quote: "'",
+  Comma: ',',
+  Period: '.',
+  Slash: '/',
+};
 
 /**
  * The key a shortcut means. With a Russian (or any non-Latin) layout `e.key` is "я" where Ctrl+Z is pressed, and every shortcut would be dead:
@@ -101,7 +140,20 @@ export function keyIdOf(combo: string): KeyId | null {
 }
 
 /** The browser keeps these for itself (closing the tab, reloading…): a page cannot use them reliably. */
-const RESERVED = new Set(['Ctrl+W', 'Ctrl+T', 'Ctrl+N', 'Ctrl+Shift+N', 'Ctrl+Shift+T', 'Ctrl+R', 'Ctrl+Shift+R', 'Ctrl+Q', 'Ctrl+L', 'Ctrl+Tab', 'F5', 'F11']);
+const RESERVED = new Set([
+  'Ctrl+W',
+  'Ctrl+T',
+  'Ctrl+N',
+  'Ctrl+Shift+N',
+  'Ctrl+Shift+T',
+  'Ctrl+R',
+  'Ctrl+Shift+R',
+  'Ctrl+Q',
+  'Ctrl+L',
+  'Ctrl+Tab',
+  'F5',
+  'F11',
+]);
 
 /** What already has a combination (a command, a tool, or the browser), for the message when it is taken. */
 export function whoHas(combo: string, except?: KeyId): string | null {
@@ -167,7 +219,10 @@ export const hotkeyGroups = (): HotkeyGroup[] => [
       row('play'),
       { label: 'Step frame', keys: ['←', '→'] },
       { label: 'Step 10 frames', keys: ['Shift+←', 'Shift+→'] },
-      { label: 'Micro-move: bones by a unit; keys by a frame (← →) and their values (↑ ↓). Shift: ten', keys: ['Alt+←', 'Alt+→', 'Alt+↑', 'Alt+↓'] },
+      {
+        label: 'Micro-move: bones by a unit; keys by a frame (← →) and their values (↑ ↓). Shift: ten',
+        keys: ['Alt+←', 'Alt+→', 'Alt+↑', 'Alt+↓'],
+      },
       { label: 'Go to the start', keys: ['Home'] },
       row('key'),
       row('keyShown'),

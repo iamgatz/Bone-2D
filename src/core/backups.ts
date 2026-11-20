@@ -43,7 +43,12 @@ export function dueForBackup(last: number | null, now: number, interval = BACKUP
  * Puts a copy at the front of the list (newest first) and drops what is over the limits, oldest first. Returns the new list and the ids dropped.
  * A copy with the same fingerprint as the newest one is not added (nothing changed), unless it is a manual one, which is always kept.
  */
-export function addBackup(list: readonly BackupMeta[], meta: BackupMeta, maxCount = MAX_BACKUPS, maxChars = MAX_BACKUP_CHARS): { list: BackupMeta[]; dropped: string[]; added: boolean } {
+export function addBackup(
+  list: readonly BackupMeta[],
+  meta: BackupMeta,
+  maxCount = MAX_BACKUPS,
+  maxChars = MAX_BACKUP_CHARS,
+): { list: BackupMeta[]; dropped: string[]; added: boolean } {
   if (list[0] && list[0].hash === meta.hash && meta.why !== 'manual') return { list: [...list], dropped: [], added: false };
   const next = [meta, ...list];
   const dropped: string[] = [];
@@ -66,7 +71,16 @@ export function readBackupList(raw: unknown): BackupMeta[] {
   const why = new Set<BackupWhy>(['auto', 'manual', 'open', 'new', 'restore']);
   for (const b of raw as Partial<BackupMeta>[]) {
     if (!b || typeof b.id !== 'string' || typeof b.time !== 'number' || typeof b.hash !== 'string' || typeof b.size !== 'number') continue;
-    out.push({ id: b.id, time: b.time, name: typeof b.name === 'string' ? b.name : '', why: why.has(b.why as BackupWhy) ? (b.why as BackupWhy) : 'auto', bones: Number(b.bones) || 0, animations: Number(b.animations) || 0, size: b.size, hash: b.hash });
+    out.push({
+      id: b.id,
+      time: b.time,
+      name: typeof b.name === 'string' ? b.name : '',
+      why: why.has(b.why as BackupWhy) ? (b.why as BackupWhy) : 'auto',
+      bones: Number(b.bones) || 0,
+      animations: Number(b.animations) || 0,
+      size: b.size,
+      hash: b.hash,
+    });
   }
   return out.sort((a, b) => b.time - a.time);
 }

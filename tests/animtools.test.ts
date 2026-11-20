@@ -12,7 +12,10 @@ import { encodeKey } from '../src/core/keyrefs';
 import { emptySelection, uiStore } from '../src/store/ui';
 
 describe('wiggle', () => {
-  const base = [{ time: 0, value: [0] }, { time: 1, value: [10] }];
+  const base = [
+    { time: 0, value: [0] },
+    { time: 1, value: [10] },
+  ];
   const opts = { amount: 2, every: 3, fps: 30, seed: 7, smooth: false, keepEnds: true };
 
   it('is the same for the same seed, differs for another, and stays within the amount', () => {
@@ -57,8 +60,16 @@ describe('left and right', () => {
   });
 
   it('pairs only the items whose other side exists', () => {
-    const p = sidePairs([{ id: 'a', name: 'arm L' }, { id: 'b', name: 'arm R' }, { id: 'c', name: 'foot L' }, { id: 'd', name: 'hip' }]);
-    expect([...p]).toEqual([['a', 'b'], ['b', 'a']]);
+    const p = sidePairs([
+      { id: 'a', name: 'arm L' },
+      { id: 'b', name: 'arm R' },
+      { id: 'c', name: 'foot L' },
+      { id: 'd', name: 'hip' },
+    ]);
+    expect([...p]).toEqual([
+      ['a', 'b'],
+      ['b', 'a'],
+    ]);
   });
 });
 
@@ -71,9 +82,24 @@ function rig(): { project: Project; ids: Record<string, string> } {
   const footR = newBone({ name: 'foot R', parent: hip.id, x: 10, y: -40 });
   project.skeleton.bones.push(root, hip, footL, footR);
   const half = newAnimation('step', 1);
-  half.bones[footL.id] = { rotate: [{ time: 0, value: [0] }, { time: 1, value: [30] }] };
-  half.bones[footR.id] = { rotate: [{ time: 0, value: [30] }, { time: 1, value: [0] }] };
-  half.bones[hip.id] = { rotate: [{ time: 0, value: [5] }, { time: 1, value: [10] }] };
+  half.bones[footL.id] = {
+    rotate: [
+      { time: 0, value: [0] },
+      { time: 1, value: [30] },
+    ],
+  };
+  half.bones[footR.id] = {
+    rotate: [
+      { time: 0, value: [30] },
+      { time: 1, value: [0] },
+    ],
+  };
+  half.bones[hip.id] = {
+    rotate: [
+      { time: 0, value: [5] },
+      { time: 1, value: [10] },
+    ],
+  };
   project.skeleton.animations = [half];
   return { project, ids: { root: root.id, hip: hip.id, footL: footL.id, footR: footR.id } };
 }
@@ -113,8 +139,17 @@ describe('foot slide', () => {
     const a = newAnimation('walk', 1);
     // planted from 0 to 0.5 (y = 0), lifted at 0.7, back down at 1
     a.bones[foot.id] = {
-      translatex: [{ time: 0, value: [0] }, { time: 0.5, value: [plantedSpeed * 0.5] }, { time: 1, value: [plantedSpeed * 0.5] }],
-      translatey: [{ time: 0, value: [0] }, { time: 0.5, value: [0] }, { time: 0.7, value: [20] }, { time: 1, value: [0] }],
+      translatex: [
+        { time: 0, value: [0] },
+        { time: 0.5, value: [plantedSpeed * 0.5] },
+        { time: 1, value: [plantedSpeed * 0.5] },
+      ],
+      translatey: [
+        { time: 0, value: [0] },
+        { time: 0.5, value: [0] },
+        { time: 0.7, value: [20] },
+        { time: 1, value: [0] },
+      ],
     };
     project.skeleton.animations = [a];
     return { project, foot: foot.id, anim: a };
@@ -141,7 +176,14 @@ describe('the actions', () => {
   beforeEach(() => {
     const { project, ids } = rig();
     docStore.replace(project);
-    uiStore.patch({ mode: 'animate', animationId: project.skeleton.animations[0].id, time: 0, selection: { ...emptySelection, bones: [ids.footL] }, playing: false, selectedKeys: [] });
+    uiStore.patch({
+      mode: 'animate',
+      animationId: project.skeleton.animations[0].id,
+      time: 0,
+      selection: { ...emptySelection, bones: [ids.footL] },
+      playing: false,
+      selectedKeys: [],
+    });
   });
 
   it('wiggles the selected timelines in one undo step', () => {
@@ -168,6 +210,11 @@ describe('the actions', () => {
     const un = unkeyedBones(docStore.get().skeleton, currentAnimation());
     expect(un).toHaveLength(1); // the root
     expect(hideUnkeyedBones()).toBe(1);
-    expect(docStore.get().skeleton.bones.filter((b) => b.hidden).map((b) => b.name)).toEqual(['root']);
+    expect(
+      docStore
+        .get()
+        .skeleton.bones.filter((b) => b.hidden)
+        .map((b) => b.name),
+    ).toEqual(['root']);
   });
 });

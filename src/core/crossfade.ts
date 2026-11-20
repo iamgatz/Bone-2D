@@ -44,7 +44,7 @@ export function fadeSteps(slot: Slot, anim: Animation, seconds: number): FadeSte
 
 /** Why a slot cannot be faded in this animation, or null when it can. */
 export function fadeRefusal(doc: SkeletonDoc, slot: Slot, anim: Animation): FadeRefusal | null {
-  if (!(anim.slots[slot.id]?.attachment?.length)) return 'no-keys';
+  if (!anim.slots[slot.id]?.attachment?.length) return 'no-keys';
   if (slot.dark || anim.slots[slot.id]?.rgba2?.length) return 'two-color';
   if (anim.slots[slot.id]?.rgba?.length) return 'color-keys';
   if (!fadeSteps(slot, anim, 1).some((s) => s.from !== null || s.to !== null)) return 'no-pictures';
@@ -79,14 +79,27 @@ export function applyCrossfade(doc: SkeletonDoc, animId: Id, slotId: Id, seconds
   if (!anim || !slot || fadeRefusal(doc, slot, anim)) return null;
   // only pictures fade: a change that involves a path, a clip or a box stays a hard cut
   const pics = new Set<string>();
-  for (const skin of doc.skins) for (const [name, att] of Object.entries(skin.attachments[slot.id] ?? {})) if (att.type === 'region' || att.type === 'mesh') pics.add(name);
-  const steps = fadeSteps(slot, anim, seconds).filter((s) => s.seconds > 2 * KEY_EPS && (s.from === null || pics.has(s.from)) && (s.to === null || pics.has(s.to)));
+  for (const skin of doc.skins)
+    for (const [name, att] of Object.entries(skin.attachments[slot.id] ?? {}))
+      if (att.type === 'region' || att.type === 'mesh') pics.add(name);
+  const steps = fadeSteps(slot, anim, seconds).filter(
+    (s) => s.seconds > 2 * KEY_EPS && (s.from === null || pics.has(s.from)) && (s.to === null || pics.has(s.to)),
+  );
   if (!steps.length) return null;
 
   const wanted = `${slot.name} fade`;
   let partner = doc.slots.find((s) => s.name === wanted && s.bone === slot.bone && s.id !== slot.id);
   if (!partner) {
-    partner = { id: uid(), name: freshName(wanted, doc.slots), bone: slot.bone, color: [...slot.color], dark: null, attachment: null, blend: slot.blend, hidden: slot.hidden };
+    partner = {
+      id: uid(),
+      name: freshName(wanted, doc.slots),
+      bone: slot.bone,
+      color: [...slot.color],
+      dark: null,
+      attachment: null,
+      blend: slot.blend,
+      hidden: slot.hidden,
+    };
     const at = doc.slots.findIndex((s) => s.id === slot.id);
     doc.slots.splice(at + 1, 0, partner);
     for (const f of doc.drawOrderFolders ?? []) {

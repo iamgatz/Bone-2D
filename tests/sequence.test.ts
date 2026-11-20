@@ -13,7 +13,17 @@ import { importSpineJson } from '../src/core/import/spineJson';
 import { meshFromRegion } from '../src/core/mesh';
 import { SEQUENCE_MODES, newAnimation, newSkin } from '../src/core/model';
 import type { Animation, Attachment, MeshAttachment, Project, RegionAttachment, SequenceDef, SequenceKey } from '../src/core/model';
-import { attachmentPictures, cleanSequence, detectSequence, cleanSequenceKey, resolveSequenceIndex, sequenceFrameNames, sequenceFramePath, sequenceIndexAt, setupPicture } from '../src/core/sequence';
+import {
+  attachmentPictures,
+  cleanSequence,
+  detectSequence,
+  cleanSequenceKey,
+  resolveSequenceIndex,
+  sequenceFrameNames,
+  sequenceFramePath,
+  sequenceIndexAt,
+  setupPicture,
+} from '../src/core/sequence';
 import { compileSkeleton, createSkeleton } from '../src/core/skeleton';
 import { repairProject, validateProject } from '../src/core/validate';
 import { duplicateSkin } from '../src/core/skins';
@@ -25,8 +35,6 @@ import * as SQ from '../src/store/sequenceActions';
 import { emptySelection, uiStore } from '../src/store/ui';
 import { buildFixture } from './fixture';
 import { loadOfficial, loadOfficialBinary } from './official';
-
- 
 
 const SEQ: SequenceDef = { count: 6, start: 3, digits: 2, setupIndex: 1 };
 
@@ -69,10 +77,11 @@ function rig(kind: 'region' | 'mesh'): Rig {
   }
   if (!base) throw new Error('the fixture has no region');
   const region: RegionAttachment = { ...structuredClone(base), name: 'flame', path: 'flame_', sequence: { ...SEQ } };
-  const att: Attachment = kind === 'region' ? region : ({ ...meshFromRegion(region), name: 'flame', path: 'flame_', sequence: { ...SEQ } });
+  const att: Attachment = kind === 'region' ? region : { ...meshFromRegion(region), name: 'flame', path: 'flame_', sequence: { ...SEQ } };
   skin.attachments[slotId].flame = att;
   doc.slots.find((s) => s.id === slotId)!.attachment = 'flame';
-  for (const picture of attachmentPictures(att)) project.images.push({ id: picture, name: picture, width: base.width || 32, height: base.height || 32 });
+  for (const picture of attachmentPictures(att))
+    project.images.push({ id: picture, name: picture, width: base.width || 32, height: base.height || 32 });
   const animation = newAnimation('fx', 4);
   animation.sequence = { [skin.id]: { [slotId]: { flame: KEYS.map((k) => ({ ...k })) } } };
   doc.animations.push(animation);
@@ -81,8 +90,13 @@ function rig(kind: 'region' | 'mesh'): Rig {
 
 function atlasFor(project: Project): string {
   const used = new Set<string>();
-  for (const skin of project.skeleton.skins) for (const per of Object.values(skin.attachments)) for (const a of Object.values(per)) for (const p of attachmentPictures(a)) used.add(p);
-  const pages = packAtlas(project.images.filter((i) => used.has(i.name)).map((i) => ({ name: i.name, width: i.width, height: i.height })), { maxSize: 2048, padding: 2 });
+  for (const skin of project.skeleton.skins)
+    for (const per of Object.values(skin.attachments))
+      for (const a of Object.values(per)) for (const p of attachmentPictures(a)) used.add(p);
+  const pages = packAtlas(
+    project.images.filter((i) => used.has(i.name)).map((i) => ({ name: i.name, width: i.width, height: i.height })),
+    { maxSize: 2048, padding: 2 },
+  );
   return writeAtlas(pages, (i) => `atlas${i}.png`);
 }
 
@@ -123,14 +137,19 @@ describe('frame names and indexes', () => {
     const att = r.project.skeleton.skins[0].attachments[r.slotId].flame;
     expect(attachmentPictures(att)).toEqual(['flame_03', 'flame_04', 'flame_05', 'flame_06', 'flame_07', 'flame_08']);
     expect(setupPicture(att)).toBe('flame_04');
-    const plain = Object.values(r.project.skeleton.skins[0].attachments[r.slotId]).find((a) => a.type === 'region' && !(a).sequence)!;
+    const plain = Object.values(r.project.skeleton.skins[0].attachments[r.slotId]).find((a) => a.type === 'region' && !a.sequence)!;
     expect(attachmentPictures(plain)).toEqual([(plain as RegionAttachment).path]);
   });
 
   it('repairs a damaged sequence and damaged keys', () => {
     expect(cleanSequence({ count: 0, start: -3, digits: 99, setupIndex: 50 })).toEqual({ count: 1, start: 0, digits: 9, setupIndex: 0 });
     expect(cleanSequence(undefined)).toEqual({ count: 1, start: 1, digits: 0, setupIndex: 0 });
-    expect(cleanSequenceKey({ time: -1, mode: 'zigzag' as any, index: 2.7, delay: -4 })).toEqual({ time: 0, mode: 'hold', index: 2, delay: 0 });
+    expect(cleanSequenceKey({ time: -1, mode: 'zigzag' as any, index: 2.7, delay: -4 })).toEqual({
+      time: 0,
+      mode: 'hold',
+      index: 2,
+      delay: 0,
+    });
   });
 });
 
@@ -154,7 +173,14 @@ for (const kind of ['region', 'mesh'] as const) {
       expect(keys).toHaveLength(KEYS.length);
       const slot = sd.findSlot(slotName);
       const official = sd.findSkin('default').getAttachment(slot.index, 'flame');
-      expect(official.sequence.regions.map((x: any) => x.name)).toEqual(['flame_03', 'flame_04', 'flame_05', 'flame_06', 'flame_07', 'flame_08']);
+      expect(official.sequence.regions.map((x: any) => x.name)).toEqual([
+        'flame_03',
+        'flame_04',
+        'flame_05',
+        'flame_06',
+        'flame_07',
+        'flame_08',
+      ]);
       expect(official.sequence.setupIndex).toBe(1);
     });
 
@@ -205,10 +231,18 @@ describe('sequence keys in a project', () => {
   it('are dropped by the repair when the attachment has no sequence, and sorted and merged otherwise', () => {
     const r = rig('region');
     const a = r.project.skeleton.animations.find((x) => x.name === 'fx')!;
-    a.sequence![r.skinId][r.slotId].flame = [key(1, 'loop', 0, 0.1), key(0.5, 'once', 0, 0.1), key(1, 'hold', 3, 0.2), { time: NaN, mode: 'hold', index: 0, delay: 0 }];
+    a.sequence![r.skinId][r.slotId].flame = [
+      key(1, 'loop', 0, 0.1),
+      key(0.5, 'once', 0, 0.1),
+      key(1, 'hold', 3, 0.2),
+      { time: NaN, mode: 'hold', index: 0, delay: 0 },
+    ];
     expect(repairProject(r.project).some((m) => /sequence keys/.test(m))).toBe(true);
     const keys = a.sequence![r.skinId][r.slotId].flame;
-    expect(keys.map((k) => [k.time, k.mode])).toEqual([[0.5, 'once'], [1, 'hold']]);
+    expect(keys.map((k) => [k.time, k.mode])).toEqual([
+      [0.5, 'once'],
+      [1, 'hold'],
+    ]);
     delete (r.project.skeleton.skins[0].attachments[r.slotId].flame as RegionAttachment).sequence;
     expect(repairProject(r.project).some((m) => /no sequence/.test(m))).toBe(true);
     expect(a.sequence).toBeUndefined();
@@ -232,7 +266,22 @@ describe('sequence keys in a project', () => {
 });
 
 describe('finding the series of pictures', () => {
-  const names = ['flame01', 'flame02', 'flame03', 'flame04', 'flame07', 'flame08', 'smoke_1', 'smoke_2', 'smoke_3', 'smoke_10', 'blink', 'x9', 'x10', 'x11'];
+  const names = [
+    'flame01',
+    'flame02',
+    'flame03',
+    'flame04',
+    'flame07',
+    'flame08',
+    'smoke_1',
+    'smoke_2',
+    'smoke_3',
+    'smoke_10',
+    'blink',
+    'x9',
+    'x10',
+    'x11',
+  ];
 
   it('takes the run of consecutive numbers around the picture', () => {
     expect(detectSequence(names, 'flame02')).toEqual({ path: 'flame', sequence: { count: 4, start: 1, digits: 2, setupIndex: 1 } });
@@ -260,7 +309,17 @@ describe('sequence actions', () => {
     delete att.sequence;
     r.project.skeleton.animations = r.project.skeleton.animations.filter((a) => a.name !== 'fx');
     docStore.replace(r.project);
-    uiStore.patch({ mode: 'setup', tool: 'select', animationId: null, skinId: null, time: 0, selection: emptySelection, overrides: {}, autoKey: true, playing: false });
+    uiStore.patch({
+      mode: 'setup',
+      tool: 'select',
+      animationId: null,
+      skinId: null,
+      time: 0,
+      selection: emptySelection,
+      overrides: {},
+      autoKey: true,
+      playing: false,
+    });
     return r;
   }
   const attOf = (r: Rig) => docStore.get().skeleton.skins[0].attachments[r.slotId].flame as RegionAttachment;
@@ -280,7 +339,14 @@ describe('sequence actions', () => {
 
   it('changes nothing when there are no numbered pictures', () => {
     const r = setUp();
-    docStore.update('t', (d) => void (d.skeleton.skins[0].attachments[r.slotId].flame = { ...(d.skeleton.skins[0].attachments[r.slotId].flame as RegionAttachment), path: 'lonely' }));
+    docStore.update(
+      't',
+      (d) =>
+        void (d.skeleton.skins[0].attachments[r.slotId].flame = {
+          ...(d.skeleton.skins[0].attachments[r.slotId].flame as RegionAttachment),
+          path: 'lonely',
+        }),
+    );
     expect(SQ.makeSequence(r.slotId, 'flame')).toBe(0);
     expect(attOf(r).sequence).toBeUndefined();
   });
@@ -368,9 +434,15 @@ describe('sequence keys in the dopesheet', () => {
     expect(resolveKeys(r.animation, refs[0])).toBe(r.animation.sequence![r.skinId][r.slotId].flame);
     moveKeys(r.animation, refs, 0.05);
     expect(r.animation.sequence![r.skinId][r.slotId].flame.slice(0, 2).map((k) => k.time)).toEqual([0.25, 0.55]);
-    removeKeys(r.animation, [{ ...refs[0], time: 0.25 }, { ...refs[1], time: 0.55 }]);
+    removeKeys(r.animation, [
+      { ...refs[0], time: 0.25 },
+      { ...refs[1], time: 0.55 },
+    ]);
     expect(r.animation.sequence![r.skinId][r.slotId].flame).toHaveLength(KEYS.length - 2);
-    removeKeys(r.animation, r.animation.sequence![r.skinId][r.slotId].flame.map((k) => ({ ...refs[0], time: k.time })));
+    removeKeys(
+      r.animation,
+      r.animation.sequence![r.skinId][r.slotId].flame.map((k) => ({ ...refs[0], time: k.time })),
+    );
     expect(r.animation.sequence).toBeUndefined();
   });
 });

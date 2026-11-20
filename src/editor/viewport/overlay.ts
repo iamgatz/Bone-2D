@@ -77,7 +77,15 @@ export interface OverlayInput {
 }
 
 /** Arrows along the motion (see `motionArrows`): a line with a head at the later end, in the colour of its side. */
-export function drawMotionArrows(ctx: CanvasRenderingContext2D, w: number, h: number, cam: Camera, arrows: readonly MotionArrow[], before: readonly number[], after: readonly number[]) {
+export function drawMotionArrows(
+  ctx: CanvasRenderingContext2D,
+  w: number,
+  h: number,
+  cam: Camera,
+  arrows: readonly MotionArrow[],
+  before: readonly number[],
+  after: readonly number[],
+) {
   const css = (c: readonly number[]) => `rgb(${c.map((v) => Math.round(v * 255)).join(',')})`;
   ctx.save();
   ctx.lineWidth = 1.6;
@@ -179,7 +187,10 @@ function boneColor(bone: Bone, o: OverlayInput, selected: boolean, hovered: bool
   const r = Math.round(c[0] * 255);
   const g = Math.round(c[1] * 255);
   const b = Math.round(c[2] * 255);
-  return { fill: `rgba(${r},${g},${b},0.42)`, stroke: `rgba(${Math.min(255, r + 70)},${Math.min(255, g + 70)},${Math.min(255, b + 70)},0.95)` };
+  return {
+    fill: `rgba(${r},${g},${b},0.42)`,
+    stroke: `rgba(${Math.min(255, r + 70)},${Math.min(255, g + 70)},${Math.min(255, b + 70)},0.95)`,
+  };
 }
 
 export function drawBone(o: OverlayInput, bone: Bone, selected: boolean, hovered: boolean) {
@@ -249,7 +260,12 @@ export function drawBones(o: OverlayInput) {
     if (targets.has(id) && bone.data.length < 1) continue; // drawn by constraint visuals
     drawBone(o, bone, sel.has(id), o.hoverBone === id);
   }
-  const named = new Set(docStore.get().skeleton.bones.filter((b) => b.showName).map((b) => b.id));
+  const named = new Set(
+    docStore
+      .get()
+      .skeleton.bones.filter((b) => b.showName)
+      .map((b) => b.id),
+  );
   if (ui.view.names || named.size) {
     const { ctx, w, h, cam } = o;
     ctx.font = '11px Inter Variable, Inter, system-ui, sans-serif';

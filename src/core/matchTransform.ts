@@ -29,7 +29,11 @@ export function matchTransformConstraint(doc: SkeletonDoc, id: Id): MatchResult 
   const c = doc.constraints.find((x) => x.id === id);
   if (!c || c.type !== 'transform' || !c.bones.length || !c.properties.length) return null;
   // the pose without this constraint: that is the pose the constraint has to leave alone
-  const stripped: SkeletonDoc = { ...doc, constraints: doc.constraints.filter((x) => x.id !== id), skins: doc.skins.map((k) => ({ ...k, constraints: k.constraints.filter((x) => x !== id) })) };
+  const stripped: SkeletonDoc = {
+    ...doc,
+    constraints: doc.constraints.filter((x) => x.id !== id),
+    skins: doc.skins.map((k) => ({ ...k, constraints: k.constraints.filter((x) => x !== id) })),
+  };
   const sk = createSkeleton(compileSkeleton(stripped));
   sk.setToSetupPose();
   sk.updateWorldTransform('none');

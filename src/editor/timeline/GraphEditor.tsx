@@ -69,7 +69,13 @@ export function channelNames(kind: KeyRef['kind'], prop: string): string[] {
  * Curves for: timelines of selected keys, else all timelines of the selected bones (`sync` 'dopesheet', Spine's dopesheet-centric mode:
  * a key selected in the Dopesheet shows its own timeline). With `sync` 'selection' the keys do not matter: the selected bones' timelines.
  */
-export function buildCurves(doc: SkeletonDoc, anim: Animation | null, selection: Selection, selectedKeys: string[], sync: 'dopesheet' | 'selection' = 'dopesheet'): Curve[] {
+export function buildCurves(
+  doc: SkeletonDoc,
+  anim: Animation | null,
+  selection: Selection,
+  selectedKeys: string[],
+  sync: 'dopesheet' | 'selection' = 'dopesheet',
+): Curve[] {
   if (!anim) return [];
   const out: Curve[] = [];
   const seen = new Set<string>();
@@ -80,7 +86,15 @@ export function buildCurves(doc: SkeletonDoc, anim: Animation | null, selection:
     seen.add(id);
     const channels = keys[0].value.length;
     for (let c = 0; c < channels; c++) {
-      out.push({ id: `${id}|${c}`, label: `${title} · ${names[c] ?? c}`, color: curveColor(c), ref: { kind, target, prop }, channel: c, channels, keys });
+      out.push({
+        id: `${id}|${c}`,
+        label: `${title} · ${names[c] ?? c}`,
+        color: curveColor(c),
+        ref: { kind, target, prop },
+        channel: c,
+        channels,
+        keys,
+      });
     }
   };
   const addBone = (boneId: Id, only?: string) => {
@@ -92,12 +106,53 @@ export function buildCurves(doc: SkeletonDoc, anim: Animation | null, selection:
   const refs = sync === 'selection' ? [] : selectedKeys.map(decodeKey);
   for (const r of refs) {
     if (r.kind === 'bone') addBone(r.target, r.prop);
-    else if (r.kind === 'slot' && (r.prop === 'rgba' || r.prop === 'rgba2')) add('slot', r.target, r.prop, anim.slots[r.target]?.[r.prop], doc.slots.find((s) => s.id === r.target)?.name ?? '?', CHANNEL_NAMES[r.prop]);
-    else if (r.kind === 'transform') add('transform', r.target, '', anim.transform?.[r.target], doc.constraints.find((c) => c.id === r.target)?.name ?? '?', CHANNEL_NAMES.transform);
-    else if (r.kind === 'ik') add('ik', r.target, '', anim.ik[r.target], doc.constraints.find((c) => c.id === r.target)?.name ?? '?', CHANNEL_NAMES.ik);
-    else if (r.kind === 'path' && (r.prop === 'position' || r.prop === 'spacing' || r.prop === 'mix')) add('path', r.target, r.prop, anim.path?.[r.target]?.[r.prop], doc.constraints.find((c) => c.id === r.target)?.name ?? '?', r.prop === 'mix' ? CHANNEL_NAMES.pathMix : CHANNEL_NAMES[r.prop]);
-    else if (r.kind === 'physics' && r.prop !== 'reset') add('physics', r.target, r.prop, anim.physics?.[r.target]?.[r.prop as 'mix'], r.target === GLOBAL_PHYSICS ? 'Global physics' : (doc.constraints.find((c) => c.id === r.target)?.name ?? '?'), CHANNEL_NAMES[r.prop] ?? [r.prop]);
-    else if (r.kind === 'slider' && (r.prop === 'time' || r.prop === 'mix')) add('slider', r.target, r.prop, anim.slider?.[r.target]?.[r.prop], doc.constraints.find((c) => c.id === r.target)?.name ?? '?', CHANNEL_NAMES[r.prop]);
+    else if (r.kind === 'slot' && (r.prop === 'rgba' || r.prop === 'rgba2'))
+      add(
+        'slot',
+        r.target,
+        r.prop,
+        anim.slots[r.target]?.[r.prop],
+        doc.slots.find((s) => s.id === r.target)?.name ?? '?',
+        CHANNEL_NAMES[r.prop],
+      );
+    else if (r.kind === 'transform')
+      add(
+        'transform',
+        r.target,
+        '',
+        anim.transform?.[r.target],
+        doc.constraints.find((c) => c.id === r.target)?.name ?? '?',
+        CHANNEL_NAMES.transform,
+      );
+    else if (r.kind === 'ik')
+      add('ik', r.target, '', anim.ik[r.target], doc.constraints.find((c) => c.id === r.target)?.name ?? '?', CHANNEL_NAMES.ik);
+    else if (r.kind === 'path' && (r.prop === 'position' || r.prop === 'spacing' || r.prop === 'mix'))
+      add(
+        'path',
+        r.target,
+        r.prop,
+        anim.path?.[r.target]?.[r.prop],
+        doc.constraints.find((c) => c.id === r.target)?.name ?? '?',
+        r.prop === 'mix' ? CHANNEL_NAMES.pathMix : CHANNEL_NAMES[r.prop],
+      );
+    else if (r.kind === 'physics' && r.prop !== 'reset')
+      add(
+        'physics',
+        r.target,
+        r.prop,
+        anim.physics?.[r.target]?.[r.prop as 'mix'],
+        r.target === GLOBAL_PHYSICS ? 'Global physics' : (doc.constraints.find((c) => c.id === r.target)?.name ?? '?'),
+        CHANNEL_NAMES[r.prop] ?? [r.prop],
+      );
+    else if (r.kind === 'slider' && (r.prop === 'time' || r.prop === 'mix'))
+      add(
+        'slider',
+        r.target,
+        r.prop,
+        anim.slider?.[r.target]?.[r.prop],
+        doc.constraints.find((c) => c.id === r.target)?.name ?? '?',
+        CHANNEL_NAMES[r.prop],
+      );
   }
   if (!out.length) for (const id of selection.bones) addBone(id);
   return out;
@@ -118,7 +173,19 @@ interface Drag {
   vCenter?: number;
 }
 
-export function GraphEditor({ anim, doc, selection, selectedKeys, fps }: { anim: Animation | null; doc: SkeletonDoc; selection: Selection; selectedKeys: string[]; fps: number }) {
+export function GraphEditor({
+  anim,
+  doc,
+  selection,
+  selectedKeys,
+  fps,
+}: {
+  anim: Animation | null;
+  doc: SkeletonDoc;
+  selection: Selection;
+  selectedKeys: string[];
+  fps: number;
+}) {
   const sync = useSettings((s) => s.graphSync);
   const curves = useMemo(() => buildCurves(doc, anim, selection, selectedKeys, sync), [doc, anim, selection, selectedKeys, sync]);
   const [hidden, setHidden] = useState<Record<string, boolean>>({});
@@ -169,10 +236,11 @@ export function GraphEditor({ anim, doc, selection, selectedKeys, fps }: { anim:
     const fit = () => {
       let min = Infinity;
       let max = -Infinity;
-      for (const c of visible()) for (const k of c.keys) {
-        min = Math.min(min, k.value[c.channel]);
-        max = Math.max(max, k.value[c.channel]);
-      }
+      for (const c of visible())
+        for (const k of c.keys) {
+          min = Math.min(min, k.value[c.channel]);
+          max = Math.max(max, k.value[c.channel]);
+        }
       if (!isFinite(min)) {
         min = -1;
         max = 1;
@@ -324,7 +392,8 @@ export function GraphEditor({ anim, doc, selection, selectedKeys, fps }: { anim:
             [tx(k.time + cv[c.channel * 4] * dt), vy(k.value[c.channel] + cv[c.channel * 4 + 1] * dv)],
             [tx(k.time + cv[c.channel * 4 + 2] * dt), vy(k.value[c.channel] + cv[c.channel * 4 + 3] * dv)],
           ];
-          for (let hi = 0; hi < 2; hi++) if (Math.hypot(hs[hi][0] - x, hs[hi][1] - y) < 8) return { kind: 'handle', curve: c, keyIndex: i, handle: (hi + 1) as 1 | 2 };
+          for (let hi = 0; hi < 2; hi++)
+            if (Math.hypot(hs[hi][0] - x, hs[hi][1] - y) < 8) return { kind: 'handle', curve: c, keyIndex: i, handle: (hi + 1) as 1 | 2 };
         }
       }
       let best: Drag | null = null;
@@ -359,7 +428,9 @@ export function GraphEditor({ anim, doc, selection, selectedKeys, fps }: { anim:
         const ref: KeyRef = { ...hh.curve.ref, time: hh.curve.keys[hh.keyIndex!].time };
         const enc = encodeKey(ref);
         const cur = uiStore.get().selectedKeys;
-        uiStore.patch({ selectedKeys: e.shiftKey ? (cur.includes(enc) ? cur.filter((s) => s !== enc) : [...cur, enc]) : cur.includes(enc) ? cur : [enc] });
+        uiStore.patch({
+          selectedKeys: e.shiftKey ? (cur.includes(enc) ? cur.filter((s) => s !== enc) : [...cur, enc]) : cur.includes(enc) ? cur : [enc],
+        });
         drag.current = hh;
         docStore.beginGesture('Edit key');
         return;
@@ -446,7 +517,12 @@ export function GraphEditor({ anim, doc, selection, selectedKeys, fps }: { anim:
         <div className="tl-labels-head" style={{ gap: 6 }}>
           Curves
           <span style={{ flex: 1 }} />
-          <button className="btn ghost" style={{ height: 20, padding: '0 6px' }} onClick={() => (state.current.view.auto = true, (dirty.current = true))} title="Fit values">
+          <button
+            className="btn ghost"
+            style={{ height: 20, padding: '0 6px' }}
+            onClick={() => ((state.current.view.auto = true), (dirty.current = true))}
+            title="Fit values"
+          >
             Fit
           </button>
         </div>
@@ -454,8 +530,15 @@ export function GraphEditor({ anim, doc, selection, selectedKeys, fps }: { anim:
           {curves.map((c) => (
             <div key={c.id} className="tl-label" style={{ height: 24, paddingLeft: 8 }}>
               <span style={{ width: 9, height: 9, borderRadius: 2, background: c.color, flex: 'none', opacity: hidden[c.id] ? 0.3 : 1 }} />
-              <span className="lbl" style={{ opacity: hidden[c.id] ? 0.45 : 1 }}>{c.label}</span>
-              <IconButton icon={hidden[c.id] ? EyeOff : Eye} title="Toggle curve" small onClick={() => setHidden((h) => ({ ...h, [c.id]: !h[c.id] }))} />
+              <span className="lbl" style={{ opacity: hidden[c.id] ? 0.45 : 1 }}>
+                {c.label}
+              </span>
+              <IconButton
+                icon={hidden[c.id] ? EyeOff : Eye}
+                title="Toggle curve"
+                small
+                onClick={() => setHidden((h) => ({ ...h, [c.id]: !h[c.id] }))}
+              />
             </div>
           ))}
           {!curves.length && <div className="empty">Select keys in the dopesheet, or a bone that has keys.</div>}

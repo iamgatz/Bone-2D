@@ -5,4 +5,5 @@ import { localizeProps } from './index';
 export { Fragment };
 export type { JSX } from 'react/jsx-dev-runtime';
 
-export const jsxDEV: typeof reactJsxDEV = (type, props, ...rest) => (reactJsxDEV as (...args: unknown[]) => ReturnType<typeof reactJsxDEV>)(type, localizeProps(props), ...rest);
+export const jsxDEV: typeof reactJsxDEV = (type, props, ...rest) =>
+  (reactJsxDEV as (...args: unknown[]) => ReturnType<typeof reactJsxDEV>)(type, localizeProps(props), ...rest);

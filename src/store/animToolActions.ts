@@ -44,7 +44,8 @@ export function wiggleSelected(options: Omit<WiggleOptions, 'fps'>): number {
       const next = wiggleKeys(JSON.parse(JSON.stringify(keys)) as Key[], { ...options, fps });
       if (next === keys) continue;
       // a colour outside 0..1 never shows and cannot be exported, so the shake stays inside
-      if (ref.kind === 'slot' && ref.prop.startsWith('rgba')) for (const k of next) k.value = (k.value).map((x) => Math.min(1, Math.max(0, x)));
+      if (ref.kind === 'slot' && ref.prop.startsWith('rgba'))
+        for (const k of next) k.value = k.value.map((x) => Math.min(1, Math.max(0, x)));
       keys.splice(0, keys.length, ...next);
       changed++;
     }
@@ -114,7 +115,7 @@ export function tweenSelected(amount: number): number {
       let any = false;
       for (const prop of Object.keys(values) as BoneProp[]) {
         const owner = prop === 'rotate' && limit ? limit.control : id;
-        const tl = ((a.bones[owner] ??= {}) as Record<string, { time: number; value: number[]; curve?: unknown }[]>);
+        const tl = (a.bones[owner] ??= {}) as Record<string, { time: number; value: number[]; curve?: unknown }[]>;
         const keys = (tl[prop] ??= []);
         const hit = keys.find((k) => Math.abs(k.time - t) < 1e-4);
         if (hit) hit.value = values[prop]!;

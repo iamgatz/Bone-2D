@@ -12,8 +12,6 @@ import type { Id, PhysicsConstraint, Project } from '../src/core/model';
 import { compileSkeleton, createSkeleton } from '../src/core/skeleton';
 import { S, exportAndLoad } from './official';
 
- 
-
 interface Rig {
   project: Project;
   id: Record<string, Id>;
@@ -44,7 +42,13 @@ function rig(configure: (r: Rig) => void, opts: { referenceScale?: number } = {}
 
   const a = newAnimation('move', 2);
   a.bones[id.driver] = {
-    translate: [key(0, [0, 0]), key(0.5, [200, 100], [0.3, 0, 0.7, 1, 0.3, 0, 0.7, 1]), key(1, [-100, 50]), key(1.5, [150, -60], 'stepped'), key(2, [0, 0])],
+    translate: [
+      key(0, [0, 0]),
+      key(0.5, [200, 100], [0.3, 0, 0.7, 1, 0.3, 0, 0.7, 1]),
+      key(1, [-100, 50]),
+      key(1.5, [150, -60], 'stepped'),
+      key(2, [0, 0]),
+    ],
     rotate: [key(0, [0]), key(0.5, [60]), key(1, [-40], [0.25, 0, 0.75, 1]), key(1.5, [30]), key(2, [0])],
   };
   doc.animations.push(a);
@@ -100,7 +104,10 @@ export interface PlayOptions {
  * Plays "move" in both runtimes the way a game does (state.update, state.apply, skeleton.update, updateWorldTransform with
  * Physics.update) and returns the first frame where a bone differs, or null.
  */
-function firstDifference(r: Rig, opts: PlayOptions = {}): { frame: number; bone: string; what: string; ours: number; official: number } | null {
+function firstDifference(
+  r: Rig,
+  opts: PlayOptions = {},
+): { frame: number; bone: string; what: string; ours: number; official: number } | null {
   const { skeletonData: sd } = exportAndLoad(r.project);
   const doc = r.project.skeleton;
   const anim = doc.animations[0];
@@ -139,7 +146,8 @@ function firstDifference(r: Rig, opts: PlayOptions = {}): { frame: number; bone:
       for (let k = 0; k < 6; k++) {
         const x = a[i].m[k];
         const y = b[i].m[k];
-        if (!(Math.abs(x - y) <= 1e-4 * Math.max(1, Math.abs(x), Math.abs(y)))) return { frame: f, bone: a[i].name, what: MATRIX[k], ours: x, official: y };
+        if (!(Math.abs(x - y) <= 1e-4 * Math.max(1, Math.abs(x), Math.abs(y))))
+          return { frame: f, bone: a[i].name, what: MATRIX[k], ours: x, official: y };
       }
     }
   }
@@ -264,8 +272,15 @@ describe('physics constraint vs the official 4.3 runtime, frame by frame', () =>
 
   it('is driven by the global timelines of the constraints that opt in', () => {
     const r = rig((r) => {
-      physics(r, 'h1', { rotate: 1, global: { inertia: true, strength: false, damping: true, mass: false, wind: true, gravity: false, mix: false } });
-      physics(r, 'h2', { rotate: 1, x: 0.5, global: { inertia: false, strength: true, damping: false, mass: true, wind: true, gravity: true, mix: true } });
+      physics(r, 'h1', {
+        rotate: 1,
+        global: { inertia: true, strength: false, damping: true, mass: false, wind: true, gravity: false, mix: false },
+      });
+      physics(r, 'h2', {
+        rotate: 1,
+        x: 0.5,
+        global: { inertia: false, strength: true, damping: false, mass: true, wind: true, gravity: true, mix: true },
+      });
       physics(r, 'h3', { rotate: 1 });
     });
     r.project.skeleton.animations[0].physics[GLOBAL_PHYSICS] = {
@@ -328,14 +343,18 @@ describe('physics constraint vs the official 4.3 runtime, frame by frame', () =>
       ours.updateWorldTransform('update');
     }
     // the same frame again without time passing: Physics.pose applies what the simulation has now
-    for (const [mode, theirs] of [['pose', S.Physics.pose], ['reset', S.Physics.reset]] as const) {
+    for (const [mode, theirs] of [
+      ['pose', S.Physics.pose],
+      ['reset', S.Physics.reset],
+    ] as const) {
       state.apply(official);
       official.updateWorldTransform(theirs);
       applyAnimation(ours, doc.animations[0], t);
       ours.updateWorldTransform(mode);
       const a = oursPose(ours);
       const b = officialPose(official);
-      for (let i = 0; i < a.length; i++) for (let k = 0; k < 6; k++) expect(a[i].m[k], `${mode}: ${a[i].name}.${MATRIX[k]}`).toBeCloseTo(b[i].m[k], 3);
+      for (let i = 0; i < a.length; i++)
+        for (let k = 0; k < 6; k++) expect(a[i].m[k], `${mode}: ${a[i].name}.${MATRIX[k]}`).toBeCloseTo(b[i].m[k], 3);
     }
   });
 });
@@ -343,7 +362,25 @@ describe('physics constraint vs the official 4.3 runtime, frame by frame', () =>
 describe('physics in the exported file', () => {
   const full = () =>
     rig((r) => {
-      physics(r, 'h1', { x: 0.4, y: 0.2, rotate: 0.9, scaleX: 0.3, scaleY: 'volume', shearX: 0.2, limit: 120, fps: 45, inertia: 0.7, strength: 80, damping: 0.9, mass: 2.5, wind: 3, gravity: 7, mix: 0.8, global: { inertia: true, strength: false, damping: false, mass: true, wind: false, gravity: false, mix: true }, skinRequired: true });
+      physics(r, 'h1', {
+        x: 0.4,
+        y: 0.2,
+        rotate: 0.9,
+        scaleX: 0.3,
+        scaleY: 'volume',
+        shearX: 0.2,
+        limit: 120,
+        fps: 45,
+        inertia: 0.7,
+        strength: 80,
+        damping: 0.9,
+        mass: 2.5,
+        wind: 3,
+        gravity: 7,
+        mix: 0.8,
+        global: { inertia: true, strength: false, damping: false, mass: true, wind: false, gravity: false, mix: true },
+        skinRequired: true,
+      });
       physics(r, 'h2', {});
     });
 
@@ -351,7 +388,29 @@ describe('physics in the exported file', () => {
     const r = full();
     const json: any = exportSpineJson(r.project.skeleton);
     const [a, b] = json.constraints.filter((c: any) => c.type === 'physics');
-    expect(a).toMatchObject({ name: 'h1 physics', bone: 'h1', skin: true, x: 0.4, y: 0.2, rotate: 0.9, scaleX: 0.3, scaleY: 'volume', shearX: 0.2, limit: 120, fps: 45, inertia: 0.7, strength: 80, damping: 0.9, mass: 2.5, wind: 3, gravity: 7, mix: 0.8, inertiaGlobal: true, massGlobal: true, mixGlobal: true });
+    expect(a).toMatchObject({
+      name: 'h1 physics',
+      bone: 'h1',
+      skin: true,
+      x: 0.4,
+      y: 0.2,
+      rotate: 0.9,
+      scaleX: 0.3,
+      scaleY: 'volume',
+      shearX: 0.2,
+      limit: 120,
+      fps: 45,
+      inertia: 0.7,
+      strength: 80,
+      damping: 0.9,
+      mass: 2.5,
+      wind: 3,
+      gravity: 7,
+      mix: 0.8,
+      inertiaGlobal: true,
+      massGlobal: true,
+      mixGlobal: true,
+    });
     expect(a.strengthGlobal).toBeUndefined();
     expect(b).toEqual({ type: 'physics', name: 'h2 physics', bone: 'h2', rotate: 1 });
   });
@@ -359,7 +418,11 @@ describe('physics in the exported file', () => {
   it('survives export -> import -> export', () => {
     const r = full();
     const a = r.project.skeleton.animations[0];
-    a.physics[r.constraint.h1.id] = { inertia: [key(0, [0.5]), key(1, [0.9], [0.3, 0, 0.7, 1])], mass: [key(0.5, [2])], reset: [key(0.7, [1])] };
+    a.physics[r.constraint.h1.id] = {
+      inertia: [key(0, [0.5]), key(1, [0.9], [0.3, 0, 0.7, 1])],
+      mass: [key(0.5, [2])],
+      reset: [key(0.7, [1])],
+    };
     a.physics[GLOBAL_PHYSICS] = { wind: [key(0, [1]), key(1, [9])] };
     const first = exportSpineJson(r.project.skeleton);
     const imported = importSpineJson(JSON.parse(JSON.stringify(first)), 'x');

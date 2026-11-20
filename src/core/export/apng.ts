@@ -18,7 +18,7 @@ const readU32 = (b: Uint8Array, at: number) => ((b[at] << 24) | (b[at + 1] << 16
 export function pngChunks(png: Uint8Array): Chunk[] {
   if (png.length < 8 || SIGNATURE.some((v, i) => png[i] !== v)) throw new Error('Not a PNG file');
   const out: Chunk[] = [];
-  for (let at = 8; at + 12 <= png.length; ) {
+  for (let at = 8; at + 12 <= png.length;) {
     const length = readU32(png, at);
     const type = String.fromCharCode(png[at + 4], png[at + 5], png[at + 6], png[at + 7]);
     out.push({ type, data: png.subarray(at + 8, at + 8 + length) });
@@ -61,7 +61,8 @@ export function encodeApng(frames: Uint8Array[], opts: ApngOptions): Uint8Array 
   const parsed = frames.map(pngChunks);
   const head = parsed[0].find((c) => c.type === 'IHDR');
   if (!head) throw new Error('A frame has no header');
-  const same = (ihdr: Chunk | undefined) => !!ihdr && ihdr.data.length === head.data.length && ihdr.data.every((v, i) => v === head.data[i]);
+  const same = (ihdr: Chunk | undefined) =>
+    !!ihdr && ihdr.data.length === head.data.length && ihdr.data.every((v, i) => v === head.data[i]);
   if (!parsed.every((p) => same(p.find((c) => c.type === 'IHDR')))) throw new Error('The frames differ in size or colour format');
   const width = readU32(head.data, 0);
   const height = readU32(head.data, 4);
@@ -71,7 +72,19 @@ export function encodeApng(frames: Uint8Array[], opts: ApngOptions): Uint8Array 
   out.push(chunk('acTL', [...be32(frames.length), ...be32(opts.plays)]));
   let sequence = 0;
   parsed.forEach((p, i) => {
-    const fctl = [...be32(sequence++), ...be32(width), ...be32(height), ...be32(0), ...be32(0), (opts.delayNum >> 8) & 255, opts.delayNum & 255, (opts.delayDen >> 8) & 255, opts.delayDen & 255, 0, 0];
+    const fctl = [
+      ...be32(sequence++),
+      ...be32(width),
+      ...be32(height),
+      ...be32(0),
+      ...be32(0),
+      (opts.delayNum >> 8) & 255,
+      opts.delayNum & 255,
+      (opts.delayDen >> 8) & 255,
+      opts.delayDen & 255,
+      0,
+      0,
+    ];
     out.push(chunk('fcTL', fctl));
     for (const c of p) {
       if (c.type !== 'IDAT') continue;

@@ -35,7 +35,13 @@ export const REGION_UVS = new Float32Array([0, 1, 0, 0, 1, 0, 1, 1]);
 export const REGION_TRIANGLES = new Uint16Array([0, 1, 2, 2, 3, 0]);
 
 /** World vertex positions of a mesh or polygon attachment. `deform` holds per vertex (or per influence) deltas. */
-export function meshWorldVertices(skeleton: Skeleton, slot: Slot, mesh: VertexData, deform: ArrayLike<number> | null, out: Float32Array | number[]) {
+export function meshWorldVertices(
+  skeleton: Skeleton,
+  slot: Slot,
+  mesh: VertexData,
+  deform: ArrayLike<number> | null,
+  out: Float32Array | number[],
+) {
   const n = mesh.vertexCount;
   if (!mesh.weighted) {
     const bone = slot.bone;

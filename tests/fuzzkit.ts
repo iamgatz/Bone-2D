@@ -19,7 +19,19 @@ import { resolveSequenceIndex, sequenceFrameNames } from '../src/core/sequence';
 import { uid } from '../src/core/ids';
 import type { KeyRef } from '../src/core/keyrefs';
 import { meshWorldPositions } from '../src/core/mesh';
-import { SEQUENCE_MODES, BLEND_MODES, GLOBAL_PHYSICS, INHERIT_MODES, PATH_POSITION_MODES, PATH_ROTATE_MODES, PATH_SPACING_MODES, PHYSICS_PARAMS, TRANSFORM_PROPS, pathNodeCount, polygonVertexCount } from '../src/core/model';
+import {
+  SEQUENCE_MODES,
+  BLEND_MODES,
+  GLOBAL_PHYSICS,
+  INHERIT_MODES,
+  PATH_POSITION_MODES,
+  PATH_ROTATE_MODES,
+  PATH_SPACING_MODES,
+  PHYSICS_PARAMS,
+  TRANSFORM_PROPS,
+  pathNodeCount,
+  polygonVertexCount,
+} from '../src/core/model';
 import type { Animation, Influence, MeshAttachment, Project } from '../src/core/model';
 import { compileSkeleton, createSkeleton, meshWorldVertices, pointWorld } from '../src/core/skeleton';
 import { validateProject } from '../src/core/validate';
@@ -119,22 +131,26 @@ const NAMES = ['a', 'b', 'bone', 'root', 'head', 'arm', '', '  ', 'x"y', 'ünï'
 function meshes() {
   const out: { slotId: string; name: string }[] = [];
   const skin = doc().skins[0];
-  for (const slotId in skin.attachments) for (const name in skin.attachments[slotId]) if (skin.attachments[slotId][name].type === 'mesh') out.push({ slotId, name });
+  for (const slotId in skin.attachments)
+    for (const name in skin.attachments[slotId]) if (skin.attachments[slotId][name].type === 'mesh') out.push({ slotId, name });
   return out;
 }
 /** Every linked mesh of every skin. */
 function linkedMeshes() {
   const out: { skinId: string; slotId: string; name: string }[] = [];
-  for (const skin of doc().skins) for (const slotId in skin.attachments) for (const name in skin.attachments[slotId]) {
-    const a = skin.attachments[slotId][name];
-    if (a.type === 'mesh' && a.link) out.push({ skinId: skin.id, slotId, name });
-  }
+  for (const skin of doc().skins)
+    for (const slotId in skin.attachments)
+      for (const name in skin.attachments[slotId]) {
+        const a = skin.attachments[slotId][name];
+        if (a.type === 'mesh' && a.link) out.push({ skinId: skin.id, slotId, name });
+      }
   return out;
 }
 function regions() {
   const out: { slotId: string; name: string }[] = [];
   const skin = doc().skins[0];
-  for (const slotId in skin.attachments) for (const name in skin.attachments[slotId]) if (skin.attachments[slotId][name].type === 'region') out.push({ slotId, name });
+  for (const slotId in skin.attachments)
+    for (const name in skin.attachments[slotId]) if (skin.attachments[slotId][name].type === 'region') out.push({ slotId, name });
   return out;
 }
 function polygons() {
@@ -151,28 +167,47 @@ function polygons() {
 function paths() {
   const out: { slotId: string; name: string }[] = [];
   const skin = doc().skins[0];
-  for (const slotId in skin.attachments) for (const name in skin.attachments[slotId]) if (skin.attachments[slotId][name].type === 'path') out.push({ slotId, name });
+  for (const slotId in skin.attachments)
+    for (const name in skin.attachments[slotId]) if (skin.attachments[slotId][name].type === 'path') out.push({ slotId, name });
   return out;
 }
 function points() {
   const out: { slotId: string; name: string }[] = [];
   const skin = doc().skins[0];
-  for (const slotId in skin.attachments) for (const name in skin.attachments[slotId]) if (skin.attachments[slotId][name].type === 'point') out.push({ slotId, name });
+  for (const slotId in skin.attachments)
+    for (const name in skin.attachments[slotId]) if (skin.attachments[slotId][name].type === 'point') out.push({ slotId, name });
   return out;
 }
 
 function allKeyRefs(a: Animation): KeyRef[] {
   const out: KeyRef[] = [];
-  for (const id in a.bones) for (const prop of Object.keys(a.bones[id])) for (const k of (a.bones[id] as Record<string, { time: number }[]>)[prop]) out.push({ kind: 'bone', target: id, prop, time: k.time });
-  for (const id in a.slots) for (const prop of Object.keys(a.slots[id])) for (const k of (a.slots[id] as Record<string, { time: number }[]>)[prop]) out.push({ kind: 'slot', target: id, prop, time: k.time });
+  for (const id in a.bones)
+    for (const prop of Object.keys(a.bones[id]))
+      for (const k of (a.bones[id] as Record<string, { time: number }[]>)[prop]) out.push({ kind: 'bone', target: id, prop, time: k.time });
+  for (const id in a.slots)
+    for (const prop of Object.keys(a.slots[id]))
+      for (const k of (a.slots[id] as Record<string, { time: number }[]>)[prop]) out.push({ kind: 'slot', target: id, prop, time: k.time });
   for (const id in a.ik) for (const k of a.ik[id]) out.push({ kind: 'ik', target: id, prop: '', time: k.time });
   for (const id in a.transform) for (const k of a.transform[id]) out.push({ kind: 'transform', target: id, prop: '', time: k.time });
-  for (const id in a.slider) for (const prop of Object.keys(a.slider[id])) for (const k of (a.slider[id] as Record<string, { time: number }[]>)[prop]) out.push({ kind: 'slider', target: id, prop, time: k.time });
-  for (const id in a.path) for (const prop of Object.keys(a.path[id])) for (const k of (a.path[id] as Record<string, { time: number }[]>)[prop]) out.push({ kind: 'path', target: id, prop, time: k.time });
-  for (const id in a.physics) for (const prop of Object.keys(a.physics[id])) for (const k of (a.physics[id] as Record<string, { time: number }[]>)[prop]) out.push({ kind: 'physics', target: id, prop, time: k.time });
-  for (const skinId in a.deform) for (const slotId in a.deform[skinId]) for (const att in a.deform[skinId][slotId]) for (const k of a.deform[skinId][slotId][att]) out.push({ kind: 'deform', target: slotId, prop: deformProp(skinId, att), time: k.time });
+  for (const id in a.slider)
+    for (const prop of Object.keys(a.slider[id]))
+      for (const k of (a.slider[id] as Record<string, { time: number }[]>)[prop])
+        out.push({ kind: 'slider', target: id, prop, time: k.time });
+  for (const id in a.path)
+    for (const prop of Object.keys(a.path[id]))
+      for (const k of (a.path[id] as Record<string, { time: number }[]>)[prop]) out.push({ kind: 'path', target: id, prop, time: k.time });
+  for (const id in a.physics)
+    for (const prop of Object.keys(a.physics[id]))
+      for (const k of (a.physics[id] as Record<string, { time: number }[]>)[prop])
+        out.push({ kind: 'physics', target: id, prop, time: k.time });
+  for (const skinId in a.deform)
+    for (const slotId in a.deform[skinId])
+      for (const att in a.deform[skinId][slotId])
+        for (const k of a.deform[skinId][slotId][att])
+          out.push({ kind: 'deform', target: slotId, prop: deformProp(skinId, att), time: k.time });
   for (const k of a.drawOrder) out.push({ kind: 'drawOrder', target: '', prop: '', time: k.time });
-  for (const id in a.drawOrderFolder ?? {}) for (const k of a.drawOrderFolder![id]) out.push({ kind: 'drawOrderFolder', target: id, prop: '', time: k.time });
+  for (const id in a.drawOrderFolder ?? {})
+    for (const k of a.drawOrderFolder![id]) out.push({ kind: 'drawOrderFolder', target: id, prop: '', time: k.time });
   for (const k of a.events) out.push({ kind: 'event', target: '', prop: '', time: k.time });
   return out;
 }
@@ -183,23 +218,97 @@ export type Op = { name: string; run: (c: Ctx) => void };
 
 export const ops: Op[] = [
   // ---- bones
-  { name: 'createBone', run: (c) => { const p = c.pick(doc().bones)!; const x = c.num(-200, 200); const y = c.num(-200, 200); A.createBoneWorld({ parent: p.id, x, y, tipX: x + c.num(-90, 90), tipY: y + c.num(-90, 90) }); } },
-  { name: 'renameBone', run: (c) => { const b = c.pick(doc().bones)!; A.renameBone(b.id, c.pick(NAMES)!); } },
-  { name: 'deleteBones', run: (c) => { const n = 1 + Math.floor(c.r() * 2); A.deleteBones(Array.from({ length: n }, () => c.pick(doc().bones)!.id)); } },
-  { name: 'reparentBone', run: (c) => { const b = c.pick(doc().bones)!; const p = c.chance(0.1) ? null : c.pick(doc().bones)!.id; A.reparentBone(b.id, p); } },
-  { name: 'setBoneProps', run: (c) => { const b = c.pick(doc().bones)!; A.setBoneProps(b.id, { length: c.num(0, 120), inherit: c.pick(INHERIT_MODES)!, hidden: c.chance(0.2) }); } },
-  { name: 'setBonePose', run: (c) => { const b = c.pick(doc().bones)!; A.setBonePose([{ id: b.id, props: c.chance(0.5) ? { rotation: c.num(-180, 180) } : { x: c.num(-100, 100), y: c.num(-100, 100), scaleX: c.num(-2, 2), scaleY: c.num(0.2, 2), shearX: c.num(-30, 30) } }]); } },
-  { name: 'splitBone', run: (c) => { A.setMode('setup'); const b = c.pick(doc().bones)!; SPL.splitBone(b.id, 2 + Math.floor(c.r() * 3), { nested: c.chance(0.7), fibonacci: c.chance(0.3), weights: c.pick(['keep', 'split', 'blend'] as const) }); } },
-  { name: 'rotationLimit', run: (c) => {
-    A.setMode(c.chance(0.7) ? 'setup' : 'animate');
-    const k = c.r();
-    const limits = rotationLimits(doc());
-    if (k < 0.45) LIM.addLimit(c.pick(doc().bones)!.id, c.num(10, 120));
-    else if (k < 0.6 && limits.length) LIM.removeLimit(c.pick(limits)!.bone);
-    else if (k < 0.8 && limits.length) { const l = c.pick(limits)!; const lo = c.num(-170, 0); LIM.setLimit(l.bone, lo, lo + c.num(5, 180)); }
-    else if (limits.length) { const l = c.pick(limits)!; A.setBonePose([{ id: c.chance(0.5) ? l.bone : l.control, props: { rotation: c.num(-300, 300) } }]); }
-  } },
-  { name: 'tween', run: (c) => { A.setMode('animate'); A.setTime(c.num(0, 2)); A.selectBone(c.pick(doc().bones)!.id); AT.tweenSelected(c.num(-0.3, 1.3)); } },
+  {
+    name: 'createBone',
+    run: (c) => {
+      const p = c.pick(doc().bones)!;
+      const x = c.num(-200, 200);
+      const y = c.num(-200, 200);
+      A.createBoneWorld({ parent: p.id, x, y, tipX: x + c.num(-90, 90), tipY: y + c.num(-90, 90) });
+    },
+  },
+  {
+    name: 'renameBone',
+    run: (c) => {
+      const b = c.pick(doc().bones)!;
+      A.renameBone(b.id, c.pick(NAMES)!);
+    },
+  },
+  {
+    name: 'deleteBones',
+    run: (c) => {
+      const n = 1 + Math.floor(c.r() * 2);
+      A.deleteBones(Array.from({ length: n }, () => c.pick(doc().bones)!.id));
+    },
+  },
+  {
+    name: 'reparentBone',
+    run: (c) => {
+      const b = c.pick(doc().bones)!;
+      const p = c.chance(0.1) ? null : c.pick(doc().bones)!.id;
+      A.reparentBone(b.id, p);
+    },
+  },
+  {
+    name: 'setBoneProps',
+    run: (c) => {
+      const b = c.pick(doc().bones)!;
+      A.setBoneProps(b.id, { length: c.num(0, 120), inherit: c.pick(INHERIT_MODES)!, hidden: c.chance(0.2) });
+    },
+  },
+  {
+    name: 'setBonePose',
+    run: (c) => {
+      const b = c.pick(doc().bones)!;
+      A.setBonePose([
+        {
+          id: b.id,
+          props: c.chance(0.5)
+            ? { rotation: c.num(-180, 180) }
+            : { x: c.num(-100, 100), y: c.num(-100, 100), scaleX: c.num(-2, 2), scaleY: c.num(0.2, 2), shearX: c.num(-30, 30) },
+        },
+      ]);
+    },
+  },
+  {
+    name: 'splitBone',
+    run: (c) => {
+      A.setMode('setup');
+      const b = c.pick(doc().bones)!;
+      SPL.splitBone(b.id, 2 + Math.floor(c.r() * 3), {
+        nested: c.chance(0.7),
+        fibonacci: c.chance(0.3),
+        weights: c.pick(['keep', 'split', 'blend'] as const),
+      });
+    },
+  },
+  {
+    name: 'rotationLimit',
+    run: (c) => {
+      A.setMode(c.chance(0.7) ? 'setup' : 'animate');
+      const k = c.r();
+      const limits = rotationLimits(doc());
+      if (k < 0.45) LIM.addLimit(c.pick(doc().bones)!.id, c.num(10, 120));
+      else if (k < 0.6 && limits.length) LIM.removeLimit(c.pick(limits)!.bone);
+      else if (k < 0.8 && limits.length) {
+        const l = c.pick(limits)!;
+        const lo = c.num(-170, 0);
+        LIM.setLimit(l.bone, lo, lo + c.num(5, 180));
+      } else if (limits.length) {
+        const l = c.pick(limits)!;
+        A.setBonePose([{ id: c.chance(0.5) ? l.bone : l.control, props: { rotation: c.num(-300, 300) } }]);
+      }
+    },
+  },
+  {
+    name: 'tween',
+    run: (c) => {
+      A.setMode('animate');
+      A.setTime(c.num(0, 2));
+      A.selectBone(c.pick(doc().bones)!.id);
+      AT.tweenSelected(c.num(-0.3, 1.3));
+    },
+  },
   {
     name: 'constraintPreset',
     run: (c) => {
@@ -213,80 +322,558 @@ export const ops: Op[] = [
       PRE.deletePreset(preset!.id);
     },
   },
-  { name: 'nudge', run: (c) => { A.setMode(c.chance(0.6) ? 'setup' : 'animate'); A.setTime(c.num(0, 2)); A.setSelection({ bones: [c.pick(doc().bones)!.id, c.pick(doc().bones)!.id] }); const dx = c.num(-12, 12); const dy = c.num(-12, 12); if (!process.env.SKIP_NUDGE) NU.nudgeBones(dx, dy); } },
-  { name: 'selectionSet', run: (c) => { A.setSelection({ bones: [c.pick(doc().bones)!.id, c.pick(doc().bones)!.id] }); const id = SS.saveSelectionSet(); if (id) { A.setSelection({}); SS.selectSet(id); if (c.chance(0.3)) SS.deleteSelectionSet(id); } } },
-  { name: 'softMove', run: (c) => { const m = c.pick(meshes()); if (!m) return; const { mats, slotMat } = M.setupMats(); const w = meshWorldPositions(M.getMesh(m.slotId, m.name)!, slotMat(m.slotId), mats); const n = w.length / 2; const picked = Array.from({ length: 1 + Math.floor(c.r() * 3) }, () => Math.floor(c.r() * n)); M.moveMeshVertices(m.slotId, m.name, softMoves(w, softWeights(w, picked, c.num(0, 120), c.pick(['smooth', 'linear', 'sharp'] as const)!), c.num(-30, 30), c.num(-30, 30))); } },
+  {
+    name: 'nudge',
+    run: (c) => {
+      A.setMode(c.chance(0.6) ? 'setup' : 'animate');
+      A.setTime(c.num(0, 2));
+      A.setSelection({ bones: [c.pick(doc().bones)!.id, c.pick(doc().bones)!.id] });
+      const dx = c.num(-12, 12);
+      const dy = c.num(-12, 12);
+      if (!process.env.SKIP_NUDGE) NU.nudgeBones(dx, dy);
+    },
+  },
+  {
+    name: 'selectionSet',
+    run: (c) => {
+      A.setSelection({ bones: [c.pick(doc().bones)!.id, c.pick(doc().bones)!.id] });
+      const id = SS.saveSelectionSet();
+      if (id) {
+        A.setSelection({});
+        SS.selectSet(id);
+        if (c.chance(0.3)) SS.deleteSelectionSet(id);
+      }
+    },
+  },
+  {
+    name: 'softMove',
+    run: (c) => {
+      const m = c.pick(meshes());
+      if (!m) return;
+      const { mats, slotMat } = M.setupMats();
+      const w = meshWorldPositions(M.getMesh(m.slotId, m.name)!, slotMat(m.slotId), mats);
+      const n = w.length / 2;
+      const picked = Array.from({ length: 1 + Math.floor(c.r() * 3) }, () => Math.floor(c.r() * n));
+      M.moveMeshVertices(
+        m.slotId,
+        m.name,
+        softMoves(
+          w,
+          softWeights(w, picked, c.num(0, 120), c.pick(['smooth', 'linear', 'sharp'] as const)!),
+          c.num(-30, 30),
+          c.num(-30, 30),
+        ),
+      );
+    },
+  },
   { name: 'checkpoint', run: () => void CP.markCheckpoint() },
-  { name: 'backToCheckpoint', run: (c) => { const cp = c.pick(CP.checkpointsOfActive()); if (!cp) return; if (CP.restoreCheckpoint(cp.id) && (docStore.get().skeleton !== cp.skeleton || diffSkeletons(cp.skeleton, docStore.get().skeleton).length)) throw new Error('a restored checkpoint differs from what was marked'); getScene(); } },
-  { name: 'skinMix', run: (c) => { const s = c.pick(doc().skins); if (s) A.toggleSkinMix(s.id); getScene(); } },
-  { name: 'swapSides', run: (c) => { A.setMode(c.chance(0.6) ? 'animate' : 'setup'); if (c.chance(0.5)) A.selectBone(c.pick(doc().bones)!.id); PO.swapSides(); } },
-  { name: 'chainCurve', run: (c) => {
-    A.setMode('setup');
-    const ids = chainBones(doc(), [c.pick(doc().bones)!.id]);
-    CH.applyChainCurve(ids, { param: c.pick(CHAIN_PARAMS)!, from: c.num(-1, 400), to: c.num(-1, 400), shape: c.pick(CHAIN_SHAPES)!, power: c.num(0.25, 6), create: c.chance(0.7) });
-  } },
-  { name: 'marker', run: (c) => { A.setMode('animate'); A.setTime(c.num(0, 2)); const id = MK.addMarkerAtPlayhead(); MK.closeMarkerDialog(); if (id && c.chance(0.3)) MK.splitAtMarkersAction(); else if (id && c.chance(0.3)) MK.deleteMarker(id); } },
-  { name: 'animTool', run: (c) => { A.setMode('animate'); const k = c.r(); if (k < 0.4) AT.mirrorCurrentCycle({ flipCentre: c.chance(0.5) }); else if (k < 0.7) AT.hideUnkeyedBones(); else AT.wiggleSelected({ amount: c.num(0, 5), every: 1 + Math.floor(c.r() * 6), seed: Math.floor(c.r() * 100), smooth: c.chance(0.5), keepEnds: c.chance(0.5) }); } },
-  { name: 'splitAxes', run: (c) => { A.setMode('animate'); AX.setAxesSplit([c.pick(doc().bones)!.id], c.pick(['translate', 'scale', 'shear'] as const)!, c.chance(0.7)); } },
-  { name: 'setBoneAxis', run: (c) => { A.setMode('animate'); const b = c.pick(doc().bones)!; const axis = c.pick([{ x: c.num(-100, 100) }, { y: c.num(-100, 100) }, { scaleX: c.num(-2, 2) }, { scaleY: c.num(0.2, 2) }, { shearX: c.num(-30, 30) }, { shearY: c.num(-30, 30) }])!; A.setBonePose([{ id: b.id, props: axis }]); } },
-  { name: 'keySelectedBones', run: (c) => { A.selectBone(c.pick(doc().bones)!.id); A.keySelectedBones(c.chance(0.5) ? ['rotate'] : undefined); } },
-  { name: 'duplicateBones', run: (c) => { A.setMode('setup'); A.selectBone(c.pick(doc().bones)!.id); PO.duplicateSelection(c.chance(0.5)); } },
-  { name: 'resetPose', run: (c) => { A.setMode('animate'); A.selectBone(c.pick(doc().bones)!.id); PO.resetPose(); } },
-  { name: 'copyPastePose', run: (c) => { A.setMode('animate'); A.setSelection({ bones: [c.pick(doc().bones)!.id, c.pick(doc().bones)!.id] }); PO.copyPose(); A.selectBone(c.pick(doc().bones)!.id); PO.pastePose(); } },
-  { name: 'poseLibrary', run: (c) => {
-    A.setSelection({ bones: c.chance(0.3) ? [] : [c.pick(doc().bones)!.id, c.pick(doc().bones)!.id] });
-    const made = PO.savePose(c.pick(NAMES));
-    const t = made ?? c.pick(project().poses ?? []);
-    if (t && c.chance(0.7)) { A.setMode(c.chance(0.5) ? 'animate' : 'setup'); A.selectBone(c.pick(doc().bones)!.id); PO.applyPose(t.id, c.chance(0.5) ? 1 : c.r()); }
-    if (t && c.chance(0.3)) PO.renamePose(t.id, c.pick(NAMES)!);
-    if (t && c.chance(0.2)) PO.overwritePose(t.id);
-    if (t && c.chance(0.2)) PO.deletePose(t.id);
-  } },
+  {
+    name: 'backToCheckpoint',
+    run: (c) => {
+      const cp = c.pick(CP.checkpointsOfActive());
+      if (!cp) return;
+      if (
+        CP.restoreCheckpoint(cp.id) &&
+        (docStore.get().skeleton !== cp.skeleton || diffSkeletons(cp.skeleton, docStore.get().skeleton).length)
+      )
+        throw new Error('a restored checkpoint differs from what was marked');
+      getScene();
+    },
+  },
+  {
+    name: 'skinMix',
+    run: (c) => {
+      const s = c.pick(doc().skins);
+      if (s) A.toggleSkinMix(s.id);
+      getScene();
+    },
+  },
+  {
+    name: 'swapSides',
+    run: (c) => {
+      A.setMode(c.chance(0.6) ? 'animate' : 'setup');
+      if (c.chance(0.5)) A.selectBone(c.pick(doc().bones)!.id);
+      PO.swapSides();
+    },
+  },
+  {
+    name: 'chainCurve',
+    run: (c) => {
+      A.setMode('setup');
+      const ids = chainBones(doc(), [c.pick(doc().bones)!.id]);
+      CH.applyChainCurve(ids, {
+        param: c.pick(CHAIN_PARAMS)!,
+        from: c.num(-1, 400),
+        to: c.num(-1, 400),
+        shape: c.pick(CHAIN_SHAPES)!,
+        power: c.num(0.25, 6),
+        create: c.chance(0.7),
+      });
+    },
+  },
+  {
+    name: 'marker',
+    run: (c) => {
+      A.setMode('animate');
+      A.setTime(c.num(0, 2));
+      const id = MK.addMarkerAtPlayhead();
+      MK.closeMarkerDialog();
+      if (id && c.chance(0.3)) MK.splitAtMarkersAction();
+      else if (id && c.chance(0.3)) MK.deleteMarker(id);
+    },
+  },
+  {
+    name: 'animTool',
+    run: (c) => {
+      A.setMode('animate');
+      const k = c.r();
+      if (k < 0.4) AT.mirrorCurrentCycle({ flipCentre: c.chance(0.5) });
+      else if (k < 0.7) AT.hideUnkeyedBones();
+      else
+        AT.wiggleSelected({
+          amount: c.num(0, 5),
+          every: 1 + Math.floor(c.r() * 6),
+          seed: Math.floor(c.r() * 100),
+          smooth: c.chance(0.5),
+          keepEnds: c.chance(0.5),
+        });
+    },
+  },
+  {
+    name: 'splitAxes',
+    run: (c) => {
+      A.setMode('animate');
+      AX.setAxesSplit([c.pick(doc().bones)!.id], c.pick(['translate', 'scale', 'shear'] as const)!, c.chance(0.7));
+    },
+  },
+  {
+    name: 'setBoneAxis',
+    run: (c) => {
+      A.setMode('animate');
+      const b = c.pick(doc().bones)!;
+      const axis = c.pick([
+        { x: c.num(-100, 100) },
+        { y: c.num(-100, 100) },
+        { scaleX: c.num(-2, 2) },
+        { scaleY: c.num(0.2, 2) },
+        { shearX: c.num(-30, 30) },
+        { shearY: c.num(-30, 30) },
+      ])!;
+      A.setBonePose([{ id: b.id, props: axis }]);
+    },
+  },
+  {
+    name: 'keySelectedBones',
+    run: (c) => {
+      A.selectBone(c.pick(doc().bones)!.id);
+      A.keySelectedBones(c.chance(0.5) ? ['rotate'] : undefined);
+    },
+  },
+  {
+    name: 'duplicateBones',
+    run: (c) => {
+      A.setMode('setup');
+      A.selectBone(c.pick(doc().bones)!.id);
+      PO.duplicateSelection(c.chance(0.5));
+    },
+  },
+  {
+    name: 'resetPose',
+    run: (c) => {
+      A.setMode('animate');
+      A.selectBone(c.pick(doc().bones)!.id);
+      PO.resetPose();
+    },
+  },
+  {
+    name: 'copyPastePose',
+    run: (c) => {
+      A.setMode('animate');
+      A.setSelection({ bones: [c.pick(doc().bones)!.id, c.pick(doc().bones)!.id] });
+      PO.copyPose();
+      A.selectBone(c.pick(doc().bones)!.id);
+      PO.pastePose();
+    },
+  },
+  {
+    name: 'poseLibrary',
+    run: (c) => {
+      A.setSelection({ bones: c.chance(0.3) ? [] : [c.pick(doc().bones)!.id, c.pick(doc().bones)!.id] });
+      const made = PO.savePose(c.pick(NAMES));
+      const t = made ?? c.pick(project().poses ?? []);
+      if (t && c.chance(0.7)) {
+        A.setMode(c.chance(0.5) ? 'animate' : 'setup');
+        A.selectBone(c.pick(doc().bones)!.id);
+        PO.applyPose(t.id, c.chance(0.5) ? 1 : c.r());
+      }
+      if (t && c.chance(0.3)) PO.renamePose(t.id, c.pick(NAMES)!);
+      if (t && c.chance(0.2)) PO.overwritePose(t.id);
+      if (t && c.chance(0.2)) PO.deletePose(t.id);
+    },
+  },
   // ---- slots / images / attachments
-  { name: 'addImageToScene', run: (c) => { const img = c.pick(project().images); if (img) A.addImageToScene(img.name, c.num(-150, 150), c.num(-50, 250), c.chance(0.5) ? c.pick(doc().bones)!.id : null); } },
-  { name: 'setSlotProps', run: (c) => { const s = c.pick(doc().slots); if (s) A.setSlotProps(s.id, { blend: c.pick(BLEND_MODES)!, hidden: c.chance(0.2), dark: c.chance(0.3) ? [c.r(), c.r(), c.r()] : null }); } },
-  { name: 'renameSlot', run: (c) => { const s = c.pick(doc().slots); if (s) A.renameSlot(s.id, c.pick(NAMES)!); } },
-  { name: 'deleteSlots', run: (c) => { const s = c.pick(doc().slots); if (s) A.deleteSlots([s.id]); } },
-  { name: 'setSlotFolder', run: (c) => { const s = c.pick(doc().slots); if (!s) return; const f = c.pick(doc().drawOrderFolders ?? []); const r = c.r(); FO.setSlotFolder(s.id, r < 0.3 ? 'new' : r < 0.45 ? null : (f?.id ?? 'new')); } },
-  { name: 'deleteFolder', run: (c) => { const f = c.pick(doc().drawOrderFolders ?? []); if (f && c.chance(0.4)) FO.deleteFolder(f.id); } },
-  { name: 'renameFolder', run: (c) => { const f = c.pick(doc().drawOrderFolders ?? []); if (f) FO.renameFolder(f.id, c.chance(0.5) ? 'wings' : 'tail'); } },
-  { name: 'moveSlot', run: (c) => { const s = c.pick(doc().slots); if (s) A.moveSlot(s.id, Math.floor(c.r() * (doc().slots.length + 1))); } },
-  { name: 'setSlotBone', run: (c) => { const s = c.pick(doc().slots); if (s) A.setSlotBone(s.id, c.pick(doc().bones)!.id); } },
-  { name: 'setSlotAttachment', run: (c) => { const s = c.pick(doc().slots); if (!s) return; const names = Object.keys(doc().skins[0].attachments[s.id] ?? {}); A.setSlotAttachment(s.id, c.chance(0.2) ? null : (c.pick(names) ?? null)); } },
-  { name: 'setSlotColor', run: (c) => { const s = c.pick(doc().slots); if (s) A.setSlotColor(s.id, [c.r(), c.r(), c.r(), c.r()]); } },
-  { name: 'setSlotColors', run: (c) => { const s = c.pick(doc().slots); if (s) A.setSlotColor(s.id, [c.r(), c.r(), c.r(), c.r()], [c.r(), c.r(), c.r()]); } }, // light + dark (two-color tinting)
-  { name: 'deleteAttachment', run: (c) => { const a = c.pick([...meshes(), ...regions(), ...polygons(), ...points(), ...paths()]); if (a) A.deleteAttachment(a.slotId, a.name); } },
-  { name: 'setAttachmentProps', run: (c) => { const a = c.pick(regions()); if (a) A.setAttachmentProps(a.slotId, a.name, { x: c.num(-40, 40), rotation: c.num(-90, 90), scaleX: c.num(0.5, 2) }); } },
+  {
+    name: 'addImageToScene',
+    run: (c) => {
+      const img = c.pick(project().images);
+      if (img) A.addImageToScene(img.name, c.num(-150, 150), c.num(-50, 250), c.chance(0.5) ? c.pick(doc().bones)!.id : null);
+    },
+  },
+  {
+    name: 'setSlotProps',
+    run: (c) => {
+      const s = c.pick(doc().slots);
+      if (s)
+        A.setSlotProps(s.id, { blend: c.pick(BLEND_MODES)!, hidden: c.chance(0.2), dark: c.chance(0.3) ? [c.r(), c.r(), c.r()] : null });
+    },
+  },
+  {
+    name: 'renameSlot',
+    run: (c) => {
+      const s = c.pick(doc().slots);
+      if (s) A.renameSlot(s.id, c.pick(NAMES)!);
+    },
+  },
+  {
+    name: 'deleteSlots',
+    run: (c) => {
+      const s = c.pick(doc().slots);
+      if (s) A.deleteSlots([s.id]);
+    },
+  },
+  {
+    name: 'setSlotFolder',
+    run: (c) => {
+      const s = c.pick(doc().slots);
+      if (!s) return;
+      const f = c.pick(doc().drawOrderFolders ?? []);
+      const r = c.r();
+      FO.setSlotFolder(s.id, r < 0.3 ? 'new' : r < 0.45 ? null : (f?.id ?? 'new'));
+    },
+  },
+  {
+    name: 'deleteFolder',
+    run: (c) => {
+      const f = c.pick(doc().drawOrderFolders ?? []);
+      if (f && c.chance(0.4)) FO.deleteFolder(f.id);
+    },
+  },
+  {
+    name: 'renameFolder',
+    run: (c) => {
+      const f = c.pick(doc().drawOrderFolders ?? []);
+      if (f) FO.renameFolder(f.id, c.chance(0.5) ? 'wings' : 'tail');
+    },
+  },
+  {
+    name: 'moveSlot',
+    run: (c) => {
+      const s = c.pick(doc().slots);
+      if (s) A.moveSlot(s.id, Math.floor(c.r() * (doc().slots.length + 1)));
+    },
+  },
+  {
+    name: 'setSlotBone',
+    run: (c) => {
+      const s = c.pick(doc().slots);
+      if (s) A.setSlotBone(s.id, c.pick(doc().bones)!.id);
+    },
+  },
+  {
+    name: 'setSlotAttachment',
+    run: (c) => {
+      const s = c.pick(doc().slots);
+      if (!s) return;
+      const names = Object.keys(doc().skins[0].attachments[s.id] ?? {});
+      A.setSlotAttachment(s.id, c.chance(0.2) ? null : (c.pick(names) ?? null));
+    },
+  },
+  {
+    name: 'setSlotColor',
+    run: (c) => {
+      const s = c.pick(doc().slots);
+      if (s) A.setSlotColor(s.id, [c.r(), c.r(), c.r(), c.r()]);
+    },
+  },
+  {
+    name: 'setSlotColors',
+    run: (c) => {
+      const s = c.pick(doc().slots);
+      if (s) A.setSlotColor(s.id, [c.r(), c.r(), c.r(), c.r()], [c.r(), c.r(), c.r()]);
+    },
+  }, // light + dark (two-color tinting)
+  {
+    name: 'deleteAttachment',
+    run: (c) => {
+      const a = c.pick([...meshes(), ...regions(), ...polygons(), ...points(), ...paths()]);
+      if (a) A.deleteAttachment(a.slotId, a.name);
+    },
+  },
+  {
+    name: 'setAttachmentProps',
+    run: (c) => {
+      const a = c.pick(regions());
+      if (a) A.setAttachmentProps(a.slotId, a.name, { x: c.num(-40, 40), rotation: c.num(-90, 90), scaleX: c.num(0.5, 2) });
+    },
+  },
   // ---- clipping / bounding box / point attachments
-  { name: 'createPolygon', run: (c) => { A.selectBone(c.pick(doc().bones)!.id); const n = 3 + Math.floor(c.r() * 4); const pts = Array.from({ length: n }, () => [c.num(-150, 150), c.num(-50, 250)] as [number, number]); P.createPolygon(c.chance(0.5) ? 'clipping' : 'boundingbox', pts); } },
-  { name: 'createPoint', run: (c) => { A.selectBone(c.pick(doc().bones)!.id); P.createPoint(c.num(-150, 150), c.num(-50, 250)); } },
-  { name: 'movePolygonVertices', run: (c) => { const a = c.pick(polygons()); if (!a) return; const n = polygonVertexCount(P.getPolygon(a.slotId, a.name)!); P.movePolygonVertices(a.slotId, a.name, [{ index: Math.floor(c.r() * n), x: c.num(-100, 100), y: c.num(-100, 200) }]); } },
-  { name: 'addPolygonVertex', run: (c) => { const a = c.pick(polygons()); if (a) P.addPolygonVertex(a.slotId, a.name, c.num(-100, 100), c.num(-100, 200)); } },
-  { name: 'deletePolygonVertices', run: (c) => { const a = c.pick(polygons()); if (!a) return; const n = polygonVertexCount(P.getPolygon(a.slotId, a.name)!); P.deletePolygonVertices(a.slotId, a.name, [Math.floor(c.r() * n), Math.floor(c.r() * n)]); } },
-  { name: 'setClipping', run: (c) => { const a = c.pick(polygons().filter((x) => x.type === 'clipping')); if (a) A.setAttachmentProps(a.slotId, a.name, { end: c.chance(0.25) ? null : (c.pick(doc().slots)?.id ?? null), convex: c.chance(0.5), inverse: c.chance(0.4) }); } },
-  { name: 'setPointProps', run: (c) => { const a = c.pick(points()); if (a) A.setAttachmentProps(a.slotId, a.name, { x: c.num(-50, 50), y: c.num(-50, 50), rotation: c.num(-180, 180) }); } },
+  {
+    name: 'createPolygon',
+    run: (c) => {
+      A.selectBone(c.pick(doc().bones)!.id);
+      const n = 3 + Math.floor(c.r() * 4);
+      const pts = Array.from({ length: n }, () => [c.num(-150, 150), c.num(-50, 250)] as [number, number]);
+      P.createPolygon(c.chance(0.5) ? 'clipping' : 'boundingbox', pts);
+    },
+  },
+  {
+    name: 'createPoint',
+    run: (c) => {
+      A.selectBone(c.pick(doc().bones)!.id);
+      P.createPoint(c.num(-150, 150), c.num(-50, 250));
+    },
+  },
+  {
+    name: 'movePolygonVertices',
+    run: (c) => {
+      const a = c.pick(polygons());
+      if (!a) return;
+      const n = polygonVertexCount(P.getPolygon(a.slotId, a.name)!);
+      P.movePolygonVertices(a.slotId, a.name, [{ index: Math.floor(c.r() * n), x: c.num(-100, 100), y: c.num(-100, 200) }]);
+    },
+  },
+  {
+    name: 'addPolygonVertex',
+    run: (c) => {
+      const a = c.pick(polygons());
+      if (a) P.addPolygonVertex(a.slotId, a.name, c.num(-100, 100), c.num(-100, 200));
+    },
+  },
+  {
+    name: 'deletePolygonVertices',
+    run: (c) => {
+      const a = c.pick(polygons());
+      if (!a) return;
+      const n = polygonVertexCount(P.getPolygon(a.slotId, a.name)!);
+      P.deletePolygonVertices(a.slotId, a.name, [Math.floor(c.r() * n), Math.floor(c.r() * n)]);
+    },
+  },
+  {
+    name: 'setClipping',
+    run: (c) => {
+      const a = c.pick(polygons().filter((x) => x.type === 'clipping'));
+      if (a)
+        A.setAttachmentProps(a.slotId, a.name, {
+          end: c.chance(0.25) ? null : (c.pick(doc().slots)?.id ?? null),
+          convex: c.chance(0.5),
+          inverse: c.chance(0.4),
+        });
+    },
+  },
+  {
+    name: 'setPointProps',
+    run: (c) => {
+      const a = c.pick(points());
+      if (a) A.setAttachmentProps(a.slotId, a.name, { x: c.num(-50, 50), y: c.num(-50, 50), rotation: c.num(-180, 180) });
+    },
+  },
   // ---- path attachments and path constraints
-  { name: 'createPath', run: (c) => { A.selectBone(c.pick(doc().bones)!.id); const n = 2 + Math.floor(c.r() * 4); const nodes = Array.from({ length: n }, () => { const x = c.num(-200, 200); const y = c.num(-100, 250); return { x, y, inX: x - c.num(-60, 60), inY: y - c.num(-60, 60), outX: x + c.num(-60, 60), outY: y + c.num(-60, 60) }; }); PA.createPath(nodes, c.chance(0.4)); } },
-  { name: 'movePathPoints', run: (c) => { const a = c.pick(paths()); if (!a) return; const n = polygonVertexCount(PA.getPath(a.slotId, a.name)!); P.movePolygonVertices(a.slotId, a.name, [{ index: Math.floor(c.r() * n), x: c.num(-150, 150), y: c.num(-100, 250) }]); } },
-  { name: 'insertPathNode', run: (c) => { const a = c.pick(paths()); if (a) PA.insertPathNode(a.slotId, a.name, c.num(-150, 150), c.num(-100, 250)); } },
-  { name: 'deletePathNodes', run: (c) => { const a = c.pick(paths()); if (!a) return; const n = pathNodeCount(PA.getPath(a.slotId, a.name)!); PA.deletePathNodes(a.slotId, a.name, [Math.floor(c.r() * n), Math.floor(c.r() * n)]); } },
-  { name: 'setPathClosed', run: (c) => { const a = c.pick(paths()); if (a) PA.setPathClosed(a.slotId, a.name, c.chance(0.5)); } },
-  { name: 'bindPathToBones', run: (c) => { const a = c.pick(paths()); if (a) PA.bindPathToBones(a.slotId, a.name, Array.from({ length: 1 + Math.floor(c.r() * 3) }, () => c.pick(doc().bones)!.id)); } },
-  { name: 'unbindPath', run: (c) => { const a = c.pick(paths()); if (a) PA.unbindPath(a.slotId, a.name); } },
-  { name: 'setPathFlags', run: (c) => { const a = c.pick(paths()); if (a) A.setAttachmentProps(a.slotId, a.name, { constantSpeed: c.chance(0.5) }); } },
-  { name: 'createPathConstraint', run: (c) => { const p = c.pick(paths()); if (!p) return; A.setSelection({ slot: p.slotId, attachment: p.name, bones: Array.from({ length: 1 + Math.floor(c.r() * 3) }, () => c.pick(doc().bones)!.id) }); PC.createPathConstraint(); } },
-  { name: 'updatePathConstraint', run: (c) => { const k = c.pick(doc().constraints.filter((x) => x.type === 'path')); if (k) PC.updatePathConstraint(k.id, (x) => { x.positionMode = c.pick(PATH_POSITION_MODES)!; x.spacingMode = c.pick(PATH_SPACING_MODES)!; x.rotateMode = c.pick(PATH_ROTATE_MODES)!; x.offsetRotation = c.num(-90, 90); x.mix = { rotate: c.r(), x: c.r(), y: c.r() }; if (c.chance(0.3)) x.target = c.pick(doc().slots)!.id; }); } },
-  { name: 'setPathValues', run: (c) => { const k = c.pick(doc().constraints.filter((x) => x.type === 'path')); if (k) PC.setPathValues(k.id, { position: c.chance(0.5) ? c.num(-0.5, 1.5) : c.num(-100, 400), spacing: c.num(-20, 60), ...(c.chance(0.5) ? { mix: { rotate: c.r(), x: c.r(), y: c.r() } } : {}) }); } },
+  {
+    name: 'createPath',
+    run: (c) => {
+      A.selectBone(c.pick(doc().bones)!.id);
+      const n = 2 + Math.floor(c.r() * 4);
+      const nodes = Array.from({ length: n }, () => {
+        const x = c.num(-200, 200);
+        const y = c.num(-100, 250);
+        return { x, y, inX: x - c.num(-60, 60), inY: y - c.num(-60, 60), outX: x + c.num(-60, 60), outY: y + c.num(-60, 60) };
+      });
+      PA.createPath(nodes, c.chance(0.4));
+    },
+  },
+  {
+    name: 'movePathPoints',
+    run: (c) => {
+      const a = c.pick(paths());
+      if (!a) return;
+      const n = polygonVertexCount(PA.getPath(a.slotId, a.name)!);
+      P.movePolygonVertices(a.slotId, a.name, [{ index: Math.floor(c.r() * n), x: c.num(-150, 150), y: c.num(-100, 250) }]);
+    },
+  },
+  {
+    name: 'insertPathNode',
+    run: (c) => {
+      const a = c.pick(paths());
+      if (a) PA.insertPathNode(a.slotId, a.name, c.num(-150, 150), c.num(-100, 250));
+    },
+  },
+  {
+    name: 'deletePathNodes',
+    run: (c) => {
+      const a = c.pick(paths());
+      if (!a) return;
+      const n = pathNodeCount(PA.getPath(a.slotId, a.name)!);
+      PA.deletePathNodes(a.slotId, a.name, [Math.floor(c.r() * n), Math.floor(c.r() * n)]);
+    },
+  },
+  {
+    name: 'setPathClosed',
+    run: (c) => {
+      const a = c.pick(paths());
+      if (a) PA.setPathClosed(a.slotId, a.name, c.chance(0.5));
+    },
+  },
+  {
+    name: 'bindPathToBones',
+    run: (c) => {
+      const a = c.pick(paths());
+      if (a)
+        PA.bindPathToBones(
+          a.slotId,
+          a.name,
+          Array.from({ length: 1 + Math.floor(c.r() * 3) }, () => c.pick(doc().bones)!.id),
+        );
+    },
+  },
+  {
+    name: 'unbindPath',
+    run: (c) => {
+      const a = c.pick(paths());
+      if (a) PA.unbindPath(a.slotId, a.name);
+    },
+  },
+  {
+    name: 'setPathFlags',
+    run: (c) => {
+      const a = c.pick(paths());
+      if (a) A.setAttachmentProps(a.slotId, a.name, { constantSpeed: c.chance(0.5) });
+    },
+  },
+  {
+    name: 'createPathConstraint',
+    run: (c) => {
+      const p = c.pick(paths());
+      if (!p) return;
+      A.setSelection({
+        slot: p.slotId,
+        attachment: p.name,
+        bones: Array.from({ length: 1 + Math.floor(c.r() * 3) }, () => c.pick(doc().bones)!.id),
+      });
+      PC.createPathConstraint();
+    },
+  },
+  {
+    name: 'updatePathConstraint',
+    run: (c) => {
+      const k = c.pick(doc().constraints.filter((x) => x.type === 'path'));
+      if (k)
+        PC.updatePathConstraint(k.id, (x) => {
+          x.positionMode = c.pick(PATH_POSITION_MODES)!;
+          x.spacingMode = c.pick(PATH_SPACING_MODES)!;
+          x.rotateMode = c.pick(PATH_ROTATE_MODES)!;
+          x.offsetRotation = c.num(-90, 90);
+          x.mix = { rotate: c.r(), x: c.r(), y: c.r() };
+          if (c.chance(0.3)) x.target = c.pick(doc().slots)!.id;
+        });
+    },
+  },
+  {
+    name: 'setPathValues',
+    run: (c) => {
+      const k = c.pick(doc().constraints.filter((x) => x.type === 'path'));
+      if (k)
+        PC.setPathValues(k.id, {
+          position: c.chance(0.5) ? c.num(-0.5, 1.5) : c.num(-100, 400),
+          spacing: c.num(-20, 60),
+          ...(c.chance(0.5) ? { mix: { rotate: c.r(), x: c.r(), y: c.r() } } : {}),
+        });
+    },
+  },
   // ---- physics constraints
-  { name: 'createPhysicsConstraint', run: (c) => { A.selectBone(c.pick(doc().bones)!.id); PH.createPhysicsConstraint(); } },
-  { name: 'updatePhysicsConstraint', run: (c) => { const k = c.pick(doc().constraints.filter((x) => x.type === 'physics')); if (k) PH.updatePhysicsConstraint(k.id, (x) => { x.x = c.chance(0.5) ? c.r() : 0; x.y = c.chance(0.5) ? c.r() : 0; x.rotate = c.chance(0.6) ? c.r() : 0; x.scaleX = c.chance(0.3) ? c.r() : 0; x.shearX = c.chance(0.3) ? c.r() : 0; x.scaleY = c.pick(['none', 'uniform', 'volume'] as const)!; x.limit = c.chance(0.3) ? c.num(0, 100) : 5000; x.fps = c.pick([15, 30, 60, 120] as const)!; x.global[c.pick(PHYSICS_PARAMS)!] = c.chance(0.5); if (c.chance(0.2)) x.bone = c.pick(doc().bones)!.id; }); } },
-  { name: 'setPhysicsValue', run: (c) => { const k = c.pick(doc().constraints.filter((x) => x.type === 'physics')); if (k) { const p = c.pick(PHYSICS_PARAMS)!; const range: Record<typeof p, [number, number]> = { inertia: [0, 1], strength: [0, 200], damping: [0, 1], mass: [0.3, 10], wind: [-40, 40], gravity: [-40, 40], mix: [0, 1.2] }; PH.setPhysicsValue(k.id, p, c.num(range[p][0], range[p][1])); } } },
-  { name: 'addPhysicsReset', run: (c) => { const k = c.pick(doc().constraints.filter((x) => x.type === 'physics')); if (k) { A.setMode('animate'); PH.addPhysicsReset(c.chance(0.2) ? GLOBAL_PHYSICS : k.id); } } },
+  {
+    name: 'createPhysicsConstraint',
+    run: (c) => {
+      A.selectBone(c.pick(doc().bones)!.id);
+      PH.createPhysicsConstraint();
+    },
+  },
+  {
+    name: 'updatePhysicsConstraint',
+    run: (c) => {
+      const k = c.pick(doc().constraints.filter((x) => x.type === 'physics'));
+      if (k)
+        PH.updatePhysicsConstraint(k.id, (x) => {
+          x.x = c.chance(0.5) ? c.r() : 0;
+          x.y = c.chance(0.5) ? c.r() : 0;
+          x.rotate = c.chance(0.6) ? c.r() : 0;
+          x.scaleX = c.chance(0.3) ? c.r() : 0;
+          x.shearX = c.chance(0.3) ? c.r() : 0;
+          x.scaleY = c.pick(['none', 'uniform', 'volume'] as const)!;
+          x.limit = c.chance(0.3) ? c.num(0, 100) : 5000;
+          x.fps = c.pick([15, 30, 60, 120] as const)!;
+          x.global[c.pick(PHYSICS_PARAMS)!] = c.chance(0.5);
+          if (c.chance(0.2)) x.bone = c.pick(doc().bones)!.id;
+        });
+    },
+  },
+  {
+    name: 'setPhysicsValue',
+    run: (c) => {
+      const k = c.pick(doc().constraints.filter((x) => x.type === 'physics'));
+      if (k) {
+        const p = c.pick(PHYSICS_PARAMS)!;
+        const range: Record<typeof p, [number, number]> = {
+          inertia: [0, 1],
+          strength: [0, 200],
+          damping: [0, 1],
+          mass: [0.3, 10],
+          wind: [-40, 40],
+          gravity: [-40, 40],
+          mix: [0, 1.2],
+        };
+        PH.setPhysicsValue(k.id, p, c.num(range[p][0], range[p][1]));
+      }
+    },
+  },
+  {
+    name: 'addPhysicsReset',
+    run: (c) => {
+      const k = c.pick(doc().constraints.filter((x) => x.type === 'physics'));
+      if (k) {
+        A.setMode('animate');
+        PH.addPhysicsReset(c.chance(0.2) ? GLOBAL_PHYSICS : k.id);
+      }
+    },
+  },
   // ---- skins / events
-  { name: 'createSkin', run: (c) => { A.createSkin(c.pick(NAMES)); } },
-  { name: 'renameSkin', run: (c) => { const s = c.pick(doc().skins)!; A.renameSkin(s.id, c.pick(NAMES)!); } },
-  { name: 'deleteSkin', run: (c) => { A.deleteSkin(c.pick(doc().skins)!.id); } },
-  { name: 'setSkinImage', run: (c) => { const s = c.pick(doc().skins.slice(1)); const r = c.pick(regions()); const img = c.pick(project().images); if (s && r && img) A.setSkinImage(s.id, r.slotId, r.name, img.name); } },
+  {
+    name: 'createSkin',
+    run: (c) => {
+      A.createSkin(c.pick(NAMES));
+    },
+  },
+  {
+    name: 'renameSkin',
+    run: (c) => {
+      const s = c.pick(doc().skins)!;
+      A.renameSkin(s.id, c.pick(NAMES)!);
+    },
+  },
+  {
+    name: 'deleteSkin',
+    run: (c) => {
+      A.deleteSkin(c.pick(doc().skins)!.id);
+    },
+  },
+  {
+    name: 'setSkinImage',
+    run: (c) => {
+      const s = c.pick(doc().skins.slice(1));
+      const r = c.pick(regions());
+      const img = c.pick(project().images);
+      if (s && r && img) A.setSkinImage(s.id, r.slotId, r.name, img.name);
+    },
+  },
   // a skin from pictures: pictures named like attachments with a prefix are added, then the skin is made (more pictures later add to the same skin)
   {
     name: 'skinFromImages',
@@ -304,7 +891,15 @@ export const ops: Op[] = [
     },
   },
   // a linked mesh: the skin picture of a mesh, and a mesh in another slot that follows one
-  { name: 'setSkinImageMesh', run: (c) => { const s = c.pick(doc().skins.slice(1)); const m = c.pick(meshes()); const img = c.pick(project().images); if (s && m && img) A.setSkinImage(s.id, m.slotId, m.name, img.name); } },
+  {
+    name: 'setSkinImageMesh',
+    run: (c) => {
+      const s = c.pick(doc().skins.slice(1));
+      const m = c.pick(meshes());
+      const img = c.pick(project().images);
+      if (s && m && img) A.setSkinImage(s.id, m.slotId, m.name, img.name);
+    },
+  },
   {
     name: 'linkMeshAcrossSlots',
     run: (c) => {
@@ -316,119 +911,662 @@ export const ops: Op[] = [
       if (src.type !== 'mesh' || src.link) return;
       const name = `link${Math.floor(c.r() * 1000)}`;
       if (doc().skins[0].attachments[slot.id]?.[name]) return;
-      const copy = { ...structuredClone(src), name, path: img.name, link: makeLink(doc(), slot.id, { skinId: doc().skins[0].id, slotId: m.slotId, name: m.name }, c.chance(0.7)) };
+      const copy = {
+        ...structuredClone(src),
+        name,
+        path: img.name,
+        link: makeLink(doc(), slot.id, { skinId: doc().skins[0].id, slotId: m.slotId, name: m.name }, c.chance(0.7)),
+      };
       delete copy.sequence;
-      docStore.update('Link mesh', (d) => { (d.skeleton.skins[0].attachments[slot.id] ??= {})[name] = copy; });
+      docStore.update('Link mesh', (d) => {
+        (d.skeleton.skins[0].attachments[slot.id] ??= {})[name] = copy;
+      });
     },
   },
-  { name: 'linkDeform', run: (c) => { const l = c.pick(linkedMeshes()); if (l) A.setLinkDeform(l.skinId, l.slotId, l.name, c.chance(0.5)); } },
-  { name: 'unlinkMesh', run: (c) => { const l = c.pick(linkedMeshes()); if (l) A.unlinkMesh(l.skinId, l.slotId, l.name); } },
-  { name: 'removeSkinImage', run: (c) => { const s = c.pick(doc().skins.slice(1)); const r = c.pick(regions()); if (s && r) A.removeSkinImage(s.id, r.slotId, r.name); } },
-  { name: 'duplicateSkin', run: (c) => { A.duplicateSkinAction(c.pick(doc().skins)!.id, { scope: c.chance(0.7), animations: c.chance(0.7), relink: c.chance(0.7) }); } },
-  { name: 'skinPin', run: (c) => { A.toggleSkinPin(c.pick(doc().skins)!.id); } },
+  {
+    name: 'linkDeform',
+    run: (c) => {
+      const l = c.pick(linkedMeshes());
+      if (l) A.setLinkDeform(l.skinId, l.slotId, l.name, c.chance(0.5));
+    },
+  },
+  {
+    name: 'unlinkMesh',
+    run: (c) => {
+      const l = c.pick(linkedMeshes());
+      if (l) A.unlinkMesh(l.skinId, l.slotId, l.name);
+    },
+  },
+  {
+    name: 'removeSkinImage',
+    run: (c) => {
+      const s = c.pick(doc().skins.slice(1));
+      const r = c.pick(regions());
+      if (s && r) A.removeSkinImage(s.id, r.slotId, r.name);
+    },
+  },
+  {
+    name: 'duplicateSkin',
+    run: (c) => {
+      A.duplicateSkinAction(c.pick(doc().skins)!.id, { scope: c.chance(0.7), animations: c.chance(0.7), relink: c.chance(0.7) });
+    },
+  },
+  {
+    name: 'skinPin',
+    run: (c) => {
+      A.toggleSkinPin(c.pick(doc().skins)!.id);
+    },
+  },
   // store the values of some keys, change them, swap
   {
     name: 'storeSwapKeys',
     run: (c) => {
       const a = A.currentAnimation();
       if (!a) return;
-      uiStore.patch({ selectedKeys: allKeyRefs(a).filter(() => c.chance(0.4)).map(encodeKey) });
+      uiStore.patch({
+        selectedKeys: allKeyRefs(a)
+          .filter(() => c.chance(0.4))
+          .map(encodeKey),
+      });
       storeSelectedKeys();
       if (c.chance(0.5)) favorSelectedKeys('neutral', c.num(0.1, 1));
       swapStoredKeys();
       uiStore.patch({ selectedKeys: [] });
     },
   },
-  { name: 'skinRequiredBone', run: (c) => { A.setSkinRequiredAction('bone', c.pick(doc().bones)!.id, c.chance(0.7)); } },
-  { name: 'skinRequiredConstraint', run: (c) => { const k = c.pick(doc().constraints); if (k) A.setSkinRequiredAction('constraint', k.id, c.chance(0.7)); } },
-  { name: 'skinScopeBone', run: (c) => { const s = c.pick(doc().skins); const b = c.pick(doc().bones); if (s && b) A.setSkinScopeAction(s.id, 'bone', b.id, c.chance(0.7)); } },
-  { name: 'skinScopeConstraint', run: (c) => { const s = c.pick(doc().skins); const k = c.pick(doc().constraints); if (s && k) A.setSkinScopeAction(s.id, 'constraint', k.id, c.chance(0.7)); } },
-  { name: 'toggleSkinOverride', run: (c) => { const s = c.pick(doc().skins.slice(1)); const r = c.pick(regions()); if (s && r) A.toggleSkinOverride(s.id, r.slotId, r.name); } },
-  { name: 'renameImage', run: (c) => { const img = c.pick(project().images); if (img) A.renameImageAction(img.name, c.chance(0.5) ? `folder/${c.pick(NAMES)}` : c.pick(NAMES)!); } },
-  { name: 'removeUnusedImages', run: () => { A.removeUnusedImages(); } },
-  { name: 'setActiveSkin', run: (c) => { A.setActiveSkin(c.chance(0.3) ? null : c.pick(doc().skins)!.id); } },
-  { name: 'createEvent', run: (c) => { A.createEvent(c.pick(NAMES)); } },
-  { name: 'updateEvent', run: (c) => { const e = c.pick(doc().events); if (e) A.updateEvent(e.id, { name: c.pick(NAMES)!, int: c.num(-5, 5), float: c.num(-3, 3), string: c.pick(NAMES)! }); } },
-  { name: 'deleteEvent', run: (c) => { const e = c.pick(doc().events); if (e) A.deleteEvent(e.id); } },
-  { name: 'keyEvent', run: (c) => { const e = c.pick(doc().events); if (e) { A.setMode('animate'); A.keyEvent(e.id); } } },
-  { name: 'eventSound', run: (c) => { const e = c.pick(doc().events); if (!e) return; A.updateEvent(e.id, { audio: c.chance(0.2) ? '' : c.pick(['a.ogg', 'sfx/b.wav', 'c d.mp3'])!, volume: c.r(), balance: c.num(-1, 1) }); const a = A.currentAnimation(); if (a && a.events.length && c.chance(0.5)) docStore.update('fuzz event key', (d) => { const an = d.skeleton.animations.find((x) => x.id === a.id); const k = an ? c.pick(an.events) : undefined; if (k) { k.volume = c.r(); k.balance = c.num(-1, 1); } }); } },
+  {
+    name: 'skinRequiredBone',
+    run: (c) => {
+      A.setSkinRequiredAction('bone', c.pick(doc().bones)!.id, c.chance(0.7));
+    },
+  },
+  {
+    name: 'skinRequiredConstraint',
+    run: (c) => {
+      const k = c.pick(doc().constraints);
+      if (k) A.setSkinRequiredAction('constraint', k.id, c.chance(0.7));
+    },
+  },
+  {
+    name: 'skinScopeBone',
+    run: (c) => {
+      const s = c.pick(doc().skins);
+      const b = c.pick(doc().bones);
+      if (s && b) A.setSkinScopeAction(s.id, 'bone', b.id, c.chance(0.7));
+    },
+  },
+  {
+    name: 'skinScopeConstraint',
+    run: (c) => {
+      const s = c.pick(doc().skins);
+      const k = c.pick(doc().constraints);
+      if (s && k) A.setSkinScopeAction(s.id, 'constraint', k.id, c.chance(0.7));
+    },
+  },
+  {
+    name: 'toggleSkinOverride',
+    run: (c) => {
+      const s = c.pick(doc().skins.slice(1));
+      const r = c.pick(regions());
+      if (s && r) A.toggleSkinOverride(s.id, r.slotId, r.name);
+    },
+  },
+  {
+    name: 'renameImage',
+    run: (c) => {
+      const img = c.pick(project().images);
+      if (img) A.renameImageAction(img.name, c.chance(0.5) ? `folder/${c.pick(NAMES)}` : c.pick(NAMES)!);
+    },
+  },
+  {
+    name: 'removeUnusedImages',
+    run: () => {
+      A.removeUnusedImages();
+    },
+  },
+  {
+    name: 'setActiveSkin',
+    run: (c) => {
+      A.setActiveSkin(c.chance(0.3) ? null : c.pick(doc().skins)!.id);
+    },
+  },
+  {
+    name: 'createEvent',
+    run: (c) => {
+      A.createEvent(c.pick(NAMES));
+    },
+  },
+  {
+    name: 'updateEvent',
+    run: (c) => {
+      const e = c.pick(doc().events);
+      if (e) A.updateEvent(e.id, { name: c.pick(NAMES)!, int: c.num(-5, 5), float: c.num(-3, 3), string: c.pick(NAMES)! });
+    },
+  },
+  {
+    name: 'deleteEvent',
+    run: (c) => {
+      const e = c.pick(doc().events);
+      if (e) A.deleteEvent(e.id);
+    },
+  },
+  {
+    name: 'keyEvent',
+    run: (c) => {
+      const e = c.pick(doc().events);
+      if (e) {
+        A.setMode('animate');
+        A.keyEvent(e.id);
+      }
+    },
+  },
+  {
+    name: 'eventSound',
+    run: (c) => {
+      const e = c.pick(doc().events);
+      if (!e) return;
+      A.updateEvent(e.id, { audio: c.chance(0.2) ? '' : c.pick(['a.ogg', 'sfx/b.wav', 'c d.mp3'])!, volume: c.r(), balance: c.num(-1, 1) });
+      const a = A.currentAnimation();
+      if (a && a.events.length && c.chance(0.5))
+        docStore.update('fuzz event key', (d) => {
+          const an = d.skeleton.animations.find((x) => x.id === a.id);
+          const k = an ? c.pick(an.events) : undefined;
+          if (k) {
+            k.volume = c.r();
+            k.balance = c.num(-1, 1);
+          }
+        });
+    },
+  },
   // ---- meshes and weights
-  { name: 'convertToMesh', run: (c) => { const r = c.pick(regions()); if (r) M.convertToMesh(r.slotId, r.name, 'quad'); } },
-  { name: 'addMeshVertex', run: (c) => { const m = c.pick(meshes()); if (!m) return; const { mats, slotMat } = M.setupMats(); const w = meshWorldPositions(M.getMesh(m.slotId, m.name)!, slotMat(m.slotId), mats); const i = Math.floor(c.r() * (w.length / 2)); M.addMeshVertex(m.slotId, m.name, w[i * 2] + c.num(-30, 30), w[i * 2 + 1] + c.num(-30, 30)); } },
-  { name: 'deleteMeshVertices', run: (c) => { const m = c.pick(meshes()); if (!m) return; const n = M.getMesh(m.slotId, m.name)!.uvs.length / 2; M.deleteMeshVertices(m.slotId, m.name, [Math.floor(c.r() * n), Math.floor(c.r() * n)]); } },
-  { name: 'retriangulateMesh', run: (c) => { const m = c.pick(meshes()); if (m) M.retriangulateMesh(m.slotId, m.name); } },
-  { name: 'moveMeshVertices', run: (c) => { const m = c.pick(meshes()); if (!m) return; const n = M.getMesh(m.slotId, m.name)!.uvs.length / 2; M.moveMeshVertices(m.slotId, m.name, [{ index: Math.floor(c.r() * n), x: c.num(-100, 100), y: c.num(-100, 100) }]); } },
-  { name: 'bindMeshToBones', run: (c) => { const m = c.pick(meshes()); if (m) M.bindMeshToBones(m.slotId, m.name, Array.from({ length: 1 + Math.floor(c.r() * 3) }, () => c.pick(doc().bones)!.id)); } },
-  { name: 'unbindMeshFromBones', run: (c) => { const m = c.pick(meshes()); if (m) M.unbindMeshFromBones(m.slotId, m.name); } },
-  { name: 'autoWeightMesh', run: (c) => { const m = c.pick(meshes()); if (m) M.autoWeightMesh(m.slotId, m.name); } },
-  { name: 'pruneMeshWeights', run: (c) => { const m = c.pick(meshes()); if (m) M.pruneMeshWeights(m.slotId, m.name, c.num(0, 0.4), 1 + Math.floor(c.r() * 4)); } },
-  { name: 'toggleMeshEdge', run: (c) => { const m = c.pick(meshes()); if (!m) return; const n = M.getMesh(m.slotId, m.name)!.uvs.length / 2; M.toggleMeshEdge(m.slotId, m.name, Math.floor(c.r() * n), Math.floor(c.r() * n)); } },
-  { name: 'clearMeshEdges', run: (c) => { const m = c.pick(meshes()); if (m && c.chance(0.3)) M.clearMeshEdges(m.slotId, m.name); } },
-  { name: 'removeBoneFromMesh', run: (c) => { const m = c.pick(meshes()); const w = m && M.getMesh(m.slotId, m.name)?.weights; if (m && w) M.removeBoneFromMesh(m.slotId, m.name, c.pick(w.flat())?.[0] ?? doc().bones[0].id); } },
-  { name: 'updateMeshBindings', run: (c) => { const m = c.pick(meshes()); if (m) M.updateMeshBindings(m.slotId, m.name); } },
-  { name: 'weldMeshWeights', run: (c) => { const m = c.pick(meshes()); const o = c.pick(meshes()); if (m && o) M.weldMeshWeights(m.slotId, m.name, o.slotId, o.name, c.chance(0.5) ? 'all' : 'overlapping'); } },
-  { name: 'mirrorMeshWeights', run: (c) => { const m = c.pick(meshes()); if (m) M.mirrorMeshWeights(m.slotId, m.name, c.chance(0.5)); } },
-  { name: 'smoothMeshWeights', run: (c) => { const m = c.pick(meshes()); if (m) M.smoothMeshWeights(m.slotId, m.name, 1 + Math.floor(c.r() * 3)); } },
-  { name: 'paintWeights', run: (c) => { const m = c.pick(meshes()); if (!m) return; const bone = c.pick(doc().bones)!.id; uiStore.patch({ brush: { size: c.num(10, 300), strength: c.num(0.1, 1), mode: c.pick(['add', 'subtract', 'smooth', 'replace'] as const)!, bone, feather: c.pick([0, 30, 100])!, shape: c.pick(['soft', 'linear', 'smooth', 'sharp'] as const)!, curve: c.pick(['linear', 'fine', 'bold'] as const)!, locked: doc().bones.filter(() => c.r() < 0.2).map((b) => b.id) } }); const { mats, slotMat } = M.setupMats(); const w = meshWorldPositions(M.getMesh(m.slotId, m.name)!, slotMat(m.slotId), mats); const i = Math.floor(c.r() * (w.length / 2)); M.paintWeights(m.slotId, m.name, { x: w[i * 2], y: w[i * 2 + 1] }, bone); } },
-  { name: 'setDeformKey', run: (c) => { A.setMode('animate'); const sc = getScene(); const cands = sc.skeleton.slots.filter((s) => { const k = sc.skeleton.slotAttachment(s)?.kind; return k === 'mesh' || k === 'path'; }); const s = c.pick(cands); if (!s) return; const att = sc.skeleton.slotAttachment(s)!; const base = M.currentDeform(s.data.id); if (!base) return; M.setDeformKey(s.data.id, att.name, base, [{ index: Math.floor(c.r() * (att.kind === 'mesh' || att.kind === 'path' ? att.vertexCount : 1)), dx: c.num(-20, 20), dy: c.num(-20, 20) }]); } },
+  {
+    name: 'convertToMesh',
+    run: (c) => {
+      const r = c.pick(regions());
+      if (r) M.convertToMesh(r.slotId, r.name, 'quad');
+    },
+  },
+  {
+    name: 'addMeshVertex',
+    run: (c) => {
+      const m = c.pick(meshes());
+      if (!m) return;
+      const { mats, slotMat } = M.setupMats();
+      const w = meshWorldPositions(M.getMesh(m.slotId, m.name)!, slotMat(m.slotId), mats);
+      const i = Math.floor(c.r() * (w.length / 2));
+      M.addMeshVertex(m.slotId, m.name, w[i * 2] + c.num(-30, 30), w[i * 2 + 1] + c.num(-30, 30));
+    },
+  },
+  {
+    name: 'deleteMeshVertices',
+    run: (c) => {
+      const m = c.pick(meshes());
+      if (!m) return;
+      const n = M.getMesh(m.slotId, m.name)!.uvs.length / 2;
+      M.deleteMeshVertices(m.slotId, m.name, [Math.floor(c.r() * n), Math.floor(c.r() * n)]);
+    },
+  },
+  {
+    name: 'retriangulateMesh',
+    run: (c) => {
+      const m = c.pick(meshes());
+      if (m) M.retriangulateMesh(m.slotId, m.name);
+    },
+  },
+  {
+    name: 'moveMeshVertices',
+    run: (c) => {
+      const m = c.pick(meshes());
+      if (!m) return;
+      const n = M.getMesh(m.slotId, m.name)!.uvs.length / 2;
+      M.moveMeshVertices(m.slotId, m.name, [{ index: Math.floor(c.r() * n), x: c.num(-100, 100), y: c.num(-100, 100) }]);
+    },
+  },
+  {
+    name: 'bindMeshToBones',
+    run: (c) => {
+      const m = c.pick(meshes());
+      if (m)
+        M.bindMeshToBones(
+          m.slotId,
+          m.name,
+          Array.from({ length: 1 + Math.floor(c.r() * 3) }, () => c.pick(doc().bones)!.id),
+        );
+    },
+  },
+  {
+    name: 'unbindMeshFromBones',
+    run: (c) => {
+      const m = c.pick(meshes());
+      if (m) M.unbindMeshFromBones(m.slotId, m.name);
+    },
+  },
+  {
+    name: 'autoWeightMesh',
+    run: (c) => {
+      const m = c.pick(meshes());
+      if (m) M.autoWeightMesh(m.slotId, m.name);
+    },
+  },
+  {
+    name: 'pruneMeshWeights',
+    run: (c) => {
+      const m = c.pick(meshes());
+      if (m) M.pruneMeshWeights(m.slotId, m.name, c.num(0, 0.4), 1 + Math.floor(c.r() * 4));
+    },
+  },
+  {
+    name: 'toggleMeshEdge',
+    run: (c) => {
+      const m = c.pick(meshes());
+      if (!m) return;
+      const n = M.getMesh(m.slotId, m.name)!.uvs.length / 2;
+      M.toggleMeshEdge(m.slotId, m.name, Math.floor(c.r() * n), Math.floor(c.r() * n));
+    },
+  },
+  {
+    name: 'clearMeshEdges',
+    run: (c) => {
+      const m = c.pick(meshes());
+      if (m && c.chance(0.3)) M.clearMeshEdges(m.slotId, m.name);
+    },
+  },
+  {
+    name: 'removeBoneFromMesh',
+    run: (c) => {
+      const m = c.pick(meshes());
+      const w = m && M.getMesh(m.slotId, m.name)?.weights;
+      if (m && w) M.removeBoneFromMesh(m.slotId, m.name, c.pick(w.flat())?.[0] ?? doc().bones[0].id);
+    },
+  },
+  {
+    name: 'updateMeshBindings',
+    run: (c) => {
+      const m = c.pick(meshes());
+      if (m) M.updateMeshBindings(m.slotId, m.name);
+    },
+  },
+  {
+    name: 'weldMeshWeights',
+    run: (c) => {
+      const m = c.pick(meshes());
+      const o = c.pick(meshes());
+      if (m && o) M.weldMeshWeights(m.slotId, m.name, o.slotId, o.name, c.chance(0.5) ? 'all' : 'overlapping');
+    },
+  },
+  {
+    name: 'mirrorMeshWeights',
+    run: (c) => {
+      const m = c.pick(meshes());
+      if (m) M.mirrorMeshWeights(m.slotId, m.name, c.chance(0.5));
+    },
+  },
+  {
+    name: 'smoothMeshWeights',
+    run: (c) => {
+      const m = c.pick(meshes());
+      if (m) M.smoothMeshWeights(m.slotId, m.name, 1 + Math.floor(c.r() * 3));
+    },
+  },
+  {
+    name: 'paintWeights',
+    run: (c) => {
+      const m = c.pick(meshes());
+      if (!m) return;
+      const bone = c.pick(doc().bones)!.id;
+      uiStore.patch({
+        brush: {
+          size: c.num(10, 300),
+          strength: c.num(0.1, 1),
+          mode: c.pick(['add', 'subtract', 'smooth', 'replace'] as const)!,
+          bone,
+          feather: c.pick([0, 30, 100])!,
+          shape: c.pick(['soft', 'linear', 'smooth', 'sharp'] as const)!,
+          curve: c.pick(['linear', 'fine', 'bold'] as const)!,
+          locked: doc()
+            .bones.filter(() => c.r() < 0.2)
+            .map((b) => b.id),
+        },
+      });
+      const { mats, slotMat } = M.setupMats();
+      const w = meshWorldPositions(M.getMesh(m.slotId, m.name)!, slotMat(m.slotId), mats);
+      const i = Math.floor(c.r() * (w.length / 2));
+      M.paintWeights(m.slotId, m.name, { x: w[i * 2], y: w[i * 2 + 1] }, bone);
+    },
+  },
+  {
+    name: 'setDeformKey',
+    run: (c) => {
+      A.setMode('animate');
+      const sc = getScene();
+      const cands = sc.skeleton.slots.filter((s) => {
+        const k = sc.skeleton.slotAttachment(s)?.kind;
+        return k === 'mesh' || k === 'path';
+      });
+      const s = c.pick(cands);
+      if (!s) return;
+      const att = sc.skeleton.slotAttachment(s)!;
+      const base = M.currentDeform(s.data.id);
+      if (!base) return;
+      M.setDeformKey(s.data.id, att.name, base, [
+        {
+          index: Math.floor(c.r() * (att.kind === 'mesh' || att.kind === 'path' ? att.vertexCount : 1)),
+          dx: c.num(-20, 20),
+          dy: c.num(-20, 20),
+        },
+      ]);
+    },
+  },
   // ---- constraints
-  { name: 'createIkFromDrag', run: (c) => { const end = c.pick(doc().bones)!; const target = c.chance(0.5) ? c.pick(doc().bones)!.id : null; I.createIkFromDrag(end.id, target, c.num(-150, 150), c.num(-50, 250), c.chance(0.3)); } },
-  { name: 'createTransformConstraint', run: (c) => { const target = c.pick(doc().bones)!; const source = c.pick(doc().bones)!; T.createTransformConstraint([target.id], source.id, c.pick(['rotation', 'mirror', 'position', 'scale', 'rotateToX'] as const)!); } },
-  { name: 'deleteConstraint', run: (c) => { const k = c.pick(doc().constraints); if (k) I.deleteConstraint(k.id); } },
-  { name: 'moveConstraint', run: (c) => { const k = c.pick(doc().constraints); if (k) I.moveConstraint(k.id, c.chance(0.5) ? -1 : 1); } },
-  { name: 'renameConstraint', run: (c) => { const k = c.pick(doc().constraints); if (k) I.renameConstraint(k.id, c.pick(NAMES)!); } },
-  { name: 'setIkValues', run: (c) => { const k = c.pick(doc().constraints.filter((x) => x.type === 'ik')); if (k) I.setIkValues(k.id, { mix: c.r(), softness: c.num(0, 30), bendPositive: c.chance(0.5), stretch: c.chance(0.3), compress: c.chance(0.3) }); } },
-  { name: 'setConstraintSetup', run: (c) => { const k = c.pick(doc().constraints.filter((x) => x.type === 'ik')); if (k) I.setConstraintSetup(k.id, { mix: c.r(), softness: c.num(0, 30), bendPositive: c.chance(0.5) }); } },
-  { name: 'createSlider', run: (c) => { SL.createSlider(c.chance(0.6) ? c.pick(doc().bones)!.id : null); } },
-  { name: 'updateSlider', run: (c) => { const s = c.pick(doc().constraints.filter((x) => x.type === 'slider')); if (s) SL.updateSlider(s.id, { additive: c.chance(0.5), loop: c.chance(0.5), local: c.chance(0.5), property: c.pick(TRANSFORM_PROPS)!, from: c.num(-50, 50), to: c.num(0, 1), scale: c.num(-0.05, 0.05), animation: c.chance(0.85) ? (c.pick(doc().animations)?.id ?? null) : null, bone: c.chance(0.7) ? c.pick(doc().bones)!.id : null, mix: c.r(), time: c.num(0, 2) }); } },
-  { name: 'setSliderValues', run: (c) => { const s = c.pick(doc().constraints.filter((x) => x.type === 'slider')); if (s) SL.setSliderValues(s.id, { mix: c.r(), ...(c.chance(0.5) ? { time: c.num(0, 2) } : {}) }); } },
-  { name: 'setTransformMix', run: (c) => { const k = c.pick(doc().constraints.filter((x) => x.type === 'transform')); if (k) T.setTransformMix(k.id, { [c.pick(TRANSFORM_PROPS)!]: c.r(), ...(c.chance(0.3) ? { [c.pick(TRANSFORM_PROPS)!]: c.num(0, 1.5) } : {}) }); } },
-  { name: 'updateTransform', run: (c) => { const k = c.pick(doc().constraints.filter((x) => x.type === 'transform')); if (k) T.updateTransform(k.id, (t) => { t.clamp = c.chance(0.5); t.additive = c.chance(0.5); t.localTarget = c.chance(0.5); t.mix.rotate = c.r(); }); } },
+  {
+    name: 'createIkFromDrag',
+    run: (c) => {
+      const end = c.pick(doc().bones)!;
+      const target = c.chance(0.5) ? c.pick(doc().bones)!.id : null;
+      I.createIkFromDrag(end.id, target, c.num(-150, 150), c.num(-50, 250), c.chance(0.3));
+    },
+  },
+  {
+    name: 'createTransformConstraint',
+    run: (c) => {
+      const target = c.pick(doc().bones)!;
+      const source = c.pick(doc().bones)!;
+      T.createTransformConstraint([target.id], source.id, c.pick(['rotation', 'mirror', 'position', 'scale', 'rotateToX'] as const)!);
+    },
+  },
+  {
+    name: 'deleteConstraint',
+    run: (c) => {
+      const k = c.pick(doc().constraints);
+      if (k) I.deleteConstraint(k.id);
+    },
+  },
+  {
+    name: 'moveConstraint',
+    run: (c) => {
+      const k = c.pick(doc().constraints);
+      if (k) I.moveConstraint(k.id, c.chance(0.5) ? -1 : 1);
+    },
+  },
+  {
+    name: 'renameConstraint',
+    run: (c) => {
+      const k = c.pick(doc().constraints);
+      if (k) I.renameConstraint(k.id, c.pick(NAMES)!);
+    },
+  },
+  {
+    name: 'setIkValues',
+    run: (c) => {
+      const k = c.pick(doc().constraints.filter((x) => x.type === 'ik'));
+      if (k)
+        I.setIkValues(k.id, {
+          mix: c.r(),
+          softness: c.num(0, 30),
+          bendPositive: c.chance(0.5),
+          stretch: c.chance(0.3),
+          compress: c.chance(0.3),
+        });
+    },
+  },
+  {
+    name: 'setConstraintSetup',
+    run: (c) => {
+      const k = c.pick(doc().constraints.filter((x) => x.type === 'ik'));
+      if (k) I.setConstraintSetup(k.id, { mix: c.r(), softness: c.num(0, 30), bendPositive: c.chance(0.5) });
+    },
+  },
+  {
+    name: 'createSlider',
+    run: (c) => {
+      SL.createSlider(c.chance(0.6) ? c.pick(doc().bones)!.id : null);
+    },
+  },
+  {
+    name: 'updateSlider',
+    run: (c) => {
+      const s = c.pick(doc().constraints.filter((x) => x.type === 'slider'));
+      if (s)
+        SL.updateSlider(s.id, {
+          additive: c.chance(0.5),
+          loop: c.chance(0.5),
+          local: c.chance(0.5),
+          property: c.pick(TRANSFORM_PROPS)!,
+          from: c.num(-50, 50),
+          to: c.num(0, 1),
+          scale: c.num(-0.05, 0.05),
+          animation: c.chance(0.85) ? (c.pick(doc().animations)?.id ?? null) : null,
+          bone: c.chance(0.7) ? c.pick(doc().bones)!.id : null,
+          mix: c.r(),
+          time: c.num(0, 2),
+        });
+    },
+  },
+  {
+    name: 'setSliderValues',
+    run: (c) => {
+      const s = c.pick(doc().constraints.filter((x) => x.type === 'slider'));
+      if (s) SL.setSliderValues(s.id, { mix: c.r(), ...(c.chance(0.5) ? { time: c.num(0, 2) } : {}) });
+    },
+  },
+  {
+    name: 'setTransformMix',
+    run: (c) => {
+      const k = c.pick(doc().constraints.filter((x) => x.type === 'transform'));
+      if (k)
+        T.setTransformMix(k.id, {
+          [c.pick(TRANSFORM_PROPS)!]: c.r(),
+          ...(c.chance(0.3) ? { [c.pick(TRANSFORM_PROPS)!]: c.num(0, 1.5) } : {}),
+        });
+    },
+  },
+  {
+    name: 'updateTransform',
+    run: (c) => {
+      const k = c.pick(doc().constraints.filter((x) => x.type === 'transform'));
+      if (k)
+        T.updateTransform(k.id, (t) => {
+          t.clamp = c.chance(0.5);
+          t.additive = c.chance(0.5);
+          t.localTarget = c.chance(0.5);
+          t.mix.rotate = c.r();
+        });
+    },
+  },
   // ---- animations / keys
-  { name: 'setMode', run: (c) => { A.setMode(c.chance(0.6) ? 'animate' : 'setup'); } },
-  { name: 'createAnimation', run: (c) => { A.createAnimation(c.pick(NAMES), c.num(0.2, 3)); } },
-  { name: 'selectAnimation', run: (c) => { const a = c.pick(doc().animations); if (a) A.selectAnimation(a.id); } },
-  { name: 'duplicateAnimation', run: (c) => { const a = c.pick(doc().animations); if (a) A.duplicateAnimation(a.id); } },
-  { name: 'renameAnimation', run: (c) => { const a = c.pick(doc().animations); if (a) A.renameAnimation(a.id, c.pick(NAMES)!); } },
-  { name: 'createSkeleton', run: (c) => { if (skeletonCount(docStore.get()) < 4 && c.chance(0.3)) SK.createSkeleton(c.chance(0.5) ? 'extra' : 'x'); } },
-  { name: 'copySkeleton', run: (c) => { if (skeletonCount(docStore.get()) < 4 && c.chance(0.3)) SK.copySkeleton(); } },
-  { name: 'switchSkeleton', run: (c) => { const n = skeletonCount(docStore.get()); if (n > 1 && c.chance(0.5)) SK.switchToSkeleton(Math.floor(c.r() * n)); } },
-  { name: 'deleteSkeleton', run: (c) => { const n = skeletonCount(docStore.get()); if (n > 1 && c.chance(0.25)) SK.deleteSkeletonAt(Math.floor(c.r() * n)); } },
-  { name: 'renameSkeleton', run: (c) => { const n = skeletonCount(docStore.get()); if (n > 1 && c.chance(0.4)) SK.renameSkeletonAt(Math.floor(c.r() * n), c.chance(0.5) ? 'hero' : 'same'); } },
-  { name: 'setDefaultMix', run: (c) => { MX.setDefaultMix(c.chance(0.3) ? 0 : c.num(0, 1.5)); } },
-  { name: 'setMixPair', run: (c) => { const a = c.pick(doc().animations); const b = c.pick(doc().animations); if (a && b) MX.setMixPair(a.id, b.id, c.chance(0.3) ? 0 : c.num(0, 2)); } },
-  { name: 'deleteAnimation', run: (c) => { const a = c.pick(doc().animations); if (a) A.deleteAnimation(a.id); } },
-  { name: 'setAnimationDuration', run: (c) => { const a = c.pick(doc().animations); if (a) A.setAnimationDuration(a.id, c.num(0, 3)); } },
-  { name: 'setFps', run: (c) => { A.setFps(c.pick([12, 24, 30, 60, 240, 0, 1000])!); } },
-  { name: 'setTime', run: (c) => { A.setTime(c.num(0, 3), c.chance(0.7)); } },
-  { name: 'moveKeysBy', run: (c) => { const a = A.currentAnimation(); if (!a) return; const refs = allKeyRefs(a); const k = c.pick(refs); if (k) A.moveKeysBy(refs.filter((r) => r.kind === k.kind && r.target === k.target && r.prop === k.prop && c.chance(0.6)).concat(k), c.num(-1, 1)); } },
-  { name: 'moveKeysOffset', run: (c) => { const a = A.currentAnimation(); if (!a) return; const refs = allKeyRefs(a); const k = c.pick(refs); if (k) A.moveKeysBy(refs.filter((r) => r.kind === k.kind && r.target === k.target && r.prop === k.prop && c.chance(0.5)).concat(k), c.num(-2, 2), false, true); } },
-  { name: 'moveKeysRipple', run: (c) => { const a = A.currentAnimation(); if (!a) return; const refs = allKeyRefs(a); const k = c.pick(refs); if (k) A.moveKeysBy(refs.filter((r) => r.kind === k.kind && r.target === k.target && r.prop === k.prop && c.chance(0.4)).concat(k), c.num(-1, 1), true); } },
-  { name: 'cleanUpKeys', run: () => { const a = A.currentAnimation(); if (a) A.cleanUpKeys(a.id); } },
-  { name: 'sequenceOn', run: (c) => {
-    const r = c.pick([...regions(), ...meshes()]);
-    if (!r) return;
-    const att = doc().skins[0].attachments[r.slotId][r.name];
-    if (att.type !== 'region' && att.type !== 'mesh') return;
-    const count = 2 + Math.floor(c.r() * 4);
-    const def = { count, start: c.pick([0, 1, 3])!, digits: c.pick([0, 2, 3])!, setupIndex: Math.floor(c.r() * count) };
-    // every frame is a picture the export has to find
-    docStore.update('fuzz frames', (d) => {
-      for (const n of sequenceFrameNames(att.path, def)) if (!d.images.some((i) => i.name === n)) d.images.push({ id: uid(), name: n, width: 16, height: 16 });
-    });
-    SQ.setSequence(r.slotId, r.name, def);
-  } },
-  { name: 'sequenceKey', run: (c) => {
-    const withSeq = [...regions(), ...meshes()].filter((r) => {
-      const a = doc().skins[0].attachments[r.slotId][r.name];
-      return (a.type === 'region' || a.type === 'mesh') && !!a.sequence;
-    });
-    const r = c.pick(withSeq);
-    if (!r) return;
-    A.setMode('animate');
-    A.setTime(Math.round(c.r() * 20) / 10);
-    SQ.keySequence(r.slotId, r.name, { mode: c.pick(SEQUENCE_MODES)!, index: Math.floor(c.r() * 6), delay: c.pick([0.04, 0.1, 0.0333, 0.25])! });
-  } },
+  {
+    name: 'setMode',
+    run: (c) => {
+      A.setMode(c.chance(0.6) ? 'animate' : 'setup');
+    },
+  },
+  {
+    name: 'createAnimation',
+    run: (c) => {
+      A.createAnimation(c.pick(NAMES), c.num(0.2, 3));
+    },
+  },
+  {
+    name: 'selectAnimation',
+    run: (c) => {
+      const a = c.pick(doc().animations);
+      if (a) A.selectAnimation(a.id);
+    },
+  },
+  {
+    name: 'duplicateAnimation',
+    run: (c) => {
+      const a = c.pick(doc().animations);
+      if (a) A.duplicateAnimation(a.id);
+    },
+  },
+  {
+    name: 'renameAnimation',
+    run: (c) => {
+      const a = c.pick(doc().animations);
+      if (a) A.renameAnimation(a.id, c.pick(NAMES)!);
+    },
+  },
+  {
+    name: 'createSkeleton',
+    run: (c) => {
+      if (skeletonCount(docStore.get()) < 4 && c.chance(0.3)) SK.createSkeleton(c.chance(0.5) ? 'extra' : 'x');
+    },
+  },
+  {
+    name: 'copySkeleton',
+    run: (c) => {
+      if (skeletonCount(docStore.get()) < 4 && c.chance(0.3)) SK.copySkeleton();
+    },
+  },
+  {
+    name: 'switchSkeleton',
+    run: (c) => {
+      const n = skeletonCount(docStore.get());
+      if (n > 1 && c.chance(0.5)) SK.switchToSkeleton(Math.floor(c.r() * n));
+    },
+  },
+  {
+    name: 'deleteSkeleton',
+    run: (c) => {
+      const n = skeletonCount(docStore.get());
+      if (n > 1 && c.chance(0.25)) SK.deleteSkeletonAt(Math.floor(c.r() * n));
+    },
+  },
+  {
+    name: 'renameSkeleton',
+    run: (c) => {
+      const n = skeletonCount(docStore.get());
+      if (n > 1 && c.chance(0.4)) SK.renameSkeletonAt(Math.floor(c.r() * n), c.chance(0.5) ? 'hero' : 'same');
+    },
+  },
+  {
+    name: 'setDefaultMix',
+    run: (c) => {
+      MX.setDefaultMix(c.chance(0.3) ? 0 : c.num(0, 1.5));
+    },
+  },
+  {
+    name: 'setMixPair',
+    run: (c) => {
+      const a = c.pick(doc().animations);
+      const b = c.pick(doc().animations);
+      if (a && b) MX.setMixPair(a.id, b.id, c.chance(0.3) ? 0 : c.num(0, 2));
+    },
+  },
+  {
+    name: 'deleteAnimation',
+    run: (c) => {
+      const a = c.pick(doc().animations);
+      if (a) A.deleteAnimation(a.id);
+    },
+  },
+  {
+    name: 'setAnimationDuration',
+    run: (c) => {
+      const a = c.pick(doc().animations);
+      if (a) A.setAnimationDuration(a.id, c.num(0, 3));
+    },
+  },
+  {
+    name: 'setFps',
+    run: (c) => {
+      A.setFps(c.pick([12, 24, 30, 60, 240, 0, 1000])!);
+    },
+  },
+  {
+    name: 'setTime',
+    run: (c) => {
+      A.setTime(c.num(0, 3), c.chance(0.7));
+    },
+  },
+  {
+    name: 'moveKeysBy',
+    run: (c) => {
+      const a = A.currentAnimation();
+      if (!a) return;
+      const refs = allKeyRefs(a);
+      const k = c.pick(refs);
+      if (k)
+        A.moveKeysBy(
+          refs.filter((r) => r.kind === k.kind && r.target === k.target && r.prop === k.prop && c.chance(0.6)).concat(k),
+          c.num(-1, 1),
+        );
+    },
+  },
+  {
+    name: 'moveKeysOffset',
+    run: (c) => {
+      const a = A.currentAnimation();
+      if (!a) return;
+      const refs = allKeyRefs(a);
+      const k = c.pick(refs);
+      if (k)
+        A.moveKeysBy(
+          refs.filter((r) => r.kind === k.kind && r.target === k.target && r.prop === k.prop && c.chance(0.5)).concat(k),
+          c.num(-2, 2),
+          false,
+          true,
+        );
+    },
+  },
+  {
+    name: 'moveKeysRipple',
+    run: (c) => {
+      const a = A.currentAnimation();
+      if (!a) return;
+      const refs = allKeyRefs(a);
+      const k = c.pick(refs);
+      if (k)
+        A.moveKeysBy(
+          refs.filter((r) => r.kind === k.kind && r.target === k.target && r.prop === k.prop && c.chance(0.4)).concat(k),
+          c.num(-1, 1),
+          true,
+        );
+    },
+  },
+  {
+    name: 'cleanUpKeys',
+    run: () => {
+      const a = A.currentAnimation();
+      if (a) A.cleanUpKeys(a.id);
+    },
+  },
+  {
+    name: 'sequenceOn',
+    run: (c) => {
+      const r = c.pick([...regions(), ...meshes()]);
+      if (!r) return;
+      const att = doc().skins[0].attachments[r.slotId][r.name];
+      if (att.type !== 'region' && att.type !== 'mesh') return;
+      const count = 2 + Math.floor(c.r() * 4);
+      const def = { count, start: c.pick([0, 1, 3])!, digits: c.pick([0, 2, 3])!, setupIndex: Math.floor(c.r() * count) };
+      // every frame is a picture the export has to find
+      docStore.update('fuzz frames', (d) => {
+        for (const n of sequenceFrameNames(att.path, def))
+          if (!d.images.some((i) => i.name === n)) d.images.push({ id: uid(), name: n, width: 16, height: 16 });
+      });
+      SQ.setSequence(r.slotId, r.name, def);
+    },
+  },
+  {
+    name: 'sequenceKey',
+    run: (c) => {
+      const withSeq = [...regions(), ...meshes()].filter((r) => {
+        const a = doc().skins[0].attachments[r.slotId][r.name];
+        return (a.type === 'region' || a.type === 'mesh') && !!a.sequence;
+      });
+      const r = c.pick(withSeq);
+      if (!r) return;
+      A.setMode('animate');
+      A.setTime(Math.round(c.r() * 20) / 10);
+      SQ.keySequence(r.slotId, r.name, {
+        mode: c.pick(SEQUENCE_MODES)!,
+        index: Math.floor(c.r() * 6),
+        delay: c.pick([0.04, 0.1, 0.0333, 0.25])!,
+      });
+    },
+  },
   // the frames of a cut sprite sheet: numbered pictures (their names from the sheet rules) put on the scene as one sequence, in one step
   {
     name: 'framesFromSheet',
@@ -451,7 +1589,12 @@ export const ops: Op[] = [
       if (!b || !live || !pose) return;
       const p = live.parent;
       const parent = p ? { a: p.a, b: p.b, c: p.c, d: p.d, x: p.worldX, y: p.worldY } : null;
-      const next = turnAbout({ x: pose.x, y: pose.y, rotation: pose.rotation, sign: turnSign(parent), parent }, c.num(-150, 150), c.num(-50, 250), c.num(-120, 120));
+      const next = turnAbout(
+        { x: pose.x, y: pose.y, rotation: pose.rotation, sign: turnSign(parent), parent },
+        c.num(-150, 150),
+        c.num(-50, 250),
+        c.num(-120, 120),
+      );
       if (![next.x, next.y, next.rotation].every(Number.isFinite)) throw new Error('a turn about a point gave a pose that is not finite');
       A.setBonePose([{ id: b.id, props: next }], 'Rotate');
     },
@@ -465,7 +1608,13 @@ export const ops: Op[] = [
       if (!cur || !other) return;
       const id = A.layerCurrentAnimation(other.id, { weight: c.num(0, 2), loop: c.chance(0.6), step: c.chance(0.3) ? 2 : 1 });
       const made = id ? doc().animations.find((a) => a.id === id) : undefined;
-      if (made && !Object.values(made.bones).every((tl) => (Object.values(tl) as { value: number[] }[][]).every((t) => t.every((k) => k.value.every(Number.isFinite))))) throw new Error('a layered animation has a key that is not finite');
+      if (
+        made &&
+        !Object.values(made.bones).every((tl) =>
+          (Object.values(tl) as { value: number[] }[][]).every((t) => t.every((k) => k.value.every(Number.isFinite))),
+        )
+      )
+        throw new Error('a layered animation has a key that is not finite');
     },
   },
   // the pictures of a slot fade into each other: a partner slot shows the old picture (refused when the slot has no picture keys or has color keys)
@@ -482,13 +1631,34 @@ export const ops: Op[] = [
     name: 'findReplaceNames',
     run: (c) => {
       const kinds = (['bone', 'slot', 'skin', 'event', 'constraint', 'animation', 'image'] as const).filter(() => c.chance(0.5));
-      RN.findReplaceNames({ find: c.pick(['a', 'e', 'o', '[0-9]', '^.', '_', 'r'])!, replace: c.pick(['', 'x', '_a', 'Q', '$&$&'])!, regex: c.chance(0.5), matchCase: c.chance(0.5), firstOnly: c.chance(0.5), kinds, scope: RN.renameScope(c.pick(['all', 'all', 'selection', 'skin'] as const)!) });
+      RN.findReplaceNames({
+        find: c.pick(['a', 'e', 'o', '[0-9]', '^.', '_', 'r'])!,
+        replace: c.pick(['', 'x', '_a', 'Q', '$&$&'])!,
+        regex: c.chance(0.5),
+        matchCase: c.chance(0.5),
+        firstOnly: c.chance(0.5),
+        kinds,
+        scope: RN.renameScope(c.pick(['all', 'all', 'selection', 'skin'] as const)!),
+      });
     },
   },
   // automatic bezier handles on some keys (smooth through the neighbours)
-  { name: 'autoCurveKeys', run: (c) => { const a = A.currentAnimation(); if (!a) return; setKeysAutoCurve(allKeyRefs(a).filter(() => c.chance(0.3))); } },
+  {
+    name: 'autoCurveKeys',
+    run: (c) => {
+      const a = A.currentAnimation();
+      if (!a) return;
+      setKeysAutoCurve(allKeyRefs(a).filter(() => c.chance(0.3)));
+    },
+  },
   // the offsets of a transform constraint matched to the Setup pose
-  { name: 'matchTransform', run: (c) => { const k = c.pick(doc().constraints.filter((x) => x.type === 'transform')); if (k) T.matchTransform(k.id); } },
+  {
+    name: 'matchTransform',
+    run: (c) => {
+      const k = c.pick(doc().constraints.filter((x) => x.type === 'transform'));
+      if (k) T.matchTransform(k.id);
+    },
+  },
   // Setup mode compensation: the children and the pictures of an edited bone keep their place (the document must stay finite and valid)
   {
     name: 'compensatedEdit',
@@ -498,7 +1668,18 @@ export const ops: Op[] = [
       const was = uiStore.get().compensate;
       uiStore.patch({ compensate: { bones: c.chance(0.6), images: c.chance(0.6) } });
       try {
-        if (uiStore.get().mode === 'setup') A.setBonePose([{ id: bone.id, props: c.chance(0.5) ? { rotation: bone.rotation + c.num(-60, 60) } : { x: bone.x + c.num(-30, 30), y: bone.y + c.num(-30, 30) } }], 'Edit bone');
+        if (uiStore.get().mode === 'setup')
+          A.setBonePose(
+            [
+              {
+                id: bone.id,
+                props: c.chance(0.5)
+                  ? { rotation: bone.rotation + c.num(-60, 60) }
+                  : { x: bone.x + c.num(-30, 30), y: bone.y + c.num(-30, 30) },
+              },
+            ],
+            'Edit bone',
+          );
       } finally {
         uiStore.patch({ compensate: was });
       }
@@ -510,78 +1691,389 @@ export const ops: Op[] = [
     run: (c) => {
       const a = A.currentAnimation();
       if (!a) return;
-      uiStore.patch({ selectedKeys: allKeyRefs(a).filter(() => c.chance(0.4)).map(encodeKey) });
-      if (c.chance(0.5)) favorSelectedKeys(c.pick(['previous', 'next', 'average', 'neutral', 'shiftPrevious', 'shiftNext'] as const)!, c.num(0.1, 1));
+      uiStore.patch({
+        selectedKeys: allKeyRefs(a)
+          .filter(() => c.chance(0.4))
+          .map(encodeKey),
+      });
+      if (c.chance(0.5))
+        favorSelectedKeys(c.pick(['previous', 'next', 'average', 'neutral', 'shiftPrevious', 'shiftNext'] as const)!, c.num(0.1, 1));
       else scaleSelectedKeyTimes(c.pick([0.5, 0.75, 1.5, 2])!);
       uiStore.patch({ selectedKeys: [] });
     },
   },
-  { name: 'sequenceOff', run: (c) => { const withSeq = [...regions(), ...meshes()]; const r = c.pick(withSeq); if (r && c.chance(0.5)) SQ.setSequence(r.slotId, r.name, null); } },
-  { name: 'closeLoop', run: (c) => { A.closeCurrentLoop(c.chance(0.7) ? 'first' : 'last', c.chance(0.3)); } },
-  { name: 'deleteKeys', run: (c) => { const a = A.currentAnimation(); if (!a) return; const refs = allKeyRefs(a); A.deleteKeys(refs.filter(() => c.chance(0.15))); } },
-  { name: 'setKeysCurve', run: (c) => { const a = A.currentAnimation(); if (!a) return; const refs = allKeyRefs(a).filter((r) => r.kind !== 'drawOrder' && r.kind !== 'drawOrderFolder' && r.kind !== 'event' && r.prop !== 'attachment'); const k = c.pick(refs); if (k) A.setKeysCurve([k], c.pick(['linear', 'stepped', 'bezier', [0.1, 0.2, 0.9, 0.8]] as const)! as 'linear'); } },
-  { name: 'setKeyChannelValue', run: (c) => { const a = A.currentAnimation(); if (!a) return; const refs = allKeyRefs(a).filter((r) => r.kind === 'bone' || r.kind === 'ik' || r.kind === 'slider' || r.kind === 'transform' || r.kind === 'path' || (r.kind === 'physics' && r.prop !== 'reset')); const k = c.pick(refs); if (k) A.setKeyChannelValue(k, 0, c.num(-50, 50)); } },
-  { name: 'setKeyCurveHandle', run: (c) => { const a = A.currentAnimation(); if (!a) return; const refs = allKeyRefs(a).filter((r) => r.kind === 'bone' || r.kind === 'ik' || r.kind === 'deform' || r.kind === 'transform' || r.kind === 'path' || (r.kind === 'physics' && r.prop !== 'reset')); const k = c.pick(refs); if (k) A.setKeyCurveHandle(k, 0, c.chance(0.5) ? 1 : 2, c.r(), c.num(-1, 2)); } },
-  { name: 'copyPasteKeys', run: (c) => { const a = A.currentAnimation(); if (!a) return; const refs = allKeyRefs(a).filter((r) => r.kind !== 'drawOrder' && r.kind !== 'drawOrderFolder'); const k = c.pick(refs); if (!k) return; A.copyKeys([k]); A.pasteKeys(c.num(0, 2)); } },
+  {
+    name: 'sequenceOff',
+    run: (c) => {
+      const withSeq = [...regions(), ...meshes()];
+      const r = c.pick(withSeq);
+      if (r && c.chance(0.5)) SQ.setSequence(r.slotId, r.name, null);
+    },
+  },
+  {
+    name: 'closeLoop',
+    run: (c) => {
+      A.closeCurrentLoop(c.chance(0.7) ? 'first' : 'last', c.chance(0.3));
+    },
+  },
+  {
+    name: 'deleteKeys',
+    run: (c) => {
+      const a = A.currentAnimation();
+      if (!a) return;
+      const refs = allKeyRefs(a);
+      A.deleteKeys(refs.filter(() => c.chance(0.15)));
+    },
+  },
+  {
+    name: 'setKeysCurve',
+    run: (c) => {
+      const a = A.currentAnimation();
+      if (!a) return;
+      const refs = allKeyRefs(a).filter(
+        (r) => r.kind !== 'drawOrder' && r.kind !== 'drawOrderFolder' && r.kind !== 'event' && r.prop !== 'attachment',
+      );
+      const k = c.pick(refs);
+      if (k) A.setKeysCurve([k], c.pick(['linear', 'stepped', 'bezier', [0.1, 0.2, 0.9, 0.8]] as const)! as 'linear');
+    },
+  },
+  {
+    name: 'setKeyChannelValue',
+    run: (c) => {
+      const a = A.currentAnimation();
+      if (!a) return;
+      const refs = allKeyRefs(a).filter(
+        (r) =>
+          r.kind === 'bone' ||
+          r.kind === 'ik' ||
+          r.kind === 'slider' ||
+          r.kind === 'transform' ||
+          r.kind === 'path' ||
+          (r.kind === 'physics' && r.prop !== 'reset'),
+      );
+      const k = c.pick(refs);
+      if (k) A.setKeyChannelValue(k, 0, c.num(-50, 50));
+    },
+  },
+  {
+    name: 'setKeyCurveHandle',
+    run: (c) => {
+      const a = A.currentAnimation();
+      if (!a) return;
+      const refs = allKeyRefs(a).filter(
+        (r) =>
+          r.kind === 'bone' ||
+          r.kind === 'ik' ||
+          r.kind === 'deform' ||
+          r.kind === 'transform' ||
+          r.kind === 'path' ||
+          (r.kind === 'physics' && r.prop !== 'reset'),
+      );
+      const k = c.pick(refs);
+      if (k) A.setKeyCurveHandle(k, 0, c.chance(0.5) ? 1 : 2, c.r(), c.num(-1, 2));
+    },
+  },
+  {
+    name: 'copyPasteKeys',
+    run: (c) => {
+      const a = A.currentAnimation();
+      if (!a) return;
+      const refs = allKeyRefs(a).filter((r) => r.kind !== 'drawOrder' && r.kind !== 'drawOrderFolder');
+      const k = c.pick(refs);
+      if (!k) return;
+      A.copyKeys([k]);
+      A.pasteKeys(c.num(0, 2));
+    },
+  },
   // ---- triangle order, keys between frames, pictures of a duplicated skin, alpha-only and colour-only keys
-  { name: 'moveTriangle', run: (c) => { const m = c.pick(meshes()); if (!m) return; const n = M.getMesh(m.slotId, m.name)!.triangles.length / 3; M.moveMeshTriangle(m.slotId, m.name, Math.floor(c.r() * n), c.pick(['first', 'earlier', 'later', 'last'] as const)!); } },
-  { name: 'keyStep', run: (c) => { setSettings({ keyGrid: c.pick([1, 2, 4, 10])! }); } },
-  { name: 'duplicateSkinPictures', run: (c) => { const s = c.pick(doc().skins.slice(1)); const a = c.pick(project().images); const b = c.pick(project().images); if (s && a && b) A.duplicateSkinAction(s.id, { scope: c.chance(0.7) }, { find: a.name, replace: b.name }); } },
-  { name: 'mergeSkins', run: (c) => { const a = c.pick(doc().skins); const b = c.pick(doc().skins); if (a && b) A.mergeSkinAction(a.id, b.id, { overwrite: c.chance(0.5), scope: c.chance(0.7), animations: c.chance(0.7) }); } },
-  { name: 'keyConstrained', run: (c) => { const b = c.pick(doc().bones); if (!b || !A.currentAnimation()) return; A.setMode('animate'); A.setSelection({ bones: [b.id] }); A.keyConstrainedBones(); } },
-  { name: 'lastCurve', run: (c) => { setSettings({ lastChosenCurve: c.chance(0.5) }); } },
-  { name: 'boneOrder', run: (c) => { const b = c.pick(doc().bones); if (!b) return; A.setSelection({ bones: [b.id] }); POSE.moveBoneOrderAction(c.chance(0.5) ? -1 : 1); } },
-  { name: 'flipScale', run: (c) => { const b = c.pick(doc().bones); if (!b) return; A.setSelection({ bones: [b.id] }); POSE.flipScale(c.chance(0.5) ? 'x' : 'y'); } },
-  { name: 'resetShape', run: (c) => { const polys: { slotId: string; name: string }[] = []; for (const slotId of Object.keys(doc().skins[0].attachments)) for (const a of Object.values(doc().skins[0].attachments[slotId])) if (a.type === 'clipping' || a.type === 'boundingbox') polys.push({ slotId, name: a.name }); const p = c.pick(polys); if (p) POLY.resetPolygonShape(p.slotId, p.name); } },
-  { name: 'importReview', run: (c) => { const a = c.pick(doc().animations); if (!a) return; RV.importReviewText(serializeReview('fuzz', [makeComment(`f${Math.floor(c.r() * 1000)}`, a.name, c.r() * a.duration * 1.2, 'a note', 'Fuzz')])); } },
-  { name: 'takeFromCheckpoint', run: (c) => { const cp = c.pick(CP.checkpointsOfActive()); if (!cp) return; const can = diffSkeletons(cp.skeleton, docStore.get().skeleton).filter((x) => x.kind !== 'added' && (x.area === 'skeleton' || x.id)); if (!can.length) return; const picked = can.filter(() => c.chance(0.5)); if (!picked.length) picked.push(can[0]); CP.takeNow(cp, picked.map((x) => ({ area: x.area, id: x.id }))); getScene(); } },
-  { name: 'backToFile', run: (c) => { const cp = c.pick(CP.checkpointsOfActive().filter((x) => x.fromFile)); if (!cp) return; if (CP.restoreNow(cp) && diffSkeletons(cp.skeleton, docStore.get().skeleton).filter((x) => x.area !== 'skeleton').length) throw new Error('a restored project file differs from the file'); getScene(); } },
-  { name: 'compareFile', run: () => { compareWithProjectText(JSON.stringify({ bone2d: 1, project: project(), images: {} }), 'fuzz.bone2d'); } },
-  { name: 'keyAlphaOnly', run: (c) => { const s = c.pick(doc().slots); if (!s || !A.currentAnimation()) return; A.setMode('animate'); A.setSlotColor(s.id, [s.color[0], s.color[1], s.color[2], c.r()]); } },
-  { name: 'keyColorOnly', run: (c) => { const s = c.pick(doc().slots); if (!s || !A.currentAnimation()) return; A.setMode('animate'); A.setSlotColor(s.id, [c.r(), c.r(), c.r(), s.color[3]]); } },
-  { name: 'overweight', run: (c) => {
-    const found: { slotId: string; name: string }[] = [];
-    for (const slotId of Object.keys(doc().skins[0].attachments)) for (const a of Object.values(doc().skins[0].attachments[slotId])) if (a.type === 'mesh' && a.weights && !a.link) found.push({ slotId, name: a.name });
-    const m = c.pick(found);
-    if (!m || doc().bones.length < 2) return;
-    // a vertex that follows more bones than the editor likes: still a valid document, with deform keys that have to follow
-    docStore.update('Add influences', (d) => {
-      const mesh = d.skeleton.skins[0].attachments[m.slotId][m.name] as MeshAttachment;
-      if (!mesh.weights?.length) return;
-      const before = { ...mesh };
-      const vi = Math.floor(c.r() * mesh.weights.length);
-      const bones = d.skeleton.bones.slice(0, 6);
-      const w = mesh.weights[vi];
-      mesh.weights = mesh.weights.map((list, i) => (i === vi ? [...w, ...bones.filter((b) => !w.some((x) => x[0] === b.id)).map((b) => [b.id, 1, 1, 0.1] as Influence)].map((e, _k, all) => [e[0], e[1], e[2], e[3] / all.reduce((s, x) => s + x[3], 0)] as Influence) : list));
-      reconcileDeform(d.skeleton, m.slotId, m.name, before, mesh);
-    });
-  } },
-  { name: 'resetPath', run: (c) => { const paths: { slotId: string; name: string }[] = []; for (const slotId of Object.keys(doc().skins[0].attachments)) for (const a of Object.values(doc().skins[0].attachments[slotId])) if (a.type === 'path') paths.push({ slotId, name: a.name }); const p = c.pick(paths); if (p) PA.resetPathShape(p.slotId, p.name); } },
-  { name: 'copyPasteBones', run: (c) => { const a = A.currentAnimation(); if (!a || doc().bones.length < 4) return; const refs = allKeyRefs(a).filter((r) => r.kind === 'bone'); const from = [...new Set(refs.map((r) => r.target))].slice(0, 2); if (from.length < 2) return; A.copyKeys(refs.filter((r) => from.includes(r.target))); const others = doc().bones.filter((b) => !from.includes(b.id)); if (others.length < 2) return; A.setSelection({ bones: [c.pick(others)!.id, c.pick(others)!.id].filter((x, i, l) => l.indexOf(x) === i) }); A.pasteKeys(c.r() * a.duration); } },
-  { name: 'meshGroup', run: (c) => {
-    const m = c.pick(meshes());
-    if (!m) return;
-    const bone = c.pick(doc().bones)!.id;
-    A.setSelection({ slot: m.slotId, attachment: m.name, bones: [bone] });
-    for (const s of doc().slots) if (s.id !== m.slotId && c.chance(0.4)) A.toggleExtraSlot(s.id);
-    const k = Math.floor(c.r() * 8);
-    if (k === 0) M.pruneMeshesWeights(0.05, 1 + Math.floor(c.r() * 4));
-    else if (k === 1) M.smoothMeshesWeights(1);
-    else if (k === 2) M.autoWeightMeshes();
-    else if (k === 3) M.unbindMeshesFromBones();
-    else if (k === 4) M.bindMeshesToBones([bone]);
-    else if (k === 5) M.convertImagesToMeshes('quad');
-    else if (k === 6) M.removeBoneFromMeshes(bone);
-    else { uiStore.patch({ brush: { size: c.num(10, 300), strength: c.num(0.1, 1), mode: 'add', bone, feather: 100, locked: [] } }); M.paintWeightsGroup({ x: c.num(-100, 100), y: c.num(-100, 100) }, bone); }
-  } },
-  { name: 'pasteHold', run: (c) => { const a = A.currentAnimation(); if (!a) return; const refs = allKeyRefs(a).filter((r) => r.kind !== 'drawOrder' && r.kind !== 'drawOrderFolder'); const k = c.pick(refs); if (!k) return; A.copyKeys([k]); A.pasteKeys(c.r() * a.duration, true); } },
-  { name: 'flipView', run: () => { A.flipViewport(); } },
-  { name: 'insertTime', run: (c) => { const a = A.currentAnimation(); if (!a) return; A.setTime(c.r() * a.duration); A.insertTimeAtPlayhead(1 + Math.floor(c.r() * 12)); } },
-  { name: 'deleteTime', run: (c) => { const a = A.currentAnimation(); if (!a) return; A.setTime(c.r() * a.duration); A.deleteTimeAtPlayhead(1 + Math.floor(c.r() * 12)); } },
-  { name: 'saveCurve', run: (c) => { const a = A.currentAnimation(); if (!a) return; const refs = allKeyRefs(a).filter((r) => r.kind === 'bone'); const k = c.pick(refs); if (!k) return; if (c.chance(0.5)) A.setKeysCurve([k], [c.num(0, 1), c.num(-1, 2), c.num(0, 1), c.num(-1, 2)]); if (c.chance(0.8)) A.saveKeyCurve(k); else A.forgetSavedCurve(Math.floor(c.r() * 3)); const saved = settingsStore.get().savedCurves[0]; if (saved && c.chance(0.5)) A.setKeysCurve(refs.slice(0, 3), saved.curve); } },
-  { name: 'selectMatches', run: (c) => { A.selectMatches(filterTree(doc(), c.pick(['a', 'arm', 'sw', 'tail', 'b*', '/^[hp]/', 'zz'])!)); } },
-  { name: 'comments', run: (c) => { const it = c.pick(listReview(doc())); if (!it) return; const k = c.r(); if (k < 0.4) CMT.setCommentResolved(it.animationId, it.marker.id, c.chance(0.6)); else if (k < 0.8) CMT.goToComment(it.animationId, it.marker.id); else CMT.resolveAllComments(); } },
-  { name: 'fixProblems', run: (c) => { const w = c.pick(projectWarnings(project()).filter(canFix)); if (c.chance(0.5) || !w) PRB.fixAllSafeWarnings(); else PRB.fixWarning(w); } },
+  {
+    name: 'moveTriangle',
+    run: (c) => {
+      const m = c.pick(meshes());
+      if (!m) return;
+      const n = M.getMesh(m.slotId, m.name)!.triangles.length / 3;
+      M.moveMeshTriangle(m.slotId, m.name, Math.floor(c.r() * n), c.pick(['first', 'earlier', 'later', 'last'] as const)!);
+    },
+  },
+  {
+    name: 'keyStep',
+    run: (c) => {
+      setSettings({ keyGrid: c.pick([1, 2, 4, 10])! });
+    },
+  },
+  {
+    name: 'duplicateSkinPictures',
+    run: (c) => {
+      const s = c.pick(doc().skins.slice(1));
+      const a = c.pick(project().images);
+      const b = c.pick(project().images);
+      if (s && a && b) A.duplicateSkinAction(s.id, { scope: c.chance(0.7) }, { find: a.name, replace: b.name });
+    },
+  },
+  {
+    name: 'mergeSkins',
+    run: (c) => {
+      const a = c.pick(doc().skins);
+      const b = c.pick(doc().skins);
+      if (a && b) A.mergeSkinAction(a.id, b.id, { overwrite: c.chance(0.5), scope: c.chance(0.7), animations: c.chance(0.7) });
+    },
+  },
+  {
+    name: 'keyConstrained',
+    run: (c) => {
+      const b = c.pick(doc().bones);
+      if (!b || !A.currentAnimation()) return;
+      A.setMode('animate');
+      A.setSelection({ bones: [b.id] });
+      A.keyConstrainedBones();
+    },
+  },
+  {
+    name: 'lastCurve',
+    run: (c) => {
+      setSettings({ lastChosenCurve: c.chance(0.5) });
+    },
+  },
+  {
+    name: 'boneOrder',
+    run: (c) => {
+      const b = c.pick(doc().bones);
+      if (!b) return;
+      A.setSelection({ bones: [b.id] });
+      POSE.moveBoneOrderAction(c.chance(0.5) ? -1 : 1);
+    },
+  },
+  {
+    name: 'flipScale',
+    run: (c) => {
+      const b = c.pick(doc().bones);
+      if (!b) return;
+      A.setSelection({ bones: [b.id] });
+      POSE.flipScale(c.chance(0.5) ? 'x' : 'y');
+    },
+  },
+  {
+    name: 'resetShape',
+    run: (c) => {
+      const polys: { slotId: string; name: string }[] = [];
+      for (const slotId of Object.keys(doc().skins[0].attachments))
+        for (const a of Object.values(doc().skins[0].attachments[slotId]))
+          if (a.type === 'clipping' || a.type === 'boundingbox') polys.push({ slotId, name: a.name });
+      const p = c.pick(polys);
+      if (p) POLY.resetPolygonShape(p.slotId, p.name);
+    },
+  },
+  {
+    name: 'importReview',
+    run: (c) => {
+      const a = c.pick(doc().animations);
+      if (!a) return;
+      RV.importReviewText(
+        serializeReview('fuzz', [makeComment(`f${Math.floor(c.r() * 1000)}`, a.name, c.r() * a.duration * 1.2, 'a note', 'Fuzz')]),
+      );
+    },
+  },
+  {
+    name: 'takeFromCheckpoint',
+    run: (c) => {
+      const cp = c.pick(CP.checkpointsOfActive());
+      if (!cp) return;
+      const can = diffSkeletons(cp.skeleton, docStore.get().skeleton).filter((x) => x.kind !== 'added' && (x.area === 'skeleton' || x.id));
+      if (!can.length) return;
+      const picked = can.filter(() => c.chance(0.5));
+      if (!picked.length) picked.push(can[0]);
+      CP.takeNow(
+        cp,
+        picked.map((x) => ({ area: x.area, id: x.id })),
+      );
+      getScene();
+    },
+  },
+  {
+    name: 'backToFile',
+    run: (c) => {
+      const cp = c.pick(CP.checkpointsOfActive().filter((x) => x.fromFile));
+      if (!cp) return;
+      if (CP.restoreNow(cp) && diffSkeletons(cp.skeleton, docStore.get().skeleton).filter((x) => x.area !== 'skeleton').length)
+        throw new Error('a restored project file differs from the file');
+      getScene();
+    },
+  },
+  {
+    name: 'compareFile',
+    run: () => {
+      compareWithProjectText(JSON.stringify({ bone2d: 1, project: project(), images: {} }), 'fuzz.bone2d');
+    },
+  },
+  {
+    name: 'keyAlphaOnly',
+    run: (c) => {
+      const s = c.pick(doc().slots);
+      if (!s || !A.currentAnimation()) return;
+      A.setMode('animate');
+      A.setSlotColor(s.id, [s.color[0], s.color[1], s.color[2], c.r()]);
+    },
+  },
+  {
+    name: 'keyColorOnly',
+    run: (c) => {
+      const s = c.pick(doc().slots);
+      if (!s || !A.currentAnimation()) return;
+      A.setMode('animate');
+      A.setSlotColor(s.id, [c.r(), c.r(), c.r(), s.color[3]]);
+    },
+  },
+  {
+    name: 'overweight',
+    run: (c) => {
+      const found: { slotId: string; name: string }[] = [];
+      for (const slotId of Object.keys(doc().skins[0].attachments))
+        for (const a of Object.values(doc().skins[0].attachments[slotId]))
+          if (a.type === 'mesh' && a.weights && !a.link) found.push({ slotId, name: a.name });
+      const m = c.pick(found);
+      if (!m || doc().bones.length < 2) return;
+      // a vertex that follows more bones than the editor likes: still a valid document, with deform keys that have to follow
+      docStore.update('Add influences', (d) => {
+        const mesh = d.skeleton.skins[0].attachments[m.slotId][m.name] as MeshAttachment;
+        if (!mesh.weights?.length) return;
+        const before = { ...mesh };
+        const vi = Math.floor(c.r() * mesh.weights.length);
+        const bones = d.skeleton.bones.slice(0, 6);
+        const w = mesh.weights[vi];
+        mesh.weights = mesh.weights.map((list, i) =>
+          i === vi
+            ? [...w, ...bones.filter((b) => !w.some((x) => x[0] === b.id)).map((b) => [b.id, 1, 1, 0.1] as Influence)].map(
+                (e, _k, all) => [e[0], e[1], e[2], e[3] / all.reduce((s, x) => s + x[3], 0)] as Influence,
+              )
+            : list,
+        );
+        reconcileDeform(d.skeleton, m.slotId, m.name, before, mesh);
+      });
+    },
+  },
+  {
+    name: 'resetPath',
+    run: (c) => {
+      const paths: { slotId: string; name: string }[] = [];
+      for (const slotId of Object.keys(doc().skins[0].attachments))
+        for (const a of Object.values(doc().skins[0].attachments[slotId])) if (a.type === 'path') paths.push({ slotId, name: a.name });
+      const p = c.pick(paths);
+      if (p) PA.resetPathShape(p.slotId, p.name);
+    },
+  },
+  {
+    name: 'copyPasteBones',
+    run: (c) => {
+      const a = A.currentAnimation();
+      if (!a || doc().bones.length < 4) return;
+      const refs = allKeyRefs(a).filter((r) => r.kind === 'bone');
+      const from = [...new Set(refs.map((r) => r.target))].slice(0, 2);
+      if (from.length < 2) return;
+      A.copyKeys(refs.filter((r) => from.includes(r.target)));
+      const others = doc().bones.filter((b) => !from.includes(b.id));
+      if (others.length < 2) return;
+      A.setSelection({ bones: [c.pick(others)!.id, c.pick(others)!.id].filter((x, i, l) => l.indexOf(x) === i) });
+      A.pasteKeys(c.r() * a.duration);
+    },
+  },
+  {
+    name: 'meshGroup',
+    run: (c) => {
+      const m = c.pick(meshes());
+      if (!m) return;
+      const bone = c.pick(doc().bones)!.id;
+      A.setSelection({ slot: m.slotId, attachment: m.name, bones: [bone] });
+      for (const s of doc().slots) if (s.id !== m.slotId && c.chance(0.4)) A.toggleExtraSlot(s.id);
+      const k = Math.floor(c.r() * 8);
+      if (k === 0) M.pruneMeshesWeights(0.05, 1 + Math.floor(c.r() * 4));
+      else if (k === 1) M.smoothMeshesWeights(1);
+      else if (k === 2) M.autoWeightMeshes();
+      else if (k === 3) M.unbindMeshesFromBones();
+      else if (k === 4) M.bindMeshesToBones([bone]);
+      else if (k === 5) M.convertImagesToMeshes('quad');
+      else if (k === 6) M.removeBoneFromMeshes(bone);
+      else {
+        uiStore.patch({ brush: { size: c.num(10, 300), strength: c.num(0.1, 1), mode: 'add', bone, feather: 100, locked: [] } });
+        M.paintWeightsGroup({ x: c.num(-100, 100), y: c.num(-100, 100) }, bone);
+      }
+    },
+  },
+  {
+    name: 'pasteHold',
+    run: (c) => {
+      const a = A.currentAnimation();
+      if (!a) return;
+      const refs = allKeyRefs(a).filter((r) => r.kind !== 'drawOrder' && r.kind !== 'drawOrderFolder');
+      const k = c.pick(refs);
+      if (!k) return;
+      A.copyKeys([k]);
+      A.pasteKeys(c.r() * a.duration, true);
+    },
+  },
+  {
+    name: 'flipView',
+    run: () => {
+      A.flipViewport();
+    },
+  },
+  {
+    name: 'insertTime',
+    run: (c) => {
+      const a = A.currentAnimation();
+      if (!a) return;
+      A.setTime(c.r() * a.duration);
+      A.insertTimeAtPlayhead(1 + Math.floor(c.r() * 12));
+    },
+  },
+  {
+    name: 'deleteTime',
+    run: (c) => {
+      const a = A.currentAnimation();
+      if (!a) return;
+      A.setTime(c.r() * a.duration);
+      A.deleteTimeAtPlayhead(1 + Math.floor(c.r() * 12));
+    },
+  },
+  {
+    name: 'saveCurve',
+    run: (c) => {
+      const a = A.currentAnimation();
+      if (!a) return;
+      const refs = allKeyRefs(a).filter((r) => r.kind === 'bone');
+      const k = c.pick(refs);
+      if (!k) return;
+      if (c.chance(0.5)) A.setKeysCurve([k], [c.num(0, 1), c.num(-1, 2), c.num(0, 1), c.num(-1, 2)]);
+      if (c.chance(0.8)) A.saveKeyCurve(k);
+      else A.forgetSavedCurve(Math.floor(c.r() * 3));
+      const saved = settingsStore.get().savedCurves[0];
+      if (saved && c.chance(0.5)) A.setKeysCurve(refs.slice(0, 3), saved.curve);
+    },
+  },
+  {
+    name: 'selectMatches',
+    run: (c) => {
+      A.selectMatches(filterTree(doc(), c.pick(['a', 'arm', 'sw', 'tail', 'b*', '/^[hp]/', 'zz'])!));
+    },
+  },
+  {
+    name: 'comments',
+    run: (c) => {
+      const it = c.pick(listReview(doc()));
+      if (!it) return;
+      const k = c.r();
+      if (k < 0.4) CMT.setCommentResolved(it.animationId, it.marker.id, c.chance(0.6));
+      else if (k < 0.8) CMT.goToComment(it.animationId, it.marker.id);
+      else CMT.resolveAllComments();
+    },
+  },
+  {
+    name: 'fixProblems',
+    run: (c) => {
+      const w = c.pick(projectWarnings(project()).filter(canFix));
+      if (c.chance(0.5) || !w) PRB.fixAllSafeWarnings();
+      else PRB.fixWarning(w);
+    },
+  },
   // ---- history
   { name: 'undo', run: () => docStore.undo() },
   { name: 'redo', run: () => docStore.redo() },
@@ -597,7 +2089,10 @@ function finiteSkeleton(p: Project, label: string) {
   for (const [anim, t] of poses) {
     applyAnimation(sk, anim, t);
     sk.updateWorldTransform();
-    for (const b of sk.bones) for (const v of [b.a, b.b, b.c, b.d, b.worldX, b.worldY]) if (!Number.isFinite(v)) throw new Error(`${label}: non-finite matrix on bone "${b.data.name}" (animation ${anim?.name ?? 'setup'} t=${t})`);
+    for (const b of sk.bones)
+      for (const v of [b.a, b.b, b.c, b.d, b.worldX, b.worldY])
+        if (!Number.isFinite(v))
+          throw new Error(`${label}: non-finite matrix on bone "${b.data.name}" (animation ${anim?.name ?? 'setup'} t=${t})`);
   }
 }
 
@@ -620,7 +2115,13 @@ function ambiguousBones(ours: ReturnType<typeof createSkeleton>, official: any):
   // (the constraint may have read its source before a slider moved it, so the pose that is left says nothing about the wrap)
   const nearWrapValue = (v: number) => v < 1e-3 || v > 360 - 1e-3;
   for (const c of ours.constraints) {
-    if (c.kind === 'transform' && !c.data.localSource && c.data.properties.some((p) => p.prop === 'rotate') && (nearWrap(c.source) || nearWrapValue(c.lastSourceRotation))) for (const b of c.bones) mark(b);
+    if (
+      c.kind === 'transform' &&
+      !c.data.localSource &&
+      c.data.properties.some((p) => p.prop === 'rotate') &&
+      (nearWrap(c.source) || nearWrapValue(c.lastSourceRotation))
+    )
+      for (const b of c.bones) mark(b);
     // a path bone that has to turn by exactly half a turn goes either way on a nanometre of noise
     if (c.kind === 'path' && c.onBranchCut) for (const b of c.bones) mark(b);
     if (c.kind === 'slider') {
@@ -645,14 +2146,15 @@ function ambiguousBones(ours: ReturnType<typeof createSkeleton>, official: any):
   }
   // What follows an ambiguous bone is ambiguous too: a path constraint moves its bones along a path that sits on the slot's bone
   // (or on the bones the path is skinned to), and an IK / transform constraint reads its target / source.
-  for (let changed = true; changed; ) {
+  for (let changed = true; changed;) {
     changed = false;
     for (const c of ours.constraints) {
       let reads: (typeof ours.bones)[number][] = [];
       if (c.kind === 'path') {
         const att = ours.slotAttachment(c.slot);
         reads = [c.slot.bone];
-        if (att && att.kind === 'path' && att.bones) for (const i of influencingBones(att.bones, att.vertexCount)) reads.push(ours.bones[i]);
+        if (att && att.kind === 'path' && att.bones)
+          for (const i of influencingBones(att.bones, att.vertexCount)) reads.push(ours.bones[i]);
       } else if (c.kind === 'ik') reads = [c.target];
       else if (c.kind === 'transform') reads = [c.source];
       else if (c.kind === 'slider' && c.bone) reads = [c.bone];
@@ -800,7 +2302,10 @@ function physicsMismatch(p: Project, sd: any, json: unknown, atlasText: string, 
   const keyTimes = [...JSON.stringify(anim.physics ?? {}).matchAll(/"time":(-?[\d.]+(?:e[+-]?\d+)?)/gi)].map((m) => Number(m[1]));
   if (keyTimes.some((k) => frameTimes.some((t) => Math.abs(t - k) < 1e-5))) return null;
   const official = officialPlayed(sd, anim.name, dts);
-  const judge = judgeBy(official, nudgedRuns(json, atlasText, (nudgedData) => officialPlayed(nudgedData, anim.name, dts)));
+  const judge = judgeBy(
+    official,
+    nudgedRuns(json, atlasText, (nudgedData) => officialPlayed(nudgedData, anim.name, dts)),
+  );
   const ours = createSkeleton(data);
   startLikeOfficial(ours);
   let last = -1;
@@ -815,7 +2320,8 @@ function physicsMismatch(p: Project, sd: any, json: unknown, atlasText: string, 
     // A bone of a chain / chainScale path constraint with no size at all (a, c = 0) gives its neighbour a spacing that is 0 in one
     // runtime and 1e-17 in the other, and the exact test `spaces[i + 1] === 0` then picks another angle for one frame. The physics
     // of the bone remembers that frame for the rest of the run, so a run where it happens says nothing about the physics.
-    for (const c of ours.constraints) if (c.kind === 'path' && c.data.rotateMode !== 'tangent' && c.bones.some((b) => Math.hypot(b.a, b.c) < 1e-6)) return null;
+    for (const c of ours.constraints)
+      if (c.kind === 'path' && c.data.rotateMode !== 'tangent' && c.bones.some((b) => Math.hypot(b.a, b.c) < 1e-6)) return null;
   }
   const ambiguous = ambiguousBones(ours, official);
   for (const ob of official.bones) {
@@ -824,12 +2330,27 @@ function physicsMismatch(p: Project, sd: any, json: unknown, atlasText: string, 
     if (ambiguous.has(mine.data.index)) continue;
     const q = ob.appliedPose;
     const mag = Math.max(Math.abs(q.a), Math.abs(q.b), Math.abs(q.c), Math.abs(q.d));
-    const parentMag = ob.parent ? Math.max(Math.abs(ob.parent.appliedPose.a), Math.abs(ob.parent.appliedPose.b), Math.abs(ob.parent.appliedPose.c), Math.abs(ob.parent.appliedPose.d)) : 1;
+    const parentMag = ob.parent
+      ? Math.max(
+          Math.abs(ob.parent.appliedPose.a),
+          Math.abs(ob.parent.appliedPose.b),
+          Math.abs(ob.parent.appliedPose.c),
+          Math.abs(ob.parent.appliedPose.d),
+        )
+      : 1;
     const wscale = 0.004 * (Math.abs(mine.ax) + Math.abs(mine.ay)) * parentMag;
-    const pairs: [string, number, number, number][] = [['a', mine.a, q.a, mag], ['b', mine.b, q.b, mag], ['c', mine.c, q.c, mag], ['d', mine.d, q.d, mag], ['worldX', mine.worldX, q.worldX, wscale], ['worldY', mine.worldY, q.worldY, wscale]];
+    const pairs: [string, number, number, number][] = [
+      ['a', mine.a, q.a, mag],
+      ['b', mine.b, q.b, mag],
+      ['c', mine.c, q.c, mag],
+      ['d', mine.d, q.d, mag],
+      ['worldX', mine.worldX, q.worldX, wscale],
+      ['worldY', mine.worldY, q.worldY, wscale],
+    ];
     for (const [what, x, y, scale] of pairs) {
       if (Math.abs(x - y) <= 5e-3 * Math.max(1, Math.abs(x), Math.abs(y), scale)) continue;
-      if (judge((sk) => sk.bones.find((b: { data: { name: string } }) => b.data.name === ob.data.name)?.appliedPose[what] ?? NaN, x - y)) continue;
+      if (judge((sk) => sk.bones.find((b: { data: { name: string } }) => b.data.name === ob.data.name)?.appliedPose[what] ?? NaN, x - y))
+        continue;
       return { bone: ob.data.name, what, ours: x, official: y, animation: `${anim.name} (played ${dts.length} frames)`, time };
     }
   }
@@ -858,7 +2379,10 @@ export function parityMismatch(p: Project): Mismatch | null {
     for (const t of [0, end * 0.37 + 0.00137, end * 0.8 + 0.00137, end - 0.00137]) {
       if (t < 0 || t > end) continue;
       const official = officialAt(sd, anim.name, t);
-      const judge = judgeBy(official, nudgedRuns(json, atlasText, (nudgedData) => officialAt(nudgedData, anim.name, t)));
+      const judge = judgeBy(
+        official,
+        nudgedRuns(json, atlasText, (nudgedData) => officialAt(nudgedData, anim.name, t)),
+      );
       const ours = createSkeleton(data);
       startLikeOfficial(ours);
       applyAnimation(ours, anim, t);
@@ -875,13 +2399,30 @@ export function parityMismatch(p: Project): Mismatch | null {
         const mag = Math.max(Math.abs(q.a), Math.abs(q.b), Math.abs(q.c), Math.abs(q.d));
         // The position is a sum of terms the size of (local offset x parent matrix): a bone 7000 units out on a parent with a
         // 1e-5 relative difference (an IK solve, a slider mix of 48) is off by a few tenths, which is still the same pose.
-        const parentMag = ob.parent ? Math.max(Math.abs(ob.parent.appliedPose.a), Math.abs(ob.parent.appliedPose.b), Math.abs(ob.parent.appliedPose.c), Math.abs(ob.parent.appliedPose.d)) : 1;
+        const parentMag = ob.parent
+          ? Math.max(
+              Math.abs(ob.parent.appliedPose.a),
+              Math.abs(ob.parent.appliedPose.b),
+              Math.abs(ob.parent.appliedPose.c),
+              Math.abs(ob.parent.appliedPose.d),
+            )
+          : 1;
         const wscale = 0.004 * (Math.abs(mine.ax) + Math.abs(mine.ay)) * parentMag;
-        const pairs: [string, number, number, number][] = [['a', mine.a, q.a, mag], ['b', mine.b, q.b, mag], ['c', mine.c, q.c, mag], ['d', mine.d, q.d, mag], ['worldX', mine.worldX, q.worldX, wscale], ['worldY', mine.worldY, q.worldY, wscale]];
+        const pairs: [string, number, number, number][] = [
+          ['a', mine.a, q.a, mag],
+          ['b', mine.b, q.b, mag],
+          ['c', mine.c, q.c, mag],
+          ['d', mine.d, q.d, mag],
+          ['worldX', mine.worldX, q.worldX, wscale],
+          ['worldY', mine.worldY, q.worldY, wscale],
+        ];
         for (const [what, x, y, scale] of pairs) {
           if (Math.abs(x - y) <= 5e-3 * Math.max(1, Math.abs(x), Math.abs(y), scale)) continue;
           // ill-conditioned (see above)
-          if (judge((sk) => sk.bones.find((b: { data: { name: string } }) => b.data.name === ob.data.name)?.appliedPose[what] ?? NaN, x - y)) continue;
+          if (
+            judge((sk) => sk.bones.find((b: { data: { name: string } }) => b.data.name === ob.data.name)?.appliedPose[what] ?? NaN, x - y)
+          )
+            continue;
           return { bone: ob.data.name, what, ours: x, official: y, animation: anim.name, time: t };
         }
       }
@@ -899,29 +2440,52 @@ export function parityMismatch(p: Project): Mismatch | null {
  * Slot colors, light and dark. They travel as 8-bit hex in the JSON and a bezier can extrapolate the rounding error, hence the
  * tolerance: a wrong channel, clamp or mix is off by far more.
  */
-function colorMismatch(p: Project, ours: ReturnType<typeof createSkeleton>, official: any, judge: (read: (sk: any) => number, diff: number) => boolean): Omit<Mismatch, 'animation' | 'time'> | null {
+function colorMismatch(
+  p: Project,
+  ours: ReturnType<typeof createSkeleton>,
+  official: any,
+  judge: (read: (sk: any) => number, diff: number) => boolean,
+): Omit<Mismatch, 'animation' | 'time'> | null {
   for (const os of official.slots) {
     const slotDoc = p.skeleton.slots.find((s) => s.name === os.data.name);
     const slot = slotDoc && ours.slotById(slotDoc.id);
     if (!slot) continue;
     const c = os.appliedPose.color;
     const dk = os.appliedPose.darkColor;
-    const pairs: [string, number, number][] = [['color.r', slot.color[0], c.r], ['color.g', slot.color[1], c.g], ['color.b', slot.color[2], c.b], ['color.a', slot.color[3], c.a]];
-    if (dk) pairs.push(['dark.r', slot.dark ? slot.dark[0] : NaN, dk.r], ['dark.g', slot.dark ? slot.dark[1] : NaN, dk.g], ['dark.b', slot.dark ? slot.dark[2] : NaN, dk.b]);
+    const pairs: [string, number, number][] = [
+      ['color.r', slot.color[0], c.r],
+      ['color.g', slot.color[1], c.g],
+      ['color.b', slot.color[2], c.b],
+      ['color.a', slot.color[3], c.a],
+    ];
+    if (dk)
+      pairs.push(
+        ['dark.r', slot.dark ? slot.dark[0] : NaN, dk.r],
+        ['dark.g', slot.dark ? slot.dark[1] : NaN, dk.g],
+        ['dark.b', slot.dark ? slot.dark[2] : NaN, dk.b],
+      );
     else if (slot.dark) pairs.push(['dark (the official slot has none)', 1, 0]);
     // the picture of a sequence the slot shows
     const shown = os.appliedPose.attachment;
     if (shown?.sequence?.hasPathSuffix()) {
       const mine = ours.slotAttachment(slot);
       const seq = mine && (mine.kind === 'region' || mine.kind === 'mesh') ? mine.src.sequence : undefined;
-      pairs.push([`sequence frame (ours: ${mine ? mine.kind + ' ' + mine.name : 'none'} seq=${JSON.stringify(seq)} idx=${slot.sequenceIndex}; official: ${shown.name} ${shown.sequence.regions.length} frames)`, seq ? resolveSequenceIndex(seq, slot.sequenceIndex) : NaN, shown.sequence.resolveIndex(os.appliedPose)]);
+      pairs.push([
+        `sequence frame (ours: ${mine ? mine.kind + ' ' + mine.name : 'none'} seq=${JSON.stringify(seq)} idx=${slot.sequenceIndex}; official: ${shown.name} ${shown.sequence.regions.length} frames)`,
+        seq ? resolveSequenceIndex(seq, slot.sequenceIndex) : NaN,
+        shown.sequence.resolveIndex(os.appliedPose),
+      ]);
     }
     // a slider whose mix is 13 hands the 8-bit rounding of the colour keys back 13 times larger
     for (const [what, x, y] of pairs) {
       if (Math.abs(x - y) <= 1.5e-2 * colorAmplification(p)) continue;
       // a slider whose time lands on a key of the colour (to within the rounding of the file) takes it in one runtime and not in the other: the same knife edge as for bones
       const ch = /^color\.([rgba])$/.exec(what)?.[1];
-      if (ch && judge((sk) => sk.slots.find((q: { data: { name: string } }) => q.data.name === os.data.name)?.appliedPose.color[ch] ?? NaN, x - y)) continue;
+      if (
+        ch &&
+        judge((sk) => sk.slots.find((q: { data: { name: string } }) => q.data.name === os.data.name)?.appliedPose.color[ch] ?? NaN, x - y)
+      )
+        continue;
       return { bone: `slot "${os.data.name}"`, what, ours: x, official: y };
     }
   }
@@ -932,7 +2496,8 @@ function colorMismatch(p: Project, ours: ReturnType<typeof createSkeleton>, offi
 function colorAmplification(p: Project): number {
   let amp = 1;
   for (const c of p.skeleton.constraints) if (c.type === 'slider') amp = Math.max(amp, Math.abs(c.mix));
-  for (const a of p.skeleton.animations) for (const t of Object.values(a.slider ?? {})) for (const k of t.mix ?? []) amp = Math.max(amp, Math.abs(k.value[0]));
+  for (const a of p.skeleton.animations)
+    for (const t of Object.values(a.slider ?? {})) for (const k of t.mix ?? []) amp = Math.max(amp, Math.abs(k.value[0]));
   return amp;
 }
 
@@ -947,10 +2512,25 @@ function influencingBones(bones: Int32Array, vertexCount: number): number[] {
 }
 
 /** Clipping polygons, bounding boxes and points: world geometry and flags against the official runtime. */
-function attachmentMismatch(p: Project, ours: ReturnType<typeof createSkeleton>, official: any, ambiguous: Set<number>, judge: Judge): Omit<Mismatch, 'animation' | 'time'> | null {
+function attachmentMismatch(
+  p: Project,
+  ours: ReturnType<typeof createSkeleton>,
+  official: any,
+  ambiguous: Set<number>,
+  judge: Judge,
+): Omit<Mismatch, 'animation' | 'time'> | null {
   for (const os of official.slots) {
     const oa = os.appliedPose.attachment;
-    const kind = oa instanceof S.ClippingAttachment ? 'clipping' : oa instanceof S.BoundingBoxAttachment ? 'boundingbox' : oa instanceof S.PointAttachment ? 'point' : oa instanceof S.PathAttachment ? 'path' : null;
+    const kind =
+      oa instanceof S.ClippingAttachment
+        ? 'clipping'
+        : oa instanceof S.BoundingBoxAttachment
+          ? 'boundingbox'
+          : oa instanceof S.PointAttachment
+            ? 'point'
+            : oa instanceof S.PathAttachment
+              ? 'path'
+              : null;
     if (!kind) continue;
     const slotDoc = p.skeleton.slots.find((s) => s.name === os.data.name);
     const slot = slotDoc && ours.slotById(slotDoc.id);
@@ -964,11 +2544,16 @@ function attachmentMismatch(p: Project, ours: ReturnType<typeof createSkeleton>,
     // made of large terms (matrix size x local extent + translation) is compared against the size of those terms.
     let extent = 0;
     if (att.kind === 'point') extent = Math.max(Math.abs(att.x), Math.abs(att.y));
-    else for (let i = 0; i < att.positions.length; i++) if (!att.weighted || i % 3 !== 2) extent = Math.max(extent, Math.abs(att.positions[i]));
+    else
+      for (let i = 0; i < att.positions.length; i++)
+        if (!att.weighted || i % 3 !== 2) extent = Math.max(extent, Math.abs(att.positions[i]));
     let terms = 0;
     for (const bi of new Set(driving)) {
       const b = ours.bones[bi];
-      terms = Math.max(terms, Math.max(Math.abs(b.a), Math.abs(b.b), Math.abs(b.c), Math.abs(b.d)) * extent + Math.abs(b.worldX) + Math.abs(b.worldY));
+      terms = Math.max(
+        terms,
+        Math.max(Math.abs(b.a), Math.abs(b.b), Math.abs(b.c), Math.abs(b.d)) * extent + Math.abs(b.worldX) + Math.abs(b.worldY),
+      );
     }
     const near = (x: number, y: number) => Math.abs(x - y) <= 5e-3 * Math.max(1, Math.abs(x), Math.abs(y), terms);
     /** The same number read from another official skeleton (a nudged run), for `judge`. */
@@ -981,8 +2566,10 @@ function attachmentMismatch(p: Project, ours: ReturnType<typeof createSkeleton>,
         const a = s?.appliedPose.attachment;
         return a instanceof S.PointAttachment ? a.computeWorldPosition(s.bone.appliedPose, new S.Vector2()) : { x: NaN, y: NaN };
       };
-      if (!near(mine.x, pos.x) && !judge((sk) => pointOf(sk).x, mine.x - pos.x)) return { bone: label, what: 'x', ours: mine.x, official: pos.x };
-      if (!near(mine.y, pos.y) && !judge((sk) => pointOf(sk).y, mine.y - pos.y)) return { bone: label, what: 'y', ours: mine.y, official: pos.y };
+      if (!near(mine.x, pos.x) && !judge((sk) => pointOf(sk).x, mine.x - pos.x))
+        return { bone: label, what: 'x', ours: mine.x, official: pos.x };
+      if (!near(mine.y, pos.y) && !judge((sk) => pointOf(sk).y, mine.y - pos.y))
+        return { bone: label, what: 'y', ours: mine.y, official: pos.y };
       const rotationOf = (sk: OfficialSkeleton) => {
         const s = slotOf(sk);
         const a = s?.appliedPose.attachment;
@@ -991,7 +2578,8 @@ function attachmentMismatch(p: Project, ours: ReturnType<typeof createSkeleton>,
       const rot = oa.computeWorldRotation(os.bone.appliedPose);
       const d = ((((mine.rotation - rot + 180) % 360) + 360) % 360) - 180;
       // 0.1° = 1.7e-3 rad: ill-conditioned matrices (see above)
-      if (Math.abs(d) > 0.1 && !judge((sk) => ((((rotationOf(sk) - rot + 180) % 360) + 360) % 360) - 180, d)) return { bone: label, what: 'rotation', ours: mine.rotation, official: rot };
+      if (Math.abs(d) > 0.1 && !judge((sk) => ((((rotationOf(sk) - rot + 180) % 360) + 360) % 360) - 180, d))
+        return { bone: label, what: 'rotation', ours: mine.rotation, official: rot };
       continue;
     }
     const n = oa.worldVerticesLength;
@@ -1008,11 +2596,20 @@ function attachmentMismatch(p: Project, ours: ReturnType<typeof createSkeleton>,
       a.computeWorldVertices(sk, s, 0, n, w, 0, 2);
       return w[i];
     };
-    for (let i = 0; i < n; i++) if (!near(mine[i], out[i]) && !judge((sk) => vertexOf(sk, i), mine[i] - out[i])) return { bone: label, what: `vertex[${i}]`, ours: mine[i], official: out[i] };
+    for (let i = 0; i < n; i++)
+      if (!near(mine[i], out[i]) && !judge((sk) => vertexOf(sk, i), mine[i] - out[i]))
+        return { bone: label, what: `vertex[${i}]`, ours: mine[i], official: out[i] };
     if (att.kind === 'clipping') {
       const endName = att.end ? (p.skeleton.slots.find((s) => s.id === att.end)?.name ?? null) : null;
-      if ((oa.endSlot?.name ?? null) !== endName) return { bone: label, what: `end slot (ours ${endName}, official ${oa.endSlot?.name ?? null})`, ours: 0, official: 1 };
-      if (oa.convex !== att.convex || oa.inverse !== att.inverse) return { bone: label, what: 'convex / inverse flag', ours: Number(att.convex) * 2 + Number(att.inverse), official: Number(oa.convex) * 2 + Number(oa.inverse) };
+      if ((oa.endSlot?.name ?? null) !== endName)
+        return { bone: label, what: `end slot (ours ${endName}, official ${oa.endSlot?.name ?? null})`, ours: 0, official: 1 };
+      if (oa.convex !== att.convex || oa.inverse !== att.inverse)
+        return {
+          bone: label,
+          what: 'convex / inverse flag',
+          ours: Number(att.convex) * 2 + Number(att.inverse),
+          official: Number(oa.convex) * 2 + Number(oa.inverse),
+        };
     }
   }
   return null;
@@ -1068,15 +2665,20 @@ export function bakeMismatch(p: Project): string | null {
         if (unexplained.has(i)) {
           // allowed to differ only because the parent differs: a child that differs under a parent that matches is a real bake error
           const p = probe.bones[i].parent!.data.index;
-          const differs = (j: number) => want[f][j].some((x, k) => !(Math.abs(x - got[f][j][k]) <= (k < 4 ? 1e-3 : 5e-3) * Math.max(1, Math.abs(x), Math.abs(got[f][j][k]))));
-          if (differs(i) && !differs(p)) return `animation "${anim.name}" frame ${f} bone "${names[i]}" differs from its baked pose although its parent matches (original ${want[f][i].map((v) => v.toFixed(4))}, baked ${got[f][i].map((v) => v.toFixed(4))}; parent original ${want[f][p].map((v) => v.toFixed(4))}, baked ${got[f][p].map((v) => v.toFixed(4))})`;
+          const differs = (j: number) =>
+            want[f][j].some(
+              (x, k) => !(Math.abs(x - got[f][j][k]) <= (k < 4 ? 1e-3 : 5e-3) * Math.max(1, Math.abs(x), Math.abs(got[f][j][k]))),
+            );
+          if (differs(i) && !differs(p))
+            return `animation "${anim.name}" frame ${f} bone "${names[i]}" differs from its baked pose although its parent matches (original ${want[f][i].map((v) => v.toFixed(4))}, baked ${got[f][i].map((v) => v.toFixed(4))}; parent original ${want[f][p].map((v) => v.toFixed(4))}, baked ${got[f][p].map((v) => v.toFixed(4))})`;
           continue;
         }
         for (let k = 0; k < 6; k++) {
           const x = want[f][i][k];
           const y = got[f][i][k];
           const scale = Math.max(1, Math.abs(x), Math.abs(y));
-          if (!(Math.abs(x - y) <= (k < 4 ? 1e-3 : 5e-3) * scale)) return `animation "${anim.name}" frame ${f} bone "${names[i]}" element ${k}: original ${x}, baked ${y}`;
+          if (!(Math.abs(x - y) <= (k < 4 ? 1e-3 : 5e-3) * scale))
+            return `animation "${anim.name}" frame ${f} bone "${names[i]}" element ${k}: original ${x}, baked ${y}`;
         }
       }
     }
@@ -1086,7 +2688,8 @@ export function bakeMismatch(p: Project): string | null {
 
 function parity(p: Project, label: string) {
   const m = parityMismatch(p);
-  if (m) throw new Error(`${label}: bone "${m.bone}".${m.what} ours=${m.ours} official=${m.official} (animation ${m.animation} t=${m.time})`);
+  if (m)
+    throw new Error(`${label}: bone "${m.bone}".${m.what} ours=${m.ours} official=${m.official} (animation ${m.animation} t=${m.time})`);
 }
 
 /** What the selection may refer to: after any action (undo included) no panel is asked about a slot / bone / constraint that is gone. */
@@ -1094,9 +2697,11 @@ function checkSelection(label: string) {
   const sel = uiStore.get().selection;
   const d = doc();
   if (sel.slot && !d.slots.some((s) => s.id === sel.slot)) throw new Error(`${label}: the selection refers to a missing slot`);
-  if (sel.attachment && !(sel.slot && d.skins[0]?.attachments[sel.slot]?.[sel.attachment])) throw new Error(`${label}: the selection refers to a missing attachment`);
+  if (sel.attachment && !(sel.slot && d.skins[0]?.attachments[sel.slot]?.[sel.attachment]))
+    throw new Error(`${label}: the selection refers to a missing attachment`);
   for (const id of sel.bones) if (!d.bones.some((b) => b.id === id)) throw new Error(`${label}: the selection refers to a missing bone`);
-  if (sel.constraint && !d.constraints.some((c) => c.id === sel.constraint)) throw new Error(`${label}: the selection refers to a missing constraint`);
+  if (sel.constraint && !d.constraints.some((c) => c.id === sel.constraint))
+    throw new Error(`${label}: the selection refers to a missing constraint`);
 }
 
 export function check(label: string) {
@@ -1146,7 +2751,18 @@ export function freshSession() {
   addPhysicsRig(f.project); // physics constraints of every flavour, animated
   setSettings({ keyGrid: 1, lastChosenCurve: false, savedCurves: [] }); // keys between frames are a preference of the person: every run starts on whole frames
   docStore.replace(f.project);
-  uiStore.patch({ mode: 'setup', tool: 'select', animationId: f.project.skeleton.animations[0].id, skinId: null, time: 0, selection: emptySelection, overrides: {}, autoKey: true, playing: false, defaultCurve: 'bezier' });
+  uiStore.patch({
+    mode: 'setup',
+    tool: 'select',
+    animationId: f.project.skeleton.animations[0].id,
+    skinId: null,
+    time: 0,
+    selection: emptySelection,
+    overrides: {},
+    autoKey: true,
+    playing: false,
+    defaultCurve: 'bezier',
+  });
   return f;
 }
 

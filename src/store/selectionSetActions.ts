@@ -52,7 +52,10 @@ export function renameSelectionSet(id: Id, name: string) {
   const entry = list.find((s) => s.id === id);
   const wanted = name.trim();
   if (!entry || !wanted || wanted === entry.name) return;
-  const next = newSetName(list.filter((s) => s.id !== id), wanted);
+  const next = newSetName(
+    list.filter((s) => s.id !== id),
+    wanted,
+  );
   docStore.update('Rename selection set', (d) => {
     const s = d.skeleton.selectionSets?.find((x) => x.id === id);
     if (s) s.name = next;

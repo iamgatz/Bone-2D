@@ -15,7 +15,24 @@ export const PRESET_FIELDS: Record<ConstraintKind, string[]> = {
   transform: ['localSource', 'localTarget', 'additive', 'clamp', 'properties', 'offsets', 'mix'],
   slider: ['additive', 'loop', 'mix', 'time', 'property', 'from', 'to', 'scale', 'max', 'local'],
   path: ['positionMode', 'spacingMode', 'rotateMode', 'offsetRotation', 'position', 'spacing', 'mix'],
-  physics: ['x', 'y', 'rotate', 'scaleX', 'shearX', 'scaleY', 'limit', 'fps', 'inertia', 'strength', 'damping', 'mass', 'wind', 'gravity', 'mix', 'global'],
+  physics: [
+    'x',
+    'y',
+    'rotate',
+    'scaleX',
+    'shearX',
+    'scaleY',
+    'limit',
+    'fps',
+    'inertia',
+    'strength',
+    'damping',
+    'mass',
+    'wind',
+    'gravity',
+    'mix',
+    'global',
+  ],
 };
 
 export interface ConstraintPreset {
@@ -50,7 +67,11 @@ function fits(current: unknown, value: unknown): boolean {
  * Puts the settings of a preset on a constraint (in place). A field that is missing or of the wrong sort is left as it is, so a damaged preset
  * cannot break the rig; physics values go through the same limits as the inspector. Returns how many fields changed.
  */
-export function applyPresetSettings(c: Constraint, settings: Record<string, unknown>, clamp?: (param: PhysicsParam, v: number) => number): number {
+export function applyPresetSettings(
+  c: Constraint,
+  settings: Record<string, unknown>,
+  clamp?: (param: PhysicsParam, v: number) => number,
+): number {
   const target = c as unknown as Record<string, unknown>;
   let changed = 0;
   for (const k of PRESET_FIELDS[c.type]) {
@@ -65,7 +86,10 @@ export function applyPresetSettings(c: Constraint, settings: Record<string, unkn
 }
 
 export function presetName(list: readonly ConstraintPreset[], type: ConstraintKind, wanted: string): string {
-  return uniqueName(wanted.trim() || 'Preset', list.filter((p) => p.type === type).map((p) => p.name));
+  return uniqueName(
+    wanted.trim() || 'Preset',
+    list.filter((p) => p.type === type).map((p) => p.name),
+  );
 }
 
 export function newPreset(list: readonly ConstraintPreset[], c: Constraint, name: string): ConstraintPreset {

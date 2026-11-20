@@ -28,7 +28,8 @@ export interface Stats {
   longest: number;
 }
 
-export type WarningKind = 'unusedImage' | 'emptyAnimation' | 'emptySlot' | 'tooManyInfluences' | 'duplicatePath' | 'missingFrame' | 'ignoredDeform';
+export type WarningKind =
+  'unusedImage' | 'emptyAnimation' | 'emptySlot' | 'tooManyInfluences' | 'duplicatePath' | 'missingFrame' | 'ignoredDeform';
 
 export interface Warning {
   kind: WarningKind;
@@ -86,7 +87,23 @@ export function projectStats(project: Project): Stats {
     timelines += countTimelines(a);
     longest = Math.max(longest, a.duration);
   }
-  return { bones: doc.bones.length, slots: doc.slots.length, skins: doc.skins.length, animations: doc.animations.length, events: doc.events.length, images: project.images.length, constraints, attachments, vertices, triangles, weightedVertices, keys, timelines, area: Math.round(area), longest };
+  return {
+    bones: doc.bones.length,
+    slots: doc.slots.length,
+    skins: doc.skins.length,
+    animations: doc.animations.length,
+    events: doc.events.length,
+    images: project.images.length,
+    constraints,
+    attachments,
+    vertices,
+    triangles,
+    weightedVertices,
+    keys,
+    timelines,
+    area: Math.round(area),
+    longest,
+  };
 }
 
 /** The most influences one vertex may have in the export (the Spine runtimes read any number, but 4 is what the editor and GPUs expect). */
@@ -99,8 +116,10 @@ export function projectWarnings(project: Project): Warning[] {
     for (const [slotId, bySlot] of Object.entries(skin.attachments)) {
       for (const a of Object.values(bySlot)) {
         const ref = { slot: slotId, skin: skin.id, name: a.name };
-        if ((a.type === 'region' || a.type === 'mesh') && a.sequence && attachmentPictures(a).some((p) => !have.has(p))) out.push({ kind: 'missingFrame', subject: a.name, ref });
-        if (a.type === 'mesh' && a.weights?.some((w) => w.length > MAX_INFLUENCES)) out.push({ kind: 'tooManyInfluences', subject: a.name, ref });
+        if ((a.type === 'region' || a.type === 'mesh') && a.sequence && attachmentPictures(a).some((p) => !have.has(p)))
+          out.push({ kind: 'missingFrame', subject: a.name, ref });
+        if (a.type === 'mesh' && a.weights?.some((w) => w.length > MAX_INFLUENCES))
+          out.push({ kind: 'tooManyInfluences', subject: a.name, ref });
       }
     }
   }
@@ -111,16 +130,23 @@ export function projectWarnings(project: Project): Warning[] {
       for (const [slotId, byName] of Object.entries(bySlot)) {
         for (const [name, keys] of Object.entries(byName)) {
           const att = skin?.attachments[slotId]?.[name];
-          if (att?.type === 'mesh' && att.link?.deform && keys.length) out.push({ kind: 'ignoredDeform', subject: `${anim.name}: ${name}`, ref: { animation: anim.id, skin: skinId, slot: slotId, name } });
+          if (att?.type === 'mesh' && att.link?.deform && keys.length)
+            out.push({
+              kind: 'ignoredDeform',
+              subject: `${anim.name}: ${name}`,
+              ref: { animation: anim.id, skin: skinId, slot: slotId, name },
+            });
         }
       }
     }
   }
   // an image another skeleton of the project shows is in use
   for (const name of unusedImages(project)) out.push({ kind: 'unusedImage', subject: name });
-  for (const anim of project.skeleton.animations) if (countKeys(anim) === 0) out.push({ kind: 'emptyAnimation', subject: anim.name, ref: { animation: anim.id } });
+  for (const anim of project.skeleton.animations)
+    if (countKeys(anim) === 0) out.push({ kind: 'emptyAnimation', subject: anim.name, ref: { animation: anim.id } });
   const filled = new Set<string>();
-  for (const skin of project.skeleton.skins) for (const [slot, by] of Object.entries(skin.attachments)) if (Object.keys(by).length) filled.add(slot);
+  for (const skin of project.skeleton.skins)
+    for (const [slot, by] of Object.entries(skin.attachments)) if (Object.keys(by).length) filled.add(slot);
   for (const s of project.skeleton.slots) if (!filled.has(s.id)) out.push({ kind: 'emptySlot', subject: s.name, ref: { slot: s.id } });
   return out;
 }

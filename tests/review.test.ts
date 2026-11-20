@@ -26,7 +26,17 @@ const hasBone = (id: string) => doc().bones.some((b) => b.id === id);
 function load() {
   const f = buildFixture();
   docStore.replace(f.project);
-  uiStore.patch({ mode: 'setup', tool: 'select', animationId: f.project.skeleton.animations[0].id, skinId: null, time: 0, selection: emptySelection, overrides: {}, autoKey: true, playing: false });
+  uiStore.patch({
+    mode: 'setup',
+    tool: 'select',
+    animationId: f.project.skeleton.animations[0].id,
+    skinId: null,
+    time: 0,
+    selection: emptySelection,
+    overrides: {},
+    autoKey: true,
+    playing: false,
+  });
 }
 
 function healthy(label: string) {
@@ -165,7 +175,11 @@ describe('selection never refers to something that is gone', () => {
     const stop = docStore.subscribe(A.sanitizeSelection); // what the app does
     try {
       A.selectBone(bone('torso').id);
-      const made = P.createPolygon('clipping', [[-50, 0], [50, 0], [0, 80]]);
+      const made = P.createPolygon('clipping', [
+        [-50, 0],
+        [50, 0],
+        [0, 80],
+      ]);
       expect(made).not.toBeNull();
       expect(uiStore.get().selection.slot).toBe(made!.slotId);
       docStore.undo();
@@ -213,7 +227,20 @@ describe('review: structural rules', () => {
     expect(doc().constraints.some((c) => c.type === 'ik' && c.bones.includes(root.id))).toBe(false);
     // and a file that already contains one gets repaired when it is opened
     const f = buildFixture();
-    f.project.skeleton.constraints.push({ id: 'rootik', type: 'ik', name: 'root ik', bones: [f.project.skeleton.bones[0].id], target: f.project.skeleton.bones[3].id, mix: 1, softness: 0, bendPositive: true, compress: false, stretch: false, scaleY: 'none', skinRequired: false });
+    f.project.skeleton.constraints.push({
+      id: 'rootik',
+      type: 'ik',
+      name: 'root ik',
+      bones: [f.project.skeleton.bones[0].id],
+      target: f.project.skeleton.bones[3].id,
+      mix: 1,
+      softness: 0,
+      bendPositive: true,
+      compress: false,
+      stretch: false,
+      scaleY: 'none',
+      skinRequired: false,
+    });
     expect(repairProject(f.project).some((m) => m.includes('root bone'))).toBe(true);
     expect(f.project.skeleton.constraints.some((c) => c.id === 'rootik')).toBe(false);
   });
@@ -255,7 +282,11 @@ describe('review: moving keys', () => {
     const b = { kind: 'bone' as const, target: head.id, prop: 'rotate', time: 0.6 };
     const c = { kind: 'bone' as const, target: torso.id, prop: 'rotate', time: 0.7 };
     const out = A.moveKeysBy([a, b, c], 0.05);
-    expect(out.map((r) => [r.target, +r.time.toFixed(3)])).toEqual([[torso.id, 0.45], [head.id, 0.65], [torso.id, 0.75]]);
+    expect(out.map((r) => [r.target, +r.time.toFixed(3)])).toEqual([
+      [torso.id, 0.45],
+      [head.id, 0.65],
+      [torso.id, 0.75],
+    ]);
   });
 
   it('moving an event key onto another event keeps both (several events may fire at one time)', () => {
@@ -278,7 +309,12 @@ describe('review: robustness against bad data', () => {
     const b = f.project.skeleton.bones.find((x) => x.name === 'head')!;
     b.x = NaN;
     b.rotation = Infinity;
-    f.project.skeleton.animations[0].bones[b.id] = { rotate: [{ time: 0, value: [NaN] }, { time: 1, value: [10] }] };
+    f.project.skeleton.animations[0].bones[b.id] = {
+      rotate: [
+        { time: 0, value: [NaN] },
+        { time: 1, value: [10] },
+      ],
+    };
     const text = JSON.stringify(exportSpineJson(f.project.skeleton));
     // (`"name":null` is legal: it is the "hide the attachment" key)
     expect(text).not.toMatch(/"(x|y|rotation|value|time|width|height|mix\w*|offset)":null|NaN|Infinity/);
@@ -300,7 +336,14 @@ describe('review: robustness against bad data', () => {
     anim.ik['missing-ik'] = [{ time: 0, value: [1, 0], bendPositive: true, compress: false, stretch: false }];
     anim.drawOrder[0].order.push('missing-slot');
     anim.events.push({ time: 0.3, event: 'missing-event' });
-    anim.bones[d.bones[2].id] = { rotate: [{ time: 0.5, value: [3] }, { time: 0.1, value: [1] }, { time: 0.1, value: [2] }, { time: NaN, value: [9] }] };
+    anim.bones[d.bones[2].id] = {
+      rotate: [
+        { time: 0.5, value: [3] },
+        { time: 0.1, value: [1] },
+        { time: 0.1, value: [2] },
+        { time: NaN, value: [9] },
+      ],
+    };
     anim.duration = 0.2;
     const msgs = repairProject(p);
     expect(msgs.length).toBeGreaterThan(8);

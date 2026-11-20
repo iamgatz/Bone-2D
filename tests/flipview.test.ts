@@ -28,7 +28,11 @@ describe('the screen mapping of a flipped view', () => {
 
   it('screenToWorld undoes worldToScreen, flipped or not', () => {
     for (const c of [cam, flipped]) {
-      for (const [wx, wy] of [[0, 0], [123.5, -40], [-77, 301]]) {
+      for (const [wx, wy] of [
+        [0, 0],
+        [123.5, -40],
+        [-77, 301],
+      ]) {
         const [sx, sy] = worldToScreen(c, 1000, 700, wx, wy);
         const [bx, by] = screenToWorld(c, 1000, 700, sx, sy);
         expect(bx).toBeCloseTo(wx, 9);

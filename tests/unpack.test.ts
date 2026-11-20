@@ -12,7 +12,10 @@ function pic(seed: number, width: number, height: number, border: number): Pictu
   for (let y = 0; y < height; y++)
     for (let x = 0; x < width; x++) {
       const inside = x >= border && x < width - border && y >= border && y < height - border;
-      data.set(inside ? [(x * 7 + seed) % 256, (y * 11 + seed * 3) % 256, (x + y + seed * 5) % 256, 255] : [0, 0, 0, 0], (y * width + x) * 4);
+      data.set(
+        inside ? [(x * 7 + seed) % 256, (y * 11 + seed * 3) % 256, (x + y + seed * 5) % 256, 255] : [0, 0, 0, 0],
+        (y * width + x) * 4,
+      );
     }
   return { width, height, data };
 }
@@ -70,7 +73,8 @@ describe('unpackAtlas', () => {
   });
 
   it('lists a missing page and a name used twice, and keeps going', () => {
-    const text = 'a.png\nsize:8,8\nfilter:Linear,Linear\npma:false\nr\nbounds:0,0,4,4\nr\nbounds:4,0,4,4\n\nmissing.png\nsize:8,8\nfilter:Linear,Linear\npma:false\nz\nbounds:0,0,4,4\n';
+    const text =
+      'a.png\nsize:8,8\nfilter:Linear,Linear\npma:false\nr\nbounds:0,0,4,4\nr\nbounds:4,0,4,4\n\nmissing.png\nsize:8,8\nfilter:Linear,Linear\npma:false\nz\nbounds:0,0,4,4\n';
     const sheet: Picture = { width: 8, height: 8, data: new Uint8ClampedArray(8 * 8 * 4).fill(9) };
     const out = unpackAtlas(text, (f) => (f === 'a.png' ? sheet : null));
     expect(out.pictures.map((p) => p.name)).toEqual(['r']);
@@ -80,7 +84,18 @@ describe('unpackAtlas', () => {
 
   it('cutRegion stays inside the page and the picture even for a region that points outside', () => {
     const sheet: Picture = { width: 4, height: 4, data: new Uint8ClampedArray(64).fill(255) };
-    const out = cutRegion(sheet, { name: 'x', x: 2, y: 2, width: 6, height: 6, rotate: 0, offsetX: 0, offsetY: 0, originalWidth: 6, originalHeight: 6 });
+    const out = cutRegion(sheet, {
+      name: 'x',
+      x: 2,
+      y: 2,
+      width: 6,
+      height: 6,
+      rotate: 0,
+      offsetX: 0,
+      offsetY: 0,
+      originalWidth: 6,
+      originalHeight: 6,
+    });
     expect(out.data.length).toBe(6 * 6 * 4);
     const pm = new Uint8ClampedArray([100, 50, 25, 128, 7, 7, 7, 0]);
     unpremultiplyAlpha(pm);

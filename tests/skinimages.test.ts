@@ -14,8 +14,6 @@ import { uiStore } from '../src/store/ui';
 import { buildFixture } from './fixture';
 import { loadOfficial } from './official';
 
- 
-
 /** Every region and mesh of the default skin: where a skin can put its own picture. */
 function placeholders(project: Project): { slotId: string; name: string; mesh: boolean; w: number; h: number }[] {
   const out: { slotId: string; name: string; mesh: boolean; w: number; h: number }[] = [];
@@ -33,7 +31,12 @@ function placeholders(project: Project): { slotId: string; name: string; mesh: b
 function rig() {
   const { project } = buildFixture();
   const list = placeholders(project);
-  const image = (name: string, w: number, h: number): ImageRef => ({ id: name, name, width: Math.max(8, Math.round(w)), height: Math.max(8, Math.round(h)) });
+  const image = (name: string, w: number, h: number): ImageRef => ({
+    id: name,
+    name,
+    width: Math.max(8, Math.round(w)),
+    height: Math.max(8, Math.round(h)),
+  });
   for (const p of list) project.images.push(image(`arctic/${p.name}`, p.w, p.h));
   for (const p of list.slice(0, 2)) project.images.push(image(`desert-${p.name}`, p.w, p.h));
   return { project, list };
@@ -64,7 +67,9 @@ describe('the plan', () => {
       project.images.push({ id: `s${sep}`, name: `tropic${sep}${first.name}`, width: 8, height: 8 });
       expect(planSkinImages(project.skeleton, project.images, 'tropic').length).toBeGreaterThanOrEqual(1);
     }
-    expect(planSkinImages(project.skeleton, project.images, 'desert-').map((p) => p.placeholder)).toEqual(list.slice(0, 2).map((p) => p.name));
+    expect(planSkinImages(project.skeleton, project.images, 'desert-').map((p) => p.placeholder)).toEqual(
+      list.slice(0, 2).map((p) => p.name),
+    );
   });
 
   it('does not take a picture whose prefix only starts the same way, nor one that is the prefix alone', () => {
@@ -86,10 +91,14 @@ describe('the plan', () => {
     const mesh = list.find((p) => p.mesh)!;
     const att: any = project.skeleton.skins[0].attachments[mesh.slotId][mesh.name];
     att.link = { source: 'x', slot: null, skin: null, deform: true };
-    expect(planSkinImages(project.skeleton, project.images, 'arctic').some((p) => p.placeholder === mesh.name && p.slotId === mesh.slotId)).toBe(false);
+    expect(
+      planSkinImages(project.skeleton, project.images, 'arctic').some((p) => p.placeholder === mesh.name && p.slotId === mesh.slotId),
+    ).toBe(false);
     delete att.link;
     att.sequence = { count: 2, start: 1, digits: 2, setupIndex: 0 };
-    expect(planSkinImages(project.skeleton, project.images, 'arctic').some((p) => p.placeholder === mesh.name && p.slotId === mesh.slotId)).toBe(false);
+    expect(
+      planSkinImages(project.skeleton, project.images, 'arctic').some((p) => p.placeholder === mesh.name && p.slotId === mesh.slotId),
+    ).toBe(false);
   });
 
   it('marks a mesh whose new picture has another size', () => {
@@ -97,7 +106,11 @@ describe('the plan', () => {
     const mesh = list.find((p) => p.mesh)!;
     expect(planSkinImages(project.skeleton, project.images, 'arctic').filter((p) => p.sizeDiffers)).toEqual([]);
     project.images.find((i) => i.name === `arctic/${mesh.name}`)!.width += 5;
-    expect(planSkinImages(project.skeleton, project.images, 'arctic').filter((p) => p.sizeDiffers).map((p) => p.placeholder)).toEqual([mesh.name]);
+    expect(
+      planSkinImages(project.skeleton, project.images, 'arctic')
+        .filter((p) => p.sizeDiffers)
+        .map((p) => p.placeholder),
+    ).toEqual([mesh.name]);
   });
 
   it('offers the prefixes that fit several attachments, the biggest first', () => {
@@ -140,7 +153,11 @@ describe('the skin', () => {
     const second = applySkinPicks(doc, 'desert', planSkinImages(doc, project.images, 'desert'), project.images);
     expect(second.skinId).toBe(first.skinId);
     expect(doc.skins.length).toBe(count);
-    expect(Object.values(doc.skins.find((s) => s.id === first.skinId)!.attachments).flatMap((m) => Object.keys(m)).sort()).toEqual([list[0].name, list[1].name, list[2].name].sort());
+    expect(
+      Object.values(doc.skins.find((s) => s.id === first.skinId)!.attachments)
+        .flatMap((m) => Object.keys(m))
+        .sort(),
+    ).toEqual([list[0].name, list[1].name, list[2].name].sort());
   });
 
   it('gets a name that is free when a default skin or another name stands in the way', () => {
@@ -157,8 +174,14 @@ describe('the skin', () => {
     const doc = project.skeleton;
     applySkinPicks(doc, 'arctic', planSkinImages(doc, project.images, 'arctic'), project.images);
     expect(validateProject(project)).toEqual([]);
-    const pages = packAtlas(project.images.map((i) => ({ name: i.name, width: i.width, height: i.height })), { maxSize: 2048, padding: 2 });
-    const sd = loadOfficial(exportSpineJson(doc), writeAtlas(pages, (i) => `atlas${i}.png`));
+    const pages = packAtlas(
+      project.images.map((i) => ({ name: i.name, width: i.width, height: i.height })),
+      { maxSize: 2048, padding: 2 },
+    );
+    const sd = loadOfficial(
+      exportSpineJson(doc),
+      writeAtlas(pages, (i) => `atlas${i}.png`),
+    );
     expect(sd.findSkin('arctic')).toBeTruthy();
   });
 });

@@ -1,15 +1,29 @@
 /** The floating tool windows: what is remembered, where a window may sit, and open / move / raise. */
 import { beforeEach, describe, expect, it } from 'vitest';
-import { DEFAULT_FLOATS, FLOAT_LIST, clampFloat, floatStore, isFloating, moveFloat, raiseFloat, readFloats, toggleFloat } from '../src/store/floats';
+import {
+  DEFAULT_FLOATS,
+  FLOAT_LIST,
+  clampFloat,
+  floatStore,
+  isFloating,
+  moveFloat,
+  raiseFloat,
+  readFloats,
+  toggleFloat,
+} from '../src/store/floats';
 
 describe('readFloats', () => {
   it('keeps defaults for nothing, damage or unknown windows', () => {
     expect(readFloats(null)).toEqual(DEFAULT_FLOATS);
     expect(readFloats('not json')).toEqual(DEFAULT_FLOATS);
-    expect(readFloats(JSON.stringify({ open: { nope: true, weights: 'yes' }, pos: { weights: { x: 'a', y: 1 } } }))).toEqual(DEFAULT_FLOATS);
+    expect(readFloats(JSON.stringify({ open: { nope: true, weights: 'yes' }, pos: { weights: { x: 'a', y: 1 } } }))).toEqual(
+      DEFAULT_FLOATS,
+    );
   });
   it('takes what is valid, and completes the stacking order', () => {
-    const s = readFloats(JSON.stringify({ open: { weights: true }, pos: { weights: { x: 10, y: 20 } }, order: ['weights', 'weights', 'zzz'] }));
+    const s = readFloats(
+      JSON.stringify({ open: { weights: true }, pos: { weights: { x: 10, y: 20 } }, order: ['weights', 'weights', 'zzz'] }),
+    );
     expect(s.open.weights).toBe(true);
     expect(s.pos.weights).toEqual({ x: 10, y: 20 });
     expect(s.order).toEqual(['weights', 'slotColor', 'meshTools']);

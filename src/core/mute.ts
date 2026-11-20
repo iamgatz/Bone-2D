@@ -18,7 +18,16 @@ function without<T>(rec: Record<Id, T>, muted: ReadonlySet<Id>): Record<Id, T> {
 /** Whether muting any of `muted` would change this animation. */
 export function hasMutedKeys(anim: Animation, muted: ReadonlySet<Id>): boolean {
   for (const id of muted) {
-    if (id in anim.bones || id in anim.slots || id in anim.ik || id in anim.transform || id in anim.slider || id in anim.path || id in anim.physics) return true;
+    if (
+      id in anim.bones ||
+      id in anim.slots ||
+      id in anim.ik ||
+      id in anim.transform ||
+      id in anim.slider ||
+      id in anim.path ||
+      id in anim.physics
+    )
+      return true;
   }
   return false;
 }
@@ -35,9 +44,12 @@ export function withoutMuted(anim: Animation, muted: ReadonlySet<Id>): Animation
   copy.path = without(anim.path, muted);
   copy.physics = without(anim.physics, muted);
   // what a muted slot does to its attachments (deform, sequence) goes too
-  const slotMuted = [...muted].filter((id) => id in anim.slots || Object.values(anim.deform).some((s) => id in s) || Object.values(anim.sequence ?? {}).some((s) => id in s));
+  const slotMuted = [...muted].filter(
+    (id) => id in anim.slots || Object.values(anim.deform).some((s) => id in s) || Object.values(anim.sequence ?? {}).some((s) => id in s),
+  );
   if (slotMuted.length) {
-    const skinMap = <T>(m: Record<Id, Record<Id, T>>) => Object.fromEntries(Object.entries(m).map(([skin, perSlot]) => [skin, without(perSlot, muted)]));
+    const skinMap = <T>(m: Record<Id, Record<Id, T>>) =>
+      Object.fromEntries(Object.entries(m).map(([skin, perSlot]) => [skin, without(perSlot, muted)]));
     copy.deform = skinMap(anim.deform);
     if (anim.sequence) copy.sequence = skinMap(anim.sequence);
   }

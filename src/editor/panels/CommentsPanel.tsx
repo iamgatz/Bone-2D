@@ -18,7 +18,13 @@ export function CommentsPanel() {
         <span className="title">Comments</span>
         <span className="chip" title="Open and resolved comments">{`${counts.open} open · ${counts.resolved} resolved`}</span>
         <IconButton icon={MessageSquareText} title="Import the comments a reviewer sent back" small onClick={() => pickReviewFile()} />
-        <IconButton icon={CheckCheck} title="Mark every open comment resolved" small disabled={!counts.open} onClick={() => resolveAllComments()} />
+        <IconButton
+          icon={CheckCheck}
+          title="Mark every open comment resolved"
+          small
+          disabled={!counts.open}
+          onClick={() => resolveAllComments()}
+        />
       </div>
       <div className="panel-body">
         <label className="row" style={{ cursor: 'pointer' }}>
@@ -27,11 +33,18 @@ export function CommentsPanel() {
         </label>
         {items.length === 0 && (
           <p className="hint-text" style={{ padding: '4px 12px' }}>
-            {counts.open + counts.resolved === 0 ? 'No comments yet. Send the player page to a reviewer (Export → Player page) and import the file they send back.' : 'Nothing open.'}
+            {counts.open + counts.resolved === 0
+              ? 'No comments yet. Send the player page to a reviewer (Export → Player page) and import the file they send back.'
+              : 'Nothing open.'}
           </p>
         )}
         {items.map(({ animationId, animation, marker }) => (
-          <div key={marker.id} className={`row${marker.resolved ? ' dim' : ''}`} onClick={() => goToComment(animationId, marker.id)} title={marker.text}>
+          <div
+            key={marker.id}
+            className={`row${marker.resolved ? ' dim' : ''}`}
+            onClick={() => goToComment(animationId, marker.id)}
+            title={marker.text}
+          >
             <span className="label">
               <b>{`${animation} ${marker.time.toFixed(2)} s`}</b>
               {marker.bone ? ` [${marker.bone}]` : ''}

@@ -67,7 +67,15 @@ function scaleYFactor(mode: IkData['scaleY'], s: number): number {
   return 1;
 }
 
-function apply1(bone: Bone, targetX: number, targetY: number, compress: boolean, stretch: boolean, scaleYMode: IkData['scaleY'], alpha: number) {
+function apply1(
+  bone: Bone,
+  targetX: number,
+  targetY: number,
+  compress: boolean,
+  stretch: boolean,
+  scaleYMode: IkData['scaleY'],
+  alpha: number,
+) {
   bone.modifyLocal();
   const p = bone.parent;
   if (!p) return;
@@ -143,7 +151,17 @@ function apply1(bone: Bone, targetX: number, targetY: number, compress: boolean,
   bone.ascaleY = sy;
 }
 
-function apply2(parent: Bone, child: Bone, targetX: number, targetY: number, bendDir: number, stretch: boolean, scaleYMode: IkData['scaleY'], softness: number, alpha: number) {
+function apply2(
+  parent: Bone,
+  child: Bone,
+  targetX: number,
+  targetY: number,
+  bendDir: number,
+  stretch: boolean,
+  scaleYMode: IkData['scaleY'],
+  softness: number,
+  alpha: number,
+) {
   if (parent.inherit !== 'normal' || child.inherit !== 'normal') return;
   parent.modifyLocal();
   child.modifyLocal();

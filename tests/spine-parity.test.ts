@@ -13,8 +13,6 @@ import { applyAnimation } from '../src/core/animate';
 import { sampleKeys } from '../src/core/curve';
 import { newAnimation } from '../src/core/model';
 
- 
-
 const close = (a: number, b: number, what: string, eps = 2e-3) => {
   if (!(Math.abs(a - b) <= eps * Math.max(1, Math.abs(a), Math.abs(b)))) throw new Error(`${what}: ours=${a} official=${b}`);
 };
@@ -142,7 +140,7 @@ describe('Spine 4.3 parity', () => {
   });
 
   it('the alt skin really changes the geometry', () => {
-    expect(() => compare(0.2, (s) => s.bones[0].x += 1, 'alt')).toThrow(/ours=/);
+    expect(() => compare(0.2, (s) => (s.bones[0].x += 1), 'alt')).toThrow(/ours=/);
   });
 
   it('draw order keys with random permutations survive export (offset encoding)', () => {
@@ -150,7 +148,7 @@ describe('Spine 4.3 parity', () => {
     const d = structuredClone(f.project.skeleton);
     const anim = newAnimation('orders', 2);
     let seed = 12345;
-    const rnd = () => ((seed = (seed * 1664525 + 1013904223) >>> 0) / 4294967296);
+    const rnd = () => (seed = (seed * 1664525 + 1013904223) >>> 0) / 4294967296;
     const keyTimes: number[] = [];
     for (let k = 0; k < 8; k++) {
       const order = d.slots.map((s) => s.id);
@@ -175,7 +173,10 @@ describe('Spine 4.3 parity', () => {
       official.updateWorldTransform((spine as any).Physics.update);
       const ours = createSkeleton(data2);
       applyAnimation(ours, d.animations[0], t);
-      expect(ours.drawOrder.map((s) => s.data.name), `t=${t}`).toEqual(official.drawOrder.appliedPose.map((s: any) => s.data.name));
+      expect(
+        ours.drawOrder.map((s) => s.data.name),
+        `t=${t}`,
+      ).toEqual(official.drawOrder.appliedPose.map((s: any) => s.data.name));
     }
   });
 
@@ -242,7 +243,18 @@ describe('Spine 4.3 parity', () => {
 
   it('loads all constraints (3 IK + 4 transform + 3 slider) in the official runtime', () => {
     expect(sd.constraints.length).toBe(10);
-    expect(sd.constraints.map((c: any) => c.constructor.name)).toEqual(['SliderData', 'IkConstraintData', 'IkConstraintData', 'IkConstraintData', 'TransformConstraintData', 'TransformConstraintData', 'TransformConstraintData', 'TransformConstraintData', 'SliderData', 'SliderData']);
+    expect(sd.constraints.map((c: any) => c.constructor.name)).toEqual([
+      'SliderData',
+      'IkConstraintData',
+      'IkConstraintData',
+      'IkConstraintData',
+      'TransformConstraintData',
+      'TransformConstraintData',
+      'TransformConstraintData',
+      'TransformConstraintData',
+      'SliderData',
+      'SliderData',
+    ]);
   });
 
   it('transform constraints change the pose (comparison is sensitive to them)', () => {
@@ -256,7 +268,9 @@ describe('Spine 4.3 parity', () => {
       expect(() => compare(0.6, (s) => ((s.constraints[at(name)] as any).mix = 0)), name).toThrow(/ours=|attachment|draw order/);
     }
     // the driven time really matters: shifting the driver bone moves the pose
-    expect(() => compare(0.9, (s) => (s.boneById(doc.bones.find((b) => b.name === 'slider')!.id)!.x += 9))).toThrow(/ours=|attachment|draw order/);
+    expect(() => compare(0.9, (s) => (s.boneById(doc.bones.find((b) => b.name === 'slider')!.id)!.x += 9))).toThrow(
+      /ours=|attachment|draw order/,
+    );
   });
 
   it('matches the official runtime across a dense time sweep (sliders, mixes, loops, additive)', () => {

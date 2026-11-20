@@ -98,9 +98,21 @@ export function insertPathNode(slotId: Id, name: string, wx: number, wy: number)
   const curves = att.closed ? n : n - 1;
   const point = (i: number, t: number): [number, number] => {
     const j = (i + 1) % n;
-    const [x0, y0, x1, y1, x2, y2, x3, y3] = [v[(3 * i + 1) * 2], v[(3 * i + 1) * 2 + 1], v[(3 * i + 2) * 2], v[(3 * i + 2) * 2 + 1], v[3 * j * 2], v[3 * j * 2 + 1], v[(3 * j + 1) * 2], v[(3 * j + 1) * 2 + 1]];
+    const [x0, y0, x1, y1, x2, y2, x3, y3] = [
+      v[(3 * i + 1) * 2],
+      v[(3 * i + 1) * 2 + 1],
+      v[(3 * i + 2) * 2],
+      v[(3 * i + 2) * 2 + 1],
+      v[3 * j * 2],
+      v[3 * j * 2 + 1],
+      v[(3 * j + 1) * 2],
+      v[(3 * j + 1) * 2 + 1],
+    ];
     const u = 1 - t;
-    return [u * u * u * x0 + 3 * u * u * t * x1 + 3 * u * t * t * x2 + t * t * t * x3, u * u * u * y0 + 3 * u * u * t * y1 + 3 * u * t * t * y2 + t * t * t * y3];
+    return [
+      u * u * u * x0 + 3 * u * u * t * x1 + 3 * u * t * t * x2 + t * t * t * x3,
+      u * u * u * y0 + 3 * u * u * t * y1 + 3 * u * t * t * y2 + t * t * t * y3,
+    ];
   };
   const dist = (i: number, t: number) => {
     const [x, y] = point(i, t);
@@ -138,11 +150,26 @@ export function insertPathNode(slotId: Id, name: string, wx: number, wy: number)
     if (!p || p.type !== 'path' || p.weights) return;
     const vv = p.vertices;
     const g = (k: number) => vv[k];
-    const x0 = g((3 * i + 1) * 2), y0 = g((3 * i + 1) * 2 + 1), x1 = g((3 * i + 2) * 2), y1 = g((3 * i + 2) * 2 + 1);
-    const x2 = g(3 * j * 2), y2 = g(3 * j * 2 + 1), x3 = g((3 * j + 1) * 2), y3 = g((3 * j + 1) * 2 + 1);
-    const ax = lerp(x0, x1, t), ay = lerp(y0, y1, t), bx = lerp(x1, x2, t), by = lerp(y1, y2, t), cx = lerp(x2, x3, t), cy = lerp(y2, y3, t);
-    const dx = lerp(ax, bx, t), dy = lerp(ay, by, t), ex = lerp(bx, cx, t), ey = lerp(by, cy, t);
-    const fx = lerp(dx, ex, t), fy = lerp(dy, ey, t);
+    const x0 = g((3 * i + 1) * 2),
+      y0 = g((3 * i + 1) * 2 + 1),
+      x1 = g((3 * i + 2) * 2),
+      y1 = g((3 * i + 2) * 2 + 1);
+    const x2 = g(3 * j * 2),
+      y2 = g(3 * j * 2 + 1),
+      x3 = g((3 * j + 1) * 2),
+      y3 = g((3 * j + 1) * 2 + 1);
+    const ax = lerp(x0, x1, t),
+      ay = lerp(y0, y1, t),
+      bx = lerp(x1, x2, t),
+      by = lerp(y1, y2, t),
+      cx = lerp(x2, x3, t),
+      cy = lerp(y2, y3, t);
+    const dx = lerp(ax, bx, t),
+      dy = lerp(ay, by, t),
+      ex = lerp(bx, cx, t),
+      ey = lerp(by, cy, t);
+    const fx = lerp(dx, ex, t),
+      fy = lerp(dy, ey, t);
     vv[(3 * i + 2) * 2] = ax;
     vv[(3 * i + 2) * 2 + 1] = ay;
     vv[3 * j * 2] = cx;

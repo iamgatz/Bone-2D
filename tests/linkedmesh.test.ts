@@ -22,8 +22,6 @@ import { docStore } from '../src/store/doc';
 import { buildFixture } from './fixture';
 import { loadOfficial, loadOfficialBinary, startLikeOfficial } from './official';
 
- 
-
 interface Rig {
   project: Project;
   slotId: string;
@@ -58,7 +56,13 @@ function rig(weighted: boolean): Rig {
 
   const alt = newSkin('linked');
   doc.skins.push(alt);
-  const linkedCopy = (path: string, link: MeshAttachment['link'], nameOf: string): MeshAttachment => ({ ...structuredClone(source), name: nameOf, path, color: [0.5, 0.8, 1, 1], link });
+  const linkedCopy = (path: string, link: MeshAttachment['link'], nameOf: string): MeshAttachment => ({
+    ...structuredClone(source),
+    name: nameOf,
+    path,
+    color: [0.5, 0.8, 1, 1],
+    link,
+  });
   alt.attachments[slotId] = {
     [name]: linkedCopy('alt_pic', makeLink(doc, slotId, { skinId: skin.id, slotId, name }), name),
     still: linkedCopy('still_pic', makeLink(doc, slotId, { skinId: skin.id, slotId, name }, false), 'still'),
@@ -72,12 +76,29 @@ function rig(weighted: boolean): Rig {
   const length = (data.defaultSkin.attachments[data.slotIndex.get(slotId)!].get(name) as { deformLength: number }).deformLength;
   const animation = newAnimation('wobble', 1);
   const wave = (k: number) => Array.from({ length }, (_, i) => Math.sin(i * 1.3 + k) * 9);
-  animation.deform = { [skin.id]: { [slotId]: { [name]: [{ time: 0, value: wave(0) }, { time: 0.5, value: wave(1) }, { time: 1, value: wave(2) }] } } };
+  animation.deform = {
+    [skin.id]: {
+      [slotId]: {
+        [name]: [
+          { time: 0, value: wave(0) },
+          { time: 0.5, value: wave(1) },
+          { time: 1, value: wave(2) },
+        ],
+      },
+    },
+  };
   doc.animations.push(animation);
   // the same, and the slot switches to `still` (a name that only the linked skin has: the official runtime cannot pose the default skin with it)
   const swap = newAnimation('swap', 1);
   swap.deform = structuredClone(animation.deform);
-  swap.slots = { [slotId]: { attachment: [{ time: 0, name }, { time: 0.7, name: 'still' }] } };
+  swap.slots = {
+    [slotId]: {
+      attachment: [
+        { time: 0, name },
+        { time: 0.7, name: 'still' },
+      ],
+    },
+  };
   doc.animations.push(swap);
   syncLinkedMeshes(doc);
   return { project, slotId, slotName: slot.name, name, ghostId: ghost.id, skinId: alt.id, animation };
@@ -86,7 +107,10 @@ function rig(weighted: boolean): Rig {
 const skinOf = (doc: Project['skeleton'], r: Rig) => doc.skins.find((s) => s.id === r.skinId)!;
 
 function atlasFor(project: Project): string {
-  const pages = packAtlas(project.images.map((i) => ({ name: i.name, width: i.width, height: i.height })), { maxSize: 2048, padding: 2 });
+  const pages = packAtlas(
+    project.images.map((i) => ({ name: i.name, width: i.width, height: i.height })),
+    { maxSize: 2048, padding: 2 },
+  );
   return writeAtlas(pages, (i) => `atlas${i}.png`);
 }
 
@@ -117,7 +141,11 @@ function ourWorld(project: Project, skinId: string | null, t: number, animation 
   const data = compileSkeleton(doc);
   const sk = createSkeleton(data, skinId);
   startLikeOfficial(sk);
-  applyAnimation(sk, doc.animations.find((a) => a.name === animation)!, t);
+  applyAnimation(
+    sk,
+    doc.animations.find((a) => a.name === animation)!,
+    t,
+  );
   sk.updateWorldTransform('update');
   const out: Record<string, number[]> = {};
   for (const slot of sk.slots) {
@@ -147,7 +175,11 @@ describe('the link and the shape of a linked mesh', () => {
     const src = linkSource(doc, r.slotId, att)!;
     expect(src.skin).toBe(doc.skins[0]);
     expect(src.mesh.name).toBe(r.name);
-    expect(linkedTo(doc, doc.skins[0].id, r.slotId, r.name).map((l) => l.name).sort()).toEqual(['ghost', r.name, 'still'].sort());
+    expect(
+      linkedTo(doc, doc.skins[0].id, r.slotId, r.name)
+        .map((l) => l.name)
+        .sort(),
+    ).toEqual(['ghost', r.name, 'still'].sort());
     att.link = { source: 'nothing', slot: null, skin: null, deform: true };
     expect(linkSource(doc, r.slotId, att)).toBeNull();
     const still = alt.attachments[r.slotId].still as MeshAttachment;
@@ -170,7 +202,11 @@ describe('the link and the shape of a linked mesh', () => {
         });
         const doc = docStore.get().skeleton;
         const source = doc.skins[0].attachments[r.slotId][r.name] as MeshAttachment;
-        for (const m of [skinOf(doc, r).attachments[r.slotId][r.name], skinOf(doc, r).attachments[r.slotId].still, doc.skins[0].attachments[r.ghostId].ghost] as MeshAttachment[]) {
+        for (const m of [
+          skinOf(doc, r).attachments[r.slotId][r.name],
+          skinOf(doc, r).attachments[r.slotId].still,
+          doc.skins[0].attachments[r.ghostId].ghost,
+        ] as MeshAttachment[]) {
           expect(m.uvs).toEqual(source.uvs);
           expect(m.weights).toEqual(source.weights);
           expect(m.vertices).toEqual(source.vertices);
@@ -267,7 +303,9 @@ for (const weighted of [false, true]) {
     it('does not write the deform keys of a mesh that follows its source', () => {
       const own = structuredClone(r.project);
       const ownDoc = own.skeleton;
-      ownDoc.animations[0].deform = { [r.skinId]: { [r.slotId]: { [r.name]: ownDoc.animations[0].deform[ownDoc.skins[0].id][r.slotId][r.name] } } };
+      ownDoc.animations[0].deform = {
+        [r.skinId]: { [r.slotId]: { [r.name]: ownDoc.animations[0].deform[ownDoc.skins[0].id][r.slotId][r.name] } },
+      };
       const out: any = exportSpineJson(ownDoc);
       expect(out.animations.wobble.attachments?.alt).toBeUndefined();
     });
@@ -276,13 +314,15 @@ for (const weighted of [false, true]) {
       it(`poses the meshes of the "${skinName}" skin like the official runtime, deform included`, () => {
         const sd = loadOfficial(json, atlas);
         const skinId = skinName === 'linked' ? r.skinId : null;
-        for (const t of [0.13, 0.31, 0.5, 0.66, 0.74, 0.93]) expectSameWorld(ourWorld(r.project, skinId, t), officialWorld(sd, skinName, t));
+        for (const t of [0.13, 0.31, 0.5, 0.66, 0.74, 0.93])
+          expectSameWorld(ourWorld(r.project, skinId, t), officialWorld(sd, skinName, t));
       });
 
       if (skinName === 'linked') {
         it('drops the deform when the slot switches to a linked mesh that does not share it, like the official runtime', () => {
           const sd = loadOfficial(json, atlas);
-          for (const t of [0.13, 0.5, 0.66, 0.74, 0.93]) expectSameWorld(ourWorld(r.project, r.skinId, t, 'swap'), officialWorld(sd, skinName, t, 'swap'));
+          for (const t of [0.13, 0.5, 0.66, 0.74, 0.93])
+            expectSameWorld(ourWorld(r.project, r.skinId, t, 'swap'), officialWorld(sd, skinName, t, 'swap'));
         });
       }
     }
@@ -314,7 +354,10 @@ for (const weighted of [false, true]) {
         expect(att.uvs).toEqual((idoc.skins[0].attachments[slot.id][r.name] as MeshAttachment).uvs);
         expect(validateProject(imported)).toEqual([]);
         // and it exports again to the same thing
-        expect(JSON.parse(JSON.stringify(exportSpineJson(idoc))).skins.find((s: any) => s.name === 'linked').attachments[r.slotName][r.name].type).toBe('linkedmesh');
+        expect(
+          JSON.parse(JSON.stringify(exportSpineJson(idoc))).skins.find((s: any) => s.name === 'linked').attachments[r.slotName][r.name]
+            .type,
+        ).toBe('linkedmesh');
       }
     });
   });

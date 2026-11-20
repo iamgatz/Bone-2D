@@ -15,7 +15,10 @@ import { emptySelection, uiStore } from '../src/store/ui';
 describe('the grid', () => {
   it('divides the picture by columns and rows inside the margin and the spacing', () => {
     expect(gridByCount(256, 64, 4, 1)).toEqual({ cols: 4, rows: 1, cellW: 64, cellH: 64, margin: 0, spacing: 0 });
-    expect(gridByCount(210, 100, 4, 2, 5, 2)).toMatchObject({ cellW: Math.floor((210 - 10 - 6) / 4), cellH: Math.floor((100 - 10 - 2) / 2) });
+    expect(gridByCount(210, 100, 4, 2, 5, 2)).toMatchObject({
+      cellW: Math.floor((210 - 10 - 6) / 4),
+      cellH: Math.floor((100 - 10 - 2) / 2),
+    });
   });
 
   it('fits as many cells of a given size as there are room for, counting the gaps between them', () => {
@@ -34,8 +37,22 @@ describe('the grid', () => {
   it('lists the cells along the rows, or down the columns', () => {
     const grid = gridByCount(60, 40, 3, 2)!;
     const rows = cellRects(grid);
-    expect(rows.map((r) => [r.x, r.y])).toEqual([[0, 0], [20, 0], [40, 0], [0, 20], [20, 20], [40, 20]]);
-    expect(cellRects(grid, true).map((r) => [r.x, r.y])).toEqual([[0, 0], [0, 20], [20, 0], [20, 20], [40, 0], [40, 20]]);
+    expect(rows.map((r) => [r.x, r.y])).toEqual([
+      [0, 0],
+      [20, 0],
+      [40, 0],
+      [0, 20],
+      [20, 20],
+      [40, 20],
+    ]);
+    expect(cellRects(grid, true).map((r) => [r.x, r.y])).toEqual([
+      [0, 0],
+      [0, 20],
+      [20, 0],
+      [20, 20],
+      [40, 0],
+      [40, 20],
+    ]);
     expect(rows.every((r) => r.w === 20 && r.h === 20)).toBe(true);
   });
 
@@ -86,7 +103,14 @@ describe('the names', () => {
   });
 });
 
-const fake = (name: string): ImageAsset => ({ name, width: 16, height: 16, blob: new Blob([]), bitmap: { close() {}, width: 16, height: 16 }, version: 1 });
+const fake = (name: string): ImageAsset => ({
+  name,
+  width: 16,
+  height: 16,
+  blob: new Blob([]),
+  bitmap: { close() {}, width: 16, height: 16 },
+  version: 1,
+});
 
 describe('adding frames', () => {
   beforeEach(() => {

@@ -9,7 +9,10 @@ import { buildFixture } from './fixture';
 function open() {
   const { project } = buildFixture();
   const doc = project.skeleton;
-  doc.skins.push({ id: 'hat', name: 'hat', attachments: {}, bones: [doc.bones[1].id], constraints: [] }, { id: 'cape', name: 'cape', attachments: {}, bones: [], constraints: [] });
+  doc.skins.push(
+    { id: 'hat', name: 'hat', attachments: {}, bones: [doc.bones[1].id], constraints: [] },
+    { id: 'cape', name: 'cape', attachments: {}, bones: [], constraints: [] },
+  );
   docStore.replace(project);
   uiStore.patch({ skinId: null, skinMix: [], skinPins: [] });
   return doc;
@@ -79,7 +82,9 @@ describe('duplicating a skin with options', () => {
 
   it('keeps a linked mesh on the original skin when asked', () => {
     const doc = open();
-    doc.skins.find((s) => s.id === 'hat')!.attachments = { slot: { m: { type: 'mesh', name: 'm', link: { skin: 'hat', parent: 'p' } } as never } };
+    doc.skins.find((s) => s.id === 'hat')!.attachments = {
+      slot: { m: { type: 'mesh', name: 'm', link: { skin: 'hat', parent: 'p' } } as never },
+    };
     const follow = duplicateSkin(structuredClone(doc), 'hat')!;
     expect((follow.attachments.slot.m as never as { link: { skin: string } }).link.skin).toBe(follow.id);
     const stay = duplicateSkin(structuredClone(doc), 'hat', { relink: false })!;

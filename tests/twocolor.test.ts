@@ -18,7 +18,17 @@ const walk = () => doc().animations.find((a) => a.name === 'walk')!;
 function load() {
   const f = buildFixture();
   docStore.replace(f.project);
-  uiStore.patch({ mode: 'setup', tool: 'select', animationId: f.project.skeleton.animations[0].id, skinId: null, time: 0, selection: emptySelection, overrides: {}, autoKey: true, playing: false });
+  uiStore.patch({
+    mode: 'setup',
+    tool: 'select',
+    animationId: f.project.skeleton.animations[0].id,
+    skinId: null,
+    time: 0,
+    selection: emptySelection,
+    overrides: {},
+    autoKey: true,
+    playing: false,
+  });
 }
 
 function healthy(label: string) {
@@ -42,7 +52,14 @@ describe('two-color timelines in Spine files', () => {
     const r = importSpineJson(
       file({
         rgba2: [
-          { light: 'ff8040ff', dark: '102030', curve: [0.25, 0.7, 0.75, 0.3, 0.3, 0.5, 0.6, 0.5, 0.3, 0.5, 0.6, 0.5, 0.3, 1, 0.6, 1, 0.3, 0.2, 0.6, 0.9, 0.3, 0.5, 0.6, 0.5, 0.3, 0.2, 0.6, 0.4] },
+          {
+            light: 'ff8040ff',
+            dark: '102030',
+            curve: [
+              0.25, 0.7, 0.75, 0.3, 0.3, 0.5, 0.6, 0.5, 0.3, 0.5, 0.6, 0.5, 0.3, 1, 0.6, 1, 0.3, 0.2, 0.6, 0.9, 0.3, 0.5, 0.6, 0.5, 0.3,
+              0.2, 0.6, 0.4,
+            ],
+          },
           { time: 1, light: '00ff8080', dark: 'ffffff', curve: 'stepped' },
           { time: 2, light: 'ffffffff', dark: '000000' },
         ],
@@ -62,7 +79,18 @@ describe('two-color timelines in Spine files', () => {
   });
 
   it('turns rgb2 into a two-color timeline whose alpha stays at the setup value', () => {
-    const r = importSpineJson(file({ rgb2: [{ light: 'ff0000', dark: '00ff00', curve: [0.3, 0.2, 0.6, 0.8, 0.3, 0, 0.6, 1, 0.3, 0, 0.6, 1, 0.3, 1, 0.6, 0, 0.3, 0.5, 0.6, 0.5, 0.3, 0, 0.6, 1] }, { time: 1, light: '0000ff', dark: '000000' }] }));
+    const r = importSpineJson(
+      file({
+        rgb2: [
+          {
+            light: 'ff0000',
+            dark: '00ff00',
+            curve: [0.3, 0.2, 0.6, 0.8, 0.3, 0, 0.6, 1, 0.3, 0, 0.6, 1, 0.3, 1, 0.6, 0, 0.3, 0.5, 0.6, 0.5, 0.3, 0, 0.6, 1],
+          },
+          { time: 1, light: '0000ff', dark: '000000' },
+        ],
+      }),
+    );
     const keys = r.project.skeleton.animations[0].slots[r.project.skeleton.slots[0].id].rgba2!;
     expect(keys[0].value).toEqual([1, 0, 0, 0xcc / 255, 0, 1, 0]);
     expect(keys[1].value).toEqual([0, 0, 1, 0xcc / 255, 0, 0, 0]);
@@ -132,7 +160,9 @@ describe('editing the dark color', () => {
     const tl = walk().slots[glow.id];
     expect(tl.rgba2).toBeUndefined();
     expect(tl.rgba!.map((k) => k.value)).toEqual(before.map((k) => k.value.slice(0, 4)));
-    expect(tl.rgba!.map((k) => (Array.isArray(k.curve) ? k.curve.length : k.curve))).toEqual(before.map((k) => (Array.isArray(k.curve) ? 16 : k.curve)));
+    expect(tl.rgba!.map((k) => (Array.isArray(k.curve) ? k.curve.length : k.curve))).toEqual(
+      before.map((k) => (Array.isArray(k.curve) ? 16 : k.curve)),
+    );
     healthy('dark removed');
     docStore.undo();
     expect(slot('glow').dark).not.toBeNull();
@@ -174,7 +204,11 @@ describe('editing the dark color', () => {
     const tl = walk().slots[flag.id];
     expect(tl.rgba).toBeUndefined();
     expect(tl.rgba2!.map((k) => k.value.slice(0, 4))).toEqual([light[0].value, [1, 0, 0, 1], light[1].value]);
-    expect(tl.rgba2!.map((k) => k.value.slice(4))).toEqual([[0.3, 0.2, 0.1], [0.3, 0.2, 0.1], [0.3, 0.2, 0.1]]); // the dark color of the upgraded keys is the setup one
+    expect(tl.rgba2!.map((k) => k.value.slice(4))).toEqual([
+      [0.3, 0.2, 0.1],
+      [0.3, 0.2, 0.1],
+      [0.3, 0.2, 0.1],
+    ]); // the dark color of the upgraded keys is the setup one
     expect(tl.rgba2!.every((k) => k.value.length === 7)).toBe(true);
     expect(tl.rgba2!.every((k) => !Array.isArray(k.curve) || k.curve.length === 28)).toBe(true);
     healthy('upgraded');

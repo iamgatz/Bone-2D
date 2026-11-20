@@ -47,12 +47,26 @@ export function WelcomeDialog() {
   };
   return (
     <Dialog title="Welcome to Bone 2D" width={680} onClose={close}>
-      <p className="hint-text flush mb">A 2D skeletal animation editor that runs in the browser and exports Spine 4.3 files. Nothing to install: everything stays on your computer.</p>
+      <p className="hint-text flush mb">
+        A 2D skeletal animation editor that runs in the browser and exports Spine 4.3 files. Nothing to install: everything stays on your
+        computer.
+      </p>
       <div className="choices">
-        <Choice primary icon={Sparkles} title="Try the demo rig" text="A fox with IK legs, a physics tail, two skins and four animations" onClick={go(loadSample)} />
+        <Choice
+          primary
+          icon={Sparkles}
+          title="Try the demo rig"
+          text="A fox with IK legs, a physics tail, two skins and four animations"
+          onClick={go(loadSample)}
+        />
         <Choice icon={FilePlus2} title="New project" text="An empty skeleton: drop PNGs, draw bones" onClick={go(() => newProject())} />
         <Choice icon={FolderOpen} title="Open a project" text="A .bone2d file from your computer" onClick={go(openProjectFile)} />
-        <Choice icon={FolderOpen} title="Import from Spine" text="A Spine .json (4.0 – 4.3) or .skel (4.3) with its atlas and images" onClick={go(openSpineImport)} />
+        <Choice
+          icon={FolderOpen}
+          title="Import from Spine"
+          text="A Spine .json (4.0 – 4.3) or .skel (4.3) with its atlas and images"
+          onClick={go(openSpineImport)}
+        />
       </div>
       {recent.length > 0 && (
         <>
@@ -65,7 +79,12 @@ export function WelcomeDialog() {
                   <span className="recent-name">{e.name}</span>
                   <span className="dim row-meta">{ago(e.time)}</span>
                 </button>
-                <IconButton icon={X} title="Forget" small onClick={() => void forgetRecent(e.id).then(() => setRecent((l) => l.filter((x) => x.id !== e.id)))} />
+                <IconButton
+                  icon={X}
+                  title="Forget"
+                  small
+                  onClick={() => void forgetRecent(e.id).then(() => setRecent((l) => l.filter((x) => x.id !== e.id)))}
+                />
               </div>
             ))}
           </div>
@@ -102,7 +121,11 @@ export function WelcomeDialog() {
         </a>
       </div>
       <div className="fb-info mt">
-        <Toggle on={showAtStart} onChange={(v) => setSettings({ showWelcome: v })} title="Show this window when the editor starts with an empty project" />
+        <Toggle
+          on={showAtStart}
+          onChange={(v) => setSettings({ showWelcome: v })}
+          title="Show this window when the editor starts with an empty project"
+        />
         <span>Show this window when the editor starts with an empty project</span>
       </div>
     </Dialog>

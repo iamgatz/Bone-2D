@@ -53,7 +53,7 @@ function insertLike<T extends { id: Id }>(list: T[], item: T, other: readonly T[
 function ensureBone(cur: SkeletonDoc, file: SkeletonDoc, id: Id | null, res: MergeResult): boolean {
   const chain: Bone[] = [];
   const seen = new Set<Id>();
-  for (let at = id; at && !cur.bones.some((b) => b.id === at); ) {
+  for (let at = id; at && !cur.bones.some((b) => b.id === at);) {
     if (seen.has(at)) return false;
     seen.add(at);
     const fb = file.bones.find((b) => b.id === at);
@@ -63,7 +63,10 @@ function ensureBone(cur: SkeletonDoc, file: SkeletonDoc, id: Id | null, res: Mer
   }
   for (const fb of chain) {
     const b = clone(fb);
-    b.name = uniqueName(b.name, cur.bones.map((x) => x.name));
+    b.name = uniqueName(
+      b.name,
+      cur.bones.map((x) => x.name),
+    );
     insertLike(cur.bones, b, file.bones);
     res.carried++;
   }
@@ -76,7 +79,10 @@ function ensureSlot(cur: SkeletonDoc, file: SkeletonDoc, id: Id, res: MergeResul
   const fs = file.slots.find((s) => s.id === id);
   if (!fs || !ensureBone(cur, file, fs.bone, res)) return false;
   const s: Slot = clone(fs);
-  s.name = uniqueName(s.name, cur.slots.map((x) => x.name));
+  s.name = uniqueName(
+    s.name,
+    cur.slots.map((x) => x.name),
+  );
   insertLike(cur.slots, s, file.slots);
   for (const skin of cur.skins) {
     const there = file.skins.find((x) => x.id === skin.id)?.attachments[id];
@@ -89,17 +95,18 @@ function ensureSlot(cur: SkeletonDoc, file: SkeletonDoc, id: Id, res: MergeResul
 function strings(v: unknown, out: Set<string> = new Set()): Set<string> {
   if (typeof v === 'string') out.add(v);
   else if (Array.isArray(v)) for (const x of v) strings(x, out);
-  else if (v && typeof v === 'object') for (const [k, x] of Object.entries(v)) {
-    out.add(k);
-    strings(x, out);
-  }
+  else if (v && typeof v === 'object')
+    for (const [k, x] of Object.entries(v)) {
+      out.add(k);
+      strings(x, out);
+    }
   return out;
 }
 
 /** True when going up from `bone` through the parents leads back to `bone` or never ends. */
 function loops(cur: SkeletonDoc, bone: Bone): boolean {
   const seen = new Set<Id>();
-  for (let b: Bone | undefined = bone; b; ) {
+  for (let b: Bone | undefined = bone; b;) {
     if (seen.has(b.id)) return true;
     seen.add(b.id);
     b = b.parent ? cur.bones.find((x) => x.id === b!.parent) : undefined;
@@ -158,7 +165,13 @@ function take(cur: SkeletonDoc, src: SkeletonDoc, ref: MergeRef, res: MergeResul
       const mine = cb.name;
       replaceInPlace(cb, clone(fb));
       if (loops(cur, cb)) cb.parent = before; // the other version hangs it under something that hangs under it here
-      cb.name = fb.name === mine ? mine : uniqueName(fb.name, cur.bones.filter((b) => b !== cb).map((b) => b.name));
+      cb.name =
+        fb.name === mine
+          ? mine
+          : uniqueName(
+              fb.name,
+              cur.bones.filter((b) => b !== cb).map((b) => b.name),
+            );
       return true;
     }
     case 'slot': {
@@ -168,7 +181,10 @@ function take(cur: SkeletonDoc, src: SkeletonDoc, ref: MergeRef, res: MergeResul
       if (!cs) return ensureSlot(cur, src, fs.id, res);
       if (!ensureBone(cur, src, fs.bone, res)) return false;
       replaceInPlace(cs, clone(fs));
-      cs.name = uniqueName(fs.name, cur.slots.filter((s) => s !== cs).map((s) => s.name));
+      cs.name = uniqueName(
+        fs.name,
+        cur.slots.filter((s) => s !== cs).map((s) => s.name),
+      );
       return true;
     }
     case 'skin': {
@@ -180,7 +196,10 @@ function take(cur: SkeletonDoc, src: SkeletonDoc, ref: MergeRef, res: MergeResul
       if (ck) replaceInPlace(ck, clone(fk));
       else insertLike(cur.skins, clone(fk), src.skins);
       const now = cur.skins.find((s) => s.id === fk.id)!;
-      now.name = uniqueName(fk.name, cur.skins.filter((s) => s !== now).map((s) => s.name));
+      now.name = uniqueName(
+        fk.name,
+        cur.skins.filter((s) => s !== now).map((s) => s.name),
+      );
       return true;
     }
     case 'constraint': {
@@ -196,7 +215,10 @@ function take(cur: SkeletonDoc, src: SkeletonDoc, ref: MergeRef, res: MergeResul
       if (cc) replaceInPlace(cc, copy);
       else insertLike(cur.constraints, copy, src.constraints);
       const now = cur.constraints.find((c) => c.id === fc.id)!;
-      now.name = uniqueName(fc.name, cur.constraints.filter((c) => c !== now).map((c) => c.name));
+      now.name = uniqueName(
+        fc.name,
+        cur.constraints.filter((c) => c !== now).map((c) => c.name),
+      );
       return true;
     }
     case 'event': {
@@ -207,7 +229,10 @@ function take(cur: SkeletonDoc, src: SkeletonDoc, ref: MergeRef, res: MergeResul
       if (ce) replaceInPlace(ce, copy);
       else insertLike(cur.events, copy, src.events);
       const now = cur.events.find((e) => e.id === fe.id)!;
-      now.name = uniqueName(fe.name, cur.events.filter((e) => e !== now).map((e) => e.name));
+      now.name = uniqueName(
+        fe.name,
+        cur.events.filter((e) => e !== now).map((e) => e.name),
+      );
       return true;
     }
     case 'animation': {
@@ -218,7 +243,10 @@ function take(cur: SkeletonDoc, src: SkeletonDoc, ref: MergeRef, res: MergeResul
       if (ca) replaceInPlace(ca, copy);
       else insertLike(cur.animations, copy, src.animations);
       const now = cur.animations.find((a) => a.id === fa.id)!;
-      now.name = uniqueName(fa.name, cur.animations.filter((a) => a !== now).map((a) => a.name));
+      now.name = uniqueName(
+        fa.name,
+        cur.animations.filter((a) => a !== now).map((a) => a.name),
+      );
       return true;
     }
   }

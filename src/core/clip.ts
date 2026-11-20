@@ -65,7 +65,8 @@ export function isConvexPolygon(v: ArrayLike<number>, n: number): boolean {
 /** Convex hull (Andrew's monotone chain) of x,y pairs; counter-clockwise, no repeated first point. */
 export function convexHull(v: ArrayLike<number>, n: number): number[] {
   const idx = Array.from({ length: n }, (_, i) => i).sort((a, b) => v[a * 2] - v[b * 2] || v[a * 2 + 1] - v[b * 2 + 1]);
-  const cross = (o: number, a: number, b: number) => (v[a * 2] - v[o * 2]) * (v[b * 2 + 1] - v[o * 2 + 1]) - (v[a * 2 + 1] - v[o * 2 + 1]) * (v[b * 2] - v[o * 2]);
+  const cross = (o: number, a: number, b: number) =>
+    (v[a * 2] - v[o * 2]) * (v[b * 2 + 1] - v[o * 2 + 1]) - (v[a * 2 + 1] - v[o * 2 + 1]) * (v[b * 2] - v[o * 2]);
   const lower: number[] = [];
   for (const i of idx) {
     while (lower.length >= 2 && cross(lower[lower.length - 2], lower[lower.length - 1], i) <= 0) lower.pop();
@@ -85,7 +86,12 @@ export function convexHull(v: ArrayLike<number>, n: number): number[] {
 }
 
 /** The polygon that is actually used for clipping: the hull for a concave `convex` / `inverse` clip, else the polygon itself. */
-export function clipOutline(world: ArrayLike<number>, n: number, convex: boolean, inverse: boolean): { vertices: ArrayLike<number>; count: number } {
+export function clipOutline(
+  world: ArrayLike<number>,
+  n: number,
+  convex: boolean,
+  inverse: boolean,
+): { vertices: ArrayLike<number>; count: number } {
   if ((convex || inverse) && !isConvexPolygon(world, n)) {
     const hull = convexHull(world, n);
     return { vertices: hull, count: hull.length >> 1 };

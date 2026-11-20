@@ -1,8 +1,57 @@
 import { useEffect, useState } from 'react';
-import { ArrowLeftRight, Bone, BoxSelect, Download, Eye, EyeOff, FilePlus2, FolderOpen, Package, Grid3x3, Bell, Search, Home, Layers, ClipboardCopy, ClipboardPaste, Copy, FlipHorizontal2, GitBranch, RotateCcw, SlidersHorizontal, Image as ImageIcon, CircleHelp, MessageSquareText, Link2, Map as MapIcon, Maximize, Play, Redo2, Route, Ruler, Magnet, Trash2, Save, Sparkles, Type, Undo2 } from 'lucide-react';
+import {
+  ArrowLeftRight,
+  Bone,
+  BoxSelect,
+  Download,
+  Eye,
+  EyeOff,
+  FilePlus2,
+  FolderOpen,
+  Package,
+  Grid3x3,
+  Bell,
+  Search,
+  Home,
+  Layers,
+  ClipboardCopy,
+  ClipboardPaste,
+  Copy,
+  FlipHorizontal2,
+  GitBranch,
+  RotateCcw,
+  SlidersHorizontal,
+  Image as ImageIcon,
+  CircleHelp,
+  MessageSquareText,
+  Link2,
+  Map as MapIcon,
+  Maximize,
+  Play,
+  Redo2,
+  Route,
+  Ruler,
+  Magnet,
+  Trash2,
+  Save,
+  Sparkles,
+  Type,
+  Undo2,
+} from 'lucide-react';
 import { decodeKey } from '@/core/keyrefs';
 import { selectionBack, selectionForward, startSelectionHistory } from '@/store/selHistory';
-import { clearSelection, copyKeys, flipViewport, deleteBones, deleteKeys, pasteKeys, sanitizeSelection, setMode, setTime, setTool } from '@/store/actions';
+import {
+  clearSelection,
+  copyKeys,
+  flipViewport,
+  deleteBones,
+  deleteKeys,
+  pasteKeys,
+  sanitizeSelection,
+  setMode,
+  setTime,
+  setTool,
+} from '@/store/actions';
 import { docStore, useProject } from '@/store/doc';
 import { pickReviewFile } from '@/store/reviewActions';
 import { newProject, openProjectFile, packageProject, restoreAutosave, saveProjectFile, startAutosave } from '@/store/project';
@@ -54,11 +103,19 @@ import { CommentsPanel } from './panels/CommentsPanel';
 import { LAYOUTS, VIEW_LIST, sameViews } from '@/store/layout';
 import { applyLayout, startLayoutPersist, toggleAllViews, toggleView } from '@/store/viewActions';
 import { microMove } from '@/store/nudgeActions';
-import { applySavedLayout,deleteSavedLayout, saveLayoutDialog, useNamedLayouts } from '@/store/layoutActions';
+import { applySavedLayout, deleteSavedLayout, saveLayoutDialog, useNamedLayouts } from '@/store/layoutActions';
 
 function LangToggle() {
   const lang = useLang();
-  return <Segmented className="lang" label="Language" value={lang} onChange={setLang} options={(['en', 'ru'] as const).map((l) => ({ value: l, label: l.toUpperCase() }))} />;
+  return (
+    <Segmented
+      className="lang"
+      label="Language"
+      value={lang}
+      onChange={setLang}
+      options={(['en', 'ru'] as const).map((l) => ({ value: l, label: l.toUpperCase() }))}
+    />
+  );
 }
 
 function TopBar() {
@@ -89,25 +146,56 @@ function TopBar() {
         </span>
         Bone 2D
       </div>
-      <input className="project-name" value={project.name} spellCheck={false} onChange={(e) => docStore.update('Rename project', (d) => void (d.name = e.target.value))} aria-label="Project name" data-tip="Project name" />
+      <input
+        className="project-name"
+        value={project.name}
+        spellCheck={false}
+        onChange={(e) => docStore.update('Rename project', (d) => void (d.name = e.target.value))}
+        aria-label="Project name"
+        data-tip="Project name"
+      />
       {docStore.dirty && <span className="dirty-dot" role="status" aria-label="Unsaved changes" data-tip="Unsaved changes" />}
       <Menu label="File">
         {(close) => (
           <>
-            <MenuItem icon={FilePlus2} close={close} onClick={() => newProject()}>New project</MenuItem>
-            <MenuItem icon={FolderOpen} close={close} hotkey={KEYS.open} onClick={() => openProjectFile()}>Open…</MenuItem>
-            <MenuItem icon={Save} close={close} hotkey={KEYS.save} onClick={() => saveProjectFile()}>Save</MenuItem>
-            <MenuItem icon={Save} close={close} hotkey={KEYS.saveAs} onClick={() => saveProjectFile(true)}>Save as…</MenuItem>
-            <MenuItem icon={Package} close={close} onClick={() => void packageProject()}>Package project (ZIP)…</MenuItem>
-            <MenuItem icon={MessageSquareText} close={close} onClick={() => pickReviewFile()}>Import review comments…</MenuItem>
+            <MenuItem icon={FilePlus2} close={close} onClick={() => newProject()}>
+              New project
+            </MenuItem>
+            <MenuItem icon={FolderOpen} close={close} hotkey={KEYS.open} onClick={() => openProjectFile()}>
+              Open…
+            </MenuItem>
+            <MenuItem icon={Save} close={close} hotkey={KEYS.save} onClick={() => saveProjectFile()}>
+              Save
+            </MenuItem>
+            <MenuItem icon={Save} close={close} hotkey={KEYS.saveAs} onClick={() => saveProjectFile(true)}>
+              Save as…
+            </MenuItem>
+            <MenuItem icon={Package} close={close} onClick={() => void packageProject()}>
+              Package project (ZIP)…
+            </MenuItem>
+            <MenuItem icon={MessageSquareText} close={close} onClick={() => pickReviewFile()}>
+              Import review comments…
+            </MenuItem>
             <div className="menu-sep" />
-            <MenuItem icon={Download} close={close} hotkey={KEYS.export} onClick={() => uiStore.patch({ exportOpen: true })}>Export for Spine 4.3…</MenuItem>
-            <MenuItem icon={FolderOpen} close={close} onClick={() => openSpineImport()}>Import Spine data (JSON 4.0–4.3, binary 4.3)…</MenuItem>
-            <MenuItem icon={FolderOpen} close={close} onClick={() => openSpineImport(true)}>Import Spine data as a new skeleton…</MenuItem>
-            <MenuItem icon={FolderOpen} close={close} onClick={() => openAtlasUnpack()}>Unpack an atlas into pictures…</MenuItem>
+            <MenuItem icon={Download} close={close} hotkey={KEYS.export} onClick={() => uiStore.patch({ exportOpen: true })}>
+              Export for Spine 4.3…
+            </MenuItem>
+            <MenuItem icon={FolderOpen} close={close} onClick={() => openSpineImport()}>
+              Import Spine data (JSON 4.0–4.3, binary 4.3)…
+            </MenuItem>
+            <MenuItem icon={FolderOpen} close={close} onClick={() => openSpineImport(true)}>
+              Import Spine data as a new skeleton…
+            </MenuItem>
+            <MenuItem icon={FolderOpen} close={close} onClick={() => openAtlasUnpack()}>
+              Unpack an atlas into pictures…
+            </MenuItem>
             <div className="menu-sep" />
-            <MenuItem icon={Sparkles} close={close} onClick={() => loadSample()}>Load demo rig (Kit)</MenuItem>
-            <MenuItem icon={Home} close={close} onClick={() => uiStore.patch({ welcomeOpen: true })}>Welcome screen</MenuItem>
+            <MenuItem icon={Sparkles} close={close} onClick={() => loadSample()}>
+              Load demo rig (Kit)
+            </MenuItem>
+            <MenuItem icon={Home} close={close} onClick={() => uiStore.patch({ welcomeOpen: true })}>
+              Welcome screen
+            </MenuItem>
           </>
         )}
       </Menu>
@@ -121,10 +209,22 @@ function TopBar() {
               Redo
             </MenuItem>
             <div className="menu-sep" />
-            <MenuItem icon={Copy} close={close} hotkey={KEYS.duplicate} disabled={mode !== 'setup'} onClick={() => duplicateSelection(false)}>
+            <MenuItem
+              icon={Copy}
+              close={close}
+              hotkey={KEYS.duplicate}
+              disabled={mode !== 'setup'}
+              onClick={() => duplicateSelection(false)}
+            >
               Duplicate bones
             </MenuItem>
-            <MenuItem icon={FlipHorizontal2} close={close} hotkey={KEYS.mirror} disabled={mode !== 'setup'} onClick={() => duplicateSelection(true)}>
+            <MenuItem
+              icon={FlipHorizontal2}
+              close={close}
+              hotkey={KEYS.mirror}
+              disabled={mode !== 'setup'}
+              onClick={() => duplicateSelection(true)}
+            >
               Mirror bones
             </MenuItem>
             <MenuItem icon={GitBranch} close={close} hotkey={KEYS.parent} disabled={mode !== 'setup'} onClick={() => startSetParent()}>
@@ -194,25 +294,126 @@ function TopBar() {
       <Menu label="View">
         {(close) => (
           <>
-            <MenuItem close={close} icon={Grid3x3} checked={view.grid} onClick={() => uiStore.patch({ view: { ...view, grid: !view.grid } })}>Grid</MenuItem>
-            <MenuItem close={close} icon={Type} checked={view.names} onClick={() => uiStore.patch({ view: { ...view, names: !view.names } })}>Bone names</MenuItem>
-            <MenuItem close={close} icon={ImageIcon} checked={view.images} onClick={() => uiStore.patch({ view: { ...view, images: !view.images } })}>Images</MenuItem>
-            <MenuItem close={close} icon={Bone} checked={view.bones} onClick={() => uiStore.patch({ view: { ...view, bones: !view.bones } })}>Bones</MenuItem>
-            <MenuItem close={close} icon={Link2} checked={view.constraints} onClick={() => uiStore.patch({ view: { ...view, constraints: !view.constraints } })}>Constraints</MenuItem>
-            <MenuItem close={close} icon={Route} checked={view.constraintInfo} onClick={() => uiStore.patch({ view: { ...view, constraintInfo: !view.constraintInfo } })}>Constraint arrows</MenuItem>
-            <MenuItem close={close} icon={BoxSelect} checked={view.outlines} onClick={() => uiStore.patch({ view: { ...view, outlines: !view.outlines } })}>Clips, boxes &amp; points</MenuItem>
-            <MenuItem close={close} icon={Layers} checked={view.onion} onClick={() => uiStore.patch({ view: { ...view, onion: !view.onion } })}>Onion skin</MenuItem>
-            <MenuItem close={close} icon={Ruler} checked={view.rulers} onClick={() => uiStore.patch({ view: { ...view, rulers: !view.rulers } })}>Rulers and guides</MenuItem>
-            <MenuItem close={close} icon={Magnet} checked={view.snap} onClick={() => uiStore.patch({ view: { ...view, snap: !view.snap } })}>Snap to grid and guides</MenuItem>
-            <MenuItem close={close} icon={Magnet} checked={view.pixel} onClick={() => uiStore.patch({ view: { ...view, pixel: !view.pixel } })}>Snap to whole pixels</MenuItem>
-            <MenuItem close={close} icon={MapIcon} checked={view.outline} onClick={() => uiStore.patch({ view: { ...view, outline: !view.outline } })}>Outline map</MenuItem>
-            <MenuItem close={close} icon={Trash2} onClick={() => void clearGuides()}>Clear guides</MenuItem>
-            <MenuItem close={close} icon={Route} checked={view.trails} onClick={() => uiStore.patch({ view: { ...view, trails: !view.trails } })}>Motion trails</MenuItem>
+            <MenuItem
+              close={close}
+              icon={Grid3x3}
+              checked={view.grid}
+              onClick={() => uiStore.patch({ view: { ...view, grid: !view.grid } })}
+            >
+              Grid
+            </MenuItem>
+            <MenuItem
+              close={close}
+              icon={Type}
+              checked={view.names}
+              onClick={() => uiStore.patch({ view: { ...view, names: !view.names } })}
+            >
+              Bone names
+            </MenuItem>
+            <MenuItem
+              close={close}
+              icon={ImageIcon}
+              checked={view.images}
+              onClick={() => uiStore.patch({ view: { ...view, images: !view.images } })}
+            >
+              Images
+            </MenuItem>
+            <MenuItem
+              close={close}
+              icon={Bone}
+              checked={view.bones}
+              onClick={() => uiStore.patch({ view: { ...view, bones: !view.bones } })}
+            >
+              Bones
+            </MenuItem>
+            <MenuItem
+              close={close}
+              icon={Link2}
+              checked={view.constraints}
+              onClick={() => uiStore.patch({ view: { ...view, constraints: !view.constraints } })}
+            >
+              Constraints
+            </MenuItem>
+            <MenuItem
+              close={close}
+              icon={Route}
+              checked={view.constraintInfo}
+              onClick={() => uiStore.patch({ view: { ...view, constraintInfo: !view.constraintInfo } })}
+            >
+              Constraint arrows
+            </MenuItem>
+            <MenuItem
+              close={close}
+              icon={BoxSelect}
+              checked={view.outlines}
+              onClick={() => uiStore.patch({ view: { ...view, outlines: !view.outlines } })}
+            >
+              Clips, boxes &amp; points
+            </MenuItem>
+            <MenuItem
+              close={close}
+              icon={Layers}
+              checked={view.onion}
+              onClick={() => uiStore.patch({ view: { ...view, onion: !view.onion } })}
+            >
+              Onion skin
+            </MenuItem>
+            <MenuItem
+              close={close}
+              icon={Ruler}
+              checked={view.rulers}
+              onClick={() => uiStore.patch({ view: { ...view, rulers: !view.rulers } })}
+            >
+              Rulers and guides
+            </MenuItem>
+            <MenuItem
+              close={close}
+              icon={Magnet}
+              checked={view.snap}
+              onClick={() => uiStore.patch({ view: { ...view, snap: !view.snap } })}
+            >
+              Snap to grid and guides
+            </MenuItem>
+            <MenuItem
+              close={close}
+              icon={Magnet}
+              checked={view.pixel}
+              onClick={() => uiStore.patch({ view: { ...view, pixel: !view.pixel } })}
+            >
+              Snap to whole pixels
+            </MenuItem>
+            <MenuItem
+              close={close}
+              icon={MapIcon}
+              checked={view.outline}
+              onClick={() => uiStore.patch({ view: { ...view, outline: !view.outline } })}
+            >
+              Outline map
+            </MenuItem>
+            <MenuItem close={close} icon={Trash2} onClick={() => void clearGuides()}>
+              Clear guides
+            </MenuItem>
+            <MenuItem
+              close={close}
+              icon={Route}
+              checked={view.trails}
+              onClick={() => uiStore.patch({ view: { ...view, trails: !view.trails } })}
+            >
+              Motion trails
+            </MenuItem>
             <div className="menu-sep" />
-            <MenuItem close={close} icon={Maximize} hotkey={KEYS.frame} onClick={() => viewportApi.frame()}>Frame skeleton</MenuItem>
-            <MenuItem close={close} icon={Maximize} hotkey={KEYS.frameSelection} onClick={() => viewportApi.frameSelection()}>Frame the selection</MenuItem>
-            <MenuItem close={close} icon={Maximize} hotkey={KEYS.zoom100} onClick={() => viewportApi.zoom100()}>Zoom to 100%</MenuItem>
-            <MenuItem close={close} icon={FlipHorizontal2} hotkey={KEYS.flipView} onClick={() => flipViewport()}>Flip the viewport</MenuItem>
+            <MenuItem close={close} icon={Maximize} hotkey={KEYS.frame} onClick={() => viewportApi.frame()}>
+              Frame skeleton
+            </MenuItem>
+            <MenuItem close={close} icon={Maximize} hotkey={KEYS.frameSelection} onClick={() => viewportApi.frameSelection()}>
+              Frame the selection
+            </MenuItem>
+            <MenuItem close={close} icon={Maximize} hotkey={KEYS.zoom100} onClick={() => viewportApi.zoom100()}>
+              Zoom to 100%
+            </MenuItem>
+            <MenuItem close={close} icon={FlipHorizontal2} hotkey={KEYS.flipView} onClick={() => flipViewport()}>
+              Flip the viewport
+            </MenuItem>
           </>
         )}
       </Menu>
@@ -227,16 +428,31 @@ function TopBar() {
         ]}
       />
       <span className="spacer" />
-      <IconButton icon={Undo2} title={docStore.undoLabel ? `Undo ${docStore.undoLabel}` : 'Undo'} hotkey={KEYS.undo} disabled={!docStore.canUndo} onClick={() => docStore.undo()} />
+      <IconButton
+        icon={Undo2}
+        title={docStore.undoLabel ? `Undo ${docStore.undoLabel}` : 'Undo'}
+        hotkey={KEYS.undo}
+        disabled={!docStore.canUndo}
+        onClick={() => docStore.undo()}
+      />
       <IconButton icon={Redo2} title="Redo" hotkey={KEYS.redo} disabled={!docStore.canRedo} onClick={() => docStore.redo()} />
       <span className="sep" />
       <LangToggle />
       <span className="tb-opt2">
-        <IconButton icon={Search} title="Command palette: find any command or tool by name" hotkey={KEYS.palette} onClick={() => uiStore.patch({ paletteOpen: true })} />
+        <IconButton
+          icon={Search}
+          title="Command palette: find any command or tool by name"
+          hotkey={KEYS.palette}
+          onClick={() => uiStore.patch({ paletteOpen: true })}
+        />
       </span>
       <span className="tb-opt">
         <span className="badge-wrap">
-          <IconButton icon={Bell} title="Updates: what is new and the project activity" onClick={() => uiStore.patch({ updatesOpen: true })} />
+          <IconButton
+            icon={Bell}
+            title="Updates: what is new and the project activity"
+            onClick={() => uiStore.patch({ updatesOpen: true })}
+          />
           {hasUnseenUpdate() && !updatesOpen && <span className="notify-dot" role="status" aria-label="New updates" />}
         </span>
       </span>
@@ -245,7 +461,9 @@ function TopBar() {
         <IconButton icon={MessageSquareText} title="Send feedback to the author" onClick={() => uiStore.patch({ feedbackOpen: true })} />
         <IconButton icon={CircleHelp} title="Shortcuts & help" hotkey={KEYS.help} onClick={() => uiStore.patch({ helpOpen: true })} />
       </span>
-      <Button primary icon={Download} onClick={() => uiStore.patch({ exportOpen: true })}>Export</Button>
+      <Button primary icon={Download} onClick={() => uiStore.patch({ exportOpen: true })}>
+        Export
+      </Button>
     </div>
   );
 }
@@ -257,7 +475,17 @@ function Toolbox() {
   return (
     <div className="toolbox">
       {TOOLS.map((t) => (
-        <IconButton key={t.tool} icon={t.icon} title={t.title} hotkey={hotkeyOf(t.tool)} tipPlace="right" active={tool === t.tool} animate={mode === 'animate'} disabled={!!t.setupOnly && mode !== 'setup'} onClick={() => setTool(t.tool)} />
+        <IconButton
+          key={t.tool}
+          icon={t.icon}
+          title={t.title}
+          hotkey={hotkeyOf(t.tool)}
+          tipPlace="right"
+          active={tool === t.tool}
+          animate={mode === 'animate'}
+          disabled={!!t.setupOnly && mode !== 'setup'}
+          onClick={() => setTool(t.tool)}
+        />
       ))}
     </div>
   );
@@ -279,11 +507,40 @@ function ViewportHud() {
       <div className="vp-top-right">
         <span className="chip plain">{Math.round(zoom * 100)}%</span>
         <IconButton icon={Maximize} title="Frame skeleton" hotkey={KEYS.frame} small onClick={() => viewportApi.frame()} />
-        <IconButton icon={Layers} title="Onion skin: faded poses of the frames around the playhead (Animate mode)" small active={view.onion} onClick={() => uiStore.patch({ view: { ...uiStore.get().view, onion: !uiStore.get().view.onion } })} />
-        <IconButton icon={Route} title="Motion trails: the path the selected bones travel in the animation, keys marked (Animate mode)" small active={view.trails} onClick={() => uiStore.patch({ view: { ...uiStore.get().view, trails: !uiStore.get().view.trails } })} />
-        <IconButton icon={Ruler} title="Rulers and guides: drag a guide out of a ruler" small active={view.rulers} onClick={() => uiStore.patch({ view: { ...uiStore.get().view, rulers: !uiStore.get().view.rulers } })} />
-        <IconButton icon={Magnet} title="Snap new and moved bones to the grid and the guides" small active={view.snap} onClick={() => uiStore.patch({ view: { ...uiStore.get().view, snap: !uiStore.get().view.snap } })} />
-        <IconButton icon={Eye} title="Toggle names" small onClick={() => uiStore.patch({ view: { ...uiStore.get().view, names: !uiStore.get().view.names } })} />
+        <IconButton
+          icon={Layers}
+          title="Onion skin: faded poses of the frames around the playhead (Animate mode)"
+          small
+          active={view.onion}
+          onClick={() => uiStore.patch({ view: { ...uiStore.get().view, onion: !uiStore.get().view.onion } })}
+        />
+        <IconButton
+          icon={Route}
+          title="Motion trails: the path the selected bones travel in the animation, keys marked (Animate mode)"
+          small
+          active={view.trails}
+          onClick={() => uiStore.patch({ view: { ...uiStore.get().view, trails: !uiStore.get().view.trails } })}
+        />
+        <IconButton
+          icon={Ruler}
+          title="Rulers and guides: drag a guide out of a ruler"
+          small
+          active={view.rulers}
+          onClick={() => uiStore.patch({ view: { ...uiStore.get().view, rulers: !uiStore.get().view.rulers } })}
+        />
+        <IconButton
+          icon={Magnet}
+          title="Snap new and moved bones to the grid and the guides"
+          small
+          active={view.snap}
+          onClick={() => uiStore.patch({ view: { ...uiStore.get().view, snap: !uiStore.get().view.snap } })}
+        />
+        <IconButton
+          icon={Eye}
+          title="Toggle names"
+          small
+          onClick={() => uiStore.patch({ view: { ...uiStore.get().view, names: !uiStore.get().view.names } })}
+        />
       </div>
       {empty && (
         <div className="vp-empty">
@@ -299,7 +556,15 @@ function ViewportHud() {
           </div>
         </div>
       )}
-      {pickParent ? <div className="vp-hint">Click the new parent bone in the viewport or the tree · Esc cancels</div> : HINTS[tool] && <div key={tool} className="vp-hint">{HINTS[tool]}</div>}
+      {pickParent ? (
+        <div className="vp-hint">Click the new parent bone in the viewport or the tree · Esc cancels</div>
+      ) : (
+        HINTS[tool] && (
+          <div key={tool} className="vp-hint">
+            {HINTS[tool]}
+          </div>
+        )
+      )}
     </>
   );
 }
@@ -323,7 +588,8 @@ function HelpDialog() {
   return (
     <Dialog title="Bone 2D — shortcuts" onClose={() => uiStore.patch({ helpOpen: false })} width={720}>
       <p className="hint-text flush mb">
-        Bone 2D is a browser-based 2D skeletal animation editor. Build a rig in <b>Setup</b>, pose and key it in <b>Animate</b>, then export a Spine 4.3 compatible skeleton + atlas.
+        Bone 2D is a browser-based 2D skeletal animation editor. Build a rig in <b>Setup</b>, pose and key it in <b>Animate</b>, then export
+        a Spine 4.3 compatible skeleton + atlas.
       </p>
       <div className="hotkeys">
         {hotkeyGroups().map((g) => (
@@ -410,7 +676,10 @@ export function App() {
         } else if (key === 'v' && ui.mode === 'animate') {
           e.preventDefault();
           const refs = pasteKeys(ui.time, e.shiftKey); // Ctrl+Shift+V: Paste Keys - Hold
-          if (refs.length) uiStore.patch({ selectedKeys: refs.map((r) => JSON.stringify([r.kind, r.target, r.prop, Math.round(r.time * 10000) / 10000])) });
+          if (refs.length)
+            uiStore.patch({
+              selectedKeys: refs.map((r) => JSON.stringify([r.kind, r.target, r.prop, Math.round(r.time * 10000) / 10000])),
+            });
         }
         return;
       }
@@ -438,7 +707,9 @@ export function App() {
             setTime(ui.time + ((key === 'arrowright' ? 1 : -1) * (e.shiftKey ? 10 : 1)) / fps);
           }
           break;
-        case 'home': if (ui.mode === 'animate') setTime(0); break;
+        case 'home':
+          if (ui.mode === 'animate') setTime(0);
+          break;
         case 'pageup':
           e.preventDefault();
           selectionBack();
@@ -453,7 +724,13 @@ export function App() {
             e.preventDefault();
             deleteKeys(ui.selectedKeys.map(decodeKey));
             uiStore.patch({ selectedKeys: [] });
-          } else if (ui.tool === 'mesh' && ui.selection.vertices.length && (viewportApi.controller?.pathTool.deleteSelectedVertices() || viewportApi.controller?.polygonTool.deleteSelectedVertices() || viewportApi.controller?.meshTool.deleteSelectedVertices())) {
+          } else if (
+            ui.tool === 'mesh' &&
+            ui.selection.vertices.length &&
+            (viewportApi.controller?.pathTool.deleteSelectedVertices() ||
+              viewportApi.controller?.polygonTool.deleteSelectedVertices() ||
+              viewportApi.controller?.meshTool.deleteSelectedVertices())
+          ) {
             e.preventDefault();
           } else if (ui.selection.constraint && !ui.selection.bones.length) {
             e.preventDefault();
@@ -494,7 +771,17 @@ export function App() {
     uiStore.patch({ panel: { ...p, [key]: Math.min(max, Math.max(min, p[key] + sign * d)) } });
   };
 
-  const leftOn = views.tree || views.images || views.animations || views.skins || views.playback || views.tools || views.poses || views.metrics || views.history || views.preview;
+  const leftOn =
+    views.tree ||
+    views.images ||
+    views.animations ||
+    views.skins ||
+    views.playback ||
+    views.tools ||
+    views.poses ||
+    views.metrics ||
+    views.history ||
+    views.preview;
 
   return (
     <div className="app">

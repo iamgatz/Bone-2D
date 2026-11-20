@@ -57,7 +57,11 @@ export function currentPathValues(id: Id): PathValues | null {
 }
 
 /** Edits position / spacing / mixes: the setup values in Setup mode, a key at the playhead in Animate mode. */
-export function setPathValues(id: Id, patch: { position?: number; spacing?: number; mix?: Partial<{ rotate: number; x: number; y: number }> }, label = 'Edit path constraint') {
+export function setPathValues(
+  id: Id,
+  patch: { position?: number; spacing?: number; mix?: Partial<{ rotate: number; x: number; y: number }> },
+  label = 'Edit path constraint',
+) {
   const ui = uiStore.get();
   if (ui.mode === 'setup') {
     updatePathConstraint(

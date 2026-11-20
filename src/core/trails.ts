@@ -33,11 +33,21 @@ export function trailTimes(duration: number, fps: number, maxSamples = 240): num
 }
 
 /** Poses the skeleton at every sample time and records where each of the bones is. A bone the skin leaves out has no trail. */
-export function sampleTrails(data: SkeletonData, anim: Animation, boneIds: Id[], fps: number, skinId: Id | null, anchor: TrailAnchor = 'origin', maxSamples = 240): Trail[] {
+export function sampleTrails(
+  data: SkeletonData,
+  anim: Animation,
+  boneIds: Id[],
+  fps: number,
+  skinId: Id | null,
+  anchor: TrailAnchor = 'origin',
+  maxSamples = 240,
+): Trail[] {
   const skeleton = createSkeleton(data, skinId);
   const physics = data.constraints.some((c) => c.kind === 'physics') ? 'reset' : 'none';
   const times = trailTimes(anim.duration, fps, maxSamples);
-  const picked = boneIds.map((id) => ({ id, index: data.boneIndex.get(id) })).filter((b): b is { id: Id; index: number } => b.index !== undefined);
+  const picked = boneIds
+    .map((id) => ({ id, index: data.boneIndex.get(id) }))
+    .filter((b): b is { id: Id; index: number } => b.index !== undefined);
   const trails: Trail[] = picked.map((b) => ({ boneId: b.id, points: [] }));
   for (const time of times) {
     applyAnimation(skeleton, anim, time);
@@ -55,7 +65,8 @@ export function sampleTrails(data: SkeletonData, anim: Animation, boneIds: Id[],
 /** Total length of a trail (world units): how far the point travels. */
 export function trailLength(trail: Trail): number {
   let sum = 0;
-  for (let i = 1; i < trail.points.length; i++) sum += Math.hypot(trail.points[i].x - trail.points[i - 1].x, trail.points[i].y - trail.points[i - 1].y);
+  for (let i = 1; i < trail.points.length; i++)
+    sum += Math.hypot(trail.points[i].x - trail.points[i - 1].x, trail.points[i].y - trail.points[i - 1].y);
   return sum;
 }
 

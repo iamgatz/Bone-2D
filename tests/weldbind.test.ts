@@ -16,7 +16,10 @@ const id = (x = 0, y = 0) => ({ a: 1, b: 0, c: 0, d: 1, x, y });
 describe('update bindings (core)', () => {
   it('re-expresses the current world position in every bone, the vertex does not move', () => {
     // bound while A stood at the origin and B at (100, 0); then B was moved up by 30 in the setup pose
-    const bones: BoneMats = new Map([['A', id()], ['B', id(100, 30)]]);
+    const bones: BoneMats = new Map([
+      ['A', id()],
+      ['B', id(100, 30)],
+    ]);
     const w: Influence[][] = [[I('A', 60, 0, 0.5), I('B', -40, 0, 0.5)], [I('A', 5, 5, 1)]];
     const before = vertexWorldPositions({ vertices: [], weights: w }, 2, id(), bones);
     const r = updateBindings(w, before, bones);
@@ -48,7 +51,11 @@ describe('update bindings (core)', () => {
 
 describe('weld weights (core)', () => {
   // the other mesh: a quad 0..100 x 0..50, left corners all on A, right corners all on B
-  const bones: BoneMats = new Map([['A', id()], ['B', id(100, 0)], ['C', id(0, 80)]]);
+  const bones: BoneMats = new Map([
+    ['A', id()],
+    ['B', id(100, 0)],
+    ['C', id(0, 80)],
+  ]);
   const other = {
     world: [0, 0, 100, 0, 100, 50, 0, 50],
     triangles: [0, 1, 2, 0, 2, 3],
@@ -81,7 +88,10 @@ describe('weld weights (core)', () => {
   it('needs two common bones, ignores the bones only one of them has, and honours the scope', () => {
     const one: Influence[][] = [[I('A', 0, 0, 1)]];
     expect(weldWeights(one, [25, 10], other, 'all', bones).changed).toBe(0);
-    const withC: Influence[][] = [[I('A', 0, 0, 0.4), I('B', 0, 0, 0.3), I('C', 0, 0, 0.3)], [I('A', 0, 0, 0.4), I('B', 0, 0, 0.3), I('C', 0, 0, 0.3)]];
+    const withC: Influence[][] = [
+      [I('A', 0, 0, 0.4), I('B', 0, 0, 0.3), I('C', 0, 0, 0.3)],
+      [I('A', 0, 0, 0.4), I('B', 0, 0, 0.3), I('C', 0, 0, 0.3)],
+    ];
     const r = weldWeights(withC, [25, 10, 25, 10], other, 'all', bones, new Set([1]));
     expect(r.weights[0]).toBe(withC[0]);
     expect(r.weights[1].map((e) => e[0]).sort()).toEqual(['A', 'B']);
@@ -104,7 +114,21 @@ describe('Update bindings and Weld (store)', () => {
     const slot1 = newSlot({ name: 'big', bone: root.id });
     const slot2 = newSlot({ name: 'small', bone: root.id });
     p.skeleton.slots.push(slot1, slot2);
-    const region = (name: string, x: number, w: number, h: number) => meshFromRegion({ type: 'region', name, path: name, x, y: 0, rotation: 0, scaleX: 1, scaleY: 1, width: w, height: h, color: [1, 1, 1, 1], sequence: null } as never);
+    const region = (name: string, x: number, w: number, h: number) =>
+      meshFromRegion({
+        type: 'region',
+        name,
+        path: name,
+        x,
+        y: 0,
+        rotation: 0,
+        scaleX: 1,
+        scaleY: 1,
+        width: w,
+        height: h,
+        color: [1, 1, 1, 1],
+        sequence: null,
+      } as never);
     p.skeleton.skins[0].attachments[slot1.id] = { big: region('big', 100, 200, 80) };
     p.skeleton.skins[0].attachments[slot2.id] = { small: region('small', 100, 100, 20) };
     slot1.attachment = 'big';

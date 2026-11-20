@@ -12,7 +12,16 @@ function session(time: number, boneName: string) {
   const doc = f.project.skeleton;
   const anim = doc.animations.find((a) => a.name === 'walk')!;
   const bone = doc.bones.find((b) => b.name === boneName)!;
-  uiStore.patch({ mode: 'animate', animationId: anim.id, selection: { ...emptySelection, bones: [bone.id] }, overrides: {}, muted: [], time, playing: false, autoKey: false });
+  uiStore.patch({
+    mode: 'animate',
+    animationId: anim.id,
+    selection: { ...emptySelection, bones: [bone.id] },
+    overrides: {},
+    muted: [],
+    time,
+    playing: false,
+    autoKey: false,
+  });
   return { doc, anim, bone };
 }
 

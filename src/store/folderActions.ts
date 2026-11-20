@@ -39,7 +39,11 @@ export function renameFolder(id: Id, name: string) {
   docStore.update('Rename folder', (d) => {
     const list = d.skeleton.drawOrderFolders ?? [];
     const f = list.find((x) => x.id === id);
-    if (f) f.name = freshName(clean, list.filter((x) => x.id !== id));
+    if (f)
+      f.name = freshName(
+        clean,
+        list.filter((x) => x.id !== id),
+      );
   });
 }
 

@@ -31,7 +31,10 @@ export function blendPose(current: BonePose, target: BonePose, amount: number): 
 
 /** A name for a new pose that no other pose has. */
 export function newPoseName(poses: readonly PoseEntry[], wanted = 'Pose'): string {
-  return uniqueName(wanted.trim() || 'Pose', poses.map((p) => p.name));
+  return uniqueName(
+    wanted.trim() || 'Pose',
+    poses.map((p) => p.name),
+  );
 }
 
 export function newPose(poses: readonly PoseEntry[], bones: Record<string, BonePose>, name?: string): PoseEntry {
@@ -52,7 +55,8 @@ export function repairPoses(list: unknown): { poses: PoseEntry[]; notes: string[
     }
     const bones: Record<string, BonePose> = {};
     for (const [name, p] of Object.entries(raw.bones)) {
-      if (p && typeof p === 'object' && POSE_FIELDS.every((k) => finite((p)[k]))) bones[name] = Object.fromEntries(POSE_FIELDS.map((k) => [k, (p)[k]])) as unknown as BonePose;
+      if (p && typeof p === 'object' && POSE_FIELDS.every((k) => finite(p[k])))
+        bones[name] = Object.fromEntries(POSE_FIELDS.map((k) => [k, p[k]])) as unknown as BonePose;
       else notes.push(`pose "${raw.name}": bone "${name}" had no valid numbers`);
     }
     if (!Object.keys(bones).length) {
@@ -62,7 +66,10 @@ export function repairPoses(list: unknown): { poses: PoseEntry[]; notes: string[
     let id = typeof raw.id === 'string' && raw.id ? raw.id : uid();
     if (ids.has(id)) id = uid();
     ids.add(id);
-    const name = uniqueName(raw.name.trim() || 'Pose', poses.map((p) => p.name));
+    const name = uniqueName(
+      raw.name.trim() || 'Pose',
+      poses.map((p) => p.name),
+    );
     if (name !== raw.name) notes.push(`pose name "${raw.name}" was made unique`);
     poses.push({ id, name, bones });
   }

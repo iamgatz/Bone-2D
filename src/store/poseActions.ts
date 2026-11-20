@@ -46,7 +46,8 @@ export function moveBoneOrderAction(direction: -1 | 1): boolean {
   docStore.update(direction === -1 ? 'Bone order up' : 'Bone order down', (d) => {
     moved = moveBoneOrder(d.skeleton, id, direction);
   });
-  if (!moved) toast(direction === -1 ? 'The bone is already the first of its parent' : 'The bone is already the last of its parent', 'info');
+  if (!moved)
+    toast(direction === -1 ? 'The bone is already the first of its parent' : 'The bone is already the last of its parent', 'info');
   return moved;
 }
 
@@ -68,7 +69,9 @@ export function resetPose() {
   }
   const updates = ids.flatMap((id) => {
     const b = doc.bones.find((x) => x.id === id);
-    return b ? [{ id, props: { x: b.x, y: b.y, rotation: b.rotation, scaleX: b.scaleX, scaleY: b.scaleY, shearX: b.shearX, shearY: b.shearY } }] : [];
+    return b
+      ? [{ id, props: { x: b.x, y: b.y, rotation: b.rotation, scaleX: b.scaleX, scaleY: b.scaleY, shearX: b.shearX, shearY: b.shearY } }]
+      : [];
   });
   setBonePose(updates, 'Reset pose');
 }
@@ -228,7 +231,10 @@ export function renamePose(id: Id, name: string) {
   const entry = list.find((p) => p.id === id);
   const wanted = name.trim();
   if (!entry || !wanted || wanted === entry.name) return;
-  const next = newPoseName(list.filter((p) => p.id !== id), wanted);
+  const next = newPoseName(
+    list.filter((p) => p.id !== id),
+    wanted,
+  );
   docStore.update('Rename pose', (d) => {
     const p = d.poses?.find((x) => x.id === id);
     if (p) p.name = next;

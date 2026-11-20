@@ -6,7 +6,8 @@
 
 type P = ArrayLike<number>;
 
-const cross = (p: P, a: number, b: number, c: number) => (p[b * 2] - p[a * 2]) * (p[c * 2 + 1] - p[a * 2 + 1]) - (p[b * 2 + 1] - p[a * 2 + 1]) * (p[c * 2] - p[a * 2]);
+const cross = (p: P, a: number, b: number, c: number) =>
+  (p[b * 2] - p[a * 2]) * (p[c * 2 + 1] - p[a * 2 + 1]) - (p[b * 2 + 1] - p[a * 2 + 1]) * (p[c * 2] - p[a * 2]);
 
 /** The open segments a-b and c-d cross at a point that is inside both (touching at an end or sharing a vertex does not count). */
 export function segmentsCross(p: P, a: number, b: number, c: number, d: number): boolean {
@@ -67,7 +68,8 @@ export function constrainTriangles(points: P, triangles: ArrayLike<number>, cons
     link(tris.length - 1);
   };
   for (let i = 0; i < triangles.length; i += 3) {
-    if (Math.abs(cross(points, triangles[i], triangles[i + 1], triangles[i + 2])) > 1e-9) add(triangles[i], triangles[i + 1], triangles[i + 2]);
+    if (Math.abs(cross(points, triangles[i], triangles[i + 1], triangles[i + 2])) > 1e-9)
+      add(triangles[i], triangles[i + 1], triangles[i + 2]);
   }
   const fixed = new Set<number>();
   const opposite = (t: number, a: number, b: number) => tris[t].find((v) => v !== a && v !== b)!;
@@ -140,7 +142,8 @@ export function constrainTriangles(points: P, triangles: ArrayLike<number>, cons
     const ey = by - ay;
     const fx = cx - ax;
     const fy = cy - ay;
-    const det = (ex * ex + ey * ey) * (fx * dy - fy * dx) - (fx * fx + fy * fy) * (ex * dy - ey * dx) + (dx * dx + dy * dy) * (ex * fy - ey * fx);
+    const det =
+      (ex * ex + ey * ey) * (fx * dy - fy * dx) - (fx * fx + fy * fy) * (ex * dy - ey * dx) + (dx * dx + dy * dy) * (ex * fy - ey * fx);
     return det > 1e-9;
   };
   for (let pass = 0, changed = true; changed && pass < 50; pass++) {

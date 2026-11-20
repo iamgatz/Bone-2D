@@ -28,7 +28,8 @@ type RuntimeConstraint = Skeleton['constraints'][number];
 function linkOf(c: RuntimeConstraint): ConstraintLink {
   const base = { id: c.data.id, name: c.data.name };
   if (c.kind === 'ik') return { ...base, kind: 'ik', strength: clamp01(c.mix), driver: c.target, driven: [...c.bones] };
-  if (c.kind === 'transform') return { ...base, kind: 'transform', strength: clamp01(Math.max(...c.mix, 0)), driver: c.source, driven: [...c.bones] };
+  if (c.kind === 'transform')
+    return { ...base, kind: 'transform', strength: clamp01(Math.max(...c.mix, 0)), driver: c.source, driven: [...c.bones] };
   if (c.kind === 'path') return { ...base, kind: 'path', strength: clamp01(Math.max(...c.mix, 0)), driver: null, driven: [...c.bones] };
   if (c.kind === 'physics') return { ...base, kind: 'physics', strength: clamp01(c.mix), driver: null, driven: [c.bone] };
   return { ...base, kind: 'slider', strength: clamp01(c.mix), driver: c.bone, driven: [] };
@@ -93,7 +94,14 @@ export function boneStages(skeleton: Skeleton, boneId: Id): BoneStages | null {
   const stages: ConstraintStage[] = [];
   let before: PoseNumbers | null = null;
   const physics: PhysicsMode = skeleton.physicsMode === 'none' ? 'none' : 'pose';
-  const start: PoseNumbers = { x: bone.x, y: bone.y, rotation: bone.rotation, scaleX: bone.scaleX, scaleY: bone.scaleY, shearY: bone.shearY };
+  const start: PoseNumbers = {
+    x: bone.x,
+    y: bone.y,
+    rotation: bone.rotation,
+    scaleX: bone.scaleX,
+    scaleY: bone.scaleY,
+    shearY: bone.shearY,
+  };
   skeleton.updateWorldTransform(physics, (item, after) => {
     if (item instanceof BoneRT) return;
     const link = linkOf(item);
@@ -114,13 +122,33 @@ export function turn(a: number, b: number): number {
 }
 
 /** How a stage changed the bone: the turn in degrees, the move, and the factor of the scale and shear; all zero when the constraint left it as it was. */
-export function stageDelta(s: { before: PoseNumbers; after: PoseNumbers }): { rotation: number; x: number; y: number; scaleX: number; scaleY: number; shearY: number } {
+export function stageDelta(s: { before: PoseNumbers; after: PoseNumbers }): {
+  rotation: number;
+  x: number;
+  y: number;
+  scaleX: number;
+  scaleY: number;
+  shearY: number;
+} {
   const { before: a, after: b } = s;
-  return { rotation: turn(a.rotation, b.rotation), x: b.x - a.x, y: b.y - a.y, scaleX: b.scaleX - a.scaleX, scaleY: b.scaleY - a.scaleY, shearY: turn(a.shearY, b.shearY) };
+  return {
+    rotation: turn(a.rotation, b.rotation),
+    x: b.x - a.x,
+    y: b.y - a.y,
+    scaleX: b.scaleX - a.scaleX,
+    scaleY: b.scaleY - a.scaleY,
+    shearY: turn(a.shearY, b.shearY),
+  };
 }
 
 /** True when a delta is too small to show: under 0.05 of a degree or a unit (one decimal), 0.005 of a scale (two decimals). A constraint at 0%, or whose target is where the bone already is. */
-export const isQuiet = (d: ReturnType<typeof stageDelta>, eps = 0.05): boolean => Math.abs(d.rotation) < eps && Math.abs(d.x) < eps && Math.abs(d.y) < eps && Math.abs(d.scaleX) < eps * 0.1 && Math.abs(d.scaleY) < eps * 0.1 && Math.abs(d.shearY) < eps;
+export const isQuiet = (d: ReturnType<typeof stageDelta>, eps = 0.05): boolean =>
+  Math.abs(d.rotation) < eps &&
+  Math.abs(d.x) < eps &&
+  Math.abs(d.y) < eps &&
+  Math.abs(d.scaleX) < eps * 0.1 &&
+  Math.abs(d.scaleY) < eps * 0.1 &&
+  Math.abs(d.shearY) < eps;
 
 /** The links that touch one of the bones (as the driver or as a bone it moves). */
 export function linksTouching(links: readonly ConstraintLink[], bones: ReadonlySet<Id>): ConstraintLink[] {

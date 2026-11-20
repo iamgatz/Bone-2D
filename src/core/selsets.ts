@@ -12,7 +12,10 @@ export function setBones(doc: SkeletonDoc, set: SelectionSet): Id[] {
 }
 
 export function newSetName(sets: readonly SelectionSet[], wanted = 'Set'): string {
-  return uniqueName(wanted.trim() || 'Set', sets.map((s) => s.name));
+  return uniqueName(
+    wanted.trim() || 'Set',
+    sets.map((s) => s.name),
+  );
 }
 
 export function newSelectionSet(doc: SkeletonDoc, bones: readonly Id[], name?: string): SelectionSet {

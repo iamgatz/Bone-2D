@@ -53,9 +53,17 @@ describe('path constraints vs the official runtime', () => {
     for (const ob of official.bones) {
       const mine = ours.bones[data.boneIndex.get(rig.boneId[ob.data.name] ?? doc.bones.find((b) => b.name === ob.data.name)!.id)!];
       const q = ob.appliedPose;
-      const pairs: [string, number, number][] = [['a', mine.a, q.a], ['b', mine.b, q.b], ['c', mine.c, q.c], ['d', mine.d, q.d], ['worldX', mine.worldX, q.worldX], ['worldY', mine.worldY, q.worldY]];
+      const pairs: [string, number, number][] = [
+        ['a', mine.a, q.a],
+        ['b', mine.b, q.b],
+        ['c', mine.c, q.c],
+        ['d', mine.d, q.d],
+        ['worldX', mine.worldX, q.worldX],
+        ['worldY', mine.worldY, q.worldY],
+      ];
       for (const [what, x, y] of pairs) {
-        if (!(Math.abs(x - y) <= tol * Math.max(1, Math.abs(x), Math.abs(y)))) throw new Error(`t=${t} skin=${opts.skin ?? 'default'} bone ${ob.data.name}.${what}: ours=${x} official=${y}`);
+        if (!(Math.abs(x - y) <= tol * Math.max(1, Math.abs(x), Math.abs(y))))
+          throw new Error(`t=${t} skin=${opts.skin ?? 'default'} bone ${ob.data.name}.${what}: ours=${x} official=${y}`);
       }
       if (pathBones.includes(ob.data.name)) compared++;
     }
@@ -176,7 +184,11 @@ describe('path constraints vs the official runtime', () => {
 
 describe('path constraints: geometry that can be checked by hand', () => {
   /** root + two bones on a straight 300 unit path along x. */
-  function straight(over: Partial<Parameters<typeof newPathConstraint>[0]>, closed = false, constantSpeed = true): { project: Project; sk: Skeleton; ids: string[] } {
+  function straight(
+    over: Partial<Parameters<typeof newPathConstraint>[0]>,
+    closed = false,
+    constantSpeed = true,
+  ): { project: Project; sk: Skeleton; ids: string[] } {
     const project = emptyProject('hand');
     const d = project.skeleton;
     const a = newBone({ name: 'a', parent: d.bones[0].id, length: 50, y: 40, x: -20 });
@@ -186,8 +198,24 @@ describe('path constraints: geometry that can be checked by hand', () => {
     d.slots.push(slot);
     d.skins[0].attachments[slot.id] = {
       p: closed
-        ? { type: 'path', name: 'p', color: [1, 1, 1, 1], closed: true, constantSpeed, weights: null, vertices: [0, 33, 0, 0, 100, 0, 200, 0, 300, 0, 300, 33, 300, 67, 300, 100, 200, 100, 100, 100, 0, 100, 0, 67] }
-        : { type: 'path', name: 'p', color: [1, 1, 1, 1], closed: false, constantSpeed, weights: null, vertices: [0, 0, 0, 0, 100, 0, 200, 0, 300, 0, 300, 0] },
+        ? {
+            type: 'path',
+            name: 'p',
+            color: [1, 1, 1, 1],
+            closed: true,
+            constantSpeed,
+            weights: null,
+            vertices: [0, 33, 0, 0, 100, 0, 200, 0, 300, 0, 300, 33, 300, 67, 300, 100, 200, 100, 100, 100, 0, 100, 0, 67],
+          }
+        : {
+            type: 'path',
+            name: 'p',
+            color: [1, 1, 1, 1],
+            closed: false,
+            constantSpeed,
+            weights: null,
+            vertices: [0, 0, 0, 0, 100, 0, 200, 0, 300, 0, 300, 0],
+          },
     };
     d.constraints.push(newPathConstraint({ name: 'c', bones: [a.id, b.id], target: slot.id, ...over }));
     const sk = createSkeleton(compileSkeleton(d));
@@ -197,9 +225,16 @@ describe('path constraints: geometry that can be checked by hand', () => {
 
   it('fixed position and spacing put the bones at known places (constant speed and setup lengths agree on a straight path)', () => {
     for (const constantSpeed of [true, false]) {
-      const { sk, ids } = straight({ positionMode: 'fixed', spacingMode: 'fixed', rotateMode: 'tangent', position: 120, spacing: 50 }, false, constantSpeed);
+      const { sk, ids } = straight(
+        { positionMode: 'fixed', spacingMode: 'fixed', rotateMode: 'tangent', position: 120, spacing: 50 },
+        false,
+        constantSpeed,
+      );
       const [a, b] = ids.map((id) => sk.boneById(id)!);
-      expect([a.worldX, a.worldY].map((v) => +v.toFixed(3)), `constantSpeed=${constantSpeed}`).toEqual([120, 0]);
+      expect(
+        [a.worldX, a.worldY].map((v) => +v.toFixed(3)),
+        `constantSpeed=${constantSpeed}`,
+      ).toEqual([120, 0]);
       expect([b.worldX, b.worldY].map((v) => +v.toFixed(3))).toEqual([170, 0]);
       expect(Math.abs(Math.atan2(a.c, a.a))).toBeLessThan(1e-6); // tangent: pointing along +x
     }
@@ -223,7 +258,11 @@ describe('path constraints: geometry that can be checked by hand', () => {
     // a 300 x 100 rectangle with straight edges: 800 units around; 0.25 of it is 200 units along the bottom edge
     for (const constantSpeed of [true, false]) {
       for (const position of [0.25, 1.25, -0.75]) {
-        const { sk, ids } = straight({ positionMode: 'percent', spacingMode: 'fixed', rotateMode: 'tangent', position, spacing: 10 }, true, constantSpeed);
+        const { sk, ids } = straight(
+          { positionMode: 'percent', spacingMode: 'fixed', rotateMode: 'tangent', position, spacing: 10 },
+          true,
+          constantSpeed,
+        );
         const a = sk.boneById(ids[0])!;
         expect([+a.worldX.toFixed(2), +a.worldY.toFixed(2)], `position ${position}, constantSpeed=${constantSpeed}`).toEqual([200, 0]);
       }
@@ -231,7 +270,14 @@ describe('path constraints: geometry that can be checked by hand', () => {
   });
 
   it('mix 0 leaves the bones alone', () => {
-    const { sk, ids } = straight({ positionMode: 'fixed', spacingMode: 'fixed', rotateMode: 'tangent', position: 120, spacing: 50, mix: { rotate: 0, x: 0, y: 0 } });
+    const { sk, ids } = straight({
+      positionMode: 'fixed',
+      spacingMode: 'fixed',
+      rotateMode: 'tangent',
+      position: 120,
+      spacing: 50,
+      mix: { rotate: 0, x: 0, y: 0 },
+    });
     const a = sk.boneById(ids[0])!;
     expect(a.worldX).toBeCloseTo(-20, 4);
     expect(a.worldY).toBeCloseTo(40, 4);

@@ -88,7 +88,11 @@ export function repairProject(project: Project): string[] {
   if (project.guides !== undefined) {
     const clean = cleanGuides(project.guides);
     const old = project.guides as { x?: unknown; y?: unknown } | null;
-    const same = !!old && typeof old === 'object' && JSON.stringify(old.x) === JSON.stringify(clean.x) && JSON.stringify(old.y) === JSON.stringify(clean.y);
+    const same =
+      !!old &&
+      typeof old === 'object' &&
+      JSON.stringify(old.x) === JSON.stringify(clean.x) &&
+      JSON.stringify(old.y) === JSON.stringify(clean.y);
     if (!same) note('the guides were repaired');
     project.guides = clean;
   }
@@ -111,7 +115,10 @@ export function repairProject(project: Project): string[] {
       return false;
     }
     imageNames.add(img.name);
-    if (img.psd !== undefined && !(Array.isArray(img.psd) && img.psd.length === 2 && img.psd.every((n) => typeof n === 'number' && Number.isFinite(n)))) {
+    if (
+      img.psd !== undefined &&
+      !(Array.isArray(img.psd) && img.psd.length === 2 && img.psd.every((n) => typeof n === 'number' && Number.isFinite(n)))
+    ) {
       delete img.psd;
       note(`image "${img.name}": PSD position dropped`);
     }
@@ -128,7 +135,7 @@ function repairOthers(project: Project, note: Note) {
     project.others = [];
     note('the list of other skeletons was repaired');
   }
-  const kept = project.others.filter((o) => o && typeof o === 'object' && Array.isArray((o).bones));
+  const kept = project.others.filter((o) => o && typeof o === 'object' && Array.isArray(o.bones));
   if (kept.length !== project.others.length) note('skeletons that could not be read were dropped');
   project.others = kept;
   const at = project.activeAt;
@@ -139,7 +146,15 @@ function repairOthers(project: Project, note: Note) {
   const seen = new Set<string>([isString(project.skeleton.name) ? project.skeleton.name : '']);
   for (const other of kept) {
     // the same checks as for the edited one, on a project that has this skeleton and its own pose library and mix table
-    const sub: Project = { format: 'bone2d', version: 1, name: project.name, skeleton: other, images: [], poses: other.aside?.poses, mixes: other.aside?.mixes };
+    const sub: Project = {
+      format: 'bone2d',
+      version: 1,
+      name: project.name,
+      skeleton: other,
+      images: [],
+      poses: other.aside?.poses,
+      mixes: other.aside?.mixes,
+    };
     for (const m of repairProject(sub)) note(`skeleton "${other.name}": ${m}`);
     const aside: NonNullable<SkeletonDoc['aside']> = {};
     if (sub.poses?.length) aside.poses = sub.poses;
@@ -259,7 +274,8 @@ function repairFolders(doc: SkeletonDoc, note: Note) {
   dedupeNames(doc.drawOrderFolders, 'folder', 'draw order folder', note);
   const before = JSON.stringify(doc.drawOrderFolders.map((f) => f.slots));
   const gone = pruneFolders(doc);
-  if (gone.length || JSON.stringify((doc.drawOrderFolders ?? []).map((f) => f.slots)) !== before) note('draw order folders repaired (unknown or shared slots, empty folders)');
+  if (gone.length || JSON.stringify((doc.drawOrderFolders ?? []).map((f) => f.slots)) !== before)
+    note('draw order folders repaired (unknown or shared slots, empty folders)');
 }
 
 /** Selection sets: a list of {id, name, bones}; a set keeps only the bones that exist and a set with none is dropped. */
@@ -281,7 +297,8 @@ function repairSelectionSets(doc: SkeletonDoc, note: Note) {
   dedupeIds(doc.selectionSets, 'selection set', note);
   dedupeNames(doc.selectionSets, 'Set', 'selection set', note);
   if (!doc.selectionSets.length) delete doc.selectionSets;
-  if (JSON.stringify(doc.selectionSets ?? []) !== before && before !== '[]') note('selection sets repaired (damaged entries, unknown bones, empty sets)');
+  if (JSON.stringify(doc.selectionSets ?? []) !== before && before !== '[]')
+    note('selection sets repaired (damaged entries, unknown bones, empty sets)');
 }
 
 function repairSlots(doc: SkeletonDoc, note: Note) {
@@ -305,17 +322,25 @@ function repairSlots(doc: SkeletonDoc, note: Note) {
  * Checks per vertex influences, fixing what can be fixed in place. Returns a problem or null.
  * A vertex without usable influences follows the root (the same fallback `compileSkeleton` applies).
  */
-function repairWeights(weights: Influence[][], label: string, boneIds: Set<Id>, rootId: Id, fixed: (message: string) => void): string | null {
+function repairWeights(
+  weights: Influence[][],
+  label: string,
+  boneIds: Set<Id>,
+  rootId: Id,
+  fixed: (message: string) => void,
+): string | null {
   for (let i = 0; i < weights.length; i++) {
     const list = weights[i];
     if (!Array.isArray(list)) return 'invalid weights';
-    const kept = list.filter((inf) => Array.isArray(inf) && boneIds.has(inf[0]) && finite(inf[1]) && finite(inf[2]) && finite(inf[3]) && inf[3] > 0);
+    const kept = list.filter(
+      (inf) => Array.isArray(inf) && boneIds.has(inf[0]) && finite(inf[1]) && finite(inf[2]) && finite(inf[3]) && inf[3] > 0,
+    );
     const sum = kept.reduce((s, inf) => s + inf[3], 0);
     if (kept.length === 0) {
       weights[i] = [[rootId, 0, 0, 1]];
       fixed(`${label}: vertex ${i} had no influences`);
     } else if (kept.length !== list.length || Math.abs(sum - 1) > 1e-6) {
-      weights[i] = kept.map((inf) => [inf[0], inf[1], inf[2], inf[3] / sum] as (typeof inf));
+      weights[i] = kept.map((inf) => [inf[0], inf[1], inf[2], inf[3] / sum] as typeof inf);
       fixed(`${label}: vertex ${i} had invalid or unnormalized influences`);
     }
   }
@@ -323,7 +348,13 @@ function repairWeights(weights: Influence[][], label: string, boneIds: Set<Id>, 
 }
 
 /** Why an attachment cannot be used (null = fine). Fixes what can be fixed in place and reports it through `fixed`. */
-function attachmentProblem(att: Attachment, boneIds: Set<Id>, slotIds: Set<Id>, rootId: Id, fixed: (message: string) => void): string | null {
+function attachmentProblem(
+  att: Attachment,
+  boneIds: Set<Id>,
+  slotIds: Set<Id>,
+  rootId: Id,
+  fixed: (message: string) => void,
+): string | null {
   if (att && att.type === 'point') {
     if (!isString(att.name)) return 'missing name';
     if (!validColor(att.color, 4)) att.color = [...DEFAULT_POINT_COLOR];
@@ -374,16 +405,31 @@ function attachmentProblem(att: Attachment, boneIds: Set<Id>, slotIds: Set<Id>, 
   if (att.sequence !== undefined) {
     const cleaned = cleanSequence(att.sequence);
     const old = att.sequence as Partial<typeof cleaned> | null;
-    if (!old || typeof old !== 'object' || old.count !== cleaned.count || old.start !== cleaned.start || old.digits !== cleaned.digits || old.setupIndex !== cleaned.setupIndex) fixed(`${att.type} "${att.name}": its sequence was repaired`);
+    if (
+      !old ||
+      typeof old !== 'object' ||
+      old.count !== cleaned.count ||
+      old.start !== cleaned.start ||
+      old.digits !== cleaned.digits ||
+      old.setupIndex !== cleaned.setupIndex
+    )
+      fixed(`${att.type} "${att.name}": its sequence was repaired`);
     att.sequence = cleaned;
   }
   if (att.type === 'region') {
-    for (const k of ['x', 'y', 'rotation', 'scaleX', 'scaleY', 'width', 'height'] as const) if (!finite(att[k])) return `${k} is not a number`;
+    for (const k of ['x', 'y', 'rotation', 'scaleX', 'scaleY', 'width', 'height'] as const)
+      if (!finite(att[k])) return `${k} is not a number`;
     return null;
   }
   if (att.link !== undefined) {
     const l = att.link as Partial<NonNullable<typeof att.link>> | null;
-    if (!l || typeof l !== 'object' || !isString(l.source) || !(l.slot === null || isString(l.slot)) || !(l.skin === null || isString(l.skin))) {
+    if (
+      !l ||
+      typeof l !== 'object' ||
+      !isString(l.source) ||
+      !(l.slot === null || isString(l.slot)) ||
+      !(l.skin === null || isString(l.skin))
+    ) {
       delete att.link;
       fixed(`mesh "${att.name}": its link to a source mesh was not valid and was removed`);
     } else att.link.deform = l.deform !== false;
@@ -461,16 +507,27 @@ function repairPhysics(c: Extract<SkeletonDoc['constraints'][number], { type: 'p
   fix('mass', c.mass > 0, () => (c.mass = 1));
   fix('damping', c.damping >= 0 && c.damping <= 1, () => (c.damping = Math.min(1, Math.max(0, c.damping))));
   fix('limit', c.limit >= 0, () => (c.limit = 5000));
-  if (!c.global || typeof c.global !== 'object') c.global = { inertia: false, strength: false, damping: false, mass: false, wind: false, gravity: false, mix: false };
+  if (!c.global || typeof c.global !== 'object')
+    c.global = { inertia: false, strength: false, damping: false, mass: false, wind: false, gravity: false, mix: false };
   for (const p of PHYSICS_PARAMS) c.global[p] = c.global[p] === true;
 }
 
-function constraintProblem(c: SkeletonDoc['constraints'][number], boneById: Map<Id, SkeletonDoc['bones'][number]>, slotIds: Set<Id>): string | null {
-  if (!c || (c.type !== 'ik' && c.type !== 'transform' && c.type !== 'slider' && c.type !== 'path' && c.type !== 'physics')) return 'unknown type';
+function constraintProblem(
+  c: SkeletonDoc['constraints'][number],
+  boneById: Map<Id, SkeletonDoc['bones'][number]>,
+  slotIds: Set<Id>,
+): string | null {
+  if (!c || (c.type !== 'ik' && c.type !== 'transform' && c.type !== 'slider' && c.type !== 'path' && c.type !== 'physics'))
+    return 'unknown type';
   if (c.type === 'physics') {
     if (!boneById.has(c.bone)) return 'bone does not exist';
     if (c.scaleY !== 'none' && c.scaleY !== 'uniform' && c.scaleY !== 'volume') return 'unknown mode';
-    if (![c.x, c.y, c.rotate, c.scaleX, c.shearX, c.limit, c.fps, c.inertia, c.strength, c.damping, c.mass, c.wind, c.gravity, c.mix].every(finite)) return 'a value is not a number';
+    if (
+      ![c.x, c.y, c.rotate, c.scaleX, c.shearX, c.limit, c.fps, c.inertia, c.strength, c.damping, c.mass, c.wind, c.gravity, c.mix].every(
+        finite,
+      )
+    )
+      return 'a value is not a number';
     return null;
   }
   if (c.type === 'slider') {
@@ -482,8 +539,14 @@ function constraintProblem(c: SkeletonDoc['constraints'][number], boneById: Map<
   if (c.type === 'path') {
     if (!Array.isArray(c.bones) || c.bones.length === 0 || c.bones.some((id) => !boneById.has(id))) return 'bone does not exist';
     if (!slotIds.has(c.target)) return 'target slot does not exist';
-    if (!PATH_POSITION_MODES.includes(c.positionMode) || !PATH_SPACING_MODES.includes(c.spacingMode) || !PATH_ROTATE_MODES.includes(c.rotateMode)) return 'unknown mode';
-    if (![c.offsetRotation, c.position, c.spacing].every(finite) || !c.mix || ![c.mix.rotate, c.mix.x, c.mix.y].every(finite)) return 'a value is not a number';
+    if (
+      !PATH_POSITION_MODES.includes(c.positionMode) ||
+      !PATH_SPACING_MODES.includes(c.spacingMode) ||
+      !PATH_ROTATE_MODES.includes(c.rotateMode)
+    )
+      return 'unknown mode';
+    if (![c.offsetRotation, c.position, c.spacing].every(finite) || !c.mix || ![c.mix.rotate, c.mix.x, c.mix.y].every(finite))
+      return 'a value is not a number';
     return null;
   }
   if (!Array.isArray(c.bones) || c.bones.length === 0 || c.bones.some((id) => !boneById.has(id))) return 'bone does not exist';
@@ -499,9 +562,11 @@ function constraintProblem(c: SkeletonDoc['constraints'][number], boneById: Map<
   if (!Array.isArray(c.properties)) return 'no properties';
   for (const f of c.properties) {
     if (!TRANSFORM_PROPS.includes(f.prop) || !finite(f.offset) || !Array.isArray(f.to)) return 'invalid property';
-    for (const t of f.to) if (!TRANSFORM_PROPS.includes(t.prop) || !finite(t.offset) || !finite(t.max) || !finite(t.scale)) return 'invalid mapped property';
+    for (const t of f.to)
+      if (!TRANSFORM_PROPS.includes(t.prop) || !finite(t.offset) || !finite(t.max) || !finite(t.scale)) return 'invalid mapped property';
   }
-  if (!c.offsets || !c.mix || Object.values(c.offsets).some((v) => !finite(v)) || Object.values(c.mix).some((v) => !finite(v))) return 'offsets or mix is not a number';
+  if (!c.offsets || !c.mix || Object.values(c.offsets).some((v) => !finite(v)) || Object.values(c.mix).some((v) => !finite(v)))
+    return 'offsets or mix is not a number';
   return null;
 }
 
@@ -522,8 +587,10 @@ function repairEvents(doc: SkeletonDoc, note: Note) {
       delete e.volume;
       delete e.balance;
     } else {
-      if (e.volume !== undefined && (!finite(e.volume) || e.volume < 0 || e.volume > 1)) e.volume = finite(e.volume) ? Math.min(1, Math.max(0, e.volume)) : 1;
-      if (e.balance !== undefined && (!finite(e.balance) || e.balance < -1 || e.balance > 1)) e.balance = finite(e.balance) ? Math.min(1, Math.max(-1, e.balance)) : 0;
+      if (e.volume !== undefined && (!finite(e.volume) || e.volume < 0 || e.volume > 1))
+        e.volume = finite(e.volume) ? Math.min(1, Math.max(0, e.volume)) : 1;
+      if (e.balance !== undefined && (!finite(e.balance) || e.balance < -1 || e.balance > 1))
+        e.balance = finite(e.balance) ? Math.min(1, Math.max(-1, e.balance)) : 0;
     }
   }
 }
@@ -607,7 +674,18 @@ function repairAnimations(doc: SkeletonDoc, note: Note) {
         note(`${where}: timelines of a missing bone removed`);
         continue;
       }
-      const spec = { rotate: 1, translate: 2, translatex: 1, translatey: 1, scale: 2, scalex: 1, scaley: 1, shear: 2, shearx: 1, sheary: 1 } as const;
+      const spec = {
+        rotate: 1,
+        translate: 2,
+        translatex: 1,
+        translatey: 1,
+        scale: 2,
+        scalex: 1,
+        scaley: 1,
+        shear: 2,
+        shearx: 1,
+        sheary: 1,
+      } as const;
       for (const prop of Object.keys(tl) as (keyof typeof spec)[]) {
         const keys = tl[prop];
         if (!(prop in spec) || !Array.isArray(keys)) {
@@ -808,7 +886,11 @@ function repairSequences(a: Animation, skins: Map<Id, SkeletonDoc['skins'][numbe
         const cleaned = keys.filter((k) => k && typeof k === 'object' && finite(k.time) && k.time >= 0).map((k) => cleanSequenceKey(k));
         cleaned.sort((x, y) => x.time - y.time);
         const unique = cleaned.filter((k, i) => i === cleaned.length - 1 || Math.abs(cleaned[i + 1].time - k.time) > 1e-6);
-        const same = unique.length === keys.length && unique.every((k, i) => k.time === keys[i].time && k.mode === keys[i].mode && k.index === keys[i].index && k.delay === keys[i].delay);
+        const same =
+          unique.length === keys.length &&
+          unique.every(
+            (k, i) => k.time === keys[i].time && k.mode === keys[i].mode && k.index === keys[i].index && k.delay === keys[i].delay,
+          );
         if (!same) note(`${where}: sequence keys of "${name}" repaired`);
         if (!same) perSlot[name] = unique;
         if (unique.length === 0) delete perSlot[name];
@@ -820,7 +902,14 @@ function repairSequences(a: Animation, skins: Map<Id, SkeletonDoc['skins'][numbe
   if (Object.keys(a.sequence).length === 0) delete a.sequence;
 }
 
-function repairDeform(doc: SkeletonDoc, a: Animation, skins: Map<Id, SkeletonDoc['skins'][number]>, boneIds: Set<Id>, note: Note, where: string) {
+function repairDeform(
+  doc: SkeletonDoc,
+  a: Animation,
+  skins: Map<Id, SkeletonDoc['skins'][number]>,
+  boneIds: Set<Id>,
+  note: Note,
+  where: string,
+) {
   const has = (id: Id) => boneIds.has(id);
   for (const skinId of Object.keys(a.deform)) {
     const skin = skins.get(skinId);

@@ -6,7 +6,14 @@ import { assets } from '../src/store/assets';
 import type { ImageAsset } from '../src/store/assets';
 import { docStore } from '../src/store/doc';
 
-const fake = (name: string, width: number, height: number, version: number): ImageAsset => ({ name, width, height, blob: new Blob([]), bitmap: { close() {}, width, height }, version });
+const fake = (name: string, width: number, height: number, version: number): ImageAsset => ({
+  name,
+  width,
+  height,
+  blob: new Blob([]),
+  bitmap: { close() {}, width, height },
+  version,
+});
 
 beforeEach(() => {
   const p = emptyProject('px');

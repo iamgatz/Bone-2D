@@ -26,12 +26,24 @@ function clampAt(at: number | undefined, others: number): number {
 
 /** A name for a new skeleton that no other skeleton of the project has. */
 export function newSkeletonName(p: Pick<Project, 'skeleton' | 'others' | 'activeAt'>, base: string): string {
-  return uniqueName(base.trim() || 'skeleton', skeletonList(p).map((d) => d.name));
+  return uniqueName(
+    base.trim() || 'skeleton',
+    skeletonList(p).map((d) => d.name),
+  );
 }
 
 /** A skeleton with a root bone and nothing else. */
 export function blankSkeleton(name: string, fps = 30): SkeletonDoc {
-  return { name, fps, bones: [newBone({ name: 'root' })], slots: [], skins: [newSkin('default')], constraints: [], events: [], animations: [] };
+  return {
+    name,
+    fps,
+    bones: [newBone({ name: 'root' })],
+    slots: [],
+    skins: [newSkin('default')],
+    constraints: [],
+    events: [],
+    animations: [],
+  };
 }
 
 /** Puts the per-skeleton parts of the project away with the skeleton that leaves, and takes the ones of the skeleton that arrives. */
@@ -134,6 +146,9 @@ export function renameSkeleton(p: Project, index: number, name: string): boolean
   const doc = list[index];
   const wanted = name.trim();
   if (!doc || !wanted || wanted === doc.name) return false;
-  doc.name = uniqueName(wanted, list.filter((d) => d !== doc).map((d) => d.name));
+  doc.name = uniqueName(
+    wanted,
+    list.filter((d) => d !== doc).map((d) => d.name),
+  );
   return true;
 }

@@ -79,7 +79,17 @@ describe('keeping and applying poses', () => {
   beforeEach(() => {
     const f = buildFixture();
     docStore.replace(f.project);
-    uiStore.patch({ mode: 'setup', tool: 'select', animationId: f.project.skeleton.animations[0].id, skinId: null, time: 0, selection: emptySelection, overrides: {}, autoKey: true, playing: false });
+    uiStore.patch({
+      mode: 'setup',
+      tool: 'select',
+      animationId: f.project.skeleton.animations[0].id,
+      skinId: null,
+      time: 0,
+      selection: emptySelection,
+      overrides: {},
+      autoKey: true,
+      playing: false,
+    });
   });
 
   it('keeps the pose of the selected bones by name and puts it back after the bones moved', () => {

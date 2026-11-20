@@ -11,8 +11,6 @@ import { importSpineJson } from '../src/core/import/spineJson';
 import { diffGraphs } from './binarykit';
 import { loadOfficial, loadOfficialBinary } from './official';
 
- 
-
 const STRINGS = ['slotA', 'slotB', 'body', 'mesh', 'linked', 'sideview'];
 const ref = (s: string | null) => (s === null ? 0 : STRINGS.indexOf(s) + 1);
 
@@ -178,7 +176,13 @@ function compose(): Uint8Array {
 
 function atlasText(): string {
   const names = ['body01', 'body02', 'body03', 'mesh', 'sideview'];
-  return writeAtlas(packAtlas(names.map((name) => ({ name, width: 32, height: 32 })), { maxSize: 256, padding: 2 }), (i) => `a${i}.png`);
+  return writeAtlas(
+    packAtlas(
+      names.map((name) => ({ name, width: 32, height: 32 })),
+      { maxSize: 256, padding: 2 },
+    ),
+    (i) => `a${i}.png`,
+  );
 }
 
 describe('binary reader on files written the way Spine writes them', () => {

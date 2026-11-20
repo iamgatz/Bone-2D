@@ -18,10 +18,15 @@ function plain() {
     s.blend = 'normal';
   }
   doc.constraints = doc.constraints.filter((c) => c.type === 'ik' || c.type === 'transform');
-  for (const skin of doc.skins) for (const slotId of Object.keys(skin.attachments)) for (const [name, a] of Object.entries(skin.attachments[slotId])) if (a.type === 'clipping' || ((a.type === 'region' || a.type === 'mesh') && a.sequence)) delete skin.attachments[slotId][name];
+  for (const skin of doc.skins)
+    for (const slotId of Object.keys(skin.attachments))
+      for (const [name, a] of Object.entries(skin.attachments[slotId]))
+        if (a.type === 'clipping' || ((a.type === 'region' || a.type === 'mesh') && a.sequence)) delete skin.attachments[slotId][name];
   for (const a of doc.animations) delete a.drawOrderFolder;
   doc.events.forEach((e) => delete e.audio);
-  for (const skin of doc.skins) for (const slotId of Object.keys(skin.attachments)) for (const a of Object.values(skin.attachments[slotId])) if (a.type === 'mesh') delete a.link;
+  for (const skin of doc.skins)
+    for (const slotId of Object.keys(skin.attachments))
+      for (const a of Object.values(skin.attachments[slotId])) if (a.type === 'mesh') delete a.link;
   return f;
 }
 
@@ -33,7 +38,14 @@ describe('engineNeeds', () => {
 
   it('notes the settings of the export that the engine has to match', () => {
     const doc = plain().project.skeleton;
-    expect(ids(engineNeeds(doc, { format: 'binary', scale: 0.5, pma: true, filter: 'Nearest', rotate: true }))).toEqual(['version', 'binary', 'scale', 'pma', 'nearest', 'rotate']);
+    expect(ids(engineNeeds(doc, { format: 'binary', scale: 0.5, pma: true, filter: 'Nearest', rotate: true }))).toEqual([
+      'version',
+      'binary',
+      'scale',
+      'pma',
+      'nearest',
+      'rotate',
+    ]);
     expect(ids(engineNeeds(doc, { format: 'json', scale: 1, pma: false, filter: 'Linear', rotate: false }))).toEqual(['version']);
     expect(engineNeeds(doc, { pma: true }).every((n) => n.level === 'note')).toBe(true);
   });
@@ -52,7 +64,16 @@ describe('engineNeeds', () => {
   it('finds clipping, and inverse clipping on top of it', () => {
     const doc = plain().project.skeleton;
     const slot = doc.slots[0];
-    const clip = (inverse: boolean): Attachment => ({ type: 'clipping', name: 'c', color: [1, 1, 1, 1], vertices: [0, 0, 1, 0, 1, 1], weights: null, end: null, convex: false, inverse });
+    const clip = (inverse: boolean): Attachment => ({
+      type: 'clipping',
+      name: 'c',
+      color: [1, 1, 1, 1],
+      vertices: [0, 0, 1, 0, 1, 1],
+      weights: null,
+      end: null,
+      convex: false,
+      inverse,
+    });
     doc.skins[0].attachments[slot.id] = { ...doc.skins[0].attachments[slot.id], c: clip(false) };
     expect(ids(engineNeeds(doc))).toContain('clipping');
     expect(ids(engineNeeds(doc))).not.toContain('inverse');
@@ -71,11 +92,15 @@ describe('engineNeeds', () => {
 
   it('finds sequences, draw order folders, a linked mesh in another slot and events with audio', () => {
     const doc = plain().project.skeleton;
-    const region = Object.values(doc.skins[0].attachments).flatMap((m) => Object.values(m)).find((a) => a.type === 'region');
+    const region = Object.values(doc.skins[0].attachments)
+      .flatMap((m) => Object.values(m))
+      .find((a) => a.type === 'region');
     if (region?.type === 'region') region.sequence = { count: 2, start: 0, digits: 0, setupIndex: 0 };
     doc.animations[0].drawOrderFolder = { f1: [{ time: 0, order: [] }] };
     doc.events.push({ id: 'e1', name: 'step', int: 0, float: 0, string: '', audio: 'step.wav' });
-    const mesh = Object.entries(doc.skins[0].attachments).flatMap(([slotId, m]) => Object.values(m).map((a) => ({ slotId, a }))).find((x) => x.a.type === 'mesh' && !x.a.link);
+    const mesh = Object.entries(doc.skins[0].attachments)
+      .flatMap(([slotId, m]) => Object.values(m).map((a) => ({ slotId, a })))
+      .find((x) => x.a.type === 'mesh' && !x.a.link);
     if (mesh?.a.type === 'mesh') mesh.a.link = { skin: null, source: 'x', slot: 'another slot', deform: false };
     const got = ids(engineNeeds(doc));
     expect(got).toEqual(expect.arrayContaining(['sequence', 'folder', 'audio', 'linked']));
@@ -84,7 +109,8 @@ describe('engineNeeds', () => {
 
   it('does not report what the skeleton does not use', () => {
     const got = ids(engineNeeds(plain().project.skeleton));
-    for (const id of ['twoColor', 'blend', 'clipping', 'inverse', 'physics', 'slider', 'sequence', 'folder', 'linked', 'audio']) expect(got).not.toContain(id);
+    for (const id of ['twoColor', 'blend', 'clipping', 'inverse', 'physics', 'slider', 'sequence', 'folder', 'linked', 'audio'])
+      expect(got).not.toContain(id);
   });
 });
 

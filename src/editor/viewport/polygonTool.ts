@@ -4,7 +4,14 @@ import { meshWorldVertices, pointWorld } from '@/core/skeleton';
 import type { Id, PolygonAttachment } from '@/core/model';
 import { setSelection } from '@/store/actions';
 import { docStore } from '@/store/doc';
-import { addPolygonVertex, createPoint, createPolygon, deletePolygonVertices, getPolygon, movePolygonVertices } from '@/store/polygonActions';
+import {
+  addPolygonVertex,
+  createPoint,
+  createPolygon,
+  deletePolygonVertices,
+  getPolygon,
+  movePolygonVertices,
+} from '@/store/polygonActions';
 import type { PolygonKind } from '@/store/polygonActions';
 import { POLYGON_TOOLS, toast, uiStore } from '@/store/ui';
 import { worldToScreen } from '@/store/scene';
@@ -36,11 +43,10 @@ interface Draft {
   cursor: [number, number];
 }
 
-type Drag =
-  | { kind: 'vertices'; start: Float32Array; weights: Map<number, number>; p0: [number, number] }
-  | Marquee;
+type Drag = { kind: 'vertices'; start: Float32Array; weights: Map<number, number>; p0: [number, number] } | Marquee;
 
-const rgba = (c: ArrayLike<number>, a: number) => `rgba(${Math.round(c[0] * 255)},${Math.round(c[1] * 255)},${Math.round(c[2] * 255)},${a})`;
+const rgba = (c: ArrayLike<number>, a: number) =>
+  `rgba(${Math.round(c[0] * 255)},${Math.round(c[1] * 255)},${Math.round(c[2] * 255)},${a})`;
 
 export class PolygonTool {
   /** The polygon being drawn with a creation tool (nothing is in the document until it is committed). */
@@ -267,7 +273,12 @@ export class PolygonTool {
         if (selected && editing) {
           const sel = new Set(ui.selection.vertices);
           // soft selection: the vertices that follow the selected ones (the weights of the drag while one is going)
-          const soft = this.drag?.kind === 'vertices' ? this.drag.weights : ui.meshView.soft && sel.size ? softWeights(v, ui.selection.vertices, ui.meshView.softRadius, ui.meshView.softShape) : null;
+          const soft =
+            this.drag?.kind === 'vertices'
+              ? this.drag.weights
+              : ui.meshView.soft && sel.size
+                ? softWeights(v, ui.selection.vertices, ui.meshView.softRadius, ui.meshView.softShape)
+                : null;
           for (let i = 0; i < n; i++) {
             const [x, y] = worldToScreen(cam, w, h, v[i * 2], v[i * 2 + 1]);
             const on = sel.has(i);

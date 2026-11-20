@@ -12,7 +12,9 @@ function setupMats(project: Project) {
   const skeleton = createSkeleton(compileSkeleton(project.skeleton));
   startLikeOfficial(skeleton);
   skeleton.updateWorldTransform();
-  return new Map<string, Mat>(skeleton.bones.map((b) => [b.data.id, { a: b.a, b: b.b, c: b.c, d: b.d, x: b.worldX, y: b.worldY }] as const));
+  return new Map<string, Mat>(
+    skeleton.bones.map((b) => [b.data.id, { a: b.a, b: b.b, c: b.c, d: b.d, x: b.worldX, y: b.worldY }] as const),
+  );
 }
 
 function run(mirror: boolean, boneName: string) {
@@ -83,7 +85,9 @@ describe('mirror', () => {
     }
     expect(copyOf(`${original.name} copy`) ?? null).not.toBeUndefined();
     // each copy's world matrix is the reflection of its original's: compare in the order the bones were copied
-    const originals = project.skeleton.bones.filter((b) => !result.bones.includes(b.id) && (b.id === original.id || isUnder(project, b.id, original.id)));
+    const originals = project.skeleton.bones.filter(
+      (b) => !result.bones.includes(b.id) && (b.id === original.id || isUnder(project, b.id, original.id)),
+    );
     expect(originals.length).toBe(result.bones.length);
     originals.forEach((o, i) => {
       const w = before.get(o.id)!;
@@ -109,7 +113,8 @@ describe('mirror', () => {
           const slot = project.skeleton.slots.find((s) => s.id === slotId)!;
           if (!copyIds.has(slot.bone)) continue;
           // an influence that pointed into the copied set now points at the copies
-          for (const v of att.weights) for (const [b] of v) if (b !== slot.bone) expect(project.skeleton.bones.some((x) => x.id === b)).toBe(true);
+          for (const v of att.weights)
+            for (const [b] of v) if (b !== slot.bone) expect(project.skeleton.bones.some((x) => x.id === b)).toBe(true);
         }
       }
     }

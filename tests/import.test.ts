@@ -76,7 +76,11 @@ describe('Spine JSON import: round trip', () => {
 
 describe('atlas parser', () => {
   it('reads what our own atlas writer produces', () => {
-    const images = [{ name: 'body', width: 64, height: 64 }, { name: 'parts/head', width: 33, height: 20 }, { name: 'flag', width: 30, height: 30 }];
+    const images = [
+      { name: 'body', width: 64, height: 64 },
+      { name: 'parts/head', width: 33, height: 20 },
+      { name: 'flag', width: 30, height: 30 },
+    ];
     const pages = packAtlas(images, { maxSize: 256, padding: 2 });
     const parsed = parseAtlas(writeAtlas(pages, (i) => `atlas${i}.png`));
     expect(parsed.length).toBe(pages.length);
@@ -88,13 +92,56 @@ describe('atlas parser', () => {
   });
 
   it('reads trimmed and rotated regions and the older xy/size format', () => {
-    const text = ['skin.png', 'size: 512, 256', 'format: RGBA8888', 'filter: Linear, Linear', 'pma: true', 'hand', 'bounds:10,20,30,40', 'offsets:2,3,34,45', 'rotate:90', 'old', 'rotate: false', 'xy: 5, 6', 'size: 7, 8', 'orig: 9, 10', 'offset: 1, 2', '', 'second.png', 'size:64,64', 'x', 'bounds:0,0,8,8'].join('\n');
+    const text = [
+      'skin.png',
+      'size: 512, 256',
+      'format: RGBA8888',
+      'filter: Linear, Linear',
+      'pma: true',
+      'hand',
+      'bounds:10,20,30,40',
+      'offsets:2,3,34,45',
+      'rotate:90',
+      'old',
+      'rotate: false',
+      'xy: 5, 6',
+      'size: 7, 8',
+      'orig: 9, 10',
+      'offset: 1, 2',
+      '',
+      'second.png',
+      'size:64,64',
+      'x',
+      'bounds:0,0,8,8',
+    ].join('\n');
     const pages = parseAtlas(text);
     expect(pages.map((p) => p.file)).toEqual(['skin.png', 'second.png']);
     expect(pages[0].pma).toBe(true);
     const [hand, old] = pages[0].regions;
-    expect(hand).toMatchObject({ name: 'hand', x: 10, y: 20, width: 30, height: 40, offsetX: 2, offsetY: 3, originalWidth: 34, originalHeight: 45, rotate: 90 });
-    expect(old).toMatchObject({ name: 'old', x: 5, y: 6, width: 7, height: 8, offsetX: 1, offsetY: 2, originalWidth: 9, originalHeight: 10, rotate: 0 });
+    expect(hand).toMatchObject({
+      name: 'hand',
+      x: 10,
+      y: 20,
+      width: 30,
+      height: 40,
+      offsetX: 2,
+      offsetY: 3,
+      originalWidth: 34,
+      originalHeight: 45,
+      rotate: 90,
+    });
+    expect(old).toMatchObject({
+      name: 'old',
+      x: 5,
+      y: 6,
+      width: 7,
+      height: 8,
+      offsetX: 1,
+      offsetY: 2,
+      originalWidth: 9,
+      originalHeight: 10,
+      rotate: 0,
+    });
     expect(pages[1].regions[0].originalWidth).toBe(8); // untrimmed: the original size defaults to the region size
   });
 });
@@ -116,7 +163,14 @@ describe('Spine JSON import: files made by Spine itself', () => {
     ],
     constraints: [
       { name: 'arm ik', type: 'ik', bones: ['arm'], target: 'root', bendPositive: false },
-      { name: 'rot', type: 'transform', bones: ['arm'], source: 'hip', properties: { rotate: { offset: 5, to: { rotate: { scale: -1 } } } }, mixRotate: 0.5 },
+      {
+        name: 'rot',
+        type: 'transform',
+        bones: ['arm'],
+        source: 'hip',
+        properties: { rotate: { offset: 5, to: { rotate: { scale: -1 } } } },
+        mixRotate: 0.5,
+      },
       { name: 'springy', type: 'wobble', bone: 'arm' }, // a constraint type nobody knows
       { name: 'swing', type: 'slider', animation: 'swing pose', bone: 'hip', property: 'rotate', from: 0, to: 0, scale: 0.01, loop: true },
     ],
@@ -126,32 +180,71 @@ describe('Spine JSON import: files made by Spine itself', () => {
         attachments: {
           body: {
             body: { name: 'body', width: 40, height: 30 },
-            hat: { type: 'mesh', uvs: [0, 0, 1, 0, 1, 1, 0, 1], triangles: [0, 1, 2, 0, 2, 3], vertices: [0, 0, 20, 0, 20, 20, 0, 20], hull: 4, width: 20, height: 20 },
+            hat: {
+              type: 'mesh',
+              uvs: [0, 0, 1, 0, 1, 1, 0, 1],
+              triangles: [0, 1, 2, 0, 2, 3],
+              vertices: [0, 0, 20, 0, 20, 20, 0, 20],
+              hull: 4,
+              width: 20,
+              height: 20,
+            },
             hatLinked: { type: 'linkedmesh', parent: 'hat', path: 'hat2' },
             box: { type: 'boundingbox', vertexCount: 3, vertices: [0, 0, 1, 0, 1, 1] },
           },
           arm: {
             // weighted: per vertex [count, (bone index, x, y, weight)*] — vertex 1 is shared by the "hip" (1) and "arm" (2) bones
-            arm: { type: 'mesh', uvs: [0, 0, 1, 0, 0.5, 1], triangles: [0, 1, 2], vertices: [1, 1, 0, 0, 1, 2, 1, 0, 0, 0.4, 2, 5, 5, 0.6, 1, 2, 1, 1, 1], hull: 3, width: 8, height: 8 },
+            arm: {
+              type: 'mesh',
+              uvs: [0, 0, 1, 0, 0.5, 1],
+              triangles: [0, 1, 2],
+              vertices: [1, 1, 0, 0, 1, 2, 1, 0, 0, 0.4, 2, 5, 5, 0.6, 1, 2, 1, 1, 1],
+              hull: 3,
+              width: 8,
+              height: 8,
+            },
           },
         },
       },
-      { name: 'dark', bones: ['arm'], ik: ['arm ik'], transform: ['rot'], attachments: { body: { body: { name: 'body', path: 'body-dark', width: 40, height: 30 } } } },
+      {
+        name: 'dark',
+        bones: ['arm'],
+        ik: ['arm ik'],
+        transform: ['rot'],
+        attachments: { body: { body: { name: 'body', path: 'body-dark', width: 40, height: 30 } } },
+      },
     ],
     events: { footstep: { int: 2, string: 'step', audio: 'step.ogg' } },
     animations: {
       'swing pose': { bones: { arm: { rotate: [{ value: 0 }, { time: 1, value: 40, curve: [0.25, 0, 0.75, 40] }] } } },
       walk: {
         bones: {
-          hip: { translatex: [{ value: 0 }, { time: 0.5, value: 12, curve: 'stepped' }, { time: 1, value: 0 }], scale: [{ x: 1, y: 1 }, { time: 1, x: 1.1, y: 0.9 }] },
+          hip: {
+            translatex: [{ value: 0 }, { time: 0.5, value: 12, curve: 'stepped' }, { time: 1, value: 0 }],
+            scale: [
+              { x: 1, y: 1 },
+              { time: 1, x: 1.1, y: 0.9 },
+            ],
+          },
         },
-        slots: { arm: { rgba: [{ color: 'ffffffff', curve: [0.3, 1, 0.6, 0.5, 0.3, 1, 0.6, 0.5, 0.3, 1, 0.6, 0.5, 0.3, 1, 0.6, 0.5] }, { time: 1, color: '00ff0080' }], attachment: [{ name: 'arm' }, { time: 0.7 }] } },
+        slots: {
+          arm: {
+            rgba: [
+              { color: 'ffffffff', curve: [0.3, 1, 0.6, 0.5, 0.3, 1, 0.6, 0.5, 0.3, 1, 0.6, 0.5, 0.3, 1, 0.6, 0.5] },
+              { time: 1, color: '00ff0080' },
+            ],
+            attachment: [{ name: 'arm' }, { time: 0.7 }],
+          },
+        },
         ik: { 'arm ik': [{ mix: 0.5, bendPositive: false }, { time: 1 }] },
         transform: { rot: [{ mixRotate: 0.2 }, { time: 1 }] },
         slider: { swing: { mix: [{ value: 0.5 }, { time: 1, value: 1 }] } },
         attachments: { default: { body: { arm: { deform: [{}, { time: 1, offset: 1, vertices: [3, 4] }] } } } },
         drawOrder: [{ time: 0.4, offsets: [{ slot: 'body', offset: 1 }] }],
-        events: [{ time: 0.5, name: 'footstep', int: 5 }, { time: 0.6, name: 'unknown' }],
+        events: [
+          { time: 0.5, name: 'footstep', int: 5 },
+          { time: 0.6, name: 'unknown' },
+        ],
       },
     },
   };

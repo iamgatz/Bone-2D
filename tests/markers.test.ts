@@ -1,7 +1,16 @@
 /** Timeline markers: cleaning, adding, and cutting an animation into clips at them. */
 import { beforeEach, describe, expect, it } from 'vitest';
 import { sampleKeys } from '../src/core/curve';
-import { addMarker, cleanMarkers, cutAnimation, markersOf, neighbourMarker, removeMarker, splitAtMarkers, splitPieces } from '../src/core/markers';
+import {
+  addMarker,
+  cleanMarkers,
+  cutAnimation,
+  markersOf,
+  neighbourMarker,
+  removeMarker,
+  splitAtMarkers,
+  splitPieces,
+} from '../src/core/markers';
 import { newAnimation } from '../src/core/model';
 import type { Animation } from '../src/core/model';
 import { validateProject } from '../src/core/validate';
@@ -13,16 +22,38 @@ import { buildFixture } from './fixture';
 
 const long = (): Animation => {
   const a = newAnimation('run', 4);
-  a.bones.b1 = { rotate: [{ time: 0, value: [0] }, { time: 2, value: [80] }, { time: 4, value: [0] }], translate: [{ time: 1, value: [5, 5], curve: 'stepped' }, { time: 3, value: [9, 9] }] };
-  a.slots.s1 = { attachment: [{ time: 0, name: 'a' }, { time: 3, name: 'b' }] };
-  a.events = [{ time: 1, event: 'e' }, { time: 2, event: 'e' }, { time: 4, event: 'e' }];
+  a.bones.b1 = {
+    rotate: [
+      { time: 0, value: [0] },
+      { time: 2, value: [80] },
+      { time: 4, value: [0] },
+    ],
+    translate: [
+      { time: 1, value: [5, 5], curve: 'stepped' },
+      { time: 3, value: [9, 9] },
+    ],
+  };
+  a.slots.s1 = {
+    attachment: [
+      { time: 0, name: 'a' },
+      { time: 3, name: 'b' },
+    ],
+  };
+  a.events = [
+    { time: 1, event: 'e' },
+    { time: 2, event: 'e' },
+    { time: 4, event: 'e' },
+  ];
   a.drawOrder = [{ time: 0.5, order: ['s1'] }];
   return a;
 };
 
 describe('markers', () => {
   it('cleans what is damaged and keeps what is right', () => {
-    const out = cleanMarkers([{ id: 'a', time: 9, name: 'x', color: 99, text: 5 }, null, { time: NaN }, { id: 'a', time: 1, name: 'y', color: 2, text: 't' }], 4);
+    const out = cleanMarkers(
+      [{ id: 'a', time: 9, name: 'x', color: 99, text: 5 }, null, { time: NaN }, { id: 'a', time: 1, name: 'y', color: 2, text: 't' }],
+      4,
+    );
     expect(out).toHaveLength(2);
     expect(out.map((m) => m.time)).toEqual([1, 4]);
     expect(out[1]).toMatchObject({ name: 'x', color: 5, text: '' });
@@ -70,7 +101,10 @@ describe('cutting', () => {
     const a = long();
     const piece = cutAnimation(a, 1.5, 3.5, 'p');
     expect(piece.bones.b1.translate![0]).toMatchObject({ time: 0, value: [5, 5], curve: 'stepped' });
-    expect(piece.slots.s1.attachment).toEqual([{ time: 0, name: 'a' }, { time: 1.5, name: 'b' }]);
+    expect(piece.slots.s1.attachment).toEqual([
+      { time: 0, name: 'a' },
+      { time: 1.5, name: 'b' },
+    ]);
     expect(piece.drawOrder).toEqual([{ time: 0, order: ['s1'] }]);
     expect(piece.events.map((e) => e.time)).toEqual([0.5]); // the event at 1 is before, at 2 is inside; the one at 4 is after
   });
@@ -79,7 +113,11 @@ describe('cutting', () => {
     const a = long();
     addMarker(a, 1, 'jump');
     addMarker(a, 3, '');
-    expect(splitPieces(a).map((p) => [p.from, p.to, p.name])).toEqual([[0, 1, 'run'], [1, 3, 'jump'], [3, 4, 'run 3']]);
+    expect(splitPieces(a).map((p) => [p.from, p.to, p.name])).toEqual([
+      [0, 1, 'run'],
+      [1, 3, 'jump'],
+      [3, 4, 'run 3'],
+    ]);
     const clips = splitAtMarkers(a, ['run']);
     expect(clips.map((c) => c.name)).toEqual(['run 1', 'jump', 'run 3']);
     expect(clips.map((c) => c.duration)).toEqual([1, 2, 1]);

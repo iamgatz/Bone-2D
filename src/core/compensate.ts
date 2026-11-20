@@ -29,10 +29,12 @@ export function setupWorlds(doc: SkeletonDoc): Map<Id, Mat> {
   const sk = createSkeleton(compileSkeleton(bare));
   sk.setToSetupPose();
   sk.updateWorldTransform('none');
-  return new Map(doc.bones.map((b) => {
-    const live = sk.boneById(b.id)!;
-    return [b.id, { a: live.a, b: live.b, c: live.c, d: live.d, x: live.worldX, y: live.worldY }] as const;
-  }));
+  return new Map(
+    doc.bones.map((b) => {
+      const live = sk.boneById(b.id)!;
+      return [b.id, { a: live.a, b: live.b, c: live.c, d: live.d, x: live.worldX, y: live.worldY }] as const;
+    }),
+  );
 }
 
 /** A matrix that can be undone: finite, and not flat. */
@@ -45,7 +47,14 @@ const apply = (m: Mat, x: number, y: number): [number, number] => [m.a * x + m.b
 function moveAttachment(att: Attachment, m: Mat) {
   if (att.type === 'region') {
     const r = att.rotation * RAD;
-    const local: Mat = { a: Math.cos(r) * att.scaleX, b: -Math.sin(r) * att.scaleY, c: Math.sin(r) * att.scaleX, d: Math.cos(r) * att.scaleY, x: att.x, y: att.y };
+    const local: Mat = {
+      a: Math.cos(r) * att.scaleX,
+      b: -Math.sin(r) * att.scaleY,
+      c: Math.sin(r) * att.scaleX,
+      d: Math.cos(r) * att.scaleY,
+      x: att.x,
+      y: att.y,
+    };
     const next = matMul(m, local);
     const dec = decompose(next.a, next.b, next.c, next.d);
     att.x = next.x;
@@ -64,7 +73,8 @@ function moveAttachment(att: Attachment, m: Mat) {
   }
   const shape = att as { vertices?: number[]; weights?: unknown };
   if (shape.weights || !Array.isArray(shape.vertices)) return;
-  for (let i = 0; i + 1 < shape.vertices.length; i += 2) [shape.vertices[i], shape.vertices[i + 1]] = apply(m, shape.vertices[i], shape.vertices[i + 1]);
+  for (let i = 0; i + 1 < shape.vertices.length; i += 2)
+    [shape.vertices[i], shape.vertices[i + 1]] = apply(m, shape.vertices[i], shape.vertices[i + 1]);
 }
 
 /**
@@ -104,7 +114,8 @@ export function compensateEdit(before: SkeletonDoc, after: SkeletonDoc, edited: 
       const m = matMul(matInvert(w1), w0);
       if (!finiteMat(m)) continue;
       const slots = new Set(after.slots.filter((s) => s.bone === id).map((s) => s.id));
-      for (const skin of after.skins) for (const slotId of slots) for (const att of Object.values(skin.attachments[slotId] ?? {})) moveAttachment(att, m);
+      for (const skin of after.skins)
+        for (const slotId of slots) for (const att of Object.values(skin.attachments[slotId] ?? {})) moveAttachment(att, m);
     }
   }
 }

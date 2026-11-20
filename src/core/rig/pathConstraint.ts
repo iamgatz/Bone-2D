@@ -72,7 +72,7 @@ export class PathConstraintRT {
     if (!pathBones) skeleton.sortBone(slotBone);
     else {
       const bones = skeleton.bones;
-      for (let i = 0, n = pathBones.length; i < n; ) {
+      for (let i = 0, n = pathBones.length; i < n;) {
         let nn = pathBones[i++];
         nn += i;
         while (i < nn) skeleton.sortBone(bones[pathBones[i++]]);
@@ -113,7 +113,7 @@ export class PathConstraintRT {
         break;
       case 'proportional': {
         let sum = 0;
-        for (let i = 0, n = spacesCount - 1; i < n; ) {
+        for (let i = 0, n = spacesCount - 1; i < n;) {
           const bone = bones[i];
           const setupLength = bone.data.length;
           if (setupLength < EPS) {
@@ -136,7 +136,7 @@ export class PathConstraintRT {
       }
       default: {
         const lengthSpacing = data.spacingMode === 'length';
-        for (let i = 0, n = spacesCount - 1; i < n; ) {
+        for (let i = 0, n = spacesCount - 1; i < n;) {
           const bone = bones[i];
           const setupLength = bone.data.length;
           if (setupLength < EPS) {
@@ -157,7 +157,16 @@ export class PathConstraintRT {
     const slot = this.slot;
     meshWorldVertices(skeleton, slot, att, slot.deform.length ? slot.deform : null, this.points);
     const positions = computeWorldPositions(
-      { points: this.points, verticesLength: att.vertexCount * 2, closed: att.closed, constantSpeed: att.constantSpeed, lengths: att.lengths, position: this.position, positionMode: data.positionMode, spacingMode: data.spacingMode },
+      {
+        points: this.points,
+        verticesLength: att.vertexCount * 2,
+        closed: att.closed,
+        constantSpeed: att.constantSpeed,
+        lengths: att.lengths,
+        position: this.position,
+        positionMode: data.positionMode,
+        spacingMode: data.spacingMode,
+      },
       this.scratch,
       spacesCount,
       tangents,

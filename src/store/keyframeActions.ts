@@ -117,7 +117,7 @@ export function setKeyCurveHandle(ref: KeyRef, channel: number, handle: 1 | 2, n
     let curve = k.curve;
     if (!Array.isArray(curve)) {
       curve = [];
-      for (let c = 0; c < channels; c++) (curve).push(1 / 3, 1 / 3, 2 / 3, 2 / 3);
+      for (let c = 0; c < channels; c++) curve.push(1 / 3, 1 / 3, 2 / 3, 2 / 3);
     }
     const arr = curve;
     const i = channel * 4 + (handle === 1 ? 0 : 2);
@@ -172,7 +172,8 @@ export function pasteKeys(time: number, hold = false): KeyRef[] {
       // colour keys follow the target slot: two-colour keys need a dark colour there, and a two-colour slot keeps its kind of keys
       if (c.kind === 'slot' && (c.prop === 'rgba' || c.prop === 'rgba2')) {
         const dark = !!d.skeleton.slots.find((s) => s.id === c.target)?.dark;
-        if (c.prop === 'rgba2' && !dark) c = { ...c, prop: 'rgba', key: rgba2ToRgba([c.key as unknown as Key])[0] as unknown as Record<string, unknown> }; // the curve loses its dark channels too
+        if (c.prop === 'rgba2' && !dark)
+          c = { ...c, prop: 'rgba', key: rgba2ToRgba([c.key as unknown as Key])[0] as unknown as Record<string, unknown> }; // the curve loses its dark channels too
         else if (c.prop === 'rgba' && dark) continue;
       }
       const t = snapTime(time + c.dt, fps);
@@ -182,7 +183,7 @@ export function pasteKeys(time: number, hold = false): KeyRef[] {
         if (c.kind === 'bone') (ensureBoneTimelines(a, c.target) as Record<string, unknown>)[c.prop] = keys = [];
         else if (c.kind === 'slot') ((a.slots[c.target] ??= {}) as Record<string, unknown>)[c.prop] = keys = [];
         else if (c.kind === 'ik') keys = a.ik[c.target] = [];
-        else if (c.kind === 'transform') keys = (a.transform[c.target] = []);
+        else if (c.kind === 'transform') keys = a.transform[c.target] = [];
         else if (c.kind === 'slider') ((a.slider[c.target] ??= {}) as Record<string, unknown>)[c.prop] = keys = [];
         else if (c.kind === 'path') ((a.path[c.target] ??= {}) as Record<string, unknown>)[c.prop] = keys = [];
         else if (c.kind === 'physics') ((a.physics[c.target] ??= {}) as Record<string, unknown>)[c.prop] = keys = [];

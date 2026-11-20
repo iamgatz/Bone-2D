@@ -72,8 +72,10 @@ export function pointInPolygon(px: number, py: number, poly: ArrayLike<number>):
   let inside = false;
   const n = poly.length / 2;
   for (let i = 0, j = n - 1; i < n; j = i++) {
-    const xi = poly[i * 2], yi = poly[i * 2 + 1];
-    const xj = poly[j * 2], yj = poly[j * 2 + 1];
+    const xi = poly[i * 2],
+      yi = poly[i * 2 + 1];
+    const xj = poly[j * 2],
+      yj = poly[j * 2 + 1];
     if (yi > py !== yj > py && px < ((xj - xi) * (py - yi)) / (yj - yi) + xi) inside = !inside;
   }
   return inside;

@@ -49,7 +49,12 @@ export function drawOrderOffsets(setup: readonly Id[], order: readonly Id[]): { 
  * The new order of a folder when slot `id` is dragged so that it lands at `toIndex` of the whole draw order `order` (bottom to top): the folder's
  * slots in the order they have after the move. Null when the slot is not in a folder with another slot.
  */
-export function folderOrderAfterMove(doc: SkeletonDoc, order: readonly Id[], id: Id, toIndex: number): { folder: DrawOrderFolder; order: Id[] } | null {
+export function folderOrderAfterMove(
+  doc: SkeletonDoc,
+  order: readonly Id[],
+  id: Id,
+  toIndex: number,
+): { folder: DrawOrderFolder; order: Id[] } | null {
   const folder = folderOfSlot(doc, id);
   if (!folder || folder.slots.filter((s) => doc.slots.some((x) => x.id === s)).length < 2) return null;
   const moved = order.filter((s) => s !== id);

@@ -27,7 +27,13 @@ export function ConstraintHeader(props: { id: Id; title: string; icon: LucideIco
       actions={
         <>
           <IconButton icon={ArrowUp} title="Apply earlier" small disabled={index <= 0} onClick={() => moveConstraint(props.id, -1)} />
-          <IconButton icon={ArrowDown} title="Apply later" small disabled={index >= constraints.length - 1} onClick={() => moveConstraint(props.id, 1)} />
+          <IconButton
+            icon={ArrowDown}
+            title="Apply later"
+            small
+            disabled={index >= constraints.length - 1}
+            onClick={() => moveConstraint(props.id, 1)}
+          />
           <IconButton icon={Trash2} title={props.deleteTitle ?? 'Delete constraint'} small onClick={() => deleteConstraint(props.id)} />
         </>
       }

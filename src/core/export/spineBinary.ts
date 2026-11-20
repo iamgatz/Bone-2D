@@ -100,7 +100,7 @@ function hexBytes(hex: string | undefined, fallback: number[]): number[] {
   }
   return out;
 }
-const rgba8888 = ([r, g, b, a]: number[]) => ((r << 24) | (g << 16) | (b << 8) | a) | 0;
+const rgba8888 = ([r, g, b, a]: number[]) => (r << 24) | (g << 16) | (b << 8) | a | 0;
 const rgb888 = ([r, g, b]: number[]) => (r << 16) | (g << 8) | b;
 
 const num = (v: unknown, def: number): number => (typeof v === 'number' && Number.isFinite(v) ? v : def);
@@ -270,7 +270,14 @@ export function jsonToBinary(json: J): Uint8Array {
             body.float(num(to.scale, 1));
           }
         }
-        const offsets: [string, number][] = [['rotation', 0], ['x', 0], ['y', 0], ['scaleX', 0], ['scaleY', 0], ['shearY', 0]];
+        const offsets: [string, number][] = [
+          ['rotation', 0],
+          ['x', 0],
+          ['y', 0],
+          ['scaleX', 0],
+          ['scaleY', 0],
+          ['shearY', 0],
+        ];
         let off = 0;
         offsets.forEach(([key], i) => {
           if (num(c[key], 0) !== 0) off |= 1 << i;
@@ -399,7 +406,8 @@ export function jsonToBinary(json: J): Uint8Array {
       body.varint((skin.bones ?? []).length, true);
       for (const b of skin.bones ?? []) body.varint(bone(b), true);
       const list: number[] = [];
-      for (const type of ['ik', 'transform', 'path', 'physics', 'slider']) for (const name of skin[type] ?? []) list.push(constraint(type, name));
+      for (const type of ['ik', 'transform', 'path', 'physics', 'slider'])
+        for (const name of skin[type] ?? []) list.push(constraint(type, name));
       body.varint(list.length, true);
       for (const i of list) body.varint(i, true);
       body.varint(attachments.length, true);
@@ -423,13 +431,13 @@ export function jsonToBinary(json: J): Uint8Array {
     }
     // [count, (bone, x, y, weight) * count] per vertex
     let entries = 0;
-    for (let i = 0; i < vertices.length; ) {
+    for (let i = 0; i < vertices.length;) {
       const n = vertices[i];
       entries += 1 + n;
       i += 1 + n * 4;
     }
     body.varint(entries, true);
-    for (let i = 0; i < vertices.length; ) {
+    for (let i = 0; i < vertices.length;) {
       const n = vertices[i++];
       body.varint(n, true);
       for (let k = 0; k < n; k++, i += 4) {
@@ -985,10 +993,11 @@ function decodeHash(hash: unknown): { low: number; high: number } {
   if (typeof hash !== 'string' || !hash) return { low: 0, high: 0 };
   try {
     const b64 = hash.replace(/-/g, '+').replace(/_/g, '/');
-    const raw = typeof atob === 'function' ? atob(b64 + '='.repeat((4 - (b64.length % 4)) % 4)) : Buffer.from(b64, 'base64').toString('binary');
+    const raw =
+      typeof atob === 'function' ? atob(b64 + '='.repeat((4 - (b64.length % 4)) % 4)) : Buffer.from(b64, 'base64').toString('binary');
     const bytes = Array.from(raw, (c) => c.charCodeAt(0));
     while (bytes.length < 8) bytes.push(0);
-    const int = (o: number) => ((bytes[o] << 24) | (bytes[o + 1] << 16) | (bytes[o + 2] << 8) | bytes[o + 3]) | 0;
+    const int = (o: number) => (bytes[o] << 24) | (bytes[o + 1] << 16) | (bytes[o + 2] << 8) | bytes[o + 3] | 0;
     return { low: int(0), high: int(4) };
   } catch {
     return { low: 0, high: 0 };

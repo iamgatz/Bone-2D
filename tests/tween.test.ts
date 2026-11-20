@@ -15,12 +15,25 @@ function rig() {
   p.skeleton.bones.push(root, arm);
   const a = newAnimation('a', 2);
   a.bones[arm.id] = {
-    rotate: [{ time: 0, value: [0] }, { time: 1, value: [40], curve: [0.2, 0, 0.8, 1] }, { time: 2, value: [100] }],
-    translate: [{ time: 0, value: [0, 0] }, { time: 2, value: [10, -20] }],
+    rotate: [
+      { time: 0, value: [0] },
+      { time: 1, value: [40], curve: [0.2, 0, 0.8, 1] },
+      { time: 2, value: [100] },
+    ],
+    translate: [
+      { time: 0, value: [0, 0] },
+      { time: 2, value: [10, -20] },
+    ],
   };
   p.skeleton.animations.push(a);
   docStore.replace(p);
-  uiStore.patch({ mode: 'animate', animationId: a.id, time: 0.5, selection: { ...uiStore.get().selection, bones: [arm.id] }, overrides: {} });
+  uiStore.patch({
+    mode: 'animate',
+    animationId: a.id,
+    time: 0.5,
+    selection: { ...uiStore.get().selection, bones: [arm.id] },
+    overrides: {},
+  });
   return { root, arm, a };
 }
 
@@ -28,7 +41,11 @@ describe('tween', () => {
   beforeEach(() => void rig());
 
   it('neighbours: the keys around a time, a key at the time is neither, one side repeats', () => {
-    const keys = [{ time: 0, value: [0] }, { time: 1, value: [10] }, { time: 2, value: [30] }];
+    const keys = [
+      { time: 0, value: [0] },
+      { time: 1, value: [10] },
+      { time: 2, value: [30] },
+    ];
     expect(neighbours(keys, 0.5)).toEqual({ prev: keys[0], next: keys[1] });
     expect(neighbours(keys, 1)).toEqual({ prev: keys[0], next: keys[2] });
     expect(neighbours(keys, 3)).toEqual({ prev: keys[2], next: keys[2] });

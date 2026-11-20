@@ -17,7 +17,17 @@ export async function loadSample() {
   const project = buildDemoRig(refs);
   const walk = project.skeleton.animations.find((a) => a.name === 'walk')!;
   docStore.replace(project);
-  uiStore.patch({ mode: 'setup', selection: emptySelection, animationId: walk.id, skinId: null, time: 0, playing: false, overrides: {}, selectedKeys: [], camera: { x: 20, y: 150, zoom: 1.5 } });
+  uiStore.patch({
+    mode: 'setup',
+    selection: emptySelection,
+    animationId: walk.id,
+    skinId: null,
+    time: 0,
+    playing: false,
+    overrides: {},
+    selectedKeys: [],
+    camera: { x: 20, y: 150, zoom: 1.5 },
+  });
   window.dispatchEvent(new Event('bone2d:frame'));
   toast('Loaded the "Kit" demo rig — switch to Animate and press Space', 'ok');
 }

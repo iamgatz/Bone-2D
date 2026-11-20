@@ -60,7 +60,12 @@ describe('turnAbout', () => {
       const sk0 = worldOf(project);
       const before = sk0.boneById(id)!;
       const [x0, y0, a0] = [before.worldX, before.worldY, worldAngle(before)];
-      for (const [px, py, deg] of [[10, 200, 35], [-60, 90, -80], [0, 0, 170], [x0 + 5, y0 - 9, -25]]) {
+      for (const [px, py, deg] of [
+        [10, 200, 35],
+        [-60, 90, -80],
+        [0, 0, 170],
+        [x0 + 5, y0 - 9, -25],
+      ]) {
         const next = turnAbout(frame, px, py, deg);
         const copy = structuredClone(project);
         apply(copy, id, next);

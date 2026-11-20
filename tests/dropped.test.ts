@@ -25,10 +25,23 @@ function dir(name: string, children: FsEntry[], batch = 2): FsEntry {
 
 describe('dropped folders', () => {
   it('walks nested folders and every batch of a reader, naming files by their path', async () => {
-    const tree = dir('hero', [file('a.png'), file('b.png'), file('c.png'), dir('arm', [file('upper.png'), file('lower.png'), file('hand.png')])]);
+    const tree = dir('hero', [
+      file('a.png'),
+      file('b.png'),
+      file('c.png'),
+      dir('arm', [file('upper.png'), file('lower.png'), file('hand.png')]),
+    ]);
     const { files, folders } = await readEntries([tree, file('loose.png')]);
     expect(folders).toBe(2);
-    expect(files.map((f) => f.path)).toEqual(['hero/a.png', 'hero/arm/hand.png', 'hero/arm/lower.png', 'hero/arm/upper.png', 'hero/b.png', 'hero/c.png', 'loose.png']);
+    expect(files.map((f) => f.path)).toEqual([
+      'hero/a.png',
+      'hero/arm/hand.png',
+      'hero/arm/lower.png',
+      'hero/arm/upper.png',
+      'hero/b.png',
+      'hero/c.png',
+      'loose.png',
+    ]);
   });
 
   it('orders numbered files naturally (frame2 before frame10)', async () => {
@@ -43,6 +56,10 @@ describe('dropped folders', () => {
 
   it('a folder chosen in an input is named by the browser relative path', () => {
     const f = (path: string) => Object.assign(new File(['x'], path.split('/').pop()!), { webkitRelativePath: path });
-    expect(pathedFromInput([f('hero/f10.png'), f('hero/f2.png'), new File(['x'], 'solo.png')]).map((p) => p.path)).toEqual(['hero/f2.png', 'hero/f10.png', 'solo.png']);
+    expect(pathedFromInput([f('hero/f10.png'), f('hero/f2.png'), new File(['x'], 'solo.png')]).map((p) => p.path)).toEqual([
+      'hero/f2.png',
+      'hero/f10.png',
+      'solo.png',
+    ]);
   });
 });

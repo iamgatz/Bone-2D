@@ -15,7 +15,12 @@ export interface PlayerPayload {
 }
 
 /** Text that is safe inside an HTML element: `<` and `&` are written as escapes so the browser cannot see a tag or a `</script>` in it. */
-const safeJson = (value: unknown): string => JSON.stringify(value).replace(/</g, '\\u003c').replace(/&/g, '\\u0026').replace(/\u2028/g, '\\u2028').replace(/\u2029/g, '\\u2029');
+const safeJson = (value: unknown): string =>
+  JSON.stringify(value)
+    .replace(/</g, '\\u003c')
+    .replace(/&/g, '\\u0026')
+    .replace(/\u2028/g, '\\u2028')
+    .replace(/\u2029/g, '\\u2029');
 
 const escapeText = (s: string): string => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]!);
 

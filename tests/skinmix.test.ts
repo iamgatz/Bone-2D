@@ -11,10 +11,21 @@ import { docStore } from '../src/store/doc';
 import { uiStore } from '../src/store/ui';
 import { exportAndLoad } from './official';
 
- 
 const S = spine as any;
 
-const region = (name: string, path: string): RegionAttachment => ({ type: 'region', name, path, x: 0, y: 0, rotation: 0, scaleX: 1, scaleY: 1, width: 20, height: 20, color: [1, 1, 1, 1] });
+const region = (name: string, path: string): RegionAttachment => ({
+  type: 'region',
+  name,
+  path,
+  x: 0,
+  y: 0,
+  rotation: 0,
+  scaleX: 1,
+  scaleY: 1,
+  width: 20,
+  height: 20,
+  color: [1, 1, 1, 1],
+});
 
 function rig() {
   const project: Project = emptyProject('mix');
@@ -59,7 +70,9 @@ describe('composeSkins', () => {
     official.updateWorldTransform(S.Physics.update);
     for (const slot of [body, head]) {
       const o = official.slots.find((s: any) => s.data.name === doc.slots.find((x) => x.id === slot.id)!.name);
-      const att = skin.getAttachment(o.data.index, o.data.attachmentName) ?? skeletonData.defaultSkin.getAttachment(o.data.index, o.data.attachmentName);
+      const att =
+        skin.getAttachment(o.data.index, o.data.attachmentName) ??
+        skeletonData.defaultSkin.getAttachment(o.data.index, o.data.attachmentName);
       expect(att.path).toBe(pathOf(mixed, slot));
     }
     for (const b of [hat, cape]) {

@@ -11,7 +11,8 @@ import { meshWorldVertices } from './geometry';
 const attachmentCache = new WeakMap<Attachment, { key: string; data: AttachmentData }>();
 
 function compileAttachment(att: Attachment, boneIndex: Map<Id, number>, boneOrderKey: string): AttachmentData {
-  const weighted = (att.type === 'mesh' || att.type === 'clipping' || att.type === 'boundingbox' || att.type === 'path') && att.weights != null;
+  const weighted =
+    (att.type === 'mesh' || att.type === 'clipping' || att.type === 'boundingbox' || att.type === 'path') && att.weights != null;
   const hit = attachmentCache.get(att);
   if (hit && (!weighted || hit.key === boneOrderKey)) return hit.data;
 
@@ -19,11 +20,35 @@ function compileAttachment(att: Attachment, boneIndex: Map<Id, number>, boneOrde
   if (att.type === 'point') {
     data = { kind: 'point', src: att, name: att.name, color: att.color, x: att.x, y: att.y, rotation: att.rotation };
   } else if (att.type === 'path') {
-    data = { kind: 'path', src: att, name: att.name, color: att.color, closed: att.closed, constantSpeed: att.constantSpeed, lengths: [], ...compileVertices(polygonVertexCount(att), att.vertices, att.weights, boneIndex) };
+    data = {
+      kind: 'path',
+      src: att,
+      name: att.name,
+      color: att.color,
+      closed: att.closed,
+      constantSpeed: att.constantSpeed,
+      lengths: [],
+      ...compileVertices(polygonVertexCount(att), att.vertices, att.weights, boneIndex),
+    };
   } else if (att.type === 'clipping') {
-    data = { kind: 'clipping', src: att, name: att.name, color: att.color, end: att.end, convex: att.convex, inverse: att.inverse, ...compileVertices(polygonVertexCount(att), att.vertices, att.weights, boneIndex) };
+    data = {
+      kind: 'clipping',
+      src: att,
+      name: att.name,
+      color: att.color,
+      end: att.end,
+      convex: att.convex,
+      inverse: att.inverse,
+      ...compileVertices(polygonVertexCount(att), att.vertices, att.weights, boneIndex),
+    };
   } else if (att.type === 'boundingbox') {
-    data = { kind: 'boundingbox', src: att, name: att.name, color: att.color, ...compileVertices(polygonVertexCount(att), att.vertices, att.weights, boneIndex) };
+    data = {
+      kind: 'boundingbox',
+      src: att,
+      name: att.name,
+      color: att.color,
+      ...compileVertices(polygonVertexCount(att), att.vertices, att.weights, boneIndex),
+    };
   } else if (att.type === 'region') {
     data = {
       kind: 'region',
@@ -277,7 +302,11 @@ export function compileSkeleton(doc: SkeletonDoc): SkeletonData {
         localTarget: c.localTarget,
         additive: c.additive,
         clamp: c.clamp,
-        properties: c.properties.map((f) => ({ prop: f.prop, offset: f.offset, to: f.to.map((t) => ({ prop: t.prop, offset: t.offset, max: t.max, scale: t.scale })) })),
+        properties: c.properties.map((f) => ({
+          prop: f.prop,
+          offset: f.offset,
+          to: f.to.map((t) => ({ prop: t.prop, offset: t.offset, max: t.max, scale: t.scale })),
+        })),
         offsets: [c.offsets.rotation, c.offsets.x, c.offsets.y, c.offsets.scaleX, c.offsets.scaleY, c.offsets.shearY],
         mix: [c.mix.rotate, c.mix.x, c.mix.y, c.mix.scaleX, c.mix.scaleY, c.mix.shearY],
         skinRequired: c.skinRequired,
@@ -332,7 +361,13 @@ export function compileSkeleton(doc: SkeletonDoc): SkeletonData {
     skinById.set(s.id, skin);
     return skin;
   });
-  const defaultSkin = skins[0] ?? { id: '', name: 'default', attachments: slots.map(() => new Map<string, AttachmentData>()), bones: [], constraints: [] };
+  const defaultSkin = skins[0] ?? {
+    id: '',
+    name: 'default',
+    attachments: slots.map(() => new Map<string, AttachmentData>()),
+    bones: [],
+    constraints: [],
+  };
 
   const data: SkeletonData = {
     name: doc.name,
@@ -350,7 +385,13 @@ export function compileSkeleton(doc: SkeletonDoc): SkeletonData {
     deformSource: new Map(),
     deformFollowers: new Map(),
     boneOrderKey,
-    folders: (doc.drawOrderFolders ?? []).map((f) => ({ id: f.id, slots: f.slots.map((s) => slotIndex.get(s)).filter((i): i is number => i !== undefined).sort((a, b) => a - b) })),
+    folders: (doc.drawOrderFolders ?? []).map((f) => ({
+      id: f.id,
+      slots: f.slots
+        .map((s) => slotIndex.get(s))
+        .filter((i): i is number => i !== undefined)
+        .sort((a, b) => a - b),
+    })),
   };
   if (hasLinkedMeshes(doc)) resolveLinkedMeshes(doc, data);
   if (pathEntries.length) fillPathLengths(data, pathEntries);

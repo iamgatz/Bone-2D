@@ -59,9 +59,20 @@ export function wiggleKeys(keys: Timeline, o: WiggleOptions): Timeline {
   });
 }
 
-const PAIRS: [string, string][] = [['near', 'far'], ['left', 'right'], ['l', 'r'], ['lft', 'rgt'], ['front', 'back']];
+const PAIRS: [string, string][] = [
+  ['near', 'far'],
+  ['left', 'right'],
+  ['l', 'r'],
+  ['lft', 'rgt'],
+  ['front', 'back'],
+];
 
-const matchCase = (from: string, to: string) => (from === from.toUpperCase() && from.length > 1 ? to.toUpperCase() : from[0] === from[0].toUpperCase() && from[0] !== from[0].toLowerCase() ? to[0].toUpperCase() + to.slice(1) : to);
+const matchCase = (from: string, to: string) =>
+  from === from.toUpperCase() && from.length > 1
+    ? to.toUpperCase()
+    : from[0] === from[0].toUpperCase() && from[0] !== from[0].toLowerCase()
+      ? to[0].toUpperCase() + to.slice(1)
+      : to;
 
 /**
  * The name of the other side: "arm near 1" -> "arm far 1", "Leg_L" -> "Leg_R", "handLeft" -> "handRight". Whole words and the ends of a
@@ -118,7 +129,12 @@ function joinHalves<T extends { time: number }>(own: T[] | undefined, other: T[]
   return [...first, ...second];
 }
 
-const negate = (keys: Key[]): Key[] => keys.map((k) => ({ ...k, value: k.value.map((v) => -v), curve: Array.isArray(k.curve) ? k.curve.map((v, i) => (i % 4 === 1 || i % 4 === 3 ? -v : v)) : k.curve }));
+const negate = (keys: Key[]): Key[] =>
+  keys.map((k) => ({
+    ...k,
+    value: k.value.map((v) => -v),
+    curve: Array.isArray(k.curve) ? k.curve.map((v, i) => (i % 4 === 1 || i % 4 === 3 ? -v : v)) : k.curve,
+  }));
 
 /**
  * A whole cycle from a half one: the animation is the first half, and the second half is the same motion with the two sides swapped (the
@@ -174,10 +190,12 @@ export function mirrorCycle(doc: SkeletonDoc, anim: Animation, name: string, opt
     }
   }
   for (const [skin, perSlot] of Object.entries(anim.deform ?? {})) {
-    for (const [slot, perAtt] of Object.entries(perSlot)) for (const [att, keys] of Object.entries(perAtt)) out.deform[skin][slot][att] = repeat(keys);
+    for (const [slot, perAtt] of Object.entries(perSlot))
+      for (const [att, keys] of Object.entries(perAtt)) out.deform[skin][slot][att] = repeat(keys);
   }
   for (const [skin, perSlot] of Object.entries(anim.sequence ?? {})) {
-    for (const [slot, perAtt] of Object.entries(perSlot)) for (const [att, keys] of Object.entries(perAtt)) out.sequence![skin][slot][att] = repeat(keys);
+    for (const [slot, perAtt] of Object.entries(perSlot))
+      for (const [att, keys] of Object.entries(perAtt)) out.sequence![skin][slot][att] = repeat(keys);
   }
   out.drawOrder = repeat(anim.drawOrder);
   for (const [id, keys] of Object.entries(anim.drawOrderFolder ?? {})) out.drawOrderFolder![id] = repeat(keys);
@@ -217,7 +235,7 @@ export function footSlides(doc: SkeletonDoc, anim: Animation, boneIds: Id[], opt
     const ys = frames.map((f) => f[index][5]);
     const low = Math.min(...ys);
     // error of the horizontal travel from frame i to i+1 (the foot should move back by the body speed)
-    const err = (i: number) => ((frames[i + 1][index][4] - frames[i][index][4]) / Math.max(1e-9, times[i + 1] - times[i])) + opts.bodySpeed;
+    const err = (i: number) => (frames[i + 1][index][4] - frames[i][index][4]) / Math.max(1e-9, times[i + 1] - times[i]) + opts.bodySpeed;
     let run: { from: number; to: number; worst: number } | null = null;
     for (let i = 0; i < frames.length - 1; i++) {
       const planted = ys[i] - low <= opts.ground && ys[i + 1] - low <= opts.ground;

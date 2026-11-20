@@ -86,7 +86,10 @@ async function main() {
       maxX = Math.max(maxX, b[0] + b[2]);
       maxY = Math.max(maxY, b[1] + b[3]);
     }
-    fit = minX === Infinity ? { x: 0, y: 0, w: 100, h: 100 } : { x: (minX + maxX) / 2, y: (minY + maxY) / 2, w: Math.max(1, maxX - minX), h: Math.max(1, maxY - minY) };
+    fit =
+      minX === Infinity
+        ? { x: 0, y: 0, w: 100, h: 100 }
+        : { x: (minX + maxX) / 2, y: (minY + maxY) / 2, w: Math.max(1, maxX - minX), h: Math.max(1, maxY - minY) };
     view.x = view.y = 0;
     view.zoom = 1;
   };
@@ -114,7 +117,10 @@ async function main() {
       canvas.height = h;
     }
     const scale = viewScale(w, h, fit, view.zoom);
-    renderer.begin({ x: fit.x + view.x, y: fit.y + view.y, scale, width: w, height: h }, dark ? [0.075, 0.082, 0.1, 1] : [0.95, 0.95, 0.96, 1]);
+    renderer.begin(
+      { x: fit.x + view.x, y: fit.y + view.y, scale, width: w, height: h },
+      dark ? [0.075, 0.082, 0.1, 1] : [0.95, 0.95, 0.96, 1],
+    );
     renderer.drawSkeleton(skeleton);
     renderer.end();
     drawPicked(w, h);
@@ -192,10 +198,14 @@ async function main() {
     dark = !dark;
     document.body.classList.toggle('light', !dark);
   };
-  canvas.addEventListener('wheel', (e) => {
-    e.preventDefault();
-    view.zoom = Math.min(20, Math.max(0.2, view.zoom * Math.exp(-e.deltaY * 0.0015)));
-  }, { passive: false });
+  canvas.addEventListener(
+    'wheel',
+    (e) => {
+      e.preventDefault();
+      view.zoom = Math.min(20, Math.max(0.2, view.zoom * Math.exp(-e.deltaY * 0.0015)));
+    },
+    { passive: false },
+  );
   let drag: { x: number; y: number } | null = null;
   let pressed: { x: number; y: number } | null = null;
   canvas.onpointerdown = (e) => {
@@ -220,7 +230,13 @@ async function main() {
       const w = Math.max(1, Math.round(canvas.clientWidth * dpr));
       const h = Math.max(1, Math.round(canvas.clientHeight * dpr));
       const [wx, wy] = canvasToWorld((e.clientX - r.left) * dpr, (e.clientY - r.top) * dpr, w, h, fit, view);
-      const segments: BoneSegment[] = skeleton.bones.map((b) => ({ name: b.data.name, x1: b.worldX, y1: b.worldY, x2: b.tipX, y2: b.tipY }));
+      const segments: BoneSegment[] = skeleton.bones.map((b) => ({
+        name: b.data.name,
+        x1: b.worldX,
+        y1: b.worldY,
+        x2: b.tipX,
+        y2: b.tipY,
+      }));
       setPicked(nearestBone(segments, wx, wy, (10 * dpr) / viewScale(w, h, fit, view.zoom)));
     }
     pressed = null;
@@ -246,9 +262,22 @@ async function main() {
   };
   // the page speaks the language of the browser: the shell is written in English and the words are put in here
   const words: [string, PlayerKey, 'text' | 'title' | 'placeholder' | 'aria-label'][] = [
-    ['bg', 'background', 'text'], ['bg', 'backgroundTip', 'title'], ['note', 'comment', 'text'], ['note', 'commentTip', 'title'], ['send', 'sendTip', 'title'],
-    ['dcancel', 'close', 'text'], ['dsave', 'addComment', 'text'], ['who', 'yourName', 'placeholder'], ['who', 'yourName', 'aria-label'], ['what', 'whatShould', 'placeholder'],
-    ['what', 'dialogLabel', 'aria-label'], ['anim', 'animation', 'title'], ['skin', 'skin', 'title'], ['dlgbox', 'dialogLabel', 'aria-label'], ['bonehint', 'boneHint', 'text'], ['bonex', 'clearBone', 'title'],
+    ['bg', 'background', 'text'],
+    ['bg', 'backgroundTip', 'title'],
+    ['note', 'comment', 'text'],
+    ['note', 'commentTip', 'title'],
+    ['send', 'sendTip', 'title'],
+    ['dcancel', 'close', 'text'],
+    ['dsave', 'addComment', 'text'],
+    ['who', 'yourName', 'placeholder'],
+    ['who', 'yourName', 'aria-label'],
+    ['what', 'whatShould', 'placeholder'],
+    ['what', 'dialogLabel', 'aria-label'],
+    ['anim', 'animation', 'title'],
+    ['skin', 'skin', 'title'],
+    ['dlgbox', 'dialogLabel', 'aria-label'],
+    ['bonehint', 'boneHint', 'text'],
+    ['bonex', 'clearBone', 'title'],
   ];
   document.documentElement.lang = lang;
   for (const [id, key, where] of words) {

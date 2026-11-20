@@ -7,7 +7,18 @@
  * runtime and plays it.
  */
 import { emptyProject, newAnimation, newBone, newPhysicsConstraint, newSkin, newSlot } from '@/core/model';
-import type { Animation, Bone, Constraint, ImageRef, Inherit, MeshAttachment, Project, RegionAttachment, RGBA, Timeline } from '@/core/model';
+import type {
+  Animation,
+  Bone,
+  Constraint,
+  ImageRef,
+  Inherit,
+  MeshAttachment,
+  Project,
+  RegionAttachment,
+  RGBA,
+  Timeline,
+} from '@/core/model';
 import { uid } from '@/core/ids';
 import { adjacency, bindMesh, interiorPoints, smoothWeights, subdivideOutline, triangulate } from '@/core/mesh';
 import type { BoneMats } from '@/core/mesh';
@@ -85,7 +96,8 @@ function fromBone(name: string, pts: Pt[]): Pt[] {
   return pts.map(([x, y]) => [b.x + x * c - y * s, b.y + x * s + y * c]);
 }
 
-export type ArtKind = 'body' | 'head' | 'tail' | 'arm' | 'leg' | 'foot' | 'hand' | 'ear' | 'scarfTail' | 'scarfRing' | 'eyeOpen' | 'eyeClosed';
+export type ArtKind =
+  'body' | 'head' | 'tail' | 'arm' | 'leg' | 'foot' | 'hand' | 'ear' | 'scarfTail' | 'scarfRing' | 'eyeOpen' | 'eyeClosed';
 
 export interface PartDef {
   /** The picture: `fox-body`, `arctic-body`, or a shared one such as `scarf-ring`. */
@@ -109,7 +121,8 @@ export const tailJoints = (): Pt[] => {
   const tip = (b: BoneSpec): Pt => [b.x + Math.cos(rad(b.angle)) * b.length, b.y + Math.sin(rad(b.angle)) * b.length];
   return [[t1.x, t1.y], [t2.x, t2.y], [t3.x, t3.y], tip(t3)];
 };
-const tailRadius = (t: number) => (t < 0.55 ? 11 + 15 * Math.sin((t / 0.55) * (Math.PI / 2)) : 26 * Math.max(0, 1 - Math.pow((t - 0.55) / 0.45, 1.7)) + 1.5);
+const tailRadius = (t: number) =>
+  t < 0.55 ? 11 + 15 * Math.sin((t / 0.55) * (Math.PI / 2)) : 26 * Math.max(0, 1 - Math.pow((t - 0.55) / 0.45, 1.7)) + 1.5;
 
 const scarfJoints = (): Pt[] => {
   const s1 = WORLD.get('scarf 1')!;
@@ -122,18 +135,80 @@ const ARM_X = 8;
 const FAR_DX = -14; // the far arm and leg are the near ones moved back
 const LEG_DX = -10;
 
-const legCentre = (): Pt[] => centreLine([[4, 92], [26.6, 47.4], [6, 4]], 10);
+const legCentre = (): Pt[] =>
+  centreLine(
+    [
+      [4, 92],
+      [26.6, 47.4],
+      [6, 4],
+    ],
+    10,
+  );
 const legRadius = (t: number) => 15 - 6 * t;
-const armCentre = (): Pt[] => centreLine([[ARM_X, 178], [ARM_X, 130], [ARM_X, 90]], 8);
+const armCentre = (): Pt[] =>
+  centreLine(
+    [
+      [ARM_X, 178],
+      [ARM_X, 130],
+      [ARM_X, 90],
+    ],
+    8,
+  );
 const armRadius = (t: number) => 11 - 3 * t;
 
 const HEAD_POINTS: Pt[] = [
-  [-26, 232], [-24, 252], [-12, 268], [10, 276], [30, 270], [46, 256], [62, 241], [78, 232], [80, 224],
-  [72, 217], [54, 214], [42, 208], [24, 203], [4, 204], [-14, 210], [-30, 222],
+  [-26, 232],
+  [-24, 252],
+  [-12, 268],
+  [10, 276],
+  [30, 270],
+  [46, 256],
+  [62, 241],
+  [78, 232],
+  [80, 224],
+  [72, 217],
+  [54, 214],
+  [42, 208],
+  [24, 203],
+  [4, 204],
+  [-14, 210],
+  [-30, 222],
 ];
 
-const earShape = (name: string): Pt[] => fromBone(name, spline([[-6, -13], [10, -14], [26, -9], [36, 0], [26, 9], [10, 14], [-6, 13]], true, 4));
-const earInner = (name: string): Pt[] => fromBone(name, spline([[2, -7], [14, -7], [26, -3], [31, 0], [26, 3], [14, 7], [2, 7]], true, 4));
+const earShape = (name: string): Pt[] =>
+  fromBone(
+    name,
+    spline(
+      [
+        [-6, -13],
+        [10, -14],
+        [26, -9],
+        [36, 0],
+        [26, 9],
+        [10, 14],
+        [-6, 13],
+      ],
+      true,
+      4,
+    ),
+  );
+const earInner = (name: string): Pt[] =>
+  fromBone(
+    name,
+    spline(
+      [
+        [2, -7],
+        [14, -7],
+        [26, -3],
+        [31, 0],
+        [26, 3],
+        [14, 7],
+        [2, 7],
+      ],
+      true,
+      4,
+    ),
+  );
 
 export const PARTS: Record<string, PartDef> = {
   tail: { kind: 'tail', shape: tube(centreLine(tailJoints(), 10), tailRadius), extra: [], shared: false },
@@ -142,13 +217,48 @@ export const PARTS: Record<string, PartDef> = {
   arm: { kind: 'arm', shape: tube(armCentre(), armRadius), extra: [], shared: false },
   leg: { kind: 'leg', shape: tube(legCentre(), legRadius), extra: [], shared: false },
   hand: { kind: 'hand', shape: ellipse(ARM_X, 80, 11, 12, 20), extra: [], shared: false },
-  foot: { kind: 'foot', shape: translate(spline([[-8, -4], [-9, 10], [2, 15], [18, 14], [30, 8], [35, 0], [32, -4]], true, 4), 6, 4), extra: [], shared: false },
+  foot: {
+    kind: 'foot',
+    shape: translate(
+      spline(
+        [
+          [-8, -4],
+          [-9, 10],
+          [2, 15],
+          [18, 14],
+          [30, 8],
+          [35, 0],
+          [32, -4],
+        ],
+        true,
+        4,
+      ),
+      6,
+      4,
+    ),
+    extra: [],
+    shared: false,
+  },
   'ear near': { kind: 'ear', shape: earShape('ear near'), extra: [earInner('ear near')], shared: false },
   'ear far': { kind: 'ear', shape: earShape('ear far'), extra: [earInner('ear far')], shared: false },
   'scarf tail': { kind: 'scarfTail', shape: tube(centreLine(scarfJoints(), 8), (t) => 11 - 3 * t, 0), extra: [], shared: true },
   'scarf ring': { kind: 'scarfRing', shape: ellipse(0, 198, 35, 15, 28), extra: [], shared: true },
   'eye open': { kind: 'eyeOpen', shape: ellipse(36, 246, 7, 9.5, 18), extra: [], shared: true },
-  'eye closed': { kind: 'eyeClosed', shape: spline([[28, 246], [36, 241], [44, 246], [36, 244.5]], true, 4), extra: [], shared: true },
+  'eye closed': {
+    kind: 'eyeClosed',
+    shape: spline(
+      [
+        [28, 246],
+        [36, 241],
+        [44, 246],
+        [36, 244.5],
+      ],
+      true,
+      4,
+    ),
+    extra: [],
+    shared: true,
+  },
 };
 
 /** The picture box of a part (world coordinates; the picture is drawn into exactly this box). */
@@ -160,7 +270,8 @@ export function partBox(part: string) {
 /** Every picture of the demo with its size: art.ts draws them, `loadSample` registers them, `buildDemoRig` refers to them. */
 export const SKINS = ['fox', 'arctic'] as const;
 export type SkinName = (typeof SKINS)[number];
-export const imageName = (part: string, skin: SkinName) => (PARTS[part].shared ? part.replace(' ', '-') : `${skin}-${part.replace(' ', '-')}`);
+export const imageName = (part: string, skin: SkinName) =>
+  PARTS[part].shared ? part.replace(' ', '-') : `${skin}-${part.replace(' ', '-')}`;
 
 export const DEMO_IMAGES: { name: string; part: string; skin: SkinName | null; width: number; height: number }[] = [];
 for (const part of Object.keys(PARTS)) {
@@ -186,11 +297,29 @@ const SHADE: RGBA = [0.8, 0.8, 0.88, 1];
 
 const SLOTS: SlotSpec[] = [
   { name: 'ear far', bone: 'ear far', part: 'ear far', color: SHADE },
-  { name: 'arm far', bone: 'arm far 1', part: 'arm', offset: [FAR_DX, 0], chain: ['arm far 1', 'arm far 2'], spacing: 12, blend: 10, color: SHADE },
+  {
+    name: 'arm far',
+    bone: 'arm far 1',
+    part: 'arm',
+    offset: [FAR_DX, 0],
+    chain: ['arm far 1', 'arm far 2'],
+    spacing: 12,
+    blend: 10,
+    color: SHADE,
+  },
   { name: 'hand far', bone: 'hand far', part: 'hand', offset: [FAR_DX, 0], color: SHADE },
   // the tail is between the two arms: in front of the far one, behind the body and the near one
   { name: 'tail', bone: 'tail 1', part: 'tail', chain: ['tail 1', 'tail 2', 'tail 3'], spacing: 20, blend: 16 },
-  { name: 'leg far', bone: 'leg far 1', part: 'leg', offset: [LEG_DX, 0], chain: ['leg far 1', 'leg far 2'], spacing: 12, blend: 12, color: SHADE },
+  {
+    name: 'leg far',
+    bone: 'leg far 1',
+    part: 'leg',
+    offset: [LEG_DX, 0],
+    chain: ['leg far 1', 'leg far 2'],
+    spacing: 12,
+    blend: 12,
+    color: SHADE,
+  },
   { name: 'foot far', bone: 'foot far', part: 'foot', offset: [LEG_DX, 0], color: SHADE },
   { name: 'leg near', bone: 'leg near 1', part: 'leg', chain: ['leg near 1', 'leg near 2'], spacing: 12, blend: 12 },
   { name: 'foot near', bone: 'foot near', part: 'foot' },
@@ -263,7 +392,11 @@ type KeyIn = [time: number, value: number[], ease?: boolean];
 
 /** A timeline from [time, value, eased] rows; an eased key blends into the next one with a bezier (one copy of the curve per channel). */
 function line(rows: KeyIn[], channels = 1): Timeline {
-  return rows.map(([time, value, eased]) => ({ time, value, ...(eased ? { curve: Array.from({ length: channels }, () => EASE).flat() } : {}) }));
+  return rows.map(([time, value, eased]) => ({
+    time,
+    value,
+    ...(eased ? { curve: Array.from({ length: channels }, () => EASE).flat() } : {}),
+  }));
 }
 
 export function buildDemoRig(images: Record<string, ImageRef>): Project {
@@ -286,7 +419,16 @@ export function buildDemoRig(images: Record<string, ImageRef>): Project {
     const lx = Math.cos(rad(pa)) * dx + Math.sin(rad(pa)) * dy;
     const ly = -Math.sin(rad(pa)) * dx + Math.cos(rad(pa)) * dy;
     const own = spec.inherit === 'noRotationOrReflection' ? spec.angle : spec.angle - pa;
-    const b = newBone({ name: spec.name, parent: made.get(spec.parent!)!.id, x: lx, y: ly, rotation: own, length: spec.length, color: spec.color, ...(spec.inherit ? { inherit: spec.inherit } : {}) });
+    const b = newBone({
+      name: spec.name,
+      parent: made.get(spec.parent!)!.id,
+      x: lx,
+      y: ly,
+      rotation: own,
+      length: spec.length,
+      color: spec.color,
+      ...(spec.inherit ? { inherit: spec.inherit } : {}),
+    });
     made.set(spec.name, b);
     doc.bones.push(b);
   }
@@ -294,13 +436,27 @@ export function buildDemoRig(images: Record<string, ImageRef>): Project {
 
   // the legs
   const ik = (name: string, a: string, b: string, target: string): Constraint => ({
-    id: uid(), type: 'ik', name, bones: [id(a), id(b)], target: id(target), mix: 1, softness: 0, bendPositive: false, compress: false, stretch: true, scaleY: 'none', skinRequired: false,
+    id: uid(),
+    type: 'ik',
+    name,
+    bones: [id(a), id(b)],
+    target: id(target),
+    mix: 1,
+    softness: 0,
+    bendPositive: false,
+    compress: false,
+    stretch: true,
+    scaleY: 'none',
+    skinRequired: false,
   });
   doc.constraints.push(ik('leg near', 'leg near 1', 'leg near 2', 'ik near'), ik('leg far', 'leg far 1', 'leg far 2', 'ik far'));
 
   // physics: the tail follows with a delay, the ears flick, the scarf flutters
-  const physics = (name: string, boneName: string, p: { inertia: number; strength: number; damping: number; mass: number; wind?: number; gravity?: number }) =>
-    newPhysicsConstraint({ name, bone: id(boneName), rotate: 1, x: 0, y: 0, scaleX: 0, shearX: 0, mix: 1, ...p });
+  const physics = (
+    name: string,
+    boneName: string,
+    p: { inertia: number; strength: number; damping: number; mass: number; wind?: number; gravity?: number },
+  ) => newPhysicsConstraint({ name, bone: id(boneName), rotate: 1, x: 0, y: 0, scaleX: 0, shearX: 0, mix: 1, ...p });
   doc.constraints.push(
     physics('tail 1', 'tail 1', { inertia: 0.6, strength: 160, damping: 0.9, mass: 1.4 }),
     physics('tail 2', 'tail 2', { inertia: 0.7, strength: 110, damping: 0.88, mass: 1 }),
@@ -336,7 +492,19 @@ export function buildDemoRig(images: Record<string, ImageRef>): Project {
     const lx = (m.d * dx - m.b * dy) / det;
     const ly = (-m.c * dx + m.a * dy) / det;
     const angle = (-Math.atan2(m.c, m.a) * 180) / Math.PI;
-    return { type: 'region', name: slot.name, path: imgName, x: lx, y: ly, rotation: angle, scaleX: 1, scaleY: 1, width: box.width, height: box.height, color: [1, 1, 1, 1] };
+    return {
+      type: 'region',
+      name: slot.name,
+      path: imgName,
+      x: lx,
+      y: ly,
+      rotation: angle,
+      scaleX: 1,
+      scaleY: 1,
+      width: box.width,
+      height: box.height,
+      color: [1, 1, 1, 1],
+    };
   };
 
   const meshOf = (slot: SlotSpec, imgName: string, partName: string): MeshAttachment => {
@@ -359,7 +527,20 @@ export function buildDemoRig(images: Record<string, ImageRef>): Project {
       const dy = y - m.y;
       vertices.push((m.d * dx - m.b * dy) / det, (-m.c * dx + m.a * dy) / det);
     }
-    const plain: MeshAttachment = { type: 'mesh', name: slot.name, path: imgName, color: [1, 1, 1, 1], width: box.width, height: box.height, uvs, triangles, hull: hull.length, edges: [], vertices, weights: null };
+    const plain: MeshAttachment = {
+      type: 'mesh',
+      name: slot.name,
+      path: imgName,
+      color: [1, 1, 1, 1],
+      width: box.width,
+      height: box.height,
+      uvs,
+      triangles,
+      hull: hull.length,
+      edges: [],
+      vertices,
+      weights: null,
+    };
     const segs = slot.chain!.map((n) => tips.get(id(n))!);
     let w = chainWeights(world, segs, slot.blend ?? 12);
     w = smoothWeights(w, adjacency(triangles, pts.length), 1, 0.35);
@@ -411,68 +592,283 @@ export function buildDemoRig(images: Record<string, ImageRef>): Project {
 
   const rot = (a: Animation, boneName: string, rows: KeyIn[]) => ((a.bones[id(boneName)] ??= {}).rotate = line(rows));
   const move = (a: Animation, boneName: string, rows: KeyIn[]) => ((a.bones[id(boneName)] ??= {}).translate = line(rows, 2));
-  const eye = (a: Animation, rows: [number, 'open' | 'closed'][]) => ((a.slots[slotId('eye')] ??= {}).attachment = rows.map(([time, name]) => ({ time, name })));
+  const eye = (a: Animation, rows: [number, 'open' | 'closed'][]) =>
+    ((a.slots[slotId('eye')] ??= {}).attachment = rows.map(([time, name]) => ({ time, name })));
   const defaultOrder = doc.slots.map((s) => s.id);
 
   // ---- idle: breathing, a nod, an ear flick, two blinks
   const idle = newAnimation('idle', 2.4);
-  move(idle, 'hip', [[0, [0, 0], true], [1.2, [0, -3], true], [2.4, [0, 0]]]);
-  rot(idle, 'torso', [[0, [0], true], [1.2, [-1.5], true], [2.4, [0]]]);
-  rot(idle, 'head', [[0, [0], true], [0.9, [2], true], [1.7, [-2.5], true], [2.4, [0]]]);
-  rot(idle, 'arm near 1', [[0, [0], true], [1.2, [2.5], true], [2.4, [0]]]);
-  rot(idle, 'arm near 2', [[0, [0], true], [1.2, [-4], true], [2.4, [0]]]);
-  rot(idle, 'arm far 1', [[0, [0], true], [1.2, [-2.5], true], [2.4, [0]]]);
-  rot(idle, 'arm far 2', [[0, [0], true], [1.2, [3], true], [2.4, [0]]]);
-  rot(idle, 'tail 1', [[0, [0], true], [1, [3], true], [2, [-3], true], [2.4, [0]]]);
-  rot(idle, 'ear near', [[0, [0]], [1.5, [0], true], [1.58, [-14], true], [1.72, [0], true], [2.4, [0]]]);
-  eye(idle, [[0, 'open'], [1.1, 'closed'], [1.2, 'open'], [1.9, 'closed'], [1.98, 'open'], [2.06, 'closed'], [2.14, 'open']]);
+  move(idle, 'hip', [
+    [0, [0, 0], true],
+    [1.2, [0, -3], true],
+    [2.4, [0, 0]],
+  ]);
+  rot(idle, 'torso', [
+    [0, [0], true],
+    [1.2, [-1.5], true],
+    [2.4, [0]],
+  ]);
+  rot(idle, 'head', [
+    [0, [0], true],
+    [0.9, [2], true],
+    [1.7, [-2.5], true],
+    [2.4, [0]],
+  ]);
+  rot(idle, 'arm near 1', [
+    [0, [0], true],
+    [1.2, [2.5], true],
+    [2.4, [0]],
+  ]);
+  rot(idle, 'arm near 2', [
+    [0, [0], true],
+    [1.2, [-4], true],
+    [2.4, [0]],
+  ]);
+  rot(idle, 'arm far 1', [
+    [0, [0], true],
+    [1.2, [-2.5], true],
+    [2.4, [0]],
+  ]);
+  rot(idle, 'arm far 2', [
+    [0, [0], true],
+    [1.2, [3], true],
+    [2.4, [0]],
+  ]);
+  rot(idle, 'tail 1', [
+    [0, [0], true],
+    [1, [3], true],
+    [2, [-3], true],
+    [2.4, [0]],
+  ]);
+  rot(idle, 'ear near', [
+    [0, [0]],
+    [1.5, [0], true],
+    [1.58, [-14], true],
+    [1.72, [0], true],
+    [2.4, [0]],
+  ]);
+  eye(idle, [
+    [0, 'open'],
+    [1.1, 'closed'],
+    [1.2, 'open'],
+    [1.9, 'closed'],
+    [1.98, 'open'],
+    [2.06, 'closed'],
+    [2.14, 'open'],
+  ]);
 
   // ---- walk: a loop of two steps; the feet are IK targets
   const walk = newAnimation('walk', 0.9);
-  move(walk, 'hip', [[0, [0, -5], true], [0.225, [0, 3], true], [0.45, [0, -5], true], [0.675, [0, 3], true], [0.9, [0, -5]]]);
-  rot(walk, 'hip', [[0, [-2], true], [0.45, [2], true], [0.9, [-2]]]);
-  rot(walk, 'torso', [[0, [-3], true], [0.45, [1], true], [0.9, [-3]]]);
-  rot(walk, 'head', [[0, [3], true], [0.45, [-1], true], [0.9, [3]]]);
-  rot(walk, 'arm near 1', [[0, [-24], true], [0.45, [24], true], [0.9, [-24]]]);
-  rot(walk, 'arm near 2', [[0, [-6], true], [0.45, [28], true], [0.9, [-6]]]);
-  rot(walk, 'arm far 1', [[0, [24], true], [0.45, [-24], true], [0.9, [24]]]);
-  rot(walk, 'arm far 2', [[0, [28], true], [0.45, [-6], true], [0.9, [28]]]);
-  rot(walk, 'tail 1', [[0, [4], true], [0.45, [-4], true], [0.9, [4]]]);
-  move(walk, 'ik near', [[0, [22, 0]], [0.45, [-22, 0], true], [0.675, [0, 18], true], [0.9, [22, 0]]]);
-  move(walk, 'ik far', [[0, [-22, 0], true], [0.225, [0, 18], true], [0.45, [22, 0]], [0.9, [-22, 0]]]);
-  walk.events = [{ time: 0, event: stepEvent, int: 1 }, { time: 0.45, event: stepEvent, int: 2 }];
+  move(walk, 'hip', [
+    [0, [0, -5], true],
+    [0.225, [0, 3], true],
+    [0.45, [0, -5], true],
+    [0.675, [0, 3], true],
+    [0.9, [0, -5]],
+  ]);
+  rot(walk, 'hip', [
+    [0, [-2], true],
+    [0.45, [2], true],
+    [0.9, [-2]],
+  ]);
+  rot(walk, 'torso', [
+    [0, [-3], true],
+    [0.45, [1], true],
+    [0.9, [-3]],
+  ]);
+  rot(walk, 'head', [
+    [0, [3], true],
+    [0.45, [-1], true],
+    [0.9, [3]],
+  ]);
+  rot(walk, 'arm near 1', [
+    [0, [-24], true],
+    [0.45, [24], true],
+    [0.9, [-24]],
+  ]);
+  rot(walk, 'arm near 2', [
+    [0, [-6], true],
+    [0.45, [28], true],
+    [0.9, [-6]],
+  ]);
+  rot(walk, 'arm far 1', [
+    [0, [24], true],
+    [0.45, [-24], true],
+    [0.9, [24]],
+  ]);
+  rot(walk, 'arm far 2', [
+    [0, [28], true],
+    [0.45, [-6], true],
+    [0.9, [28]],
+  ]);
+  rot(walk, 'tail 1', [
+    [0, [4], true],
+    [0.45, [-4], true],
+    [0.9, [4]],
+  ]);
+  move(walk, 'ik near', [
+    [0, [22, 0]],
+    [0.45, [-22, 0], true],
+    [0.675, [0, 18], true],
+    [0.9, [22, 0]],
+  ]);
+  move(walk, 'ik far', [
+    [0, [-22, 0], true],
+    [0.225, [0, 18], true],
+    [0.45, [22, 0]],
+    [0.9, [-22, 0]],
+  ]);
+  walk.events = [
+    { time: 0, event: stepEvent, int: 1 },
+    { time: 0.45, event: stepEvent, int: 2 },
+  ];
 
   // ---- wave: the near arm waves, the far hand goes to the belly (in front of the body), the eyes smile
   const wave = newAnimation('wave', 2);
-  rot(wave, 'arm near 1', [[0, [0], true], [0.35, [125], true], [1.5, [125], true], [2, [0]]]);
-  rot(wave, 'arm near 2', [[0, [0], true], [0.35, [-12], true], [0.6, [26], true], [0.85, [-26], true], [1.1, [26], true], [1.35, [-26], true], [1.55, [-8], true], [2, [0]]]);
-  rot(wave, 'torso', [[0, [0], true], [0.35, [-3], true], [1.5, [-3], true], [2, [0]]]);
-  rot(wave, 'head', [[0, [0], true], [0.35, [6], true], [1.5, [6], true], [2, [0]]]);
-  rot(wave, 'ear near', [[0, [0], true], [0.4, [12], true], [0.8, [-4], true], [1.4, [8], true], [2, [0]]]);
-  rot(wave, 'arm far 1', [[0, [0], true], [0.3, [58], true], [1.7, [58], true], [2, [0]]]);
-  rot(wave, 'arm far 2', [[0, [0], true], [0.3, [48], true], [1.7, [48], true], [2, [0]]]);
-  eye(wave, [[0, 'open'], [0.5, 'closed'], [1.45, 'open']]);
+  rot(wave, 'arm near 1', [
+    [0, [0], true],
+    [0.35, [125], true],
+    [1.5, [125], true],
+    [2, [0]],
+  ]);
+  rot(wave, 'arm near 2', [
+    [0, [0], true],
+    [0.35, [-12], true],
+    [0.6, [26], true],
+    [0.85, [-26], true],
+    [1.1, [26], true],
+    [1.35, [-26], true],
+    [1.55, [-8], true],
+    [2, [0]],
+  ]);
+  rot(wave, 'torso', [
+    [0, [0], true],
+    [0.35, [-3], true],
+    [1.5, [-3], true],
+    [2, [0]],
+  ]);
+  rot(wave, 'head', [
+    [0, [0], true],
+    [0.35, [6], true],
+    [1.5, [6], true],
+    [2, [0]],
+  ]);
+  rot(wave, 'ear near', [
+    [0, [0], true],
+    [0.4, [12], true],
+    [0.8, [-4], true],
+    [1.4, [8], true],
+    [2, [0]],
+  ]);
+  rot(wave, 'arm far 1', [
+    [0, [0], true],
+    [0.3, [58], true],
+    [1.7, [58], true],
+    [2, [0]],
+  ]);
+  rot(wave, 'arm far 2', [
+    [0, [0], true],
+    [0.3, [48], true],
+    [1.7, [48], true],
+    [2, [0]],
+  ]);
+  eye(wave, [
+    [0, 'open'],
+    [0.5, 'closed'],
+    [1.45, 'open'],
+  ]);
   // the far arm and its hand move above the body while the hand is on the belly
   const inFront = defaultOrder.filter((s) => s !== slotId('arm far') && s !== slotId('hand far'));
   const at = inFront.indexOf(slotId('body')) + 1;
   inFront.splice(at, 0, slotId('arm far'), slotId('hand far'));
-  wave.drawOrder = [{ time: 0.3, order: inFront }, { time: 1.7, order: defaultOrder }];
+  wave.drawOrder = [
+    { time: 0.3, order: inFront },
+    { time: 1.7, order: defaultOrder },
+  ];
   wave.events = [{ time: 0.45, event: waveEvent, string: 'hello' }];
 
   // ---- jump: crouch, spring, tuck, land; the tail, the ears and the scarf follow by physics
   const jump = newAnimation('jump', 1.3);
-  move(jump, 'hip', [[0, [0, 0], true], [0.28, [0, -26], true], [0.46, [0, 12], true], [0.66, [0, 50], true], [0.86, [0, -14], true], [1.04, [0, -4], true], [1.3, [0, 0]]]);
-  rot(jump, 'torso', [[0, [0], true], [0.28, [10], true], [0.46, [-6], true], [0.66, [-4], true], [0.86, [8], true], [1.04, [2], true], [1.3, [0]]]);
-  rot(jump, 'head', [[0, [0], true], [0.28, [-6], true], [0.5, [5], true], [0.66, [6], true], [0.86, [-5], true], [1.3, [0]]]);
-  rot(jump, 'arm near 1', [[0, [0], true], [0.28, [-35], true], [0.5, [85], true], [0.66, [110], true], [0.86, [20], true], [1.3, [0]]]);
-  rot(jump, 'arm far 1', [[0, [0], true], [0.28, [-30], true], [0.5, [80], true], [0.66, [105], true], [0.86, [15], true], [1.3, [0]]]);
-  rot(jump, 'tail 1', [[0, [0], true], [0.28, [-8], true], [0.5, [14], true], [0.66, [10], true], [0.86, [-10], true], [1.3, [0]]]);
-  rot(jump, 'ear near', [[0, [0], true], [0.28, [6], true], [0.5, [-18], true], [0.66, [-10], true], [0.86, [14], true], [1.3, [0]]]);
-  const tuck = (dx: number): KeyIn[] => [[0, [0, 0]], [0.4, [0, 0], true], [0.5, [0, 10], true], [0.66, [dx, 44], true], [0.82, [0, 20], true], [0.88, [0, 0], true], [1.3, [0, 0]]];
+  move(jump, 'hip', [
+    [0, [0, 0], true],
+    [0.28, [0, -26], true],
+    [0.46, [0, 12], true],
+    [0.66, [0, 50], true],
+    [0.86, [0, -14], true],
+    [1.04, [0, -4], true],
+    [1.3, [0, 0]],
+  ]);
+  rot(jump, 'torso', [
+    [0, [0], true],
+    [0.28, [10], true],
+    [0.46, [-6], true],
+    [0.66, [-4], true],
+    [0.86, [8], true],
+    [1.04, [2], true],
+    [1.3, [0]],
+  ]);
+  rot(jump, 'head', [
+    [0, [0], true],
+    [0.28, [-6], true],
+    [0.5, [5], true],
+    [0.66, [6], true],
+    [0.86, [-5], true],
+    [1.3, [0]],
+  ]);
+  rot(jump, 'arm near 1', [
+    [0, [0], true],
+    [0.28, [-35], true],
+    [0.5, [85], true],
+    [0.66, [110], true],
+    [0.86, [20], true],
+    [1.3, [0]],
+  ]);
+  rot(jump, 'arm far 1', [
+    [0, [0], true],
+    [0.28, [-30], true],
+    [0.5, [80], true],
+    [0.66, [105], true],
+    [0.86, [15], true],
+    [1.3, [0]],
+  ]);
+  rot(jump, 'tail 1', [
+    [0, [0], true],
+    [0.28, [-8], true],
+    [0.5, [14], true],
+    [0.66, [10], true],
+    [0.86, [-10], true],
+    [1.3, [0]],
+  ]);
+  rot(jump, 'ear near', [
+    [0, [0], true],
+    [0.28, [6], true],
+    [0.5, [-18], true],
+    [0.66, [-10], true],
+    [0.86, [14], true],
+    [1.3, [0]],
+  ]);
+  const tuck = (dx: number): KeyIn[] => [
+    [0, [0, 0]],
+    [0.4, [0, 0], true],
+    [0.5, [0, 10], true],
+    [0.66, [dx, 44], true],
+    [0.82, [0, 20], true],
+    [0.88, [0, 0], true],
+    [1.3, [0, 0]],
+  ];
   move(jump, 'ik near', tuck(6));
   move(jump, 'ik far', tuck(-6));
-  eye(jump, [[0, 'open'], [0.2, 'closed'], [0.42, 'open'], [0.84, 'closed'], [1, 'open']]);
-  jump.events = [{ time: 0.46, event: jumpEvent }, { time: 0.84, event: landEvent }];
+  eye(jump, [
+    [0, 'open'],
+    [0.2, 'closed'],
+    [0.42, 'open'],
+    [0.84, 'closed'],
+    [1, 'open'],
+  ]);
+  jump.events = [
+    { time: 0.46, event: jumpEvent },
+    { time: 0.84, event: landEvent },
+  ];
 
   doc.animations.push(idle, walk, wave, jump);
   return project;

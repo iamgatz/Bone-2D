@@ -63,7 +63,8 @@ export function mergeGroup(tl: BoneTimelines, g: AxisGroup): boolean {
     const key: Key = { time, value };
     if (!isLast) {
       if (here.every((c) => c === 'stepped')) key.curve = 'stepped';
-      else if (here.some((c) => Array.isArray(c))) key.curve = here.flatMap((c) => (Array.isArray(c) ? c.slice(0, 4) : [1 / 3, 1 / 3, 2 / 3, 2 / 3]));
+      else if (here.some((c) => Array.isArray(c)))
+        key.curve = here.flatMap((c) => (Array.isArray(c) ? c.slice(0, 4) : [1 / 3, 1 / 3, 2 / 3, 2 / 3]));
     }
     return key;
   });

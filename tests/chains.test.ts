@@ -20,7 +20,8 @@ function tail() {
   uiStore.patch({ mode: 'setup' });
   return { root, t1, t2, t3, t4 };
 }
-const physicsOf = (id: string) => docStore.get().skeleton.constraints.find((c): c is PhysicsConstraint => c.type === 'physics' && c.bone === id);
+const physicsOf = (id: string) =>
+  docStore.get().skeleton.constraints.find((c): c is PhysicsConstraint => c.type === 'physics' && c.bone === id);
 
 describe('chain curve', () => {
   beforeEach(() => void tail());
@@ -53,7 +54,14 @@ describe('chain curve', () => {
 
   it('creates the missing physics constraints, skips the root, sets the values, one undo step', () => {
     const { root, t1, t2, t3, t4 } = tail();
-    const n = applyChainCurve(chainBones(docStore.get().skeleton, [root.id]), { param: 'strength', from: 300, to: 60, shape: 'linear', power: 1, create: true });
+    const n = applyChainCurve(chainBones(docStore.get().skeleton, [root.id]), {
+      param: 'strength',
+      from: 300,
+      to: 60,
+      shape: 'linear',
+      power: 1,
+      create: true,
+    });
     expect(n).toBe(4);
     expect(physicsOf(root.id)).toBeUndefined();
     expect([t1, t2, t3, t4].map((b) => physicsOf(b.id)!.strength)).toEqual([300, 220, 140, 60]);

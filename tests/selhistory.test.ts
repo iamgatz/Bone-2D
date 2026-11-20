@@ -1,6 +1,13 @@
 /** Selection history: PgUp / PgDn go back and forward over the selections, skipping what is gone. */
 import { beforeEach, describe, expect, it } from 'vitest';
-import { SelectionHistory, entryExists, selectionBack, selectionForward, selectionHistory, startSelectionHistory } from '../src/store/selHistory';
+import {
+  SelectionHistory,
+  entryExists,
+  selectionBack,
+  selectionForward,
+  selectionHistory,
+  startSelectionHistory,
+} from '../src/store/selHistory';
 import { docStore } from '../src/store/doc';
 import { setSelection } from '../src/store/actions';
 import { uiStore } from '../src/store/ui';

@@ -13,7 +13,11 @@ const I = (b: string, x: number, y: number, w: number): Influence => [b, x, y, w
 const id = (x = 0, y = 0) => ({ a: 1, b: 0, c: 0, d: 1, x, y });
 
 describe('remove bone weights (core)', () => {
-  const bones: BoneMats = new Map([['P', id()], ['A', id(100, 0)], ['B', id(0, 50)]]);
+  const bones: BoneMats = new Map([
+    ['P', id()],
+    ['A', id(100, 0)],
+    ['B', id(0, 50)],
+  ]);
   it('hands the weight to the other bones in proportion and keeps the vertex', () => {
     const w: Influence[][] = [[I('A', -50, 0, 0.5), I('B', 50, -50, 0.3), I('P', 50, 0, 0.2)]];
     const r = removeBoneWeights(w, [50, 0], 'A', 'P', bones);
@@ -47,7 +51,20 @@ describe('remove bone from mesh (store)', () => {
     const slot = newSlot({ name: 's', bone: root.id });
     p.skeleton.slots.push(slot);
     p.skeleton.skins[0].attachments[slot.id] = {
-      img: meshFromRegion({ type: 'region', name: 'img', path: 'img', x: 100, y: 0, rotation: 0, scaleX: 1, scaleY: 1, width: 200, height: 60, color: [1, 1, 1, 1], sequence: null } as never),
+      img: meshFromRegion({
+        type: 'region',
+        name: 'img',
+        path: 'img',
+        x: 100,
+        y: 0,
+        rotation: 0,
+        scaleX: 1,
+        scaleY: 1,
+        width: 200,
+        height: 60,
+        color: [1, 1, 1, 1],
+        sequence: null,
+      } as never),
     };
     slot.attachment = 'img';
     docStore.replace(p);
@@ -74,6 +91,10 @@ describe('remove bone from mesh (store)', () => {
     expect(uiStore.get().brush.locked).toEqual([]);
     expect(removeBoneFromMesh(slotId, 'img', ids[1])).toBe(0);
     docStore.undo();
-    expect(getMesh(slotId, 'img')!.weights!.flat().some((e) => e[0] === ids[1])).toBe(true);
+    expect(
+      getMesh(slotId, 'img')!
+        .weights!.flat()
+        .some((e) => e[0] === ids[1]),
+    ).toBe(true);
   });
 });

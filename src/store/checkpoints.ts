@@ -44,7 +44,15 @@ export function markCheckpoint(name?: string, now = Date.now()): Checkpoint {
   const p = docStore.get();
   const at = activeIndex(p);
   const mine = checkpointsOfActive();
-  const cp: Checkpoint = { id: `cp${now.toString(36)}${counter++}`, name: name?.trim() || nextCheckpointName(mine), time: now, at, skeleton: p.skeleton, images: p.images, mixes: p.mixes };
+  const cp: Checkpoint = {
+    id: `cp${now.toString(36)}${counter++}`,
+    name: name?.trim() || nextCheckpointName(mine),
+    time: now,
+    at,
+    skeleton: p.skeleton,
+    images: p.images,
+    mixes: p.mixes,
+  };
   addCheckpoint(cp, mine);
   return cp;
 }
@@ -78,13 +86,25 @@ export function compareWithProjectText(text: string, fileName = ''): Change[] | 
   const now = Date.now();
   const current = docStore.get();
   const label = fileName.trim() || 'file';
-  const cp: Checkpoint = { id: `cp${now.toString(36)}${counter++}`, name: label, time: now, at: activeIndex(current), skeleton: project.skeleton, images: project.images, mixes: project.mixes, fromFile: label };
+  const cp: Checkpoint = {
+    id: `cp${now.toString(36)}${counter++}`,
+    name: label,
+    time: now,
+    at: activeIndex(current),
+    skeleton: project.skeleton,
+    images: project.images,
+    mixes: project.mixes,
+    fromFile: label,
+  };
   addCheckpoint(cp, checkpointsOfActive());
   if (Object.keys(read.pictures).length) filePictures.set(cp.id, read.pictures);
   uiStore.patch({ compare: cp.id });
   const changes = diffSkeletons(cp.skeleton, current.skeleton);
   const sum = summarizeChanges(changes);
-  toast(changes.length ? `Compared with ${label}: +${sum.added} −${sum.removed} ~${sum.changed}` : `${label} has the same skeleton`, changes.length ? 'ok' : 'info');
+  toast(
+    changes.length ? `Compared with ${label}: +${sum.added} −${sum.removed} ~${sum.changed}` : `${label} has the same skeleton`,
+    changes.length ? 'ok' : 'info',
+  );
   return changes;
 }
 
@@ -159,7 +179,9 @@ export function restoreNow(cp: Checkpoint): boolean {
     return false;
   }
   const open = docStore.get();
-  const same = cp.fromFile ? diffSkeletons(cp.skeleton, open.skeleton).length === 0 : open.skeleton === cp.skeleton && open.images === cp.images && open.mixes === cp.mixes;
+  const same = cp.fromFile
+    ? diffSkeletons(cp.skeleton, open.skeleton).length === 0
+    : open.skeleton === cp.skeleton && open.images === cp.images && open.mixes === cp.mixes;
   if (same) {
     toast('Nothing has changed since this checkpoint', 'info');
     return false;

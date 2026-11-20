@@ -35,7 +35,8 @@ export function spline(points: Pt[], closed = false, per = 6): Pt[] {
       const t = k / per;
       const t2 = t * t;
       const t3 = t2 * t;
-      const c = (a: number, b: number, d: number, e: number) => 0.5 * (2 * b + (-a + d) * t + (2 * a - 5 * b + 4 * d - e) * t2 + (-a + 3 * b - 3 * d + e) * t3);
+      const c = (a: number, b: number, d: number, e: number) =>
+        0.5 * (2 * b + (-a + d) * t + (2 * a - 5 * b + 4 * d - e) * t2 + (-a + 3 * b - 3 * d + e) * t3);
       out.push([c(p0[0], p1[0], p2[0], p3[0]), c(p0[1], p1[1], p2[1], p3[1])]);
     }
   }

@@ -11,7 +11,12 @@ import type { Selection } from './ui';
 export type SelEntry = Pick<Selection, 'bones' | 'slot' | 'attachment' | 'constraint'>;
 
 const holds = (e: SelEntry) => e.bones.length > 0 || e.slot !== null || e.constraint !== null;
-const same = (a: SelEntry, b: SelEntry) => a.slot === b.slot && a.attachment === b.attachment && a.constraint === b.constraint && a.bones.length === b.bones.length && a.bones.every((id, i) => id === b.bones[i]);
+const same = (a: SelEntry, b: SelEntry) =>
+  a.slot === b.slot &&
+  a.attachment === b.attachment &&
+  a.constraint === b.constraint &&
+  a.bones.length === b.bones.length &&
+  a.bones.every((id, i) => id === b.bones[i]);
 
 export class SelectionHistory {
   list: SelEntry[] = [];
@@ -68,7 +73,9 @@ function go(dir: -1 | 1): boolean {
   }
   applying = true;
   try {
-    uiStore.patch({ selection: { bones: [...entry.bones], slot: entry.slot, attachment: entry.attachment, constraint: entry.constraint, vertices: [] } });
+    uiStore.patch({
+      selection: { bones: [...entry.bones], slot: entry.slot, attachment: entry.attachment, constraint: entry.constraint, vertices: [] },
+    });
   } finally {
     applying = false;
   }

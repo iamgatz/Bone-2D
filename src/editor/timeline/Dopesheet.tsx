@@ -386,7 +386,11 @@ export function Dopesheet({ rows, duration, fps, onMenu }: Props) {
     /** The marker under a point of the ruler (the flag or its line). */
     const markerAt = (x: number) => {
       const ui = uiStore.get();
-      return markerNear(docStore.get().skeleton.animations.find((a) => a.id === ui.animationId), (x - 3) / ui.tlZoom + ui.tlScroll, 8 / ui.tlZoom);
+      return markerNear(
+        docStore.get().skeleton.animations.find((a) => a.id === ui.animationId),
+        (x - 3) / ui.tlZoom + ui.tlScroll,
+        8 / ui.tlZoom,
+      );
     };
     const onRulerDouble = (e: MouseEvent) => {
       const m = markerAt(local(e, ruler)[0]);
@@ -459,7 +463,14 @@ export function Dopesheet({ rows, duration, fps, onMenu }: Props) {
         uiStore.patch({ selectedKeys: selected });
         if (selected.length && (loop || !(already && (e.shiftKey || e.ctrlKey || e.metaKey)))) {
           docStore.beginGesture(loop ? 'Offset keys' : 'Move keys');
-          drag.current = { kind: 'keys', anchor: hit.key.refs[0], grab: xToTime(x) - hit.key.time, refs: selected.map(decodeKey), ripple: e.altKey && !loop, loop };
+          drag.current = {
+            kind: 'keys',
+            anchor: hit.key.refs[0],
+            grab: xToTime(x) - hit.key.time,
+            refs: selected.map(decodeKey),
+            ripple: e.altKey && !loop,
+            loop,
+          };
         }
         return;
       }

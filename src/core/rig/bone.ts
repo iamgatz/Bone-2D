@@ -215,7 +215,7 @@ export class Bone {
         zc *= s;
         let zb = -zc;
         let zd = za;
-        if (this.inherit === 'noScale' && (pa * pd - pb * pc < 0) !== (sx < 0 !== sy < 0)) {
+        if (this.inherit === 'noScale' && pa * pd - pb * pc < 0 !== (sx < 0 !== sy < 0)) {
           zb = -zb;
           zd = -zd;
         }

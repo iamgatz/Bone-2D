@@ -111,7 +111,9 @@ export function syncLinkedMeshes(doc: SkeletonDoc): number {
 
 /** True when the document has any linked mesh (a quick test before the work of looking at them). */
 export function hasLinkedMeshes(doc: SkeletonDoc): boolean {
-  for (const skin of doc.skins) for (const slotId in skin.attachments) for (const name in skin.attachments[slotId]) if ((skin.attachments[slotId][name] as MeshAttachment).link) return true;
+  for (const skin of doc.skins)
+    for (const slotId in skin.attachments)
+      for (const name in skin.attachments[slotId]) if ((skin.attachments[slotId][name] as MeshAttachment).link) return true;
   return false;
 }
 
@@ -139,7 +141,12 @@ export function deformHome(doc: SkeletonDoc, skinId: Id, slotId: Id, name: strin
 }
 
 /** The linked meshes that follow the mesh `name` of a slot in a skin: where they are and which of them share its deform. */
-export function linkedTo(doc: SkeletonDoc, skinId: Id, slotId: Id, name: string): { skin: Skin; slotId: Id; name: string; mesh: MeshAttachment }[] {
+export function linkedTo(
+  doc: SkeletonDoc,
+  skinId: Id,
+  slotId: Id,
+  name: string,
+): { skin: Skin; slotId: Id; name: string; mesh: MeshAttachment }[] {
   const out: { skin: Skin; slotId: Id; name: string; mesh: MeshAttachment }[] = [];
   for (const skin of doc.skins) {
     for (const sid in skin.attachments) {
@@ -147,7 +154,8 @@ export function linkedTo(doc: SkeletonDoc, skinId: Id, slotId: Id, name: string)
         const att = skin.attachments[sid][n];
         if (att.type !== 'mesh' || !att.link) continue;
         const src = linkSource(doc, sid, att);
-        if (src && src.skin.id === skinId && src.slotId === slotId && att.link.source === name) out.push({ skin, slotId: sid, name: n, mesh: att });
+        if (src && src.skin.id === skinId && src.slotId === slotId && att.link.source === name)
+          out.push({ skin, slotId: sid, name: n, mesh: att });
       }
     }
   }

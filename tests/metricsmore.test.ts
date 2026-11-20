@@ -7,9 +7,34 @@ import { buildFixture } from './fixture';
 
 describe('area', () => {
   it('a region is its size times its scale, a mesh the area of its texture triangles', () => {
-    const region = { type: 'region', name: 'r', path: 'r', x: 0, y: 0, rotation: 0, scaleX: 2, scaleY: -0.5, width: 30, height: 40, color: [1, 1, 1, 1] } as RegionAttachment;
+    const region = {
+      type: 'region',
+      name: 'r',
+      path: 'r',
+      x: 0,
+      y: 0,
+      rotation: 0,
+      scaleX: 2,
+      scaleY: -0.5,
+      width: 30,
+      height: 40,
+      color: [1, 1, 1, 1],
+    } as RegionAttachment;
     expect(attachmentArea(region)).toBe(1200);
-    const mesh = { type: 'mesh', name: 'm', path: 'm', color: [1, 1, 1, 1], width: 20, height: 10, uvs: [0, 0, 1, 0, 1, 1, 0, 1], triangles: [0, 1, 2, 0, 2, 3], hull: 4, edges: [], vertices: [], weights: null } as MeshAttachment;
+    const mesh = {
+      type: 'mesh',
+      name: 'm',
+      path: 'm',
+      color: [1, 1, 1, 1],
+      width: 20,
+      height: 10,
+      uvs: [0, 0, 1, 0, 1, 1, 0, 1],
+      triangles: [0, 1, 2, 0, 2, 3],
+      hull: 4,
+      edges: [],
+      vertices: [],
+      weights: null,
+    } as MeshAttachment;
     expect(attachmentArea(mesh)).toBeCloseTo(200, 9);
     expect(attachmentArea({ type: 'point', name: 'p' } as never)).toBe(0);
   });
@@ -26,7 +51,13 @@ describe('timelines', () => {
   it('counts every list of keys once', () => {
     const a = newAnimation('a', 1);
     const [id1, id2] = ['b1', 'b2'];
-    a.bones[id1] = { rotate: [{ time: 0, value: [0] }, { time: 1, value: [5] }], translate: [{ time: 0, value: [0, 0] }] };
+    a.bones[id1] = {
+      rotate: [
+        { time: 0, value: [0] },
+        { time: 1, value: [5] },
+      ],
+      translate: [{ time: 0, value: [0, 0] }],
+    };
     a.bones[id2] = { scale: [{ time: 0, value: [1, 1] }] };
     expect(countTimelines(a)).toBe(3);
     expect(countKeys(a)).toBe(4);
