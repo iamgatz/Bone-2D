@@ -1,7 +1,7 @@
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test } from '@playwright/test';
 import type { Page } from '@playwright/test';
-import { FOX_LESSON, RIG_LESSON } from '../src/core/lessons';
+import { FOX_LESSON, MESH_LESSON, RIG_LESSON } from '../src/core/lessons';
 
 type BoneActions = typeof import('../src/store/boneActions');
 type DocModule = typeof import('../src/store/doc');
@@ -248,6 +248,88 @@ for (const locale of ['en-US', 'ru-RU'] as const) {
       await card.getByRole('button', { name: RIG_LESSON.title[lang] }).click();
       await expect(card.locator('.learn-title')).toHaveText(RIG_LESSON.title[lang]);
       await expect(card.locator('.learn-count')).toHaveText('0/6');
+    });
+  });
+}
+
+for (const locale of ['en-US', 'ru-RU'] as const) {
+  const lang = locale === 'ru-RU' ? 'ru' : 'en';
+  test.describe(`the mesh lesson (${locale})`, () => {
+    test.use({ locale });
+
+    test('is passed on a picture of the demo: Quad, Bind with the real buttons, the brush with W, a bend', async ({ page }) => {
+      await openDemoWithLesson(page);
+      await page.evaluate(async (url) => {
+        const { uiStore } = (await import(url)) as UiModule;
+        uiStore.patch({ helpOpen: true });
+      }, UI);
+      await page.locator('.dialog .hstack.wrap .btn').nth(2).click();
+      const card = page.locator('.learn');
+      const step = (i: number) => MESH_LESSON.steps[i];
+      await expect(card.locator('.learn-title')).toHaveText(MESH_LESSON.title[lang]);
+      await expect(card.locator('.learn-step-title')).toHaveText(step(0).title[lang]);
+
+      // 1. a picture that is still a plain region
+      const ids = await page.evaluate(
+        async ([docUrl, sessionUrl]) => {
+          const { docStore } = (await import(docUrl)) as DocModule;
+          const session = (await import(sessionUrl)) as SessionActions;
+          const sk = docStore.get().skeleton;
+          const slot = sk.slots.find((s) => {
+            const att = s.attachment ? sk.skins[0].attachments[s.id]?.[s.attachment] : undefined;
+            return att?.type === 'region';
+          })!;
+          session.selectSlot(slot.id);
+          return { bone: slot.bone };
+        },
+        [DOC, SESSION] as const,
+      );
+      await expect(card.locator('.learn-step-title')).toHaveText(step(1).title[lang]);
+
+      // 2. Quad, 3. Bind (the buttons of the Inspector)
+      await page
+        .locator('aside.right')
+        .getByRole('button', { name: /^(Quad|Квадрат)$/ })
+        .click();
+      await expect(card.locator('.learn-step-title')).toHaveText(step(2).title[lang]);
+      await page
+        .locator('aside.right')
+        .getByRole('button', { name: /^(Bind to|Привязать к)/ })
+        .click();
+      await expect(card.locator('.learn-step-title')).toHaveText(step(3).title[lang]);
+
+      // 4. W: the brush
+      await page.keyboard.press('w');
+      await expect(card.locator('.learn-step-title')).toHaveText(step(4).title[lang]);
+      await page.keyboard.press('v');
+
+      // 5. Tab, 6. a turn of the bone at another time bends the mesh
+      await page.keyboard.press('Tab');
+      await expect(card.locator('.learn-step-title')).toHaveText(step(5).title[lang]);
+      await page.evaluate(
+        async ([ui, bonesUrl, bone]) => {
+          const { uiStore } = (await import(ui)) as UiModule;
+          const { setBonePose } = (await import(bonesUrl)) as BoneActions;
+          uiStore.patch({ time: 0.43 });
+          setBonePose([{ id: bone, props: { rotation: 33 } }]);
+        },
+        [UI, BONES, ids.bone] as const,
+      );
+      await expect(card.locator('.learn-count')).toHaveText('6/6');
+      await expect(card.locator('.learn-text')).toHaveText(MESH_LESSON.outro[lang]);
+    });
+
+    test('the second lesson leads to the third when it is over', async ({ page }) => {
+      await openDemoWithLesson(page);
+      await page.evaluate(async (url) => {
+        const { uiStore } = (await import(url)) as UiModule;
+        uiStore.patch({ helpOpen: true });
+      }, UI);
+      await page.locator('.dialog .hstack.wrap .btn').nth(1).click();
+      const card = page.locator('.learn');
+      for (let i = 0; i < RIG_LESSON.steps.length; i++) await card.locator('.btn.ghost').click();
+      await card.getByRole('button', { name: MESH_LESSON.title[lang] }).click();
+      await expect(card.locator('.learn-title')).toHaveText(MESH_LESSON.title[lang]);
     });
   });
 }

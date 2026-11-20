@@ -24,6 +24,13 @@ export interface LessonState {
   images: number;
   bones: number;
   ownSlots: number;
+  /** A slot (a picture) is selected. */
+  slotSelected: boolean;
+  /** Meshes in the skins, and how many of them are bound to bones (weighted). */
+  meshes: number;
+  weightedMeshes: number;
+  /** The weights brush has been the tool at some moment since the lesson began. */
+  seenWeightsTool: boolean;
   /** Playback has been on at some moment since the lesson began (it can be off again now). */
   seenPlaying: boolean;
   /** The Export window has been opened since the lesson began. */
@@ -146,6 +153,7 @@ export const RIG_LESSON: Lesson = {
     en: 'Your picture moves with its bone. Real characters are the same, only with more bones: add a bone for every part that has to move.',
     ru: 'Картинка двигается вместе со своей костью. Настоящие персонажи устроены так же, только костей больше: по кости на каждую движущуюся часть.',
   },
+  next: 'mesh',
   steps: [
     {
       id: 'pictures',
@@ -211,7 +219,83 @@ export const RIG_LESSON: Lesson = {
   ],
 };
 
-export const LESSONS: readonly Lesson[] = [FOX_LESSON, RIG_LESSON];
+/** Lesson 3: a picture that bends. A mesh is a picture cut into triangles; bound to bones, its points follow them with weights. */
+export const MESH_LESSON: Lesson = {
+  id: 'mesh',
+  title: { en: 'A picture that bends', ru: 'Картинка, которая гнётся' },
+  intro: {
+    en: 'Turn a picture into a mesh and bind it to a bone, so it bends instead of turning stiffly. Needs a picture on a slot and a bone.',
+    ru: 'Превратите картинку в сетку и привяжите к кости: она будет гнуться, а не поворачиваться целиком. Нужны картинка в слоте и кость.',
+  },
+  outro: {
+    en: 'The picture bends with its bones. Bind to two or more bones and paint the weights: that is how tails, arms and cloth are made.',
+    ru: 'Картинка гнётся вместе с костями. Привяжите к двум и более костям и подкрасьте веса: так делают хвосты, руки и ткань.',
+  },
+  steps: [
+    {
+      id: 'slot',
+      target: 'tree',
+      title: { en: 'Pick a picture', ru: 'Выберите картинку' },
+      text: {
+        en: 'Click a picture (a slot, the layered icon) in the hierarchy. No pictures yet? Do the lesson "Your own rig" first.',
+        ru: 'Нажмите на картинку (слот, значок со слоями) в иерархии. Картинок ещё нет? Сначала пройдите урок «Свой риг».',
+      },
+      done: (s) => s.slotSelected,
+    },
+    {
+      id: 'mesh',
+      target: 'inspector',
+      title: { en: 'Make it a mesh', ru: 'Сделайте сетку' },
+      text: {
+        en: 'In the Inspector press Quad (four corners) or Trace mesh (follows the outline). The mesh appears on the picture.',
+        ru: 'В инспекторе нажмите «Квадрат» (четыре угла) или «Трассировать сетку» (по контуру). Сетка появится на картинке.',
+      },
+      done: (s, base) => s.meshes > base.meshes,
+    },
+    {
+      id: 'bind',
+      target: 'inspector',
+      title: { en: 'Bind it to bones', ru: 'Привяжите к костям' },
+      text: {
+        en: 'Select the bone or bones that should move it, then press the Bind button in the Inspector.',
+        ru: 'Выберите кость или кости, которые должны её двигать, и нажмите кнопку привязки в инспекторе.',
+      },
+      done: (s, base) => s.weightedMeshes > base.weightedMeshes,
+    },
+    {
+      id: 'weights',
+      target: 'viewport',
+      title: { en: 'Look at the weights', ru: 'Посмотрите на веса' },
+      text: {
+        en: 'Press W: the brush paints how strongly each bone pulls the mesh. Paint a little, then press V to go back.',
+        ru: 'Нажмите W: кисть красит, насколько сильно каждая кость тянет сетку. Проведите кистью и вернитесь на V.',
+      },
+      done: (s) => s.seenWeightsTool,
+    },
+    {
+      id: 'animate',
+      target: 'mode',
+      title: { en: 'Switch to Animate', ru: 'Перейдите в «Анимацию»' },
+      text: {
+        en: 'Press Tab or click Animate.',
+        ru: 'Нажмите Tab или кнопку «Анимация».',
+      },
+      done: (s) => s.mode === 'animate',
+    },
+    {
+      id: 'bend',
+      target: 'viewport',
+      title: { en: 'Bend it', ru: 'Согните её' },
+      text: {
+        en: 'Move the time marker and turn a bone: the mesh bends with it. A key is made.',
+        ru: 'Передвиньте маркер времени и поверните кость: сетка согнётся вместе с ней. Ключ создастся сам.',
+      },
+      done: (s, base) => s.keys > base.keys,
+    },
+  ],
+};
+
+export const LESSONS: readonly Lesson[] = [FOX_LESSON, RIG_LESSON, MESH_LESSON];
 
 export const lessonById = (id: string): Lesson | undefined => LESSONS.find((l) => l.id === id);
 
@@ -226,8 +310,19 @@ export interface LessonProgress {
   doneCount: number;
 }
 
-/** Where a lesson stands. A skipped step stays skipped only until it is done by itself; a done step is never taken back as "todo". */
-export function progressOf(lesson: Lesson, state: LessonState, base: LessonState, skipped: readonly string[]): LessonProgress {
-  const marks: StepMark[] = lesson.steps.map((s) => (s.done(state, base) ? 'done' : skipped.includes(s.id) ? 'skipped' : 'todo'));
+/**
+ * Where a lesson stands. A skipped step stays skipped only until it is done by itself. A step that was done stays done (`kept` lists
+ * them): the editor can leave the state a step asked for (selecting a bone drops the selected picture), and the card must not jump back.
+ */
+export function progressOf(
+  lesson: Lesson,
+  state: LessonState,
+  base: LessonState,
+  skipped: readonly string[],
+  kept: readonly string[] = [],
+): LessonProgress {
+  const marks: StepMark[] = lesson.steps.map((s) =>
+    kept.includes(s.id) || s.done(state, base) ? 'done' : skipped.includes(s.id) ? 'skipped' : 'todo',
+  );
   return { marks, current: marks.indexOf('todo'), doneCount: marks.filter((m) => m === 'done').length };
 }

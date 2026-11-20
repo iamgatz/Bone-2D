@@ -1,9 +1,11 @@
 /** The lessons: the data is complete in both languages, every step condition says what it should, and the store follows the editor. */
 import { beforeEach, describe, expect, it } from 'vitest';
-import { FOX_LESSON, LESSONS, RIG_LESSON, lessonById, progressOf } from '../src/core/lessons';
+import { FOX_LESSON, LESSONS, MESH_LESSON, RIG_LESSON, lessonById, progressOf } from '../src/core/lessons';
 import type { LessonState } from '../src/core/lessons';
+import { meshFromRegion } from '../src/core/mesh';
 import { emptyProject, newAnimation, newBone, newSlot } from '../src/core/model';
-import { selectBone, setMode } from '../src/store/actions';
+import type { RegionAttachment } from '../src/core/model';
+import { selectBone, selectSlot, setMode } from '../src/store/actions';
 import { setBonePose } from '../src/store/boneActions';
 import { docStore } from '../src/store/doc';
 import { learnStore, offerLesson, readLearn, skipStep, startLesson, stopLesson } from '../src/store/learn';
@@ -18,6 +20,10 @@ const state = (over: Partial<LessonState> = {}): LessonState => ({
   images: 0,
   bones: 1,
   ownSlots: 0,
+  slotSelected: false,
+  meshes: 0,
+  weightedMeshes: 0,
+  seenWeightsTool: false,
   seenPlaying: false,
   seenExport: false,
   ...over,
@@ -97,6 +103,12 @@ describe('progress', () => {
     expect(p.marks[2]).toBe('done');
     expect(p.current).toBe(0);
     expect(p.doneCount).toBe(1);
+  });
+  it('a step that was done stays done when the editor leaves its state (kept), a skipped one does not', () => {
+    const p = progressOf(FOX_LESSON, state(), base, ['edit'], ['select', 'edit']);
+    expect(p.marks[0]).toBe('done');
+    expect(p.marks[1]).toBe('done');
+    expect(p.current).toBe(2);
   });
   it('a skipped step moves the lesson on, and becomes done when the editor gets there by itself', () => {
     const skipped = progressOf(FOX_LESSON, state(), base, ['select']);
@@ -226,7 +238,7 @@ describe('the steps of the rig lesson', () => {
   it('is offered after the first lesson, and only the first step has a button', () => {
     expect(FOX_LESSON.next).toBe('rig');
     expect(lessonById(FOX_LESSON.next!)).toBe(RIG_LESSON);
-    expect(RIG_LESSON.next).toBeUndefined();
+    expect(RIG_LESSON.next).toBe('mesh');
     expect(RIG_LESSON.steps.filter((s) => s.helper).map((s) => s.id)).toEqual(['pictures']);
   });
 });
@@ -285,5 +297,98 @@ describe('the rig lesson in the store', () => {
       d.skeleton.slots.push(newSlot({ name: 'bg', bone: d.skeleton.bones[0].id, attachment: 'bg' }));
     });
     expect(learnStore.get().progress?.marks[2]).toBe('todo');
+  });
+});
+
+describe('the steps of the mesh lesson', () => {
+  const base = state({ meshes: 2, weightedMeshes: 1, keys: 3 });
+  const done = (id: string, s: LessonState) => MESH_LESSON.steps.find((x) => x.id === id)!.done(s, base);
+
+  it('slot: a picture is selected', () => {
+    expect(done('slot', state())).toBe(false);
+    expect(done('slot', state({ slotSelected: true }))).toBe(true);
+  });
+  it('mesh: more meshes than when the lesson began (the ones that were there do not count)', () => {
+    expect(done('mesh', state({ meshes: 2 }))).toBe(false);
+    expect(done('mesh', state({ meshes: 3 }))).toBe(true);
+  });
+  it('bind: more weighted meshes than at the start', () => {
+    expect(done('bind', state({ meshes: 5, weightedMeshes: 1 }))).toBe(false);
+    expect(done('bind', state({ weightedMeshes: 2 }))).toBe(true);
+  });
+  it('weights: the brush was the tool at some moment, even if it is not now', () => {
+    expect(done('weights', state())).toBe(false);
+    expect(done('weights', state({ seenWeightsTool: true }))).toBe(true);
+  });
+  it('animate and bend: the mode, and more keys than at the start', () => {
+    expect(done('animate', state({ mode: 'animate' }))).toBe(true);
+    expect(done('bend', state({ keys: 3 }))).toBe(false);
+    expect(done('bend', state({ keys: 4 }))).toBe(true);
+  });
+  it('comes after the rig lesson and is the last one for now', () => {
+    expect(RIG_LESSON.next).toBe('mesh');
+    expect(lessonById('mesh')).toBe(MESH_LESSON);
+    expect(MESH_LESSON.next).toBeUndefined();
+  });
+});
+
+describe('the mesh lesson in the store', () => {
+  beforeEach(() => {
+    stopLesson();
+    learnStore.patch({ finished: [], offered: false });
+    const p = emptyProject('mesh');
+    const arm = newBone({ name: 'arm', parent: p.skeleton.bones[0].id, length: 40 });
+    p.skeleton.bones.push(arm);
+    const slot = newSlot({ name: 'pic', bone: arm.id, attachment: 'pic' });
+    p.skeleton.slots.push(slot);
+    const region: RegionAttachment = {
+      type: 'region',
+      name: 'pic',
+      path: 'pic',
+      x: 0,
+      y: 0,
+      rotation: 0,
+      scaleX: 1,
+      scaleY: 1,
+      width: 40,
+      height: 60,
+      color: [1, 1, 1, 1],
+    };
+    p.skeleton.skins[0].attachments[slot.id] = { pic: region };
+    docStore.replace(p);
+    uiStore.patch({ mode: 'setup', tool: 'select', selection: emptySelection, playing: false, animationId: null, time: 0, overrides: {} });
+  });
+
+  it('follows a selected picture, a mesh, a binding, the brush and the keys of a bend', () => {
+    const doc = docStore.get().skeleton;
+    const slot = doc.slots[0];
+    const arm = doc.bones[1].id;
+    startLesson('mesh');
+    expect(learnStore.get().progress?.current).toBe(0);
+
+    selectSlot(slot.id);
+    expect(learnStore.get().progress?.marks[0]).toBe('done');
+
+    docStore.update('Convert to mesh', (d) => {
+      d.skeleton.skins[0].attachments[slot.id].pic = meshFromRegion(d.skeleton.skins[0].attachments[slot.id].pic as RegionAttachment);
+    });
+    expect(learnStore.get().progress?.marks[1]).toBe('done');
+    expect(learnStore.get().progress?.marks[2]).toBe('todo');
+
+    docStore.update('Bind mesh', (d) => {
+      const m = d.skeleton.skins[0].attachments[slot.id].pic;
+      if (m.type === 'mesh') m.weights = Array.from({ length: m.uvs.length / 2 }, () => [[arm, 0, 0, 1]]);
+    });
+    expect(learnStore.get().progress?.marks[2]).toBe('done');
+
+    uiStore.patch({ tool: 'weights' });
+    uiStore.patch({ tool: 'select' });
+    expect(learnStore.get().progress?.marks[3]).toBe('done'); // it stays done after the tool changed
+
+    setMode('animate');
+    selectBone(arm);
+    setBonePose([{ id: arm, props: { rotation: 30 } }]);
+    expect(learnStore.get().progress?.current).toBe(-1);
+    expect(learnStore.get().finished).toEqual(['mesh']);
   });
 });

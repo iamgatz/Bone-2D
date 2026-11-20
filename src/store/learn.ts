@@ -19,6 +19,8 @@ export interface LearnState {
   /** The editor as it was when the lesson started: steps that ask for a change compare with it. */
   base: LessonState | null;
   skipped: string[];
+  /** Steps that were done at some moment: they stay done even when the editor leaves the state they asked for. */
+  kept: string[];
   /** Only the title bar is shown. */
   collapsed: boolean;
   progress: LessonProgress | null;
@@ -56,6 +58,7 @@ export const learnStore = createStore<LearnState>({
   active: null,
   base: null,
   skipped: [],
+  kept: [],
   collapsed: false,
   progress: null,
   ...load(),
@@ -75,11 +78,14 @@ let edits = 0;
 let lastDoc = docStore.get();
 let seenPlaying = false;
 let seenExport = false;
+let seenWeightsTool = false;
 
 // counting the keys of a big rig on every frame of a playback would be a waste: it is redone when the document is another one
 let countedDoc: ReturnType<typeof docStore.get> | null = null;
 let keyTotal = 0;
 let ownSlotTotal = 0;
+let meshTotal = 0;
+let weightedTotal = 0;
 
 function snapshot(): LessonState {
   const ui = uiStore.get();
@@ -89,6 +95,15 @@ function snapshot(): LessonState {
     keyTotal = doc.skeleton.animations.reduce((n, a) => n + countKeys(a), 0);
     const roots = new Set(doc.skeleton.bones.filter((b) => !b.parent).map((b) => b.id));
     ownSlotTotal = doc.skeleton.slots.filter((sl) => !roots.has(sl.bone)).length;
+    meshTotal = 0;
+    weightedTotal = 0;
+    for (const skin of doc.skeleton.skins)
+      for (const bySlot of Object.values(skin.attachments))
+        for (const att of Object.values(bySlot))
+          if (att.type === 'mesh') {
+            meshTotal++;
+            if (att.weights) weightedTotal++;
+          }
   }
   return {
     mode: ui.mode,
@@ -98,6 +113,10 @@ function snapshot(): LessonState {
     images: doc.images.length,
     bones: doc.skeleton.bones.length,
     ownSlots: ownSlotTotal,
+    slotSelected: ui.selection.slot !== null,
+    meshes: meshTotal,
+    weightedMeshes: weightedTotal,
+    seenWeightsTool,
     playing: ui.playing,
     seenPlaying,
     seenExport,
@@ -115,7 +134,10 @@ function refresh() {
   const ui = uiStore.get();
   if (ui.playing) seenPlaying = true;
   if (ui.exportOpen) seenExport = true;
-  const progress = progressOf(lesson, snapshot(), s.base, s.skipped);
+  if (ui.tool === 'weights') seenWeightsTool = true;
+  const progress = progressOf(lesson, snapshot(), s.base, s.skipped, s.kept);
+  const fresh = lesson.steps.filter((st, i) => progress.marks[i] === 'done' && !s.kept.includes(st.id)).map((st) => st.id);
+  if (fresh.length) learnStore.patch({ kept: [...s.kept, ...fresh] });
   if (sameProgress(s.progress, progress)) return;
   learnStore.patch({ progress });
   if (progress.current === -1 && !s.finished.includes(lesson.id)) {
@@ -141,12 +163,13 @@ export function startLesson(id: string) {
   lastDoc = docStore.get();
   seenPlaying = false;
   seenExport = false;
-  learnStore.patch({ active: id, base: snapshot(), skipped: [], collapsed: false, progress: null });
+  seenWeightsTool = false;
+  learnStore.patch({ active: id, base: snapshot(), skipped: [], kept: [], collapsed: false, progress: null });
   refresh();
 }
 
 export function stopLesson() {
-  learnStore.patch({ active: null, base: null, skipped: [], progress: null });
+  learnStore.patch({ active: null, base: null, skipped: [], kept: [], progress: null });
 }
 
 /** The step in front is set aside; it comes back as done when the editor gets into its state by itself. */

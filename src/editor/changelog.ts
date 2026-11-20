@@ -12,6 +12,18 @@ export interface Release {
 
 export const CHANGELOG: Release[] = [
   {
+    version: '0.83',
+    date: '2026-11-20',
+    en: [
+      'Lesson 3, "A picture that bends": pick a picture, make it a mesh (Quad or Trace mesh), bind it to bones, look at the weights with the brush (W), then switch to Animate and bend it with a turn of a bone. The second lesson offers it when it is over, and Help lists it.',
+      'In a lesson, a step that was done stays done: selecting a bone drops the selected picture, and the card used to jump back to the first step.',
+    ],
+    ru: [
+      'Урок 3 «Картинка, которая гнётся»: выберите картинку, сделайте из неё сетку («Квадрат» или «Трассировать сетку»), привяжите к костям, посмотрите на веса кистью (W), затем перейдите в «Анимацию» и согните её поворотом кости. Второй урок предлагает этот в конце, а справка показывает его в списке.',
+      'В уроке выполненный шаг остаётся выполненным: выбор кости снимал выбор картинки, и карточка возвращалась к первому шагу.',
+    ],
+  },
+  {
     version: '0.82',
     date: '2026-11-20',
     en: [
