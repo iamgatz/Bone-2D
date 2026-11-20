@@ -12,6 +12,16 @@ export interface Release {
 
 export const CHANGELOG: Release[] = [
   {
+    version: '0.69',
+    date: '2026-11-20',
+    en: [
+      "Fixed: the keyboard shortcuts did nothing with a Russian (or any other non-Latin) keyboard layout. Ctrl+Z, Ctrl+Y, Ctrl+S, Ctrl+C and the others, and the tool letters, read the letter that was typed (\"я\" instead of Z); now a letter or a punctuation key that is not Latin is read from the position of the key, the way it is on a US keyboard. Layouts that have Latin letters (German, French) still use the typed letter. Remapping a tool letter in Settings works on any layout too.",
+    ],
+    ru: [
+      "Исправлено: горячие клавиши ничего не делали на русской (и любой другой нелатинской) раскладке. Ctrl+Z, Ctrl+Y, Ctrl+S, Ctrl+C и остальные, а также буквы инструментов читали напечатанную букву («я» вместо Z); теперь нелатинская буква или знак читаются по положению клавиши, как на американской клавиатуре. Раскладки с латинскими буквами (немецкая, французская) по-прежнему используют напечатанную букву. Переназначение буквы инструмента в настройках тоже работает на любой раскладке.",
+    ],
+  },
+  {
     version: '0.68',
     date: '2026-11-19',
     en: [
