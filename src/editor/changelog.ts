@@ -12,6 +12,16 @@ export interface Release {
 
 export const CHANGELOG: Release[] = [
   {
+    version: '0.77',
+    date: '2026-11-20',
+    en: [
+      'Narrow panels: with a panel dragged to its smallest width, nothing is cut off any more. A row of fields puts its label above the fields (they wrap onto a second line), long labels of a field end with "…", and a section title with long buttons moves them to a second line. The window itself has a smallest size of 1100 × 560, below that the page scrolls.',
+    ],
+    ru: [
+      'Узкие панели: когда панель сдвинута до минимума, ничего больше не обрезается. Строка полей ставит подпись над полями (они переносятся на вторую строку), длинная подпись поля заканчивается на «…», а заголовок секции с длинными кнопками переносит их на вторую строку. У окна есть минимальный размер 1100 × 560, меньше страница прокручивается.',
+    ],
+  },
+  {
     version: '0.76',
     date: '2026-11-20',
     en: [
@@ -64,11 +74,11 @@ export const CHANGELOG: Release[] = [
     date: '2026-11-20',
     en: [
       'The demo rig Kit looks better: the far ear has a picture of its own that stands along its bone (before, it was a copy of the near ear and leaned the same way), and the tail is drawn between the two arms (in front of the far arm, behind the body and the near arm) instead of behind everything.',
-      'The repository is tidied up for newcomers: a README with a picture and highlights, CONTRIBUTING, a code of conduct, issue and pull request templates, a CI check, docs/ARCHITECTURE.md, and the old working notes moved to docs/history.',
+      'The repository is tidied up for newcomers: a README with a picture and highlights, CONTRIBUTING, a code of conduct, issue and pull request templates, a CI check, docs/ARCHITECTURE.md.',
     ],
     ru: [
       'Демо-риг Kit выглядит лучше: у дальнего уха теперь своя картинка, которая стоит вдоль своей кости (раньше это была копия ближнего уха, и оба наклонялись одинаково), а хвост нарисован между двумя руками (перед дальней рукой, за телом и ближней рукой), а не позади всего.',
-      'Репозиторий приведён в порядок для новичков: README с картинкой и краткими возможностями, CONTRIBUTING, кодекс поведения, шаблоны issue и pull request, проверка CI, docs/ARCHITECTURE.md, а старые рабочие заметки перенесены в docs/history.',
+      'Репозиторий приведён в порядок для новичков: README с картинкой и краткими возможностями, CONTRIBUTING, кодекс поведения, шаблоны issue и pull request, проверка CI, docs/ARCHITECTURE.md.',
     ],
   },
   {
@@ -218,11 +228,11 @@ export const CHANGELOG: Release[] = [
     date: '2026-11-19',
     en: [
       'Review comments, with no server and no account: the player page (Export → Save player page) now has a Comment button. A reviewer puts a note on a moment of an animation, with their name, and downloads a small file; File → Import review comments turns the notes into timeline markers with the author, the bone they point at and a Resolved mark (resolved ones fade). Importing the same file twice changes nothing; the file is read strictly (a limited number of notes, plain text only).',
-      'Why: collaboration and feedback are among the most asked for things in the Spine and Rive communities, and neither has comments in the editor yet. See docs/PRODUCT_DIRECTIONS.md for the evidence and the ideas that were turned down.',
+      'Why: collaboration and feedback are among the most asked for things in the Spine and Rive communities, and neither has comments in the editor yet.',
     ],
     ru: [
       'Замечания рецензента без сервера и без аккаунтов: у страницы-плеера (Экспорт → Сохранить страницу-плеер) появилась кнопка Comment. Рецензент ставит заметку на момент анимации, подписывается и скачивает маленький файл; «Файл → Импорт замечаний рецензента» превращает заметки в маркеры таймлайна с автором, костью, на которую они указывают, и отметкой «Решено» (решённые бледнеют). Повторный импорт того же файла ничего не меняет; файл читается строго (ограниченное число заметок, только простой текст).',
-      'Зачем: совместная работа и обратная связь входят в самое частое, о чём просят в сообществах Spine и Rive, а комментариев в редакторе нет ни у того, ни у другого. Доказательства и отвергнутые идеи — в docs/PRODUCT_DIRECTIONS.md.',
+      'Зачем: совместная работа и обратная связь входят в самое частое, о чём просят в сообществах Spine и Rive, а комментариев в редакторе нет ни у того, ни у другого.',
     ],
   },
   {

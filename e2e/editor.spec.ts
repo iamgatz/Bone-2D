@@ -52,14 +52,94 @@ test('the icon of every icon button sits in the middle of the button', async ({ 
   expect(off).toBeLessThan(0.75);
 });
 
-for (const width of [1100, 1440, 1920]) {
-  test(`nothing spills sideways at ${width}px`, async ({ page }) => {
-    await page.setViewportSize({ width, height: 900 });
-    await openDemo(page);
-    const spill = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
-    expect(spill).toBeLessThanOrEqual(0);
+for (const locale of ['en-US', 'ru-RU']) {
+  for (const width of [1100, 1440, 1920]) {
+    test.describe(`${locale} at ${width}px`, () => {
+      test.use({ locale });
+      test('nothing spills sideways', async ({ page }) => {
+        await page.setViewportSize({ width, height: 900 });
+        await openDemo(page);
+        const spill = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
+        expect(spill).toBeLessThanOrEqual(0);
+      });
+    });
+  }
+}
+
+// the panels dragged to their smallest: no panel may grow a sideways scrollbar, whatever is selected and in either language
+type ActionsModule = typeof import('../src/store/actions');
+const ACTIONS = '/src/store/actions.ts';
+for (const locale of ['en-US', 'ru-RU']) {
+  test.describe(`panels at their minimum width (${locale})`, () => {
+    test.use({ locale });
+    test('no panel scrolls sideways for any bone or slot, in Setup and in Animate', async ({ page }) => {
+      await page.setViewportSize({ width: 1280, height: 800 });
+      await openDemo(page);
+      const bad = await page.evaluate(
+        async (urls) => {
+          const { uiStore } = (await import(urls[0])) as UiModule;
+          const { docStore } = (await import(urls[1])) as DocModule;
+          const A = (await import(urls[2])) as ActionsModule;
+          uiStore.patch({ panel: { left: 200, right: 230, bottom: 130 } });
+          const sk = docStore.get().skeleton;
+          const wide = new Set<string>();
+          const look = (what: string) => {
+            for (const sel of ['.left .panel-body', '.right .panel-body']) {
+              for (const el of document.querySelectorAll<HTMLElement>(sel)) {
+                if (el.scrollWidth <= el.clientWidth + 1) continue;
+                // name the widest thing inside, so that a failure says where to look
+                const edge = el.getBoundingClientRect().left + el.clientWidth;
+                const culprit = [...el.querySelectorAll<HTMLElement>('*')].filter((c) => c.getBoundingClientRect().right > edge + 1).pop();
+                wide.add(
+                  `${what} ${sel} +${el.scrollWidth - el.clientWidth} at ${culprit?.tagName}.${culprit?.className} "${culprit?.textContent?.slice(0, 30)}"`,
+                );
+              }
+            }
+          };
+          const settle = () => new Promise((r) => setTimeout(r, 30));
+          for (const mode of ['setup', 'animate'] as const) {
+            A.setMode(mode);
+            if (mode === 'animate' && sk.animations[0]) A.selectAnimation(sk.animations[0].id);
+            for (const b of sk.bones) {
+              A.selectBone(b.id);
+              await settle();
+              look(`${mode} bone ${b.name}`);
+            }
+            for (const s of sk.slots) {
+              A.selectSlot(s.id);
+              A.setTool('mesh');
+              await settle();
+              look(`${mode} slot ${s.name}`);
+              A.setTool('select');
+            }
+          }
+          return [...wide];
+        },
+        [UI, DOC, ACTIONS],
+      );
+      expect(bad).toEqual([]);
+    });
   });
 }
+
+test('wide panels in a narrow window give way to the viewport, and no column is crushed below its minimum', async ({ page }) => {
+  await page.setViewportSize({ width: 1100, height: 700 });
+  await openDemo(page);
+  await page.evaluate(async (url) => {
+    const { uiStore } = (await import(url)) as UiModule;
+    uiStore.patch({ panel: { left: 480, right: 480, bottom: 400 } });
+  }, UI);
+  const w = await page.evaluate(() => ({
+    left: document.querySelector('.left')!.getBoundingClientRect().width,
+    right: document.querySelector('.right')!.getBoundingClientRect().width,
+    center: document.querySelector('.center')!.getBoundingClientRect().width,
+    spill: document.documentElement.scrollWidth - window.innerWidth,
+  }));
+  expect(w.left).toBeGreaterThanOrEqual(200);
+  expect(w.right).toBeGreaterThanOrEqual(230);
+  expect(w.center).toBeGreaterThanOrEqual(300);
+  expect(w.spill).toBeLessThanOrEqual(0);
+});
 
 test('the Export window groups its settings', async ({ page }) => {
   await openDemo(page);

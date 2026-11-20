@@ -1,6 +1,6 @@
 # Architecture
 
-A short map for someone who wants to change the code. The deeper design notes are in [docs/history](history) (in Russian).
+A short map for someone who wants to change the code. The development log (what each release did and why, in Russian) is [IDEAS.md](IDEAS.md).
 
 ## The idea
 
@@ -65,3 +65,9 @@ Add it to the table in `src/editor/hotkeys.ts` and its action to `src/editor/key
 - **No validation library**: `validate.ts` repairs a document rather than rejecting it, which a schema library does not do.
 - **`.editorconfig` and `.gitattributes`** keep line endings and whitespace the same for editors that do not run Prettier.
 - **Dependencies stay few**: React, immer, delaunator (meshes), ag-psd (Photoshop import), lucide icons and the Inter font. Anything else needs a reason in the pull request.
+
+## Spine quirks we reproduce on purpose
+
+- Angles go through float32 π (`180 / 3.1415927`), as in the official runtime.
+- Reading a world rotation at the 0 / 360° boundary (the source of a transform constraint or the driver of a slider) gives 0 or 360 depending on ~1e-6° noise, so different runtimes can disagree on such an edge.
+- The 4.3 constraint model computes `world` and `local` lazily; an update-order mistake here was one of the first things the random-session tests found.
