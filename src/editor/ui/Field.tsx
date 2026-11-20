@@ -1,6 +1,7 @@
 import { Diamond } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { useUi } from '@/store/ui';
+import { FieldLabelContext } from './controls';
 
 /** The diamond that keys a property at the playhead; lit when there is a key at the playhead. */
 export function KeyButton(props: { on: boolean; onClick: () => void; title: string; disabled?: boolean }) {
@@ -37,7 +38,9 @@ export function Field(props: { label: string; title?: string; children: ReactNod
       >
         {props.label}
       </span>
-      <div className="frow-body">{props.children}</div>
+      <div className="frow-body">
+        <FieldLabelContext.Provider value={props.label}>{props.children}</FieldLabelContext.Provider>
+      </div>
       {animate && <span className="frow-key">{props.keyButton}</span>}
     </div>
   );

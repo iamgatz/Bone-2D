@@ -222,6 +222,7 @@ export function ExportDialog() {
               <>
                 <label>Skeleton</label>
                 <SelectField
+                  name="Skeleton"
                   value={which}
                   options={[
                     { value: 'edited', label: `The edited one (${project.skeleton.name})` },
@@ -234,6 +235,7 @@ export function ExportDialog() {
             )}
             <label>Skeleton file</label>
             <SelectField
+              name="Skeleton file"
               value={format}
               options={[
                 { value: 'json', label: 'JSON (.json)' },
@@ -243,6 +245,7 @@ export function ExportDialog() {
             />
             <label>Size</label>
             <SelectField
+              name="Size"
               value={String(scale)}
               options={[
                 { value: '1', label: '100% (as drawn)' },
@@ -258,7 +261,7 @@ export function ExportDialog() {
             {format === 'json' && (
               <>
                 <label>Pretty JSON</label>
-                <Toggle on={pretty} onChange={(v) => change({ pretty: v })} />
+                <Toggle on={pretty} onChange={(v) => change({ pretty: v })} title="Pretty JSON" />
               </>
             )}
             <label>Clean up animations</label>
@@ -305,18 +308,21 @@ export function ExportDialog() {
           <div className="kv">
             <label>Atlas page size</label>
             <SelectField
+              name="Atlas page size"
               value={String(maxSize)}
               options={['1024', '2048', '4096'].map((v) => ({ value: v, label: `${v} px` }))}
               onChange={(v) => change({ maxSize: +v })}
             />
             <label>Padding</label>
             <SelectField
+              name="Padding"
               value={String(padding)}
               options={['0', '1', '2', '4'].map((v) => ({ value: v, label: `${v} px` }))}
               onChange={(v) => change({ padding: +v })}
             />
             <label>Texture filter</label>
             <SelectField
+              name="Texture filter"
               value={filter}
               options={[
                 { value: 'Linear', label: 'Smooth (Linear)' },

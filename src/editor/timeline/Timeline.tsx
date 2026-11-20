@@ -64,7 +64,7 @@ import { setSettings, useSettings } from '@/store/settings';
 import { uiStore, useUi } from '@/store/ui';
 import type { CurveKind } from '@/store/ui';
 import { KEYS } from '../hotkeys';
-import { Button, IconButton, SelectField, TextField, menuKeys, useFocusFirstItem, useOutsideClose } from '../ui/controls';
+import { Button, IconButton, SelectField, TextField, menuKeys, useFitInWindow, useFocusFirstItem, useOutsideClose } from '../ui/controls';
 import { Dopesheet, ROW_H } from './Dopesheet';
 import type { TimelineMenuRequest } from './Dopesheet';
 import { TRACK_GROUPS, buildRows, filterRows, isTrackFilter } from '@/core/timelineRows';
@@ -77,6 +77,7 @@ function FrameField({ fps, time }: { fps: number; time: number }) {
   return (
     <div className="tl-time" title="Frame · seconds (type a frame number)">
       <input
+        aria-label="Frame"
         value={text ?? `${frame}`}
         onFocus={(e) => {
           setText(String(frame));
@@ -101,6 +102,7 @@ function FrameField({ fps, time }: { fps: number; time: number }) {
 /** The window of the track filter: the kinds of tracks that show, a name to look for (words, `*`, `?` or `/regular expression/`), selected bones and slots only. */
 function TrackFilterMenu({ at, filter, onClose }: { at: { x: number; y: number }; filter: TrackFilter; onClose: () => void }) {
   const ref = useOutsideClose(true, onClose);
+  useFitInWindow(ref);
   const set = (p: Partial<TrackFilter>) => uiStore.patch({ trackFilter: { ...uiStore.get().trackFilter, ...p } });
   return (
     <div
@@ -150,6 +152,7 @@ function TrackFilterMenu({ at, filter, onClose }: { at: { x: number; y: number }
 function TimelineMenu({ menu, onClose }: { menu: TimelineMenuRequest; onClose: () => void }) {
   const ref = useOutsideClose(true, onClose);
   useFocusFirstItem(ref);
+  useFitInWindow(ref);
   const refs = menu.refs;
   const saved = useSettings((s) => s.savedCurves);
   // the translate / scale / shear timelines among the keys: each can be split into X and Y, or merged back
@@ -305,6 +308,7 @@ export function Timeline() {
             />
           ) : (
             <SelectField
+              name="Animation"
               value={animationId ?? ''}
               options={
                 doc.animations.length
@@ -350,6 +354,7 @@ export function Timeline() {
         />
         <div className="tl-opt" style={{ width: 112 }}>
           <SelectField
+            name="New keys interpolation"
             value={defaultCurve}
             options={
               [

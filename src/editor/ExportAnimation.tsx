@@ -159,7 +159,12 @@ export function ExportAnimation() {
     <div className="export-anim">
       <div className="kv">
         <label>Animation</label>
-        <SelectField value={animId} options={doc.animations.map((a) => ({ value: a.id, label: a.name }))} onChange={setAnimId} />
+        <SelectField
+          name="Animation"
+          value={animId}
+          options={doc.animations.map((a) => ({ value: a.id, label: a.name }))}
+          onChange={setAnimId}
+        />
         <label>Format</label>
         <Segmented
           label="Format"
@@ -174,15 +179,26 @@ export function ExportAnimation() {
           ]}
         />
         <label>Frame rate</label>
-        <SelectField value={fps} options={['12', '15', '24', '30', '60'].map((v) => ({ value: v, label: `${v} fps` }))} onChange={setFps} />
+        <SelectField
+          name="Frame rate"
+          value={fps}
+          options={['12', '15', '24', '30', '60'].map((v) => ({ value: v, label: `${v} fps` }))}
+          onChange={setFps}
+        />
         <label>Size</label>
         <SelectField
+          name="Size"
           value={scale}
           options={['0.25', '0.5', '1', '1.5', '2'].map((v) => ({ value: v, label: `${+v * 100}%` }))}
           onChange={setScale}
         />
         <label>Margin</label>
-        <SelectField value={pad} options={['0', '4', '8', '16', '32'].map((v) => ({ value: v, label: `${v} px` }))} onChange={setPad} />
+        <SelectField
+          name="Margin"
+          value={pad}
+          options={['0', '4', '8', '16', '32'].map((v) => ({ value: v, label: `${v} px` }))}
+          onChange={setPad}
+        />
         <label>Frames</label>
         <div className="hstack">
           <NumberField

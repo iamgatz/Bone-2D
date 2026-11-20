@@ -4,7 +4,7 @@ import { setLang, useLang } from '@/i18n';
 import { BONE_SCALE_RANGE, DEFAULT_SETTINGS, resetSettings, setSettings, useSettings } from '@/store/settings';
 import { forgetSavedCurve } from '@/store/actions';
 import { toast, uiStore } from '@/store/ui';
-import { Button, ColorSwatch, Dialog, SelectField, Toggle } from './ui/controls';
+import { Button, ColorSwatch, Dialog, FieldLabelContext, SelectField, Toggle } from './ui/controls';
 import { Segmented } from './ui/Segmented';
 import { assignToolKey, comboOf, hotkeyGroups, isDefaultBinding, latinKey, resetBinding, setBinding } from './hotkeys';
 import type { HotkeyRow, KeyId } from './hotkeys';
@@ -19,7 +19,9 @@ function Row({ label, hint, children }: { label: string; hint?: string; children
         <span>{label}</span>
         {hint && <span className="hint-text">{hint}</span>}
       </div>
-      <div className="set-control">{children}</div>
+      <div className="set-control">
+        <FieldLabelContext.Provider value={label}>{children}</FieldLabelContext.Provider>
+      </div>
     </div>
   );
 }

@@ -9,6 +9,7 @@ import { uiStore } from '@/store/ui';
 import { openSpineImport } from './importSpine';
 import { REPO, SITE } from './changelog';
 import { Dialog, IconButton, Toggle } from './ui/controls';
+import { LangToggle } from './ui/LangToggle';
 
 /** One big choice of the welcome window. */
 function Choice(props: { icon: typeof Sparkles; title: string; text: string; onClick: () => void; primary?: boolean }) {
@@ -47,10 +48,13 @@ export function WelcomeDialog() {
   };
   return (
     <Dialog title="Welcome to Bone 2D" width={680} onClose={close}>
-      <p className="hint-text flush mb">
-        A 2D skeletal animation editor that runs in the browser and exports Spine 4.3 files. Nothing to install: everything stays on your
-        computer.
-      </p>
+      <div className="welcome-intro">
+        <p className="hint-text flush">
+          A 2D skeletal animation editor that runs in the browser and exports Spine 4.3 files. Nothing to install: everything stays on your
+          computer.
+        </p>
+        <LangToggle />
+      </div>
       <div className="choices">
         <Choice
           primary
