@@ -6,7 +6,7 @@
  */
 
 /** The part of the editor a step points at (a soft frame is drawn around it). */
-export type LearnTarget = 'tree' | 'viewport' | 'inspector' | 'mode' | 'play' | 'export' | 'images';
+export type LearnTarget = 'tree' | 'viewport' | 'inspector' | 'mode' | 'play' | 'export' | 'images' | 'toolIk';
 
 /** Something the card can do for the person at a step (the store knows how): a button under the text. */
 export type LessonHelper = 'samplePictures';
@@ -29,6 +29,9 @@ export interface LessonState {
   /** Meshes in the skins, and how many of them are bound to bones (weighted). */
   meshes: number;
   weightedMeshes: number;
+  /** IK constraints in the skeleton, and the edits of the document made since a new one appeared (0 while none has). */
+  ikConstraints: number;
+  editsSinceIk: number;
   /** The weights brush has been the tool at some moment since the lesson began. */
   seenWeightsTool: boolean;
   /** Playback has been on at some moment since the lesson began (it can be off again now). */
@@ -231,6 +234,7 @@ export const MESH_LESSON: Lesson = {
     en: 'The picture bends with its bones. Bind to two or more bones and paint the weights: that is how tails, arms and cloth are made.',
     ru: 'Картинка гнётся вместе с костями. Привяжите к двум и более костям и подкрасьте веса: так делают хвосты, руки и ткань.',
   },
+  next: 'ik',
   steps: [
     {
       id: 'slot',
@@ -295,7 +299,83 @@ export const MESH_LESSON: Lesson = {
   ],
 };
 
-export const LESSONS: readonly Lesson[] = [FOX_LESSON, RIG_LESSON, MESH_LESSON];
+/** Lesson 4: IK. Move the end of a limb and the limb follows, instead of turning every bone by hand. */
+export const IK_LESSON: Lesson = {
+  id: 'ik',
+  title: { en: 'A leg that follows', ru: 'Нога, которая следует за целью' },
+  intro: {
+    en: 'IK makes a chain of bones follow a target: move the target, and the limb bends to reach it. Needs a bone that is not the root.',
+    ru: 'IK заставляет цепочку костей следовать за целью: двигаете цель, и конечность сгибается, чтобы дотянуться. Нужна кость, не корневая.',
+  },
+  outro: {
+    en: 'That is how legs stay on the ground and hands reach things: animate the target, not every bone.',
+    ru: 'Так ноги стоят на земле, а руки достают до предметов: анимируйте цель, а не каждую кость.',
+  },
+  steps: [
+    {
+      id: 'bone',
+      target: 'tree',
+      title: { en: 'Pick the end of a limb', ru: 'Выберите конец конечности' },
+      text: {
+        en: 'Click the last bone of an arm, a leg or a tail in the hierarchy (not the root).',
+        ru: 'Нажмите на последнюю кость руки, ноги или хвоста в иерархии (не корень).',
+      },
+      done: (s) => s.selectedBones > 0,
+    },
+    {
+      id: 'ik',
+      target: 'toolIk',
+      title: { en: 'Draw an IK target', ru: 'Создайте IK-цель' },
+      text: {
+        en: 'Press I, then drag from the tip of that bone out into empty space: an orange target appears and the chain follows it.',
+        ru: 'Нажмите I и протяните от кончика этой кости в пустое место: появится оранжевая цель, и цепочка пойдёт за ней.',
+      },
+      done: (s, base) => s.ikConstraints > base.ikConstraints,
+    },
+    {
+      id: 'pull',
+      target: 'viewport',
+      title: { en: 'Move the target', ru: 'Подвигайте цель' },
+      text: {
+        en: 'Press V, then drag the orange target: the limb bends to reach it, and no bone was turned by hand.',
+        ru: 'Нажмите V и потяните оранжевую цель: конечность согнётся, чтобы дотянуться, и ни одну кость не крутили вручную.',
+      },
+      done: (s) => s.editsSinceIk >= 1,
+    },
+    {
+      id: 'animate',
+      target: 'mode',
+      title: { en: 'Switch to Animate', ru: 'Перейдите в «Анимацию»' },
+      text: {
+        en: 'Press Tab or click Animate.',
+        ru: 'Нажмите Tab или кнопку «Анимация».',
+      },
+      done: (s) => s.mode === 'animate',
+    },
+    {
+      id: 'key',
+      target: 'viewport',
+      title: { en: 'Key the target', ru: 'Поставьте ключ на цель' },
+      text: {
+        en: 'Move the time marker and move the target: only the target gets a key, the limb follows it.',
+        ru: 'Передвиньте маркер времени и сдвиньте цель: ключ получает только цель, конечность следует за ней.',
+      },
+      done: (s, base) => s.keys > base.keys,
+    },
+    {
+      id: 'play',
+      target: 'play',
+      title: { en: 'Play it', ru: 'Проиграйте' },
+      text: {
+        en: 'Press Space: the limb follows the moving target. Press Space again to stop.',
+        ru: 'Нажмите Пробел: конечность следует за движущейся целью. Ещё раз Пробел остановит её.',
+      },
+      done: (s) => s.seenPlaying,
+    },
+  ],
+};
+
+export const LESSONS: readonly Lesson[] = [FOX_LESSON, RIG_LESSON, MESH_LESSON, IK_LESSON];
 
 export const lessonById = (id: string): Lesson | undefined => LESSONS.find((l) => l.id === id);
 

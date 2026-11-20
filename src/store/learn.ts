@@ -86,6 +86,10 @@ let keyTotal = 0;
 let ownSlotTotal = 0;
 let meshTotal = 0;
 let weightedTotal = 0;
+let ikTotal = 0;
+// IK: the number of constraints when the lesson began, and the count of document edits when a new one first appeared
+let baseIk: number | null = null;
+let editsAtIk: number | null = null;
 
 function snapshot(): LessonState {
   const ui = uiStore.get();
@@ -95,6 +99,7 @@ function snapshot(): LessonState {
     keyTotal = doc.skeleton.animations.reduce((n, a) => n + countKeys(a), 0);
     const roots = new Set(doc.skeleton.bones.filter((b) => !b.parent).map((b) => b.id));
     ownSlotTotal = doc.skeleton.slots.filter((sl) => !roots.has(sl.bone)).length;
+    ikTotal = doc.skeleton.constraints.filter((c) => c.type === 'ik').length;
     meshTotal = 0;
     weightedTotal = 0;
     for (const skin of doc.skeleton.skins)
@@ -105,6 +110,7 @@ function snapshot(): LessonState {
             if (att.weights) weightedTotal++;
           }
   }
+  if (baseIk !== null && editsAtIk === null && ikTotal > baseIk) editsAtIk = edits;
   return {
     mode: ui.mode,
     selectedBones: ui.selection.bones.length,
@@ -116,6 +122,8 @@ function snapshot(): LessonState {
     slotSelected: ui.selection.slot !== null,
     meshes: meshTotal,
     weightedMeshes: weightedTotal,
+    ikConstraints: ikTotal,
+    editsSinceIk: editsAtIk === null ? 0 : edits - editsAtIk,
     seenWeightsTool,
     playing: ui.playing,
     seenPlaying,
@@ -164,7 +172,11 @@ export function startLesson(id: string) {
   seenPlaying = false;
   seenExport = false;
   seenWeightsTool = false;
-  learnStore.patch({ active: id, base: snapshot(), skipped: [], kept: [], collapsed: false, progress: null });
+  baseIk = null;
+  editsAtIk = null;
+  const base = snapshot();
+  baseIk = base.ikConstraints;
+  learnStore.patch({ active: id, base, skipped: [], kept: [], collapsed: false, progress: null });
   refresh();
 }
 

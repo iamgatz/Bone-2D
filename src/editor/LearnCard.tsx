@@ -16,6 +16,7 @@ const TARGETS: Record<LearnTarget, string> = {
   play: '[data-learn="play"]',
   export: '[data-learn="export"]',
   images: '[data-learn="images"]',
+  toolIk: '[data-learn="tool-ik"]',
 };
 
 /**

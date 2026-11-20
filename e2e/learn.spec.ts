@@ -1,7 +1,7 @@
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test } from '@playwright/test';
 import type { Page } from '@playwright/test';
-import { FOX_LESSON, LESSONS, MESH_LESSON, RIG_LESSON } from '../src/core/lessons';
+import { FOX_LESSON, IK_LESSON, LESSONS, MESH_LESSON, RIG_LESSON } from '../src/core/lessons';
 
 type BoneActions = typeof import('../src/store/boneActions');
 type DocModule = typeof import('../src/store/doc');
@@ -379,6 +379,95 @@ for (const locale of ['en-US', 'ru-RU'] as const) {
       await page.locator('.vp-empty-card .btn').nth(1).click();
       await expect(page.locator('.learn .learn-title')).toHaveText(FOX_LESSON.title[lang]);
       await expect.poll(() => page.locator('.row .label').count()).toBeGreaterThan(5);
+    });
+  });
+}
+
+type IkActions = typeof import('../src/store/ikActions');
+const IK = '/src/store/ikActions.ts';
+
+for (const locale of ['en-US', 'ru-RU'] as const) {
+  const lang = locale === 'ru-RU' ? 'ru' : 'en';
+  test.describe(`the IK lesson (${locale})`, () => {
+    test.use({ locale });
+
+    test('is passed on the demo: a bone picked, I, an IK target, V, a pull, Tab, a key on the target, Space', async ({ page }) => {
+      await openDemoWithLesson(page);
+      await page.evaluate(async (url) => {
+        const { uiStore } = (await import(url)) as UiModule;
+        uiStore.patch({ helpOpen: true });
+      }, UI);
+      await page.locator('.dialog .hstack.wrap .btn').nth(3).click();
+      const card = page.locator('.learn');
+      const step = (i: number) => IK_LESSON.steps[i];
+      await expect(card.locator('.learn-title')).toHaveText(IK_LESSON.title[lang]);
+
+      // 1. the head bone (its parent is not the root, so the chain has two bones)
+      const head = await page.evaluate(
+        async ([docUrl, sessionUrl]) => {
+          const { docStore } = (await import(docUrl)) as DocModule;
+          const session = (await import(sessionUrl)) as SessionActions;
+          const id = docStore.get().skeleton.bones.find((b) => b.name === 'head')!.id;
+          session.selectBone(id);
+          return id;
+        },
+        [DOC, SESSION] as const,
+      );
+      await expect(card.locator('.learn-step-title')).toHaveText(step(1).title[lang]);
+      await expect(page.locator('[data-learn="tool-ik"]')).toHaveAttribute('data-learn-hl', '');
+
+      // 2. the key I picks the tool; the drag is the action it ends in
+      await page.keyboard.press('i');
+      await page.evaluate(
+        async ([ikUrl, bone]) => {
+          const ik = (await import(ikUrl)) as IkActions;
+          ik.createIkFromDrag(bone, null, 160, 220);
+        },
+        [IK, head] as const,
+      );
+      await expect(card.locator('.learn-step-title')).toHaveText(step(2).title[lang]);
+      await page.keyboard.press('v');
+
+      // 3. the target is pulled (the same edit a drag of it makes)
+      const move = (x: number) =>
+        page.evaluate(
+          async ([docUrl, bonesUrl, px]) => {
+            const { docStore } = (await import(docUrl)) as DocModule;
+            const { setBonePose } = (await import(bonesUrl)) as BoneActions;
+            const target = docStore.get().skeleton.bones.at(-1)!.id;
+            setBonePose([{ id: target, props: { x: px } }]);
+          },
+          [DOC, BONES, x] as const,
+        );
+      await move(190);
+      await expect(card.locator('.learn-step-title')).toHaveText(step(3).title[lang]);
+
+      // 4. Tab, 5. a key on the target at another time, 6. Space
+      await page.keyboard.press('Tab');
+      await expect(card.locator('.learn-step-title')).toHaveText(step(4).title[lang]);
+      await page.evaluate(async (url) => {
+        const { uiStore } = (await import(url)) as UiModule;
+        uiStore.patch({ time: 0.45 });
+      }, UI);
+      await move(230);
+      await expect(card.locator('.learn-step-title')).toHaveText(step(5).title[lang]);
+      await page.keyboard.press('Space');
+      await expect(card.locator('.learn-count')).toHaveText('6/6');
+      await expect(card.locator('.learn-text')).toHaveText(IK_LESSON.outro[lang]);
+      await page.keyboard.press('Space');
+    });
+
+    test('the third lesson leads to the fourth when it is over', async ({ page }) => {
+      await openDemoWithLesson(page);
+      await page.evaluate(async (url) => {
+        const { uiStore } = (await import(url)) as UiModule;
+        uiStore.patch({ helpOpen: true });
+      }, UI);
+      await page.locator('.dialog .hstack.wrap .btn').nth(2).click();
+      const card = page.locator('.learn');
+      for (let i = 0; i < MESH_LESSON.steps.length; i++) await card.locator('.btn.ghost').click();
+      await card.getByRole('button', { name: IK_LESSON.title[lang] }).click();
+      await expect(card.locator('.learn-title')).toHaveText(IK_LESSON.title[lang]);
     });
   });
 }

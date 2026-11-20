@@ -12,6 +12,16 @@ export interface Release {
 
 export const CHANGELOG: Release[] = [
   {
+    version: '0.85',
+    date: '2026-11-20',
+    en: [
+      'Lesson 4, "A leg that follows": pick the end of a limb, press I and drag out an IK target, pull it, switch to Animate, key the target and play. The limb follows the target, so you animate one thing instead of every bone. The third lesson offers it when it is over. The IK tool button is framed when the step asks for it.',
+    ],
+    ru: [
+      'Урок 4 «Нога, которая следует за целью»: выберите конец конечности, нажмите I и протяните IK-цель, подвигайте её, перейдите в «Анимацию», поставьте ключ на цель и проиграйте. Конечность следует за целью, так что анимируется одна вещь, а не каждая кость. Третий урок предлагает этот в конце. Кнопка инструмента IK подсвечивается, когда шаг на неё указывает.',
+    ],
+  },
+  {
     version: '0.84',
     date: '2026-11-20',
     en: [

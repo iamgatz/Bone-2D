@@ -1,12 +1,13 @@
 /** The lessons: the data is complete in both languages, every step condition says what it should, and the store follows the editor. */
 import { beforeEach, describe, expect, it } from 'vitest';
-import { FOX_LESSON, LESSONS, MESH_LESSON, RIG_LESSON, lessonById, progressOf } from '../src/core/lessons';
+import { FOX_LESSON, IK_LESSON, LESSONS, MESH_LESSON, RIG_LESSON, lessonById, progressOf } from '../src/core/lessons';
 import type { LessonState } from '../src/core/lessons';
 import { meshFromRegion } from '../src/core/mesh';
 import { emptyProject, newAnimation, newBone, newSlot } from '../src/core/model';
 import type { RegionAttachment } from '../src/core/model';
 import { selectBone, selectSlot, setMode } from '../src/store/actions';
 import { setBonePose } from '../src/store/boneActions';
+import { createIkFromDrag } from '../src/store/ikActions';
 import { docStore } from '../src/store/doc';
 import { learnStore, offerLesson, readLearn, skipStep, startLesson, stopLesson } from '../src/store/learn';
 import { emptySelection, uiStore } from '../src/store/ui';
@@ -23,13 +24,15 @@ const state = (over: Partial<LessonState> = {}): LessonState => ({
   slotSelected: false,
   meshes: 0,
   weightedMeshes: 0,
+  ikConstraints: 0,
+  editsSinceIk: 0,
   seenWeightsTool: false,
   seenPlaying: false,
   seenExport: false,
   ...over,
 });
 
-const TARGETS = ['tree', 'viewport', 'inspector', 'mode', 'play', 'export', 'images'];
+const TARGETS = ['tree', 'viewport', 'inspector', 'mode', 'play', 'export', 'images', 'toolIk'];
 const russian = (s: string) => /[а-яё]/i.test(s);
 
 describe('lesson data', () => {
@@ -325,10 +328,10 @@ describe('the steps of the mesh lesson', () => {
     expect(done('bend', state({ keys: 3 }))).toBe(false);
     expect(done('bend', state({ keys: 4 }))).toBe(true);
   });
-  it('comes after the rig lesson and is the last one for now', () => {
+  it('comes after the rig lesson and offers the IK lesson', () => {
     expect(RIG_LESSON.next).toBe('mesh');
     expect(lessonById('mesh')).toBe(MESH_LESSON);
-    expect(MESH_LESSON.next).toBeUndefined();
+    expect(MESH_LESSON.next).toBe('ik');
   });
 });
 
@@ -390,5 +393,67 @@ describe('the mesh lesson in the store', () => {
     setBonePose([{ id: arm, props: { rotation: 30 } }]);
     expect(learnStore.get().progress?.current).toBe(-1);
     expect(learnStore.get().finished).toEqual(['mesh']);
+  });
+});
+
+describe('the steps of the IK lesson', () => {
+  const base = state({ ikConstraints: 2, keys: 5 });
+  const done = (id: string, s: LessonState) => IK_LESSON.steps.find((x) => x.id === id)!.done(s, base);
+
+  it('ik: more IK constraints than when the lesson began (the demo legs already have some)', () => {
+    expect(done('ik', state({ ikConstraints: 2 }))).toBe(false);
+    expect(done('ik', state({ ikConstraints: 3 }))).toBe(true);
+  });
+  it('pull: an edit after the new IK appeared; the creation itself is not an edit of the target', () => {
+    expect(done('pull', state({ editsSinceIk: 0 }))).toBe(false);
+    expect(done('pull', state({ editsSinceIk: 1 }))).toBe(true);
+  });
+  it('key and play work as in the other lessons, and the lesson is the last one for now', () => {
+    expect(done('key', state({ keys: 6 }))).toBe(true);
+    expect(done('play', state({ seenPlaying: true }))).toBe(true);
+    expect(IK_LESSON.next).toBeUndefined();
+    expect(lessonById('ik')).toBe(IK_LESSON);
+  });
+});
+
+describe('the IK lesson in the store', () => {
+  beforeEach(() => {
+    stopLesson();
+    learnStore.patch({ finished: [], offered: false });
+    const p = emptyProject('ik');
+    const upper = newBone({ name: 'upper', parent: p.skeleton.bones[0].id, length: 50 });
+    const lower = newBone({ name: 'lower', parent: upper.id, length: 50, x: 50 });
+    p.skeleton.bones.push(upper, lower);
+    p.skeleton.animations.push(newAnimation('reach', 1));
+    docStore.replace(p);
+    uiStore.patch({ mode: 'setup', tool: 'select', selection: emptySelection, playing: false, animationId: null, time: 0, overrides: {} });
+  });
+
+  it('counts the edits only from the moment the new IK exists, and is passed with the real actions', () => {
+    const lower = docStore.get().skeleton.bones[2].id;
+    startLesson('ik');
+    selectBone(lower);
+    expect(learnStore.get().progress?.marks[0]).toBe('done');
+
+    // an edit made before there is an IK does not pull the target
+    setBonePose([{ id: lower, props: { rotation: 5 } }]);
+    expect(learnStore.get().progress?.marks[2]).toBe('todo');
+
+    const created = createIkFromDrag(lower, null, 120, 40);
+    expect(created).not.toBeNull();
+    expect(learnStore.get().progress?.marks[1]).toBe('done');
+    expect(learnStore.get().progress?.marks[2]).toBe('todo'); // the creation is not a pull of the target
+
+    const target = docStore.get().skeleton.bones.at(-1)!.id;
+    setBonePose([{ id: target, props: { x: 90 } }]);
+    expect(learnStore.get().progress?.marks[2]).toBe('done');
+
+    setMode('animate');
+    uiStore.patch({ time: 0.5 });
+    setBonePose([{ id: target, props: { x: 140 } }]);
+    expect(learnStore.get().progress?.marks[4]).toBe('done');
+    uiStore.patch({ playing: true });
+    expect(learnStore.get().progress?.current).toBe(-1);
+    expect(learnStore.get().finished).toEqual(['ik']);
   });
 });

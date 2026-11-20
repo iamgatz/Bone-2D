@@ -477,6 +477,7 @@ function Toolbox() {
           title={t.title}
           hotkey={hotkeyOf(t.tool)}
           tipPlace="right"
+          learn={`tool-${t.tool}`}
           active={tool === t.tool}
           animate={mode === 'animate'}
           disabled={!!t.setupOnly && mode !== 'setup'}
