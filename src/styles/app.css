@@ -14,7 +14,7 @@ body {
   font-size: var(--fs-md);
   line-height: var(--lh);
   -webkit-font-smoothing: antialiased;
-  overflow: hidden;
+  overflow: auto; /* only a window smaller than .app's minimum scrolls */
   user-select: none;
 }
 button,
@@ -54,6 +54,9 @@ textarea {
   display: flex;
   flex-direction: column;
   height: 100%;
+  /* the smallest window the editor is made for (the top bar needs about 1060 px; the columns alone need 200 + 300 + 230): below this the page scrolls instead of things being cut off */
+  min-width: 1100px;
+  min-height: 560px;
 }
 .main {
   flex: 1;
@@ -65,13 +68,15 @@ textarea {
   background: var(--panel);
   display: flex;
   flex-direction: column;
-  min-width: 190px;
   min-height: 0;
 }
+/* the same smallest widths as the splitters allow (App.tsx), so a narrow window cannot crush a panel below what its content needs */
 .left {
+  min-width: 200px;
   border-right: 1px solid var(--border);
 }
 .right {
+  min-width: 230px;
   border-left: 1px solid var(--border);
 }
 .center {
@@ -422,6 +427,7 @@ textarea {
   overflow: auto;
   flex: 1;
   min-height: 0;
+  container-type: inline-size; /* the rows inside change their shape with the width of the panel, see .frow below */
 }
 .summary-chips {
   display: flex;
@@ -620,8 +626,9 @@ textarea {
 }
 .group-title {
   display: flex;
+  flex-wrap: wrap; /* a narrow panel or a long Russian label: the action buttons drop to a second line instead of spilling out */
   align-items: center;
-  height: 28px;
+  min-height: 28px;
   font-weight: var(--fw-heading);
   color: var(--text-dim);
   gap: 6px;
@@ -659,7 +666,10 @@ textarea {
   pointer-events: none;
 }
 .field .flabel {
-  flex: none;
+  flex: 0 1 auto;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   min-width: 22px;
   padding: 0 7px;
   color: var(--muted);
@@ -676,7 +686,7 @@ textarea {
 .field input,
 .field select {
   flex: 1;
-  min-width: 0;
+  min-width: 26px; /* the label gives way first (it is cut with an ellipsis), the value stays readable */
   height: 100%;
   background: transparent;
   border: 0;
@@ -812,6 +822,23 @@ textarea {
   display: grid;
   place-items: center;
 }
+/* a narrow panel: the label goes above its controls and the controls wrap, so nothing is cut at the minimum width */
+@container (max-width: 262px) {
+  .frow {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 2px;
+  }
+  .frow.keys {
+    grid-template-columns: minmax(0, 1fr) var(--w-key);
+  }
+  .frow.keys .frow-label {
+    grid-column: 1 / -1;
+  }
+  .frow-body {
+    grid-auto-flow: row;
+    grid-template-columns: repeat(auto-fit, minmax(58px, 1fr));
+  }
+}
 .hstack {
   display: flex;
   align-items: center;
@@ -903,7 +930,7 @@ textarea {
   align-items: center;
   gap: var(--sp-3);
   min-width: 0;
-  height: 100%;
+  min-height: 28px;
   padding: 0;
   border: 0;
   background: none;
