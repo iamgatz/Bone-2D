@@ -12,6 +12,16 @@ export interface Release {
 
 export const CHANGELOG: Release[] = [
   {
+    version: '0.82',
+    date: '2026-11-20',
+    en: [
+      'Lesson 2, "Your own rig": from a picture to a moving bone in six steps (bring pictures, draw a bone with B, put a picture on it, switch to Animate, turn the bone, play). No pictures at hand: a button in the first step adds two sample ones. It works on any project, new or not. The first lesson now offers it when it is over, and Help lists all the lessons.',
+    ],
+    ru: [
+      'Урок 2 «Свой риг»: от картинки до движущейся кости за шесть шагов (добавить картинки, нарисовать кость на B, посадить на неё картинку, перейти в «Анимацию», повернуть кость, проиграть). Нет картинок под рукой: кнопка в первом шаге добавит две учебные. Работает на любом проекте, новом и нет. Первый урок в конце предлагает этот, а справка показывает список всех уроков.',
+    ],
+  },
+  {
     version: '0.81',
     date: '2026-11-20',
     en: [

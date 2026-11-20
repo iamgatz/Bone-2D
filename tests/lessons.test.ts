@@ -1,8 +1,8 @@
 /** The lessons: the data is complete in both languages, every step condition says what it should, and the store follows the editor. */
 import { beforeEach, describe, expect, it } from 'vitest';
-import { FOX_LESSON, LESSONS, lessonById, progressOf } from '../src/core/lessons';
+import { FOX_LESSON, LESSONS, RIG_LESSON, lessonById, progressOf } from '../src/core/lessons';
 import type { LessonState } from '../src/core/lessons';
-import { emptyProject, newAnimation, newBone } from '../src/core/model';
+import { emptyProject, newAnimation, newBone, newSlot } from '../src/core/model';
 import { selectBone, setMode } from '../src/store/actions';
 import { setBonePose } from '../src/store/boneActions';
 import { docStore } from '../src/store/doc';
@@ -15,12 +15,15 @@ const state = (over: Partial<LessonState> = {}): LessonState => ({
   edits: 0,
   keys: 0,
   playing: false,
+  images: 0,
+  bones: 1,
+  ownSlots: 0,
   seenPlaying: false,
   seenExport: false,
   ...over,
 });
 
-const TARGETS = ['tree', 'viewport', 'inspector', 'mode', 'play', 'export'];
+const TARGETS = ['tree', 'viewport', 'inspector', 'mode', 'play', 'export', 'images'];
 const russian = (s: string) => /[а-яё]/i.test(s);
 
 describe('lesson data', () => {
@@ -195,5 +198,92 @@ describe('the lesson in the store follows the editor', () => {
     stopLesson();
     offerLesson('fox');
     expect(learnStore.get().active).toBeNull();
+  });
+});
+
+describe('the steps of the rig lesson', () => {
+  const base = state({ images: 2, bones: 3, ownSlots: 1, keys: 4 });
+  const done = (id: string, s: LessonState) => RIG_LESSON.steps.find((x) => x.id === id)!.done(s, base);
+
+  it('pictures: more pictures than when the lesson began', () => {
+    expect(done('pictures', state({ images: 2 }))).toBe(false);
+    expect(done('pictures', state({ images: 3 }))).toBe(true);
+  });
+  it('bone: more bones than when the lesson began', () => {
+    expect(done('bone', state({ bones: 3 }))).toBe(false);
+    expect(done('bone', state({ bones: 4 }))).toBe(true);
+  });
+  it('attach: a picture sits on a bone that is not a root, and one that was already there does not count', () => {
+    expect(done('attach', state({ ownSlots: 1 }))).toBe(false);
+    expect(done('attach', state({ ownSlots: 2 }))).toBe(true);
+  });
+  it('animate, key and play work as in the first lesson', () => {
+    expect(done('animate', state({ mode: 'animate' }))).toBe(true);
+    expect(done('key', state({ keys: 5 }))).toBe(true);
+    expect(done('key', state({ keys: 4 }))).toBe(false);
+    expect(done('play', state({ seenPlaying: true }))).toBe(true);
+  });
+  it('is offered after the first lesson, and only the first step has a button', () => {
+    expect(FOX_LESSON.next).toBe('rig');
+    expect(lessonById(FOX_LESSON.next!)).toBe(RIG_LESSON);
+    expect(RIG_LESSON.next).toBeUndefined();
+    expect(RIG_LESSON.steps.filter((s) => s.helper).map((s) => s.id)).toEqual(['pictures']);
+  });
+});
+
+describe('the rig lesson in the store', () => {
+  beforeEach(() => {
+    stopLesson();
+    learnStore.patch({ finished: [], offered: false });
+    docStore.replace(emptyProject('rig'));
+    uiStore.patch({
+      mode: 'setup',
+      selection: emptySelection,
+      playing: false,
+      exportOpen: false,
+      animationId: null,
+      time: 0,
+      overrides: {},
+    });
+  });
+
+  it('follows a picture, a bone, a picture put on that bone, and the keys of the turn', () => {
+    startLesson('rig');
+    expect(learnStore.get().progress?.current).toBe(0);
+
+    docStore.update('Import image', (d) => {
+      d.images.push({ id: 'img1', name: 'body', width: 40, height: 60 });
+    });
+    expect(learnStore.get().progress?.marks[0]).toBe('done');
+
+    let arm = '';
+    docStore.update('Create bone', (d) => {
+      const b = newBone({ name: 'arm', parent: d.skeleton.bones[0].id, length: 40 });
+      arm = b.id;
+      d.skeleton.bones.push(b);
+    });
+    expect(learnStore.get().progress?.marks[1]).toBe('done');
+    expect(learnStore.get().progress?.marks[2]).toBe('todo');
+
+    docStore.update('Add image', (d) => {
+      d.skeleton.slots.push(newSlot({ name: 'body', bone: arm, attachment: 'body' }));
+    });
+    expect(learnStore.get().progress?.marks[2]).toBe('done');
+
+    setMode('animate');
+    selectBone(arm);
+    setBonePose([{ id: arm, props: { rotation: 30 } }]);
+    expect(learnStore.get().progress?.marks[4]).toBe('done');
+    uiStore.patch({ playing: true });
+    expect(learnStore.get().progress?.current).toBe(-1);
+    expect(learnStore.get().finished).toEqual(['rig']);
+  });
+
+  it('a slot on the root bone is not a picture that moves with a bone of its own', () => {
+    startLesson('rig');
+    docStore.update('Add image', (d) => {
+      d.skeleton.slots.push(newSlot({ name: 'bg', bone: d.skeleton.bones[0].id, attachment: 'bg' }));
+    });
+    expect(learnStore.get().progress?.marks[2]).toBe('todo');
   });
 });

@@ -55,6 +55,7 @@ import {
 } from '@/store/actions';
 import { docStore, useProject } from '@/store/doc';
 import { pickReviewFile } from '@/store/reviewActions';
+import { LESSONS } from '@/core/lessons';
 import { openLesson } from '@/store/learn';
 import { newProject, openProjectFile, packageProject, restoreAutosave, saveProjectFile, startAutosave } from '@/store/project';
 import { openAtlasUnpack, openSpineImport } from './importSpine';
@@ -576,6 +577,7 @@ function Keys({ combo }: { combo: string }) {
 }
 
 function HelpDialog() {
+  const lang = useLang();
   useSettings((s) => s.toolKeys);
   useSettings((s) => s.keyMap);
   return (
@@ -584,17 +586,21 @@ function HelpDialog() {
         Bone 2D is a browser-based 2D skeletal animation editor. Build a rig in <b>Setup</b>, pose and key it in <b>Animate</b>, then export
         a Spine 4.3 compatible skeleton + atlas.
       </p>
-      <p className="mb">
-        <Button
-          icon={GraduationCap}
-          onClick={() => {
-            uiStore.patch({ helpOpen: false });
-            void openLesson('fox');
-          }}
-        >
-          Take the lesson: bring the fox to life
-        </Button>
-      </p>
+      <h3 className="section-label">Lessons</h3>
+      <div className="hstack wrap mb">
+        {LESSONS.map((lesson) => (
+          <Button
+            key={lesson.id}
+            icon={GraduationCap}
+            onClick={() => {
+              uiStore.patch({ helpOpen: false });
+              void openLesson(lesson.id);
+            }}
+          >
+            {lesson.title[lang]}
+          </Button>
+        ))}
+      </div>
       <div className="hotkeys">
         {hotkeyGroups().map((g) => (
           <section key={g.title} className="hk-group">

@@ -158,7 +158,7 @@ export function AssetsPanel() {
   };
 
   return (
-    <div className="panel" style={{ height: 260 }}>
+    <div className="panel" style={{ height: 260 }} data-learn="images">
       <div className="panel-head">
         <span className="title">Images</span>
 

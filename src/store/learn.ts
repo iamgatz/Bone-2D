@@ -5,8 +5,10 @@
  */
 import { countKeys } from '@/core/stats';
 import { lessonById, progressOf } from '@/core/lessons';
-import type { LessonProgress, LessonState } from '@/core/lessons';
+import type { LessonHelper, LessonProgress, LessonState } from '@/core/lessons';
+import { drawDemoImages } from './demo/art';
 import { docStore } from './doc';
+import { importImageFiles } from './imageImportActions';
 import { loadSample } from './sample';
 import { createStore, useStore } from './store';
 import { uiStore } from './ui';
@@ -75,21 +77,27 @@ let seenPlaying = false;
 let seenExport = false;
 
 // counting the keys of a big rig on every frame of a playback would be a waste: it is redone when the document is another one
-let keysOf: ReturnType<typeof docStore.get> | null = null;
+let countedDoc: ReturnType<typeof docStore.get> | null = null;
 let keyTotal = 0;
+let ownSlotTotal = 0;
 
 function snapshot(): LessonState {
   const ui = uiStore.get();
   const doc = docStore.get();
-  if (doc !== keysOf) {
-    keysOf = doc;
+  if (doc !== countedDoc) {
+    countedDoc = doc;
     keyTotal = doc.skeleton.animations.reduce((n, a) => n + countKeys(a), 0);
+    const roots = new Set(doc.skeleton.bones.filter((b) => !b.parent).map((b) => b.id));
+    ownSlotTotal = doc.skeleton.slots.filter((sl) => !roots.has(sl.bone)).length;
   }
   return {
     mode: ui.mode,
     selectedBones: ui.selection.bones.length,
     edits,
     keys: keyTotal,
+    images: doc.images.length,
+    bones: doc.skeleton.bones.length,
+    ownSlots: ownSlotTotal,
     playing: ui.playing,
     seenPlaying,
     seenExport,
@@ -164,11 +172,22 @@ export function offerLesson(id: string) {
   startLesson(id);
 }
 
-/** Lesson 1 on request. An empty project gets the demo rig first; anything else is left as it is, the lesson works on what is open. */
+/** A lesson on request. The fox lesson on an empty project gets the demo rig first; anything else is left as it is: a lesson works on what is open. */
 export async function openLesson(id: string) {
   const sk = docStore.get().skeleton;
-  if (sk.bones.length <= 1 && sk.slots.length === 0 && sk.animations.length === 0) await loadSample();
+  if (id === 'fox' && sk.bones.length <= 1 && sk.slots.length === 0 && sk.animations.length === 0) await loadSample();
   startLesson(id);
+}
+
+/** What a button of a lesson step does. */
+export async function runLessonHelper(id: LessonHelper) {
+  if (id === 'samplePictures') {
+    // two pictures of the demo fox (body and tail), added like dropped files
+    const all = await drawDemoImages();
+    const want = ['fox-body', 'fox-tail'].map((n) => all.find((p) => p.name === n)).filter((p) => !!p);
+    const chosen = want.length === 2 ? want : all.slice(0, 2);
+    await importImageFiles(chosen.map((p) => new File([p.blob], `${p.name}.png`, { type: 'image/png' })));
+  }
 }
 
 export function useLearn<S>(selector: (s: LearnState) => S): S {

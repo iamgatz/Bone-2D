@@ -1,10 +1,10 @@
 import { useEffect } from 'react';
 import { ChevronDown, ChevronUp, X } from 'lucide-react';
-import { lessonById } from '@/core/lessons';
+import { lessonById, LESSONS } from '@/core/lessons';
 import type { LearnTarget } from '@/core/lessons';
 import { useLang } from '@/i18n';
 import { newProject } from '@/store/project';
-import { setLearnCollapsed, skipStep, stopLesson, useLearn } from '@/store/learn';
+import { openLesson, runLessonHelper, setLearnCollapsed, skipStep, stopLesson, useLearn } from '@/store/learn';
 import { Button, IconButton } from './ui/controls';
 
 /** Where each target is on the page. Names and classes of the layout, never text: the text changes with the language. */
@@ -15,6 +15,7 @@ const TARGETS: Record<LearnTarget, string> = {
   mode: '[data-learn="mode"]',
   play: '[data-learn="play"]',
   export: '[data-learn="export"]',
+  images: '[data-learn="images"]',
 };
 
 /**
@@ -40,6 +41,7 @@ export function LearnCard() {
 
   if (!lesson || !progress) return null;
   const step = current >= 0 ? lesson.steps[current] : null;
+  const next = lesson.next ? LESSONS.find((l) => l.id === lesson.next) : undefined;
   const total = lesson.steps.length;
   return (
     <section className="learn" aria-label="Lesson">
@@ -75,20 +77,33 @@ export function LearnCard() {
           </div>
           <div className="learn-actions">
             {step ? (
-              <Button ghost small onClick={() => skipStep()}>
-                Skip this step
-              </Button>
+              <>
+                {step.helper && (
+                  <Button small onClick={() => void runLessonHelper(step.helper!.id)}>
+                    {step.helper.label[lang]}
+                  </Button>
+                )}
+                <Button ghost small onClick={() => skipStep()}>
+                  Skip this step
+                </Button>
+              </>
             ) : (
               <>
-                <Button
-                  small
-                  onClick={() => {
-                    stopLesson();
-                    newProject();
-                  }}
-                >
-                  New project
-                </Button>
+                {next ? (
+                  <Button small onClick={() => void openLesson(next.id)}>
+                    {next.title[lang]}
+                  </Button>
+                ) : (
+                  <Button
+                    small
+                    onClick={() => {
+                      stopLesson();
+                      newProject();
+                    }}
+                  >
+                    New project
+                  </Button>
+                )}
                 <Button primary small onClick={() => stopLesson()}>
                   Done
                 </Button>
