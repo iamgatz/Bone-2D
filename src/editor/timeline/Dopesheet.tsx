@@ -78,7 +78,9 @@ export function Dopesheet({ rows, duration, fps, onMenu }: Props) {
     let hostH = 0;
     let lastRows: Row[] | null = null;
 
-    const resize = () => {
+    let paintNow = () => {};
+    /** Sets the canvas sizes (which empties them) and, from the resize callback, paints at once so no empty frame is shown. */
+    const resize = (repaint = false) => {
       const dpr = window.devicePixelRatio || 1;
       w = host.clientWidth;
       hostH = host.clientHeight;
@@ -92,8 +94,9 @@ export function Dopesheet({ rows, duration, fps, onMenu }: Props) {
       ruler.style.width = w + 'px';
       ruler.style.height = '28px';
       dirty.current = true;
+      if (repaint) paintNow();
     };
-    const ro = new ResizeObserver(resize);
+    const ro = new ResizeObserver(() => resize(true));
     ro.observe(host);
     resize();
 
@@ -359,7 +362,8 @@ export function Dopesheet({ rows, duration, fps, onMenu }: Props) {
       }
     };
 
-    const stopLoop = drawWhenDirty(dirty, draw);
+    const loop = drawWhenDirty(dirty, draw);
+    paintNow = loop.now;
 
     const local = localPoint;
     const xToTime = (x: number) => x / uiStore.get().tlZoom + uiStore.get().tlScroll;
@@ -562,7 +566,7 @@ export function Dopesheet({ rows, duration, fps, onMenu }: Props) {
     canvas.addEventListener('dblclick', onDouble);
 
     return () => {
-      stopLoop();
+      loop.stop();
       ro.disconnect();
       unsubs.forEach((u) => u());
       ruler.removeEventListener('pointerdown', onRulerDown);

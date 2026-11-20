@@ -1,21 +1,26 @@
 /** Small helpers for the canvases that draw themselves (dopesheet, graph editor). */
 
-/** Calls `draw` once per frame while `dirty.current` is set. Returns the function that stops the loop. */
-export function drawWhenDirty(dirty: { current: boolean }, draw: () => void): () => void {
+/**
+ * Calls `draw` once per frame while `dirty.current` is set. `stop` ends the loop. `now` draws at once when something is dirty: a canvas
+ * whose size was just set is empty, and has to be painted in the same frame (from the resize callback) or it blinks for a frame.
+ */
+export function drawWhenDirty(dirty: { current: boolean }, draw: () => void): { stop: () => void; now: () => void } {
   let raf = 0;
-  const loop = () => {
-    if (dirty.current) {
-      dirty.current = false;
-      try {
-        draw();
-      } catch (e) {
-        console.error(e);
-      }
+  const now = () => {
+    if (!dirty.current) return;
+    dirty.current = false;
+    try {
+      draw();
+    } catch (e) {
+      console.error(e);
     }
+  };
+  const loop = () => {
+    now();
     raf = requestAnimationFrame(loop);
   };
   raf = requestAnimationFrame(loop);
-  return () => cancelAnimationFrame(raf);
+  return { stop: () => cancelAnimationFrame(raf), now };
 }
 
 /** The position of a pointer event inside an element, in CSS pixels. */

@@ -12,6 +12,20 @@ export interface Release {
 
 export const CHANGELOG: Release[] = [
   {
+    version: '0.79',
+    date: '2026-11-20',
+    en: [
+      'No more flashing while a panel is dragged: the viewport, the dopesheet, the graph and the rulers used to show one empty frame at every step (a resized canvas is wiped, and it was painted again only in the next frame); they are painted at once now.',
+      'Opening a rig is much faster: the pictures of a project file are read directly instead of through the network stack (a rig with twenty large pictures froze the editor for about two seconds) and decoded all at once.',
+      'Loading the demo rig while another rig is open no longer turns the open one white: the new pictures are made first and swapped in together with the rig.',
+    ],
+    ru: [
+      'Экран больше не мигает, когда тянешь панель: вьюпорт, таблица ключей, график и линейки показывали один пустой кадр на каждом шаге (при смене размера canvas стирается, а перерисовывался он только в следующем кадре); теперь он рисуется сразу.',
+      'Рига открываются заметно быстрее: картинки из файла проекта читаются напрямую, а не через сетевой стек (риг из двадцати больших картинок вешал редактор примерно на две секунды), и декодируются все сразу.',
+      'Загрузка демо-рига при открытом другом риге больше не заливает открытый белым: новые картинки сначала готовятся и подставляются вместе с ригом.',
+    ],
+  },
+  {
     version: '0.78',
     date: '2026-11-20',
     en: [

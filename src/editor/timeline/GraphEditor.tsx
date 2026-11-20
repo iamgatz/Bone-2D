@@ -214,6 +214,7 @@ export function GraphEditor({
     const ctx = canvas.getContext('2d')!;
     let w = 0;
     let h = 0;
+    let paintNow = () => {};
     const resize = () => {
       const dpr = window.devicePixelRatio || 1;
       w = host.clientWidth;
@@ -223,6 +224,7 @@ export function GraphEditor({
       canvas.style.width = w + 'px';
       canvas.style.height = h + 'px';
       dirty.current = true;
+      paintNow(); // a resized canvas is empty: paint it in this frame, not the next
     };
     const ro = new ResizeObserver(resize);
     ro.observe(host);
@@ -372,7 +374,8 @@ export function GraphEditor({
       }
     };
 
-    const stopLoop = drawWhenDirty(dirty, draw);
+    const loop = drawWhenDirty(dirty, draw);
+    paintNow = loop.now;
 
     const local = (e: { clientX: number; clientY: number }) => localPoint(e, canvas);
 
@@ -496,7 +499,7 @@ export function GraphEditor({
     canvas.addEventListener('pointercancel', onUp);
     canvas.addEventListener('wheel', onWheel, { passive: false });
     return () => {
-      stopLoop();
+      loop.stop();
       ro.disconnect();
       unsubs.forEach((u) => u());
       canvas.removeEventListener('pointerdown', onDown);
@@ -566,6 +569,7 @@ function GraphRuler() {
     const ctx = canvas.getContext('2d')!;
     let raf = 0;
     let dirty = true;
+    let paintNow = () => {};
     const resize = () => {
       const dpr = window.devicePixelRatio || 1;
       canvas.width = Math.round(host.clientWidth * dpr);
@@ -573,6 +577,7 @@ function GraphRuler() {
       canvas.style.width = host.clientWidth + 'px';
       canvas.style.height = '28px';
       dirty = true;
+      paintNow();
     };
     const ro = new ResizeObserver(resize);
     ro.observe(host);
@@ -612,11 +617,13 @@ function GraphRuler() {
       ctx.fill();
       ctx.fillRect(x - 0.5, 0, 1, 18);
     };
+    paintNow = () => {
+      if (!dirty) return;
+      dirty = false;
+      draw();
+    };
     const loop = () => {
-      if (dirty) {
-        dirty = false;
-        draw();
-      }
+      paintNow();
       raf = requestAnimationFrame(loop);
     };
     raf = requestAnimationFrame(loop);

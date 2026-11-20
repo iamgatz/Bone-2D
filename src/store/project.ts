@@ -117,16 +117,20 @@ export async function loadProjectText(text: string): Promise<LoadReport> {
   const file = JSON.parse(text) as ProjectFile;
   if ((file.bone2d !== 1 && file.marrow !== 1) || !file.project?.skeleton) throw new Error('Not a Bone 2D project file');
   // Everything that can fail happens BEFORE the open project is touched: a damaged file must never wipe the session.
-  const decoded: ImageAsset[] = [];
   const failedImages: string[] = [];
-  for (const name of Object.keys(file.images ?? {})) {
-    try {
-      decoded.push(await assets.decode(name, await dataURLToBlob(file.images[name])));
-    } catch (e) {
-      console.warn(`image "${name}" could not be decoded`, e);
-      failedImages.push(name);
-    }
-  }
+  // all pictures at once: the browser decodes them off the main thread, so a rig of many pictures opens in the time of the slowest one
+  const tried = await Promise.all(
+    Object.keys(file.images ?? {}).map(async (name) => {
+      try {
+        return await assets.decode(name, await dataURLToBlob(file.images[name]));
+      } catch (e) {
+        console.warn(`image "${name}" could not be decoded`, e);
+        failedImages.push(name);
+        return null;
+      }
+    }),
+  );
+  const decoded = tried.filter((a): a is ImageAsset => a !== null);
   const repaired = repairProject(file.project);
   if (repaired.length) console.warn('project repaired while opening:', repaired);
   assets.replaceAll(decoded);

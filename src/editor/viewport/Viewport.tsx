@@ -66,6 +66,8 @@ export function Viewport() {
     let lastW = 0;
     let lastH = 0;
     let lastDpr = 0;
+    let ready = false;
+    let paintNow = () => {};
 
     const invalidate = () => {
       dirty = true;
@@ -87,6 +89,9 @@ export function Viewport() {
         c.style.height = h + 'px';
       }
       dirty = true;
+      // Setting a canvas size wipes it. Painting again right here, in the same frame, keeps the viewport from blinking black while a
+      // panel is dragged (the loop below would only repaint it in the next frame, after the browser has shown the empty one).
+      if (ready) paintNow();
     };
     const ro = new ResizeObserver(resize);
     ro.observe(host);
@@ -259,15 +264,18 @@ export function Viewport() {
       fpsMeter.tick(t1, t1 - t0);
     };
 
-    const loop = () => {
-      if (dirty) {
-        dirty = false;
-        try {
-          draw();
-        } catch (e) {
-          console.error(e);
-        }
+    paintNow = () => {
+      if (!dirty) return;
+      dirty = false;
+      try {
+        draw();
+      } catch (e) {
+        console.error(e);
       }
+    };
+    ready = true;
+    const loop = () => {
+      paintNow();
       raf = requestAnimationFrame(loop);
     };
     raf = requestAnimationFrame(loop);

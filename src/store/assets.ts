@@ -128,6 +128,27 @@ export function blobToDataURL(blob: Blob): Promise<string> {
   });
 }
 
-export async function dataURLToBlob(url: string): Promise<Blob> {
-  return (await fetch(url)).blob();
+/**
+ * A data URL as a Blob. Decoded here, not with `fetch(url)`: fetch copies the whole text through the network stack on the main thread
+ * (about 80 ms for a 5 MB picture, so a rig of twenty pictures froze the editor for two seconds while it opened).
+ */
+function decodeDataURL(url: string): Blob {
+  const comma = url.indexOf(',');
+  if (!url.startsWith('data:') || comma < 0) throw new Error('Not a data URL');
+  const head = url.slice(5, comma);
+  const mime = head.split(';')[0] || 'application/octet-stream';
+  const body = url.slice(comma + 1);
+  if (!head.endsWith(';base64')) return new Blob([decodeURIComponent(body)], { type: mime });
+  const bin = atob(body);
+  const bytes = new Uint8Array(bin.length);
+  for (let i = 0; i < bytes.length; i++) bytes[i] = bin.charCodeAt(i);
+  return new Blob([bytes], { type: mime });
+}
+
+export function dataURLToBlob(url: string): Promise<Blob> {
+  try {
+    return Promise.resolve(decodeDataURL(url));
+  } catch (e) {
+    return Promise.reject(e instanceof Error ? e : new Error(String(e)));
+  }
 }
