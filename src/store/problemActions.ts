@@ -1,6 +1,7 @@
 /** The Metrics window's problems: one click puts a warning right (one history step), "fix all" does the safe ones together (see core/problems.ts). */
 import type { Finding } from '@/core/lint';
 import { closeLoop } from '@/core/loops';
+import type { StressFinding } from '@/core/stress';
 import { fixAllSafe, fixProblem } from '@/core/problems';
 import { projectWarnings } from '@/core/stats';
 import type { Warning } from '@/core/stats';
@@ -69,4 +70,11 @@ export function revealFinding(f: Finding): void {
     if (f.time !== undefined) setTime(f.time);
   }
   if (f.bone && docStore.get().skeleton.bones.some((b) => b.id === f.bone)) selectBone(f.bone);
+}
+
+/** A click on a finding of the rig test: the bone that was turned and the mesh that folded. */
+export function revealStress(f: StressFinding): void {
+  const doc = docStore.get().skeleton;
+  if (!doc.slots.some((x) => x.id === f.slot)) return;
+  setSelection({ slot: f.slot, attachment: f.mesh, bones: doc.bones.some((b) => b.id === f.bone) ? [f.bone] : [] });
 }

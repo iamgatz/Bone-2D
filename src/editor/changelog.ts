@@ -12,6 +12,16 @@ export interface Release {
 
 export const CHANGELOG: Release[] = [
   {
+    version: '0.92',
+    date: '2026-11-21',
+    en: [
+      'The Metrics window has a "Rig test": it turns every bone that carries a weighted mesh through 20, 35 and 50 degrees (both ways), poses the meshes, and lists the ones whose triangles fold back over themselves, with the bone, the first angle at which it happens and how much of the mesh folds. A click selects the bone and the mesh. It runs on request, only on the bones (constraints and animation are left out), and says nothing about a rig that holds up. The demo fox holds up at 20 degrees; its lone tail, scarf and arm bones do fold at 35 to 50, which is true to the rig and shown as a hint, not as an error.',
+    ],
+    ru: [
+      'В окне «Метрики» появилось «Испытание рига»: каждая кость, которая несёт меш с весами, поворачивается на 20, 35 и 50 градусов (в обе стороны), меши позируются, и список показывает те, у которых треугольники складываются сами на себя: кость, первый угол, на котором это случается, и какая часть меша сложилась. Щелчок выделяет кость и меш. Испытание запускается по кнопке, трогает только кости (констрейнты и анимация не участвуют) и молчит про риг, который держится. Демо-лиса держится на 20 градусах; одиночные кости хвоста, шарфа и руки на 35–50 складываются, это правда про риг и показано как подсказка, а не как ошибка.',
+    ],
+  },
+  {
     version: '0.91',
     date: '2026-11-21',
     en: [

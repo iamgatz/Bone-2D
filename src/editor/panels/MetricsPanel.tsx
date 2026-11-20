@@ -1,12 +1,14 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { AlertTriangle, CheckCircle2, Wrench } from 'lucide-react';
 import { estimatePages, poseMetrics } from '@/core/drawstats';
 import { lintProject } from '@/core/lint';
 import type { Finding } from '@/core/lint';
 import { canFix, isSafeFix } from '@/core/problems';
+import { stressRig } from '@/core/stress';
+import type { StressFinding } from '@/core/stress';
 import { MAX_INFLUENCES, projectStats, projectWarnings } from '@/core/stats';
 import type { Warning } from '@/core/stats';
-import { fixAllSafeWarnings, fixFinding, fixWarning, revealFinding, revealWarning } from '@/store/problemActions';
+import { fixAllSafeWarnings, fixFinding, fixWarning, revealFinding, revealStress, revealWarning } from '@/store/problemActions';
 import { useProject } from '@/store/doc';
 import { useUi } from '@/store/ui';
 import { getScene } from '@/store/scene';
@@ -46,6 +48,8 @@ export function MetricsPanel() {
   const stats = useMemo(() => projectStats(project), [project]);
   const warnings = useMemo(() => projectWarnings(project), [project]);
   const findings = useMemo(() => lintProject(project), [project]);
+  // the rig test is run on request (it poses the rig many times); its answer is for the document it was run on
+  const [stress, setStress] = useState<{ project: typeof project; found: StressFinding[] } | null>(null);
   // the pose on screen: the numbers follow the playhead (the scene is the one the viewport draws)
   const time = useUi((s) => s.time);
   const mode = useUi((s) => s.mode);
@@ -149,6 +153,35 @@ export function MetricsPanel() {
             </div>
           ))
         )}
+        <div className="section-label">
+          Rig test
+          <button
+            className="btn sm"
+            style={{ marginLeft: 8 }}
+            title="Turn every bone that carries a weighted mesh through a few angles and look for triangles that fold over"
+            onClick={() => setStress({ project, found: stressRig(project.skeleton) })}
+          >
+            Run the rig test
+          </button>
+        </div>
+        {stress &&
+          (stress.found.length === 0 ? (
+            <div className="warn ok">
+              <CheckCircle2 size={14} /> No mesh folds when a bone turns 20 to 50 degrees
+            </div>
+          ) : (
+            stress.found.slice(0, 40).map((f, i) => (
+              <div key={i} className="warn">
+                <AlertTriangle size={14} />
+                <span className="warn-text">A mesh folds over when this bone turns</span>
+                <b style={{ cursor: 'pointer' }} onClick={() => revealStress(f)}>
+                  {project.skeleton.bones.find((b) => b.id === f.bone)?.name ?? '?'}
+                </b>
+                <span className="dim">{`${f.angle > 0 ? '+' : ''}${f.angle}° · ${f.mesh} · ${f.flipped}/${f.triangles}`}</span>
+              </div>
+            ))
+          ))}
+        {stress && stress.project !== project && <div className="hint-text flush">The rig was edited after this test: run it again.</div>}
         <div className="section-label">Animation check</div>
         {findings.length === 0 ? (
           <div className="warn ok">

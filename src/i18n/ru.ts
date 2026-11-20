@@ -1479,6 +1479,13 @@ export const RU: Record<string, string> = {
   'Before export': 'Перед экспортом',
   'Nothing looks forgotten': 'Ничего не забыто',
   'Animation check': 'Проверка анимации',
+  'Rig test': 'Испытание рига',
+  'Run the rig test': 'Запустить испытание',
+  'Turn every bone that carries a weighted mesh through a few angles and look for triangles that fold over':
+    'Повернуть каждую кость, которая несёт меш с весами, на несколько углов и поискать треугольники, которые складываются',
+  'No mesh folds when a bone turns 20 to 50 degrees': 'Ни один меш не складывается при повороте кости на 20–50 градусов',
+  'A mesh folds over when this bone turns': 'Меш складывается, когда поворачивается эта кость',
+  'The rig was edited after this test: run it again.': 'Риг изменили после испытания: запустите его снова.',
   'The animations and the names look fine': 'С анимациями и именами всё в порядке',
   'The end of this cycle is not the same as its start: it jumps when it repeats':
     'Конец цикла не совпадает с началом: при повторе будет скачок',

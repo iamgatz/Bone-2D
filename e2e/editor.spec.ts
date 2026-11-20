@@ -341,3 +341,32 @@ test('a selected mesh vertex has two number fields that place it exactly', async
   await y.press('Enter');
   await expect.poll(async () => (await worldOf())[1]).toBeCloseTo(-7, 1);
 });
+
+test('the Metrics window runs the rig test and a click on a finding selects the bone and the mesh', async ({ page }) => {
+  await openDemo(page);
+  await page.evaluate(async (url) => {
+    const { toggleView } = (await import(url)) as ViewActions;
+    toggleView('metrics');
+  }, VIEWS);
+  const metrics = page.locator('.metrics');
+  // nothing is run until it is asked for
+  await expect(metrics.getByText('A mesh folds over when this bone turns')).toHaveCount(0);
+  await metrics.getByRole('button', { name: 'Run the rig test' }).click();
+  const first = metrics.locator('.warn', { hasText: 'A mesh folds over when this bone turns' }).first();
+  await expect(first).toBeVisible();
+  await first.locator('b').click();
+  const selection = await page.evaluate(async (url) => {
+    const { uiStore } = (await import(url)) as UiModule;
+    const s = uiStore.get().selection;
+    return { bones: s.bones.length, slot: s.slot !== null, attachment: s.attachment !== null };
+  }, UI);
+  expect(selection).toEqual({ bones: 1, slot: true, attachment: true });
+  // editing the rig makes the answer old
+  await page.evaluate(async (url) => {
+    const { docStore } = (await import(url)) as DocModule;
+    docStore.update('Edit', (d) => {
+      d.skeleton.bones[1].rotation += 1;
+    });
+  }, DOC);
+  await expect(metrics.getByText('The rig was edited after this test: run it again.')).toBeVisible();
+});
