@@ -12,6 +12,8 @@ export interface GifOptions {
   loops?: number;
   /** Pixels with alpha below 128 become transparent. */
   transparent?: boolean;
+  /** Called after every frame is encoded (the slow part), with the frames done and the number of frames. */
+  onProgress?: (done: number, total: number) => void;
 }
 
 /** Median-cut: up to `count` representative colors of the given RGB samples (packed r, g, b triples). */
@@ -182,6 +184,7 @@ export function encodeGif(frames: Uint8ClampedArray[] | Uint8Array[], opts: GifO
   out.push(0x21, 0xff, 0x0b, ...Array.from('NETSCAPE2.0', (c) => c.charCodeAt(0)), 3, 1);
   word(opts.loops ?? 0);
   out.push(0);
+  let done = 0;
   for (const f of frames) {
     out.push(0x21, 0xf9, 4, (transparent ? 2 << 2 : 1 << 2) | (transparent ? 1 : 0)); // dispose to background, transparency flag
     word(Math.max(2, Math.round(opts.delayCs)));
@@ -197,6 +200,7 @@ export function encodeGif(frames: Uint8ClampedArray[] | Uint8Array[], opts: GifO
     const min = Math.max(2, bitsPerPixel);
     out.push(min);
     for (const byte of blocks(lzwEncode(idx, min))) out.push(byte); // not a spread: a frame can be longer than the argument limit
+    opts.onProgress?.(++done, frames.length);
   }
   out.push(0x3b);
   return Uint8Array.from(out);

@@ -12,6 +12,16 @@ export interface Release {
 
 export const CHANGELOG: Release[] = [
   {
+    version: '0.80',
+    date: '2026-11-20',
+    en: [
+      'Exporting an animation no longer freezes the editor: the GIF, APNG and PNG/JPEG-sequence files are put together in a background worker, so you can keep working while a long animation is encoded. Cancel stops it at once (before, it could only stop between frames and the final step could not be stopped at all). Package Project uses the worker too.',
+    ],
+    ru: [
+      'Экспорт анимации больше не вешает редактор: файлы GIF, APNG и серии PNG/JPEG собираются в фоновом воркере, и пока кодируется длинная анимация, можно работать дальше. «Отмена» останавливает сразу (раньше она работала только между кадрами, а завершающий шаг остановить было нельзя). «Упаковать проект» тоже идёт через воркер.',
+    ],
+  },
+  {
     version: '0.79',
     date: '2026-11-20',
     en: [

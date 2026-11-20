@@ -19,7 +19,7 @@ Everything that decides how a skeleton looks lives in `src/core` and has no DOM,
 |---|---|
 | `src/core` | The model (`model.ts`), animation sampling (`animate.ts`), curves, meshes, weights, clipping, the document check and repair (`validate.ts`), and the editing helpers (key tools, checkpoints, merge, time shift, ...). It imports nothing from the other folders. |
 | `src/core/rig` | The runtime skeleton, one file per responsibility: `data.ts` (compiled data types), `compile.ts`, `bone.ts`, `ik.ts`, `transform.ts`, `slider.ts`, `pathConstraint.ts`, `physics.ts`, `skeleton.ts` (the instance that poses everything), `geometry.ts`. `core/skeleton.ts` re-exports them. |
-| `src/core/export`, `src/core/import` | Spine JSON and binary writer / reader, the atlas packer, the GIF / APNG / ZIP encoders, the review player page. |
+| `src/core/export`, `src/core/import` | Spine JSON and binary writer / reader, the atlas packer, the GIF / APNG / ZIP encoders (run in a Web Worker: `encodeTask.ts` is the task, `encodeWorker.ts` the worker, `store/encodeInWorker.ts` the client with progress and cancel), the review player page. |
 | `src/store` | The document store (`doc.ts`: immer patches, one undo step per gesture), the UI store, the settings, the solved scene (`scene.ts`), and the actions the UI calls, one file per area (`boneActions`, `slotActions`, `animationActions`, `keyframeActions`, `skinActions`, ...; `actions.ts` lists them). Reads that need no action live in `accessors.ts`. |
 | `src/render` | The WebGL2 renderer: batches, blend modes, two-color tint, stencil clipping. |
 | `src/editor` | The React panels, the viewport (tools and the overlay), the dopesheet and the graph editor, the hotkey table, the command palette. |

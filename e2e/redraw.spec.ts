@@ -149,3 +149,77 @@ test('a data URL is turned into a picture file without the network stack, and qu
   expect(r.same).toBe(true);
   expect(r.ms).toBeLessThan(60); // fetch(url) needed about 80 ms for the same size
 });
+
+type EncodeModule = typeof import('../src/store/encodeInWorker');
+const ENCODE = '/src/store/encodeInWorker.ts';
+
+test('a GIF is encoded in a worker: the page keeps answering, and Cancel stops it at once', async ({ page }) => {
+  await page.goto('/');
+  const r = await page.evaluate(async (url) => {
+    const { encodeInWorker, CANCELLED } = (await import(url)) as EncodeModule;
+    const frames = Array.from({ length: 40 }, (_, k) => {
+      const d = new Uint8ClampedArray(800 * 800 * 4);
+      for (let i = 0; i < 800 * 800; i++) {
+        d[i * 4] = (i * 7 + k * 40) & 255;
+        d[i * 4 + 1] = (i * 3 + k) & 255;
+        d[i * 4 + 2] = (i + k * 90) & 255;
+        d[i * 4 + 3] = 255;
+      }
+      return d;
+    });
+    const options = { width: 800, height: 800, delayCs: 4 };
+    // a frame loop measures how long the page did not answer
+    const gaps: number[] = [];
+    let last = performance.now();
+    let on = true;
+    const tick = (t: number) => {
+      gaps.push(t - last);
+      last = t;
+      if (on) requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
+    const t0 = performance.now();
+    const bytes = await encodeInWorker({ kind: 'gif', frames, options }).result;
+    const ms = Math.round(performance.now() - t0);
+    on = false;
+    // Cancel: the promise rejects at once and the worker is gone
+    const again = Array.from({ length: 40 }, () => new Uint8ClampedArray(800 * 800 * 4).fill(90));
+    const job = encodeInWorker({ kind: 'gif', frames: again, options });
+    const t1 = performance.now();
+    setTimeout(() => job.cancel(), 150);
+    let message = '';
+    try {
+      await job.result;
+    } catch (e) {
+      message = (e as Error).message;
+    }
+    return {
+      ms,
+      maxGap: Math.max(...gaps),
+      head: String.fromCharCode(...bytes.subarray(0, 6)),
+      cancelMs: Math.round(performance.now() - t1),
+      cancelled: message === CANCELLED,
+    };
+  }, ENCODE);
+  expect(r.head).toBe('GIF89a');
+  expect(r.ms, 'the encode took long enough to matter').toBeGreaterThan(800);
+  expect(r.maxGap, 'the page stalled while the worker encoded').toBeLessThan(250);
+  expect(r.cancelled).toBe(true);
+  expect(r.cancelMs).toBeLessThan(600);
+});
+
+test('the Export window renders the demo animation to a GIF through the worker, and the file downloads', async ({ page }) => {
+  await openDemo(page);
+  await page.evaluate(async (url) => {
+    const { uiStore } = (await import(url)) as UiModule;
+    uiStore.patch({ exportOpen: true });
+  }, UI);
+  await page.getByRole('radio', { name: /Animation \(GIF/ }).click();
+  const render = page.getByRole('button', { name: 'Render' });
+  await expect(render).toBeEnabled();
+  const [download] = await Promise.all([page.waitForEvent('download'), render.click()]);
+  expect(download.suggestedFilename()).toMatch(/\.gif$/);
+  const path = await download.path();
+  const { readFileSync } = await import('node:fs');
+  expect(readFileSync(path).subarray(0, 6).toString('latin1')).toBe('GIF89a');
+});

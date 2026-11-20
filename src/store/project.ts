@@ -1,7 +1,7 @@
 /** Project persistence: new / save / open / autosave (IndexedDB). Images are embedded as data URLs. */
 import { packageEntries } from '@/core/export/packageProject';
 import type { PackageImage } from '@/core/export/packageProject';
-import { createZip } from '@/core/export/zip';
+import { encodeInWorker } from './encodeInWorker';
 import { emptyProject, migrateProject } from '@/core/model';
 import type { Project } from '@/core/model';
 import { repairProject } from '@/core/validate';
@@ -220,7 +220,8 @@ export async function packageProject() {
     if (a) images.push({ name: img.name, type: a.blob.type, bytes: new Uint8Array(await a.blob.arrayBuffer()) });
   }
   const name = (project.name || 'untitled').replace(/[^\w\- ]+/g, '_');
-  downloadBlob(new Blob([createZip(packageEntries(name, text, images)) as BlobPart], { type: 'application/zip' }), `${name}.zip`);
+  const zip = await encodeInWorker({ kind: 'zip', files: packageEntries(name, text, images) }).result;
+  downloadBlob(new Blob([zip as BlobPart], { type: 'application/zip' }), `${name}.zip`);
   toast(`Packaged the project, pictures: ${images.length}`, 'ok');
 }
 

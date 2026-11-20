@@ -1,14 +1,14 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Film } from 'lucide-react';
-import { createZip } from '@/core/export/zip';
-import { encodeGif } from '@/core/export/gif';
 import { useProject } from '@/store/doc';
 import { downloadBlob } from '@/store/project';
+import { CANCELLED, encodeInWorker } from '@/store/encodeInWorker';
+import type { EncodeJob } from '@/store/encodeInWorker';
 import { toast } from '@/store/ui';
 import { Button, ColorSwatch, NumberField, SelectField, Toggle } from './ui/controls';
 import { Segmented } from './ui/Segmented';
 import { frameCount, framesToWebm, frameToJpeg, frameToPng, prepareRender } from './renderAnimation';
-import { encodeApng, frameDelay } from '@/core/export/apng';
+import { frameDelay } from '@/core/export/apng';
 import type { Prepared } from './renderAnimation';
 
 type Format = 'gif' | 'apng' | 'png' | 'jpeg' | 'webm';
@@ -42,6 +42,8 @@ export function ExportAnimation() {
   const [progress, setProgress] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
   const cancel = useRef(false);
+  /** The encoder that is running in the worker, to stop it with Cancel. */
+  const job = useRef<EncodeJob | null>(null);
   const canvas = useRef<HTMLCanvasElement>(null);
   const [prepared, setPrepared] = useState<Prepared | null>(null);
 
@@ -110,14 +112,16 @@ export function ExportAnimation() {
           await sleep();
         }
         if (!cancel.current) {
-          await sleep();
-          const gif = encodeGif(frames, {
-            width: prepared.width,
-            height: prepared.height,
-            delayCs: 100 / prepared.fps,
-            transparent: !solid,
-          });
-          downloadBlob(new Blob([gif as BlobPart], { type: 'image/gif' }), `${base}.gif`);
+          // the frames are handed to the worker: the window stays alive while the colors are chosen and the pixels packed
+          job.current = encodeInWorker(
+            {
+              kind: 'gif',
+              frames,
+              options: { width: prepared.width, height: prepared.height, delayCs: 100 / prepared.fps, transparent: !solid },
+            },
+            (f) => setProgress(0.5 + f / 2),
+          );
+          downloadBlob(new Blob([(await job.current.result) as BlobPart], { type: 'image/gif' }), `${base}.gif`);
         }
       } else if (format === 'apng') {
         const frames: Uint8Array[] = [];
@@ -125,30 +129,36 @@ export function ExportAnimation() {
           frames.push(await frameToPng(prepared.frame(i)));
           setProgress((i + 1) / prepared.count);
         }
-        if (!cancel.current)
-          downloadBlob(
-            new Blob([encodeApng(frames, { ...frameDelay(prepared.fps), plays: 0 }) as BlobPart], { type: 'image/apng' }),
-            `${base}.png`,
-          );
+        if (!cancel.current) {
+          job.current = encodeInWorker({ kind: 'apng', frames, options: { ...frameDelay(prepared.fps), plays: 0 } });
+          downloadBlob(new Blob([(await job.current.result) as BlobPart], { type: 'image/apng' }), `${base}.png`);
+        }
       } else if (format === 'jpeg') {
         const files: { name: string; data: Uint8Array }[] = [];
         for (let i = 0; i < prepared.count && !cancel.current; i++) {
           files.push({ name: `${base}_${String(i + 1).padStart(4, '0')}.jpg`, data: await frameToJpeg(prepared.frame(i)) });
           setProgress((i + 1) / prepared.count);
         }
-        if (!cancel.current) downloadBlob(new Blob([createZip(files) as BlobPart], { type: 'application/zip' }), `${base}-frames.zip`);
+        if (!cancel.current) {
+          job.current = encodeInWorker({ kind: 'zip', files });
+          downloadBlob(new Blob([(await job.current.result) as BlobPart], { type: 'application/zip' }), `${base}-frames.zip`);
+        }
       } else {
         const files: { name: string; data: Uint8Array }[] = [];
         for (let i = 0; i < prepared.count && !cancel.current; i++) {
           files.push({ name: `${base}_${String(i + 1).padStart(4, '0')}.png`, data: await frameToPng(prepared.frame(i)) });
           setProgress((i + 1) / prepared.count);
         }
-        if (!cancel.current) downloadBlob(new Blob([createZip(files) as BlobPart], { type: 'application/zip' }), `${base}-frames.zip`);
+        if (!cancel.current) {
+          job.current = encodeInWorker({ kind: 'zip', files });
+          downloadBlob(new Blob([(await job.current.result) as BlobPart], { type: 'application/zip' }), `${base}-frames.zip`);
+        }
       }
       if (!cancel.current) toast('Animation exported', 'ok');
     } catch (e) {
-      toast((e as Error).message, 'error');
+      if (!(cancel.current && (e as Error).message === CANCELLED)) toast((e as Error).message, 'error');
     } finally {
+      job.current = null;
       setProgress(null);
     }
   };
@@ -267,7 +277,13 @@ export function ExportAnimation() {
         {progress !== null && (
           <>
             <progress value={progress} max={1} />
-            <Button ghost onClick={() => (cancel.current = true)}>
+            <Button
+              ghost
+              onClick={() => {
+                cancel.current = true;
+                job.current?.cancel();
+              }}
+            >
               Cancel
             </Button>
           </>
