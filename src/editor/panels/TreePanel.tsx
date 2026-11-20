@@ -68,7 +68,12 @@ import { SelectionSets } from './SelectionSets';
 import { SkeletonBar } from './SkeletonBar';
 
 function InlineName({ value, editing, onDone }: { value: string; editing: boolean; onDone: (v: string | null) => void }) {
-  if (!editing) return <span className="label">{value}</span>;
+  if (!editing)
+    return (
+      <span className="label" title={value}>
+        {value}
+      </span>
+    );
   return (
     <span className="label">
       <input
@@ -218,7 +223,9 @@ export function TreePanel() {
                   <ImageIcon size={12} />
                 )}
               </span>
-              <span className="label">{name}</span>
+              <span className="label" title={name}>
+                {name}
+              </span>
               {slot.attachment === name && <span className="chip">setup</span>}
               <span className="actions">
                 <IconButton
@@ -372,7 +379,9 @@ export function TreePanel() {
                     <span className="ico">
                       <Folder size={13} />
                     </span>
-                    <span className="label">{it.head.name}</span>
+                    <span className="label" title={it.head.name}>
+                      {it.head.name}
+                    </span>
                     <span className="chip" title="Slots of this draw order folder next to each other">
                       {it.head.count}
                     </span>
@@ -409,7 +418,9 @@ export function TreePanel() {
                   <span className="ico">
                     <Layers size={13} />
                   </span>
-                  <span className="label">{s.name}</span>
+                  <span className="label" title={s.name}>
+                    {s.name}
+                  </span>
                 </div>
               );
             })}
@@ -451,7 +462,9 @@ export function TreePanel() {
                   <span className="ico">
                     {c.type === 'path' ? <Spline size={13} /> : c.type === 'physics' ? <Waves size={13} /> : <Link2 size={13} />}
                   </span>
-                  <span className="label">{c.name}</span>
+                  <span className="label" title={c.name}>
+                    {c.name}
+                  </span>
                   <span className={`chip k-${c.type}`}>
                     {c.type === 'ik' ? 'IK' : c.type === 'transform' ? 'TC' : c.type === 'path' ? 'PC' : c.type === 'physics' ? 'PH' : 'SL'}
                   </span>

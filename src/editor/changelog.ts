@@ -12,6 +12,20 @@ export interface Release {
 
 export const CHANGELOG: Release[] = [
   {
+    version: '0.73',
+    date: '2026-11-20',
+    en: [
+      'The Export window is in groups: Skeleton data (file, size, editor data, clean-up, mix table, preview page), the animations to export, then Atlas (page size, padding, filter) with the rarely needed options folded under Advanced atlas options.',
+      'Long explanations in the inspector show two lines and open on a click, so a bone with many tools no longer needs a long scroll. With nothing selected the inspector shows what the skeleton holds (bones, slots, animations, skins, pictures) and how many warnings the project check has.',
+      'In Setup mode the note about switching to Animate is a strip above the timeline instead of a card over the keys. Names cut off in the hierarchy show in full on hover. The five small icons of the Images panel are one button and a menu.',
+    ],
+    ru: [
+      'Окно экспорта разбито на группы: «Данные скелета» (файл, размер, данные редактора, очистка, таблица переходов, страница предпросмотра), анимации для экспорта, затем «Атлас» (размер страницы, отступ, фильтр); редкие настройки свёрнуты в «Дополнительные настройки атласа».',
+      'Длинные пояснения в инспекторе показывают две строки и раскрываются по клику, поэтому у кости с множеством инструментов не нужна длинная прокрутка. Когда ничего не выбрано, инспектор показывает, что есть в скелете (кости, слоты, анимации, скины, картинки) и сколько предупреждений у проверки проекта.',
+      'В режиме «Риг» подсказка про переход в «Анимацию» теперь полоса над таймлайном, а не карточка поверх ключей. Обрезанные имена в иерархии показываются целиком при наведении. Пять мелких иконок панели «Картинки» стали одной кнопкой и меню.',
+    ],
+  },
+  {
     version: '0.71',
     date: '2026-11-20',
     en: [

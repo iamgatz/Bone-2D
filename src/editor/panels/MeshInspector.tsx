@@ -52,7 +52,7 @@ import { useProject } from '@/store/doc';
 import { useFloats } from '@/store/floats';
 import { uiStore, useUi } from '@/store/ui';
 import { boneCss, boundBones } from '../viewport/weightColors';
-import { Button, ColorSwatch, IconButton, NumberField, SelectField, Toggle } from '../ui/controls';
+import { Button, ColorSwatch, Hint, IconButton, NumberField, SelectField, Toggle } from '../ui/controls';
 import { Field } from '../ui/Field';
 import { SoftControls } from './SoftControls';
 import { Section } from '../ui/Section';
@@ -66,9 +66,7 @@ export function ConvertToMeshGroup({ slotId, name }: { slotId: Id; name: string 
   const images = extraSlots?.length ? traceGroup().length : 1;
   return (
     <Section id="mesh.convert" title="Mesh" icon={Hexagon}>
-      <p className="hint-text mb">
-        Turn this image into a deformable mesh. Tracing follows the opaque pixels and fills the shape with triangles.
-      </p>
+      <Hint>Turn this image into a deformable mesh. Tracing follows the opaque pixels and fills the shape with triangles.</Hint>
       {images > 1 && (
         <div className="hstack wrap mb">
           <span
@@ -412,7 +410,7 @@ export function MeshGroup({ slotId, att, part }: { slotId: Id; att: MeshAttachme
           )}
           {!weighted ? (
             <>
-              <p className="hint-text mb">Bind the mesh to bones so it bends with them. Select the bones in the viewport first.</p>
+              <Hint>Bind the mesh to bones so it bends with them. Select the bones in the viewport first.</Hint>
               <Button
                 primary
                 icon={Link2}
@@ -471,11 +469,11 @@ export function MeshGroup({ slotId, att, part }: { slotId: Id; att: MeshAttachme
                   Unbind
                 </Button>
               </div>
-              <p className="hint-text mb">
+              <Hint>
                 {pickedVertices
                   ? `Auto, Smooth, Prune, Swap, Weld and Update bindings work on the ${pickedVertices} selected vertices.`
                   : 'Select vertices with the mesh tool (M) to limit Auto, Smooth, Prune, Swap, Weld and Update bindings to them; with none selected they work on the whole mesh.'}
-              </p>
+              </Hint>
               <Field label="Prune">
                 <NumberField
                   label="bones"

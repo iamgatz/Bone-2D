@@ -6,7 +6,7 @@ import { useProject } from '@/store/doc';
 import { findFrames, keySequence, makeSequence, sequenceKeyAt, setSequence } from '@/store/sequenceActions';
 import { useUi } from '@/store/ui';
 import { getScene } from '@/store/scene';
-import { Button, NumberField, SelectField } from '../ui/controls';
+import { Button, Hint, NumberField, SelectField } from '../ui/controls';
 import { Field, KeyButton } from '../ui/Field';
 import { Section } from '../ui/Section';
 
@@ -32,10 +32,10 @@ export function SequenceSection({ slotId, att }: { slotId: Id; att: RegionAttach
     if (animate) return null;
     return (
       <Section id="slot.sequence" title="Sequence" icon={Film}>
-        <p className="hint-text mb">
+        <Hint>
           Show a different picture over time: smoke, fire, a blink drawn frame by frame. Number the pictures (flame01, flame02…) and press
           the button.
-        </p>
+        </Hint>
         <Button
           icon={Film}
           onClick={() => makeSequence(slotId, att.name)}

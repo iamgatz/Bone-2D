@@ -6,7 +6,7 @@ import { currentAnimation, deleteKeys } from '@/store/actions';
 import { useProject } from '@/store/doc';
 import { addPhysicsReset, currentPhysicsValue, restartPhysics, setPhysicsValue, updatePhysicsConstraint } from '@/store/physicsActions';
 import { useUi } from '@/store/ui';
-import { Button, NumberField, SelectField, Toggle } from '../ui/controls';
+import { Button, Hint, NumberField, SelectField, Toggle } from '../ui/controls';
 import { Field, KeyButton } from '../ui/Field';
 import { Section } from '../ui/Section';
 import { ConstraintHeader } from './ConstraintHeader';
@@ -187,7 +187,7 @@ export function PhysicsConstraintInspector({ id }: { id: Id }) {
 
       {!animate && (
         <Section id="physics.global" title="Global timelines">
-          <p className="hint-text mb">Parameters that the animation's global physics timelines drive for every constraint that opts in</p>
+          <Hint>Parameters that the animation's global physics timelines drive for every constraint that opts in</Hint>
           <div className="toggles">
             {PHYSICS_PARAMS.map((p) => (
               <span key={p} className="contents">

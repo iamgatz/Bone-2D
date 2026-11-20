@@ -7,7 +7,7 @@ import { useProject } from '@/store/doc';
 import { deleteConstraint } from '@/store/ikActions';
 import { currentSliderValues, setSliderValues, updateSlider } from '@/store/sliderActions';
 import { useUi } from '@/store/ui';
-import { Button, NumberField, SelectField, Toggle } from '../ui/controls';
+import { Button, Hint, NumberField, SelectField, Toggle } from '../ui/controls';
 import { Field, KeyButton } from '../ui/Field';
 import { Section } from '../ui/Section';
 import { ConstraintHeader } from './ConstraintHeader';
@@ -58,7 +58,7 @@ export function SliderInspector({ id }: { id: Id }) {
             onChange={(a) => updateSlider(id, { animation: a || null })}
           />
         </Field>
-        {!applied && <p className="hint-text mb">Without an animation the slider does nothing and is left out of the export.</p>}
+        {!applied && <Hint>Without an animation the slider does nothing and is left out of the export.</Hint>}
         <Field label="Mix" keyButton={keyButton('mix')}>
           <NumberField
             label="%"

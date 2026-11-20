@@ -109,6 +109,14 @@ describe('interface language', () => {
     setLang('en');
   });
 
+  it('translates the counters of the empty inspector and the hint titles', () => {
+    setLang('ru');
+    expect(tr('Bones: 12')).toBe('Кости: 12');
+    expect(tr('Warnings: 3')).toBe('Предупреждения: 3');
+    expect(tr('Click to read all')).not.toBe('Click to read all');
+    expect(tr('Click to fold')).not.toBe('Click to fold');
+  });
+
   it('has a Russian text for every static UI string in the sources', () => {
     const strings = staticStrings();
     expect(strings.length).toBeGreaterThan(150); // the scan itself works
