@@ -6,7 +6,7 @@ import { forgetSavedCurve } from '@/store/actions';
 import { toast, uiStore } from '@/store/ui';
 import { Button, ColorSwatch, Dialog, SelectField, Toggle } from './ui/controls';
 import { Segmented } from './ui/Segmented';
-import { assignToolKey, comboOf, hotkeyGroups, isDefaultBinding, resetBinding, setBinding } from './hotkeys';
+import { assignToolKey, comboOf, hotkeyGroups, isDefaultBinding, latinKey, resetBinding, setBinding } from './hotkeys';
 import type { HotkeyRow, KeyId } from './hotkeys';
 import { TOOLS, hotkeyOf, setToolKey } from './tools';
 
@@ -35,9 +35,10 @@ function ToolKey({ tool, title }: { tool: (typeof TOOLS)[number]['tool']; title:
       e.preventDefault();
       e.stopPropagation();
       if (e.key === 'Escape') return setListening(false);
-      if (!/^[a-z]$/i.test(e.key) || e.ctrlKey || e.metaKey || e.altKey) return;
-      const clash = assignToolKey(tool, e.key);
-      if (clash) toast(`Key ${e.key.toUpperCase()} is already used by ${clash}`, 'error');
+      const typed = latinKey(e);
+      if (!/^[a-z]$/i.test(typed) || e.ctrlKey || e.metaKey || e.altKey) return;
+      const clash = assignToolKey(tool, typed);
+      if (clash) toast(`Key ${typed.toUpperCase()} is already used by ${clash}`, 'error');
       setListening(false);
     };
     window.addEventListener('keydown', on, true);

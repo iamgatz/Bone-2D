@@ -30,7 +30,7 @@ import { ExportDialog } from './ExportDialog';
 import { FeedbackDialog } from './Feedback';
 import { UpdatesDialog, hasUnseenUpdate } from './Updates';
 import { focusArea, setFocusArea } from './focus';
-import { comboOf, hotkeyGroups, keyIdOf, KEYS } from './hotkeys';
+import { comboOf, hotkeyGroups, keyIdOf, KEYS, latinKey } from './hotkeys';
 import { KEY_ACTIONS } from './keyActions';
 import { HINTS, TOOLS, hotkeyOf, toolForKey } from './tools';
 import { SettingsDialog } from './Settings';
@@ -383,7 +383,7 @@ export function App() {
       if (el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.tagName === 'SELECT' || el.isContentEditable)) return;
       const ctrl = e.ctrlKey || e.metaKey;
       const ui = uiStore.get();
-      const key = e.key.toLowerCase();
+      const key = latinKey(e).toLowerCase();
       if (el?.closest?.('[role=menu]')) return; // the keys of a menu belong to the menu
       // a control that the keyboard has focused keeps Tab, Space and Enter (a click leaves no focus ring, so after a click Space still plays)
       if (key === 'tab' || key === ' ' || key === 'enter') {

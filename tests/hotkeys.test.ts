@@ -6,7 +6,7 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
-import { BINDINGS, KEYS, comboOf, hotkeyGroups, keyIdOf, setBinding } from '@/editor/hotkeys';
+import { BINDINGS, KEYS, comboOf, hotkeyGroups, keyIdOf, latinKey, setBinding } from '@/editor/hotkeys';
 import { resetSettings } from '@/store/settings';
 import { HINTS, TOOLS, toolForKey } from '@/editor/tools';
 
@@ -123,5 +123,29 @@ describe('tooltips', () => {
       expect(typed, f).toEqual([]);
     }
     expect(KEYS.undo).toBe('Ctrl+Z');
+  });
+});
+
+describe('a non-Latin layout', () => {
+  const press = (key: string, code: string, extra: object = {}) => ({ key, code, ctrlKey: false, metaKey: false, altKey: false, shiftKey: false, ...extra });
+
+  it('reads the letter from the position of the key, so Ctrl+Z works on a Russian layout', () => {
+    expect(comboOf(press('я', 'KeyZ', { ctrlKey: true }))).toBe('Ctrl+Z');
+    expect(keyIdOf(comboOf(press('я', 'KeyZ', { ctrlKey: true }))!)).toBe('undo');
+    expect(comboOf(press('Я', 'KeyZ', { ctrlKey: true, shiftKey: true }))).toBe('Ctrl+Shift+Z');
+    expect(comboOf(press('ы', 'KeyS', { ctrlKey: true }))).toBe('Ctrl+S');
+    expect(comboOf(press('с', 'KeyC', { ctrlKey: true }))).toBe('Ctrl+C');
+  });
+
+  it('reads punctuation by position too', () => {
+    expect(latinKey(press('х', 'BracketLeft'))).toBe('[');
+    expect(latinKey(press('ъ', 'BracketRight'))).toBe(']');
+    expect(latinKey(press('ю', 'Period'))).toBe('.');
+  });
+
+  it('leaves Latin layouts and named keys alone', () => {
+    expect(comboOf(press('z', 'KeyY', { ctrlKey: true }))).toBe('Ctrl+Z'); // a German keyboard: the typed letter counts
+    expect(latinKey(press('ArrowLeft', 'ArrowLeft'))).toBe('ArrowLeft');
+    expect(latinKey(press('я', ''))).toBe('я'); // no position to go by
   });
 });

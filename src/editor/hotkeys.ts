@@ -64,11 +64,26 @@ export const KEYS = {} as Record<KeyId, string>;
 for (const b of BINDINGS) Object.defineProperty(KEYS, b.id, { get: () => bindingOf(b.id), enumerable: true });
 
 /** The combination of a keyboard event in the form the editor writes it, or null for a key that cannot be bound (a modifier on its own, the arrows…). */
-export function comboOf(e: Pick<KeyboardEvent, 'key' | 'ctrlKey' | 'metaKey' | 'altKey' | 'shiftKey'>): string | null {
+/** The punctuation keys by position: with a layout that has no Latin letters on them a shortcut still means the key where it is on a US keyboard. */
+const CODE_CHARS: Record<string, string> = { Backquote: '`', Minus: '-', Equal: '=', BracketLeft: '[', BracketRight: ']', Backslash: '\\', Semicolon: ';', Quote: "'", Comma: ',', Period: '.', Slash: '/' };
+
+/**
+ * The key a shortcut means. With a Russian (or any non-Latin) layout `e.key` is "я" where Ctrl+Z is pressed, and every shortcut would be dead:
+ * a letter or a punctuation mark that is not ASCII is read from the position of the key (`e.code`: KeyZ, BracketLeft…) instead.
+ */
+export function latinKey(e: { key: string; code?: string }): string {
+  if (e.key.length !== 1 || e.key.charCodeAt(0) < 128) return e.key;
+  const code = e.code ?? '';
+  if (/^Key[A-Z]$/.test(code)) return code.slice(3).toLowerCase();
+  return CODE_CHARS[code] ?? e.key;
+}
+
+export function comboOf(e: Pick<KeyboardEvent, 'key' | 'ctrlKey' | 'metaKey' | 'altKey' | 'shiftKey'> & { code?: string }): string | null {
   let key: string;
-  if (e.key === ' ') key = 'Space';
-  else if (e.key.length === 1 && e.key !== '+') key = e.key.toUpperCase();
-  else if (/^F\d{1,2}$/.test(e.key) || e.key === 'Tab') key = e.key;
+  const typed = latinKey(e);
+  if (typed === ' ') key = 'Space';
+  else if (typed.length === 1 && typed !== '+') key = typed.toUpperCase();
+  else if (/^F\d{1,2}$/.test(typed) || typed === 'Tab') key = typed;
   else return null;
   const parts: string[] = [];
   if (e.ctrlKey || e.metaKey) parts.push('Ctrl');
