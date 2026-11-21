@@ -53,7 +53,7 @@ Texts stay English in the components and are translated while rendering. Add the
 
 ## Where to start
 
-Look for issues labelled `good first issue`. The list of known gaps is in the README ("Not done yet") and in [docs/IDEAS.md](docs/IDEAS.md) (in Russian), the comparison with Spine's feature list in [docs/SPINE_PARITY.md](docs/SPINE_PARITY.md).
+Look for issues labelled `good first issue`. The list of known gaps is in the README ("Not done yet"), the comparison with Spine's feature list in [docs/SPINE_PARITY.md](docs/SPINE_PARITY.md).
 
 ## License
 
