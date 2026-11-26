@@ -14,6 +14,25 @@ export interface Release {
 
 export const CHANGELOG: Release[] = [
   {
+    version: '0.96',
+    date: '2026-11-26',
+    en: [
+      'Test pose in the Weights tool: drag a bone and the mesh bends, then paint on it as it is. The setup pose does not change, and Esc or "Reset pose" puts the bones back. A bone held by IK is moved by its target; Alt-drag poses a bone that does not move the mesh.',
+      'Swing (Weights section): the brush bone swings back and forth while you paint, so every stroke shows its effect.',
+      'The vertex under the brush shows how much each bone moves it, in percent.',
+    ],
+    ru: [
+      'Пробная поза в инструменте весов: потяните кость — меш согнётся, и по нему можно рисовать прямо так. Поза сборки не меняется, Esc или «Сбросить позу» возвращают кости. Кость под IK двигается своей целью; Alt-перетаскивание крутит кость, которая меш не двигает.',
+      '«Качать» (раздел весов): кость кисти качается туда-сюда, пока вы рисуете, и каждый мазок сразу виден в движении.',
+      'У вершины под кистью показано, на сколько процентов её двигает каждая кость.',
+    ],
+    zh: [
+      '权重工具中的试摆姿势：拖动骨骼，网格随之弯曲，可以直接在该姿势上绘制。装配姿势不变，按 Esc 或“重置姿势”让骨骼复位。受 IK 控制的骨骼通过其目标移动；按住 Alt 拖动可摆动不影响网格的骨骼。',
+      '“摆动”（权重部分）：绘制时笔刷骨骼来回摆动，每一笔的效果立即可见。',
+      '笔刷下的顶点会以百分比显示每根骨骼对它的影响。',
+    ],
+  },
+  {
     version: '0.95',
     date: '2026-11-26',
     en: [

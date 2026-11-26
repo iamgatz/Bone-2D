@@ -54,8 +54,13 @@ export const ZH: Record<string, string> = {
   'Drag to scale · Shift = X only · Alt = Y only': '拖动以缩放 · Shift = 仅 X · Alt = 仅 Y',
   'Drag vertices · Ctrl-click or double-click adds a vertex · Ctrl-drag between vertices draws an edge · Del removes · in Animate mode dragging keys a deform':
     '拖动顶点 · Ctrl 单击或双击添加顶点 · 在顶点间按住 Ctrl 拖动画边 · Del 删除 · 动画模式下拖动会生成变形关键帧',
-  'Paint over the mesh · click a bone to switch the brush bone · adjust size and strength in the Inspector':
-    '在网格上涂抹 · 单击骨骼切换笔刷骨骼 · 在属性面板中调整大小和强度',
+  'Drag a bone to bend the mesh and paint on it. The setup pose stays.': '拖动骨骼使网格弯曲并直接绘制。装配姿势不变。',
+  'Swing the brush bone back and forth while you paint': '绘制时让笔刷骨骼来回摆动',
+  'Put the bones back into the setup pose (Esc)': '让骨骼回到装配姿势（Esc）',
+  Swing: '摆动',
+  'Click a bone of the mesh first: Swing moves the brush bone': '请先单击网格的一根骨骼：摆动的是笔刷骨骼',
+  'Paint over the mesh · click a bone to switch the brush bone · drag a bone to try a pose · adjust size and strength in the Inspector':
+    '在网格上涂抹 · 单击骨骼切换笔刷骨骼 · 拖动骨骼试摆姿势 · 在属性面板中调整大小和强度',
   'Drag from the end of a bone chain to a target bone (or empty space to create one)': '从骨骼链末端拖到目标骨骼上（拖到空白处则新建一个）',
   'Click to place polygon points · click the first point, double-click or Enter to finish · Esc cancels · it is created on the selected bone':
     '单击放置多边形的点 · 单击第一个点、双击或按 Enter 完成 · Esc 取消 · 创建在所选骨骼上',

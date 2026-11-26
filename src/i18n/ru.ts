@@ -57,8 +57,14 @@ export const RU: Record<string, string> = {
   'Drag to scale · Shift = X only · Alt = Y only': 'Тяни, чтобы масштабировать · Shift — только X · Alt — только Y',
   'Drag vertices · Ctrl-click or double-click adds a vertex · Ctrl-drag between vertices draws an edge · Del removes · in Animate mode dragging keys a deform':
     'Тяни вершины · Ctrl-клик или двойной клик добавляет вершину · Ctrl-перетаскивание между вершинами проводит ребро · Del удаляет · в режиме «Анимация» перетаскивание ключует деформацию',
-  'Paint over the mesh · click a bone to switch the brush bone · adjust size and strength in the Inspector':
-    'Рисуй по мешу · клик по кости переключает кость кисти · размер и силу задай в Инспекторе',
+  'Drag a bone to bend the mesh and paint on it. The setup pose stays.':
+    'Потяните кость: меш согнётся, красьте прямо так. Поза сборки цела.',
+  'Swing the brush bone back and forth while you paint': 'Качать кость кисти туда-сюда, пока вы рисуете',
+  'Put the bones back into the setup pose (Esc)': 'Вернуть кости в позу сборки (Esc)',
+  Swing: 'Качать',
+  'Click a bone of the mesh first: Swing moves the brush bone': 'Сначала щёлкните по кости меша: качается кость кисти',
+  'Paint over the mesh · click a bone to switch the brush bone · drag a bone to try a pose · adjust size and strength in the Inspector':
+    'Рисуй по мешу · клик по кости переключает кость кисти · потяните кость, чтобы проверить позу · размер и силу задай в Инспекторе',
   'Drag from the end of a bone chain to a target bone (or empty space to create one)':
     'Тяни от конца цепочки костей к целевой кости (или в пустое место, чтобы создать цель)',
   'Click to place polygon points · click the first point, double-click or Enter to finish · Esc cancels · it is created on the selected bone':

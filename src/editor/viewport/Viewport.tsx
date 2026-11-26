@@ -6,7 +6,7 @@ import { placeSequences } from '@/store/sequenceActions';
 import { assets } from '@/store/assets';
 import { docStore } from '@/store/doc';
 import { toast, uiStore } from '@/store/ui';
-import { getScene, screenToWorld } from '@/store/scene';
+import { canTestPose, getScene, getViewScene, screenToWorld, setWiggleClock } from '@/store/scene';
 import { checkpointStore } from '@/store/checkpoints';
 import { checkpointGhost, ghostsFor, motionArrows, referenceGhost } from '../ghosts';
 import { ViewportController } from './controller';
@@ -152,7 +152,7 @@ export function Viewport() {
       const dpr = window.devicePixelRatio || 1;
       const w = host.clientWidth;
       const h = host.clientHeight;
-      const scene = getScene();
+      const scene = getViewScene();
       const doc = docStore.get().skeleton;
       const hiddenSlots = new Set(doc.slots.filter((s) => s.hidden).map((s) => s.id));
       const hiddenBones = new Set(doc.bones.filter((b) => b.hidden).map((b) => b.id));
@@ -275,6 +275,12 @@ export function Viewport() {
     };
     ready = true;
     const loop = () => {
+      // the wiggle moves on its own: every frame is a new picture while it is on
+      const ui = uiStore.get();
+      if (ui.wiggle && canTestPose(ui)) {
+        setWiggleClock(performance.now() / 1000);
+        dirty = true;
+      }
       paintNow();
       raf = requestAnimationFrame(loop);
     };

@@ -1,7 +1,9 @@
-/** Viewport behaviour for the Mesh and Weights tools (vertex editing, deform keys, weight painting, heat map). */
+/** Viewport behaviour for the Mesh and Weights tools (vertex editing, deform keys, weight painting, test pose, heat map). */
 import { deformedVertices } from '@/core/deformMarks';
 import type { Id, MeshAttachment } from '@/core/model';
 import { trianglesAt } from '@/core/mesh';
+import { dragFrom, grabFor } from '@/core/testPose';
+import type { Grab, LocalPose } from '@/core/testPose';
 import { softMoves, softWeights } from '@/core/soft';
 import type { GLRenderer } from '@/render/gl';
 import {
@@ -17,13 +19,13 @@ import {
 import { docStore } from '@/store/doc';
 import { setSelection } from '@/store/actions';
 import { toast, uiStore } from '@/store/ui';
-import { worldToScreen } from '@/store/scene';
+import { getViewScene, worldToScreen } from '@/store/scene';
 import type { Scene } from '@/store/scene';
 import { dragMarquee, drawMarquee, hitVertex, startMarquee } from './marquee';
 import type { Marquee } from './marquee';
 import { COLORS } from './overlay';
 import type { OverlayInput } from './overlay';
-import { slotWorldVertices } from './hit';
+import { hitBone, slotWorldVertices } from './hit';
 import { settingsStore } from '@/store/settings';
 import { alpha, token } from '../ui/tokens';
 import { boneCss, boundBones, overlayColors, pieVertices } from './weightColors';
@@ -32,7 +34,23 @@ type Drag =
   | { kind: 'vertices'; start: Float32Array; weights: Map<number, number>; p0: [number, number]; base: number[] | null }
   | Marquee
   | { kind: 'paint' }
+  | PoseDrag
   | { kind: 'edge'; from: number; x: number; y: number };
+
+/** A press on a bone in the Weights tool. Dragged, it tries a pose; until the pointer has gone a few pixels it is still a click. */
+interface PoseDrag {
+  kind: 'pose';
+  bone: Id;
+  /** The bone a click makes the brush bone, when the press was on one that moves the mesh. */
+  pick: Id | null;
+  x: number;
+  y: number;
+  from: [number, number];
+  move: { grab: Grab; at: (to: [number, number]) => Partial<LocalPose> } | null;
+}
+
+/** How far the pointer goes (pixels) before a press on a bone is a drag. */
+const DRAG_PX = 4;
 
 export interface ActiveMesh {
   slotId: Id;
@@ -77,6 +95,8 @@ function heatColor(w: number, out: number[], o: number) {
 export class MeshTool {
   hoverVertex = -1;
   brush: [number, number] | null = null;
+  /** The pointer is over a bone that a drag would pose (Weights tool). */
+  hoverPose = false;
   private drag: Drag | null = null;
 
   constructor(private invalidate: () => void) {}
@@ -87,6 +107,27 @@ export class MeshTool {
 
   private worldVerts(scene: Scene, slotId: Id) {
     return slotWorldVertices(scene.skeleton, slotId);
+  }
+
+  /**
+   * The bone a drag here would pose in the Weights tool: one that moves the mesh, or the target of an IK chain with such a bone. With
+   * Alt it is any bone that is shown and not locked.
+   */
+  poseBoneAt(e: PointerEvent, wx: number, wy: number, scene: Scene): Id | null {
+    const ui = uiStore.get();
+    const am = activeMesh();
+    if (ui.tool !== 'weights' || ui.mode !== 'setup' || !am?.mesh.weights) return null;
+    const bones = docStore.get().skeleton.bones;
+    const wanted = new Set<Id>();
+    if (!e.altKey) {
+      for (const id of am.mesh.weights.flat().map((i) => i[0])) {
+        wanted.add(id);
+        const grab = grabFor(scene.skeleton, id);
+        if (grab?.chain) wanted.add(grab.bone);
+      }
+    }
+    const off = new Set(bones.filter((b) => (e.altKey ? b.hidden || b.locked : !wanted.has(b.id))).map((b) => b.id));
+    return hitBone(scene, off, wx, wy, ui.camera.zoom, 7)?.id ?? null;
   }
 
   /** Is a point of the picked mesh under the pointer? */
@@ -109,25 +150,14 @@ export class MeshTool {
         toast('Bind the mesh to bones first (Inspector → Weights → Bind)');
         return true;
       }
-      // clicking a bone that influences the mesh makes it the active brush bone
+      // a press on a bone: dragged, it tries a pose; a click on a bone that moves the mesh makes it the brush bone
       const influencing = new Set(am.mesh.weights.flat().map((i) => i[0]));
-      let hitBone: Id | null = null;
-      let bestD = (7 / zoom) ** 2;
-      for (const b of scene.skeleton.bones) {
-        if (!influencing.has(b.data.id)) continue;
-        const dx = b.tipX - b.worldX;
-        const dy = b.tipY - b.worldY;
-        const l2 = dx * dx + dy * dy || 1;
-        const t = Math.max(0, Math.min(1, ((wx - b.worldX) * dx + (wy - b.worldY) * dy) / l2));
-        const d = (b.worldX + dx * t - wx) ** 2 + (b.worldY + dy * t - wy) ** 2;
-        if (d < bestD) {
-          bestD = d;
-          hitBone = b.data.id;
-        }
-      }
-      if (hitBone) {
-        uiStore.patch({ brush: { ...ui.brush, bone: hitBone } });
-        setSelection({ slot: am.slotId, attachment: am.name, bones: [hitBone] });
+      const others = new Set(scene.skeleton.bones.map((b) => b.data.id).filter((id) => !influencing.has(id)));
+      const pick = hitBone(scene, others, wx, wy, zoom, 7)?.id ?? null;
+      const posed = this.poseBoneAt(e, wx, wy, scene) ?? pick;
+      if (posed) {
+        this.brush = null;
+        this.drag = { kind: 'pose', bone: posed, pick, x: e.clientX, y: e.clientY, from: [wx, wy], move: null };
         return true;
       }
       if (ui.mode !== 'setup') {
@@ -185,16 +215,26 @@ export class MeshTool {
   pointerMove(e: PointerEvent, wx: number, wy: number, scene: Scene): boolean {
     const ui = uiStore.get();
     const am = activeMesh();
-    this.brush = ui.tool === 'weights' ? [wx, wy] : null;
+    const d = this.drag;
+    this.hoverPose = !d && this.poseBoneAt(e, wx, wy, scene) !== null;
+    this.brush = ui.tool === 'weights' && !this.hoverPose && d?.kind !== 'pose' ? [wx, wy] : null;
     if (!am) return false;
     const geo = this.worldVerts(scene, am.slotId);
     if (!geo) return false;
-    const d = this.drag;
+    if (d?.kind === 'pose') {
+      this.dragPose(d, e, wx, wy);
+      return true;
+    }
+    // the Weights tool shows the shares of the vertex under the pointer
+    if (ui.tool === 'weights') this.hoverVertex = this.hoverPose ? -1 : hitVertex(geo.vertices, geo.count, wx, wy, ui.camera.zoom);
     if (!d) {
+      const pickable = ui.meshView.hullOnly ? Math.min(geo.count, am.mesh.hull) : geo.count;
       const h =
-        ui.tool === 'mesh' && !ui.meshView.pickTriangle
-          ? hitVertex(geo.vertices, ui.meshView.hullOnly ? Math.min(geo.count, am.mesh.hull) : geo.count, wx, wy, ui.camera.zoom)
-          : -1;
+        ui.tool === 'weights'
+          ? this.hoverVertex
+          : ui.tool === 'mesh' && !ui.meshView.pickTriangle
+            ? hitVertex(geo.vertices, pickable, wx, wy, ui.camera.zoom)
+            : -1;
       if (h !== this.hoverVertex || ui.tool === 'weights') {
         this.hoverVertex = h;
         this.invalidate();
@@ -240,8 +280,32 @@ export class MeshTool {
     return true;
   }
 
+  private dragPose(d: PoseDrag, e: PointerEvent, wx: number, wy: number) {
+    if (!d.move) {
+      if (Math.hypot(e.clientX - d.x, e.clientY - d.y) < DRAG_PX) return;
+      // the hand takes over from the wiggle, and starts from the pose without it
+      if (uiStore.get().wiggle) uiStore.patch({ wiggle: false });
+      const { skeleton } = getViewScene();
+      const grab = grabFor(skeleton, d.bone);
+      const at = grab && dragFrom(skeleton, grab, d.from);
+      if (!grab || !at) return;
+      d.move = { grab, at };
+    }
+    const { testPose } = uiStore.get();
+    const bone = d.move.grab.bone;
+    uiStore.patch({ testPose: { ...testPose, [bone]: { ...testPose[bone], ...d.move.at([wx, wy]) } } });
+    this.invalidate();
+  }
+
   pointerUp(): boolean {
     if (!this.drag) return false;
+    if (this.drag.kind === 'pose' && !this.drag.move && this.drag.pick) {
+      const am = activeMesh();
+      if (am) {
+        uiStore.patch({ brush: { ...uiStore.get().brush, bone: this.drag.pick } });
+        setSelection({ slot: am.slotId, attachment: am.name, bones: [this.drag.pick] });
+      }
+    }
     if (this.drag.kind === 'edge') {
       const am = activeMesh();
       const to = this.hoverVertex;
@@ -352,6 +416,8 @@ export class MeshTool {
         ctx.stroke();
       }
       if (ui.tool === 'weights' && ui.weightView.pies && am.mesh.weights) this.drawPies(o, am.mesh.weights, (i) => P(i));
+      if (ui.tool === 'weights' && am.mesh.weights && this.hoverVertex >= 0 && this.hoverVertex < geo.count)
+        this.drawShares(o, am.mesh.weights, this.hoverVertex, P(this.hoverVertex));
       return;
     }
     // the triangle picked for Triangle order: filled, with its place in the drawing order
@@ -451,6 +517,52 @@ export class MeshTool {
       ctx.arc(x, y, r, 0, Math.PI * 2);
       ctx.stroke();
     }
+  }
+
+  /** Next to the vertex under the pointer: every bone that moves it with its share, the strongest first. */
+  private drawShares(o: OverlayInput, weights: MeshAttachment['weights'] & object, vertex: number, at: [number, number]) {
+    const { ctx, w, h } = o;
+    const bones = docStore.get().skeleton.bones;
+    const bound = boundBones(
+      weights,
+      bones.map((b) => b.id),
+    );
+    const rows = [...(weights[vertex] ?? [])]
+      .sort((a, b) => b[3] - a[3])
+      .map((e) => ({
+        text: `${bones.find((b) => b.id === e[0])?.name ?? '?'}  ${Math.round(e[3] * 100)}%`,
+        color: boneCss(Math.max(0, bound.indexOf(e[0]))),
+      }));
+    if (!rows.length) return;
+    ctx.save();
+    ctx.font = '12px system-ui, sans-serif';
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'middle';
+    const width = Math.max(...rows.map((r) => ctx.measureText(r.text).width)) + 30;
+    const height = rows.length * 18 + 8;
+    // to the right of the vertex and above it, or on the other side where the viewport ends
+    const x = at[0] + 14 + width > w ? at[0] - 14 - width : at[0] + 14;
+    const y = Math.min(h - height - 4, Math.max(4, at[1] - height - 10));
+    ctx.fillStyle = alpha('--panel', 0.95);
+    ctx.strokeStyle = token('--handle-outline');
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.rect(x, y, width, height);
+    ctx.fill();
+    ctx.stroke();
+    rows.forEach((r, i) => {
+      const mid = y + 13 + i * 18;
+      ctx.fillStyle = r.color;
+      ctx.fillRect(x + 8, mid - 4, 8, 8);
+      ctx.fillStyle = token('--text');
+      ctx.fillText(r.text, x + 22, mid);
+    });
+    ctx.strokeStyle = token('--text');
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.arc(at[0], at[1], 5, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.restore();
   }
 
   /** Weight heat map for the active bone (or, with Overlay, the bone colours) drawn into the GL layer. */

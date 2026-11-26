@@ -5,9 +5,10 @@ import { steppedTime } from '@/core/playback';
 import type { Animation, Id, SkeletonDoc } from '@/core/model';
 import { compileSkeleton, createSkeleton } from '@/core/skeleton';
 import type { PhysicsMode, Skeleton, SkeletonData } from '@/core/skeleton';
+import { grabFor, wiggleOf } from '@/core/testPose';
 import { docStore } from '@/store/doc';
 import { uiStore } from '@/store/ui';
-import type { Camera, PoseOverride } from '@/store/ui';
+import type { Camera, PoseOverride, UiState } from '@/store/ui';
 
 export interface Scene {
   doc: SkeletonDoc;
@@ -91,6 +92,45 @@ export function getScene(): Scene {
 }
 
 const EMPTY: Record<Id, PoseOverride> = {};
+
+/** True while bones can be tried out: the Weights tool in Setup mode. */
+export const canTestPose = (ui: Pick<UiState, 'mode' | 'tool'>): boolean => ui.mode === 'setup' && ui.tool === 'weights';
+
+let wiggleSeconds = 0;
+/** Sets the time of the wiggle (the viewport does, every frame it paints while the wiggle is on). */
+export function setWiggleClock(seconds: number) {
+  wiggleSeconds = seconds;
+}
+
+let viewCache: { scene: Scene; pose: Record<Id, PoseOverride>; bone: Id | null; seconds: number; view: Scene } | null = null;
+
+/**
+ * The skeleton as the viewport shows it. It is the scene, except while a test pose or the wiggle is on: then it is a second skeleton with
+ * those bones moved. The scene itself stays in the setup pose, so nothing that reads it (copy pose, a bone dragged, the inspector's
+ * actions) can take the test pose into the document.
+ */
+export function getViewScene(): Scene {
+  const scene = getScene();
+  const ui = uiStore.get();
+  const bone = ui.wiggle ? ui.brush.bone : null;
+  if (!canTestPose(ui) || (!bone && !Object.keys(ui.testPose).length)) return scene;
+  const seconds = bone ? wiggleSeconds : 0;
+  const c = viewCache;
+  if (c && c.scene === scene && c.pose === ui.testPose && c.bone === bone && c.seconds === seconds) return c.view;
+  const skinId = ui.skinId && scene.doc.skins.some((s) => s.id === ui.skinId) ? ui.skinId : null;
+  const skeleton = c && c.scene === scene ? c.view.skeleton : createSkeleton(scene.data, skinId, ui.skinMix);
+  poseSkeleton(skeleton, null, 0, ui.testPose, ui.muted);
+  skeleton.updateWorldTransform('none');
+  const grab = bone ? grabFor(skeleton, bone) : null;
+  const swing = grab ? wiggleOf(skeleton, grab) : null;
+  if (grab && swing) {
+    poseSkeleton(skeleton, null, 0, { ...ui.testPose, [grab.bone]: { ...ui.testPose[grab.bone], ...swing(seconds) } }, ui.muted);
+    skeleton.updateWorldTransform('none');
+  }
+  const view: Scene = { ...scene, skeleton };
+  viewCache = { scene, pose: ui.testPose, bone, seconds, view };
+  return view;
+}
 
 /** Puts a skeleton into the pose the editor shows: the animation at the time (without the muted timelines), then the bones being dragged. The world transform is not updated. */
 export function poseSkeleton(

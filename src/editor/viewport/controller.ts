@@ -20,7 +20,7 @@ import { settingsStore } from '@/store/settings';
 import { createIkFromDrag } from '@/store/ikActions';
 import { applyParent, cancelSetParent } from '@/store/parentActions';
 import { POLYGON_TOOLS, toast, uiStore } from '@/store/ui';
-import { flipSign, getScene, getSetupSkeleton, screenToWorld } from '@/store/scene';
+import { flipSign, getScene, getSetupSkeleton, getViewScene, screenToWorld } from '@/store/scene';
 import { RULER } from './overlay';
 import type { Interaction } from './overlay';
 import { hitAttachment, hitBone } from './hit';
@@ -145,9 +145,11 @@ export class ViewportController {
     const [sx, sy] = this.local(e);
     const cam = ui.camera;
     this.el.focus({ preventScroll: true });
+    // Alt pans, except on a bone in the Weights tool: there it poses a bone that does not move the mesh
+    const altPose = e.altKey && this.meshTool.poseBoneAt(e, ...screenToWorld(cam, w, h, sx, sy), getViewScene()) !== null;
 
     // camera pan
-    if (e.button === 1 || e.button === 2 || (e.button === 0 && (e.altKey || this.spaceDown))) {
+    if (e.button === 1 || e.button === 2 || (e.button === 0 && ((e.altKey && !altPose) || this.spaceDown))) {
       this.begin(e, { kind: 'pan', sx, sy, camX: cam.x, camY: cam.y });
       this.el.style.cursor = 'grabbing';
       e.preventDefault();
@@ -156,7 +158,7 @@ export class ViewportController {
     if (e.button !== 0) return;
 
     const [wx, wy] = screenToWorld(cam, w, h, sx, sy);
-    const scene = getScene();
+    const scene = getViewScene();
     const blocked = this.blocked();
 
     // the pivot of the rotate tool is waiting for its point
@@ -483,8 +485,9 @@ export class ViewportController {
         return;
       }
       if ((ui.tool === 'mesh' || ui.tool === 'weights') && activeMesh()) {
-        this.meshTool.pointerMove(e, wx, wy, getScene());
-        this.el.style.cursor = ui.tool === 'weights' ? 'none' : this.meshTool.hoverVertex >= 0 ? 'pointer' : 'default';
+        this.meshTool.pointerMove(e, wx, wy, getViewScene());
+        const idle = this.meshTool.hoverVertex >= 0 ? 'pointer' : 'default';
+        this.el.style.cursor = ui.tool !== 'weights' ? idle : this.meshTool.hoverPose ? 'grab' : 'none';
         return;
       }
       const hit = hitBone(getScene(), this.blocked(), wx, wy, cam.zoom, 9);
@@ -501,7 +504,7 @@ export class ViewportController {
 
     switch (d.kind) {
       case 'mesh':
-        this.meshTool.pointerMove(e, wx, wy, getScene());
+        this.meshTool.pointerMove(e, wx, wy, getViewScene());
         break;
       case 'polygon':
         this.polygonTool.pointerMove(e, wx, wy, getScene());

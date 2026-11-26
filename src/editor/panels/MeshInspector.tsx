@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import {
+  Activity,
   ArrowLeftRight,
   Brush,
   ClipboardPaste,
@@ -12,6 +13,7 @@ import {
   Hexagon,
   Link2,
   RefreshCw,
+  RotateCcw,
   Scissors,
   Sparkles,
   Spline,
@@ -23,7 +25,7 @@ import {
 import type { Id, MeshAttachment, Project } from '@/core/model';
 import { linkSource } from '@/core/links';
 import { meshWorldPositions } from '@/core/mesh';
-import { linkMeshTo, setAttachmentProps, setLinkDeform, setTool, unlinkMesh } from '@/store/actions';
+import { linkMeshTo, resetTestPose, setAttachmentProps, setLinkDeform, setTool, toggleWiggle, unlinkMesh } from '@/store/actions';
 import {
   autoWeightMeshes,
   moveMeshTriangle,
@@ -221,6 +223,30 @@ const EMPTY: number[] = [];
  * The mesh sections of the Inspector: the mesh itself (`main`) and its weights (`weights`). In a floating window only the part that window is for
  * shows (`part`); in the Inspector a part is left out while its floating window is open.
  */
+/** Trying the weights out: the pose a drag on a bone makes, the wiggle, and putting the bones back. */
+function TestPoseControls() {
+  const wiggle = useUi((s) => s.wiggle);
+  const posed = useUi((s) => Object.keys(s.testPose).length > 0);
+  return (
+    <>
+      <Hint>Drag a bone to bend the mesh and paint on it. The setup pose stays.</Hint>
+      <div className="hstack mb">
+        <Button icon={Activity} primary={wiggle} onClick={() => toggleWiggle()} title="Swing the brush bone back and forth while you paint">
+          Swing
+        </Button>
+        <Button
+          icon={RotateCcw}
+          disabled={!posed && !wiggle}
+          onClick={() => resetTestPose()}
+          title="Put the bones back into the setup pose (Esc)"
+        >
+          Reset pose
+        </Button>
+      </div>
+    </>
+  );
+}
+
 export function MeshGroup({ slotId, att, part }: { slotId: Id; att: MeshAttachment; part?: 'main' | 'weights' }) {
   const toolsFloating = useFloats((s) => s.open.meshTools);
   const weightsFloating = useFloats((s) => s.open.weights);
@@ -462,6 +488,7 @@ export function MeshGroup({ slotId, att, part }: { slotId: Id; att: MeshAttachme
             </>
           ) : (
             <>
+              {tool === 'weights' && <TestPoseControls />}
               <div className="hstack wrap mb">
                 <Button
                   icon={Link2}

@@ -37,6 +37,8 @@ export function setMode(mode: 'setup' | 'animate') {
       mode,
       animationId: animId,
       overrides: {},
+      testPose: {},
+      wiggle: false,
       tool: ui.tool === 'create' || ui.tool === 'mesh' || ui.tool === 'weights' || ATTACHMENT_TOOLS.includes(ui.tool) ? 'select' : ui.tool,
     });
   } else {
@@ -56,7 +58,23 @@ export function setTool(tool: Tool) {
     );
     return;
   }
-  uiStore.patch({ tool });
+  // the test pose belongs to the Weights tool: leaving it puts the bones back
+  uiStore.patch(tool === 'weights' ? { tool } : { tool, testPose: {}, wiggle: false });
+}
+
+/** Puts every bone tried out in the Weights tool back and stops the wiggle. */
+export function resetTestPose() {
+  uiStore.patch({ testPose: {}, wiggle: false });
+}
+
+/** Starts or stops swinging the brush bone. */
+export function toggleWiggle() {
+  const { wiggle, brush } = uiStore.get();
+  if (!wiggle && !brush.bone) {
+    toast('Click a bone of the mesh first: Swing moves the brush bone');
+    return;
+  }
+  uiStore.patch({ wiggle: !wiggle });
 }
 
 export function setSelection(sel: Partial<Selection>) {

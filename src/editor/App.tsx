@@ -43,6 +43,7 @@ import { decodeKey } from '@/core/keyrefs';
 import { selectionBack, selectionForward, startSelectionHistory } from '@/store/selHistory';
 import {
   clearSelection,
+  resetTestPose,
   copyKeys,
   flipViewport,
   deleteSelected,
@@ -53,6 +54,7 @@ import {
   setTime,
   setTool,
 } from '@/store/actions';
+import { canTestPose } from '@/store/scene';
 import { docStore, useProject } from '@/store/doc';
 import { pickReviewFile } from '@/store/reviewActions';
 import { LESSONS } from '@/core/lessons';
@@ -769,6 +771,10 @@ export function App() {
         case 'escape':
           if (cancelSetParent()) break;
           if (viewportApi.controller?.polygonTool.cancel() || viewportApi.controller?.pathTool.cancel()) break; // an unfinished polygon or path is dropped first
+          if (canTestPose(uiStore.get()) && (uiStore.get().wiggle || Object.keys(uiStore.get().testPose).length)) {
+            resetTestPose(); // the bones tried out go back first
+            break;
+          }
           clearSelection();
           uiStore.patch({ selectedKeys: [] });
           break;

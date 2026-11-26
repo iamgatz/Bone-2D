@@ -161,6 +161,10 @@ export interface UiState {
   skinPins: Id[];
   view: ViewOptions;
   overrides: Record<Id, PoseOverride>;
+  /** Bones tried out in the Weights tool (see core/testPose): on the screen only, the setup pose does not change. */
+  testPose: Record<Id, PoseOverride>;
+  /** The brush bone swings back and forth while the weights are painted. */
+  wiggle: boolean;
   timelineView: 'dopesheet' | 'graph';
   /** How many frames Insert time / Delete time cut in (default 6). */
   timeGap?: number;
@@ -242,6 +246,8 @@ export const uiStore = createStore<UiState>({
     outline: false,
   },
   overrides: {},
+  testPose: {},
+  wiggle: false,
   timelineView: 'dopesheet',
   trackFilter: NO_TRACK_FILTER,
   tlZoom: 220,

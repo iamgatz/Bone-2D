@@ -35,7 +35,7 @@ import { matInvert } from '@/core/math';
 import type { Id, Influence, MeshAttachment, RegionAttachment } from '@/core/model';
 import { setupPicture } from '@/core/sequence';
 import { skinHolding } from '@/core/skeleton';
-import { getScene, getSetupSkeleton } from '@/store/scene';
+import { getScene, getSetupSkeleton, getViewScene } from '@/store/scene';
 import { assets } from './assets';
 import { docStore } from './doc';
 import { setSelection } from './actions';
@@ -726,6 +726,8 @@ export function paintWeights(slotId: Id, name: string, stroke: BrushStroke, bone
   const { brush } = uiStore.get();
   const { mats, slotMat } = setupMats();
   const world = meshWorldPositions(mesh, slotMat(slotId), mats);
+  // the brush touches the vertices where they are seen, which is somewhere else while a test pose is on; the bindings stay those of the setup pose
+  const seen = seenPositions(mesh, slotId) ?? world;
   const radius = brush.size;
   const adj = brush.mode === 'smooth' ? adjacency(mesh.triangles, mesh.uvs.length / 2) : null;
   const inv = matInvert(mats.get(bone) ?? { a: 1, b: 0, c: 0, d: 1, x: 0, y: 0 });
@@ -734,7 +736,7 @@ export function paintWeights(slotId: Id, name: string, stroke: BrushStroke, bone
   let changed = false;
   const n = mesh.uvs.length / 2;
   for (let i = 0; i < n; i++) {
-    const d = Math.hypot(world[i * 2] - stroke.x, world[i * 2 + 1] - stroke.y);
+    const d = Math.hypot(seen[i * 2] - stroke.x, seen[i * 2 + 1] - stroke.y);
     if (d > radius) continue;
     const f = brushFalloff(d, radius, brush.feather, brush.shape) * strengthAmount(brush.strength, brush.curve);
     const list = weights[i];
@@ -765,6 +767,16 @@ export function paintWeights(slotId: Id, name: string, stroke: BrushStroke, bone
       reconcileDeform(d.skeleton, slotId, name, mesh, { ...mesh, weights }); // influences may have appeared / vanished
     }
   });
+}
+
+/** Where the vertices of a mesh are on the screen while a test pose or the wiggle is on; null when they are in the setup pose. */
+function seenPositions(mesh: MeshAttachment, slotId: Id): Float64Array | null {
+  const view = getViewScene();
+  if (view === getScene()) return null;
+  const mats: BoneMats = new Map();
+  for (const b of view.skeleton.bones) mats.set(b.data.id, { a: b.a, b: b.b, c: b.c, d: b.d, x: b.worldX, y: b.worldY });
+  const slot = view.skeleton.slotById(slotId);
+  return meshWorldPositions(mesh, (slot && mats.get(slot.bone.data.id)) ?? { a: 1, b: 0, c: 0, d: 1, x: 0, y: 0 }, mats);
 }
 
 /** Current deform array of a slot's attachment in the posed scene (zeros when none). */
