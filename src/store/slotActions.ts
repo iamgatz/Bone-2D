@@ -1,9 +1,10 @@
 /** Slots and attachments: put an image in the scene, slot properties, draw order, colors. */
 import { folderOrderAfterMove } from '@/core/folders';
 import { freshName, keyAt, makeCurve, purgeAttachment, removeSlots, rgbaToRgba2, setSlotDarkColor, upsertKey } from '@/core/edit';
-import { atan2Deg } from '@/core/math';
+import { atan2Deg, DEG2RAD } from '@/core/math';
 import { newSlot } from '@/core/model';
-import type { Id, RGB, RGBA, Slot } from '@/core/model';
+import type { Id, RegionAttachment, RGB, RGBA, Slot } from '@/core/model';
+import type { Bone as PosedBone } from '@/core/skeleton';
 import { getScene, getSetupSkeleton } from '@/store/scene';
 import { docStore } from './doc';
 import { uiStore } from './ui';
@@ -145,6 +146,30 @@ export function moveSlot(id: Id, toIndex: number) {
   });
 }
 
+/** A picture as another bone has to hold it to leave it where it is: place, turn and size. */
+function regionOn(r: RegionAttachment, from: PosedBone, to: PosedBone) {
+  const [x, y] = to.worldToLocal(...from.localToWorld(r.x, r.y));
+  const det = to.a * to.d - to.b * to.c || 1e-9;
+  /** The direction (degrees in the frame of `from`) as a vector in the frame of `to`. */
+  const axis = (degrees: number): [number, number] => {
+    const c = Math.cos(degrees * DEG2RAD);
+    const s = Math.sin(degrees * DEG2RAD);
+    const wx = from.a * c + from.b * s;
+    const wy = from.c * c + from.d * s;
+    return [(to.d * wx - to.b * wy) / det, (to.a * wy - to.c * wx) / det];
+  };
+  const [ax, ay] = axis(r.rotation);
+  const [bx, by] = axis(r.rotation + 90);
+  const mirrored = ax * by - ay * bx < 0;
+  return {
+    x,
+    y,
+    rotation: atan2Deg(ay, ax),
+    scaleX: r.scaleX * Math.hypot(ax, ay),
+    scaleY: r.scaleY * Math.hypot(bx, by) * (mirrored ? -1 : 1),
+  };
+}
+
 export function setSlotBone(id: Id, boneId: Id) {
   // keep the slot's attachments visually in place by re-expressing them in the new bone's frame (region attachments only)
   const doc = skeletonDoc();
@@ -163,10 +188,7 @@ export function setSlotBone(id: Id, boneId: Id) {
       for (const name in atts) {
         const a = atts[name];
         if (a.type === 'region') {
-          const [wx, wy] = from.localToWorld(a.x, a.y);
-          const [lx, ly] = to.worldToLocal(wx, wy);
-          a.x = lx;
-          a.y = ly;
+          Object.assign(a, regionOn(a, from, to));
         } else if (a.type === 'point') {
           const [wx, wy] = from.localToWorld(a.x, a.y);
           const [lx, ly] = to.worldToLocal(wx, wy);

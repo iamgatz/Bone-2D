@@ -1508,6 +1508,47 @@ button.crumb:hover {
   box-shadow: var(--shadow);
   padding: 0;
 }
+.rig-dialog {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
+  gap: 12px;
+  margin-bottom: 10px;
+}
+.rig-rows {
+  max-height: min(360px, calc(100vh - 320px));
+  overflow: auto;
+}
+.rig-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 140px 96px;
+  gap: 6px;
+  align-items: center;
+  padding: 2px 4px;
+  border-radius: var(--radius);
+}
+.rig-row:hover {
+  background: var(--panel);
+}
+.rig-row .name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.rig-preview {
+  width: 100%;
+  height: min(360px, calc(100vh - 320px));
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+@media (max-width: 640px) {
+  .rig-dialog {
+    grid-template-columns: 1fr;
+  }
+  .rig-preview {
+    height: 220px;
+  }
+}
 .dialog-head {
   display: flex;
   align-items: center;

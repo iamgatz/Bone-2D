@@ -10,6 +10,7 @@ import {
   autoWeights,
   bindMesh,
   generateMeshFromImage,
+  imageToBoneSpace,
   keepOutside,
   locateInMesh,
   meshFromRegion,
@@ -31,7 +32,7 @@ import {
 } from '@/core/mesh';
 import { mirrorName } from '@/core/duplicate';
 import type { BoneMats, TraceOptions, TriangleMove, VertexMap } from '@/core/mesh';
-import { matInvert } from '@/core/math';
+import { matApply, matInvert } from '@/core/math';
 import type { Id, Influence, MeshAttachment, RegionAttachment } from '@/core/model';
 import { setupPicture } from '@/core/sequence';
 import { rebuildMesh } from '@/core/retrace';
@@ -39,7 +40,7 @@ import { skinHolding } from '@/core/skeleton';
 import { getScene, getSetupSkeleton, getViewScene } from '@/store/scene';
 import { assets } from './assets';
 import { docStore } from './doc';
-import { setSelection } from './actions';
+import { setSelection } from './sessionActions';
 import { toast as say, uiStore } from './ui';
 import type { UiState } from './ui';
 
@@ -470,6 +471,43 @@ export function unbindMeshFromBones(slotId: Id, name: string) {
   if (!mesh || !mesh.weights) return;
   const { mats, slotMat } = setupMats();
   writeMesh(slotId, name, unbindMesh(mesh, slotMat(slotId), mats), 'Unbind mesh');
+}
+
+/**
+ * A picture of one limb as a mesh that follows its bones: rows of vertices where it bends (`joints`, in the scene), automatic weights.
+ * For the auto-rig, which turns it into a step of its own history entry.
+ */
+export function bendMesh(slotId: Id, name: string, boneIds: Id[], joints: readonly { at: [number, number]; along: [number, number] }[]) {
+  const region = getRegion(slotId, name);
+  const img = region && assets.getImageData(setupPicture(region) ?? region.path);
+  if (!region || !img) return;
+  const toBone = imageToBoneSpace(region, img.width, img.height);
+  const { slotMat } = setupMats();
+  const bone = slotMat(slotId);
+  const toScene = (px: number, py: number) => matApply(bone, ...toBone(px, py));
+  // picture pixels to the scene is one affine map: three points give it
+  const o = toScene(0, 0);
+  const x = toScene(1, 0);
+  const y = toScene(0, 1);
+  const toPicture = matInvert({ a: x[0] - o[0], c: x[1] - o[1], b: y[0] - o[0], d: y[1] - o[1], x: o[0], y: o[1] });
+  const mesh = generateMeshFromImage(region, img.data, img.width, img.height, {
+    joints: joints.map((j) => {
+      const from = matApply(toPicture, j.at[0], j.at[1]);
+      const to = matApply(toPicture, j.at[0] + j.along[0], j.at[1] + j.along[1]);
+      return { x: from[0], y: from[1], dx: to[0] - from[0], dy: to[1] - from[1] };
+    }),
+  });
+  mesh.region = {
+    x: region.x,
+    y: region.y,
+    rotation: region.rotation,
+    scaleX: region.scaleX,
+    scaleY: region.scaleY,
+    width: region.width,
+    height: region.height,
+  };
+  writeMesh(slotId, name, mesh, 'Convert to mesh');
+  bindMeshToBones(slotId, name, boneIds);
 }
 
 /** The selected vertices of this mesh (Spine: Auto, Smooth, Prune and Swap work on them; with none selected, on the whole mesh). */

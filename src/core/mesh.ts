@@ -8,6 +8,8 @@ import { DEG2RAD, distToSegmentSq, matApply, matInvert, pointInPolygon } from '.
 import type { Mat } from './math';
 import { constrainTriangles, segmentsCross } from './constrain';
 import { bridgePieces, holds, isSimple, rimPoints, withoutSpecks, wrap } from './pieces';
+import { withJointRows } from './jointRows';
+import type { Joint } from './jointRows';
 import type { Mask } from './pieces';
 
 /** A 4 vertex quad covering the region (vertices in slot-bone space, hull = 4). */
@@ -46,7 +48,7 @@ export function meshFromRegion(r: RegionAttachment): MeshAttachment {
 }
 
 /** Maps image pixel coordinates (y down) to slot-bone space through the region transform. */
-function imageToBoneSpace(r: RegionAttachment, imgW: number, imgH: number): (px: number, py: number) => [number, number] {
+export function imageToBoneSpace(r: RegionAttachment, imgW: number, imgH: number): (px: number, py: number) => [number, number] {
   const c = Math.cos(r.rotation * DEG2RAD);
   const s = Math.sin(r.rotation * DEG2RAD);
   const sx = (r.width / imgW) * r.scaleX;
@@ -152,6 +154,8 @@ export interface TraceOptions {
   maxHullVertices?: number;
   /** How many vertices the whole mesh gets, outline and interior together. Without it the spacing decides. */
   vertices?: number;
+  /** Places (picture pixels) where the mesh bends: each gets rows of vertices across it. */
+  joints?: readonly Joint[];
 }
 
 /** The longest outer contour of a mask, as the corners of its cells in image pixels. */
@@ -534,6 +538,7 @@ export function generateMeshFromImage(
     outline = subdivideOutline(outline, spacing * 1.6);
     inner = interiorPoints(outline, spacing);
   }
+  if (opts.joints?.length) ({ outline, inner } = withJointRows(outline, inner, opts.joints));
   const pts: [number, number][] = [...outline, ...inner];
   const flat: number[] = [];
   for (const p of pts) flat.push(p[0], p[1]);

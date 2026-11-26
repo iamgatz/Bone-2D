@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
+  Bone as BoneIcon,
   ChevronDown,
   ChevronRight,
   Eraser,
@@ -31,6 +32,7 @@ import { assets } from '@/store/assets';
 import { docStore, useProject } from '@/store/doc';
 import { canReadGif, importGif } from '@/store/frameImport';
 import { openSliceDialog } from '@/store/sliceDialog';
+import { openAutoRig } from '@/store/autoRigDialog';
 import { toast, uiStore } from '@/store/ui';
 import { IconButton, Menu, MenuItem } from '../ui/controls';
 
@@ -200,6 +202,15 @@ export function AssetsPanel() {
                 title="Layers with the name of a picture give it new pixels, new layers become slots"
               >
                 Update from PSD / ORA
+              </MenuItem>
+              <MenuItem
+                icon={BoneIcon}
+                close={close}
+                disabled={project.skeleton.slots.length === 0}
+                onClick={() => openAutoRig()}
+                title="A skeleton for a character painted in layers: bones, meshes and IK from the names and shapes of the pictures"
+              >
+                Auto-rig the layers…
               </MenuItem>
               <MenuItem
                 icon={Eraser}

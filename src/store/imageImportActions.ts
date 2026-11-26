@@ -18,6 +18,8 @@ import { toast, uiStore } from './ui';
 import { setSelection } from './sessionActions';
 import { project, skeletonDoc } from './accessors';
 import { keepPixelsForUndo } from './imageActions';
+import { rigCandidates } from './autoRigActions';
+import { openAutoRig } from './autoRigDialog';
 
 export async function importImageFiles(files: File[], paths?: string[]): Promise<string[]> {
   const refs: ImageRef[] = [];
@@ -173,7 +175,15 @@ export async function importPsd(file: File): Promise<number> {
       : `Imported layers: ${slotIds.length} from ${file.name}`,
     'ok',
   );
+  // a character that arrives in layers named after its body gets the auto-rig offered right away
+  if (doc.bones.length <= 1 && looksLikeCharacter(slotIds)) openAutoRig();
   return slotIds.length;
+}
+
+/** Three or more different parts of a body among the names of the new slots. */
+function looksLikeCharacter(slotIds: readonly Id[]): boolean {
+  const parts = rigCandidates().flatMap((c) => (slotIds.includes(c.slotId) && !['near', 'keep'].includes(c.part) ? [c.part] : []));
+  return new Set(parts).size >= 3;
 }
 
 /**

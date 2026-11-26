@@ -14,6 +14,28 @@ export interface Release {
 
 export const CHANGELOG: Release[] = [
   {
+    version: '0.98',
+    date: '2026-11-26',
+    en: [
+      'Auto-rig: a character painted in layers gets its skeleton. Bones, pictures put on them, meshes with weights for limbs painted in one piece, and IK for the legs come from the layer names (English, Russian, Chinese) and the shapes of the pictures.',
+      'The dialog opens by itself when such a PSD or ORA file arrives in an empty project (also in the command palette and the Images menu). It shows the skeleton before building it, every guess can be corrected, and one Undo takes it all back.',
+      'A mesh made by the auto-rig has rows of vertices at the elbow or knee, so it folds much less when bent.',
+      'Fixed: moving a slot to a turned or scaled bone turned or resized its picture.',
+    ],
+    ru: [
+      'Авториг: персонаж, нарисованный слоями, получает скелет. Кости, расставленные по ним картинки, меши с весами для конечностей, нарисованных одним куском, и IK для ног строятся по именам слоёв (английским, русским, китайским) и формам картинок.',
+      'Окно открывается само, когда такой PSD или ORA попадает в пустой проект (есть и в палитре команд, и в меню «Картинки»). Скелет виден до построения, любую догадку можно исправить, а одна отмена убирает всё.',
+      'У меша, сделанного авторигом, на локте или колене есть ряды вершин, поэтому при сгибе он складывается намного меньше.',
+      'Исправлено: перенос слота на повёрнутую или масштабированную кость поворачивал картинку или менял её размер.',
+    ],
+    zh: [
+      '自动绑定：分层绘制的角色可以直接生成骨架。根据图层名称（英文、俄文、中文）和图片形状创建骨骼、放置图片，为整块绘制的四肢生成带权重的网格，并为腿部添加 IK。',
+      '当这类 PSD 或 ORA 文件导入空项目时，对话框会自动打开（命令面板和图片菜单中也可打开）。生成前可预览骨架，每个判断都能修改，撤销一次即可全部移除。',
+      '自动绑定生成的网格在肘部或膝部有多排顶点，弯曲时折叠翻面明显减少。',
+      '修复：将插槽移到旋转或缩放过的骨骼上时，图片会跟着旋转或改变大小。',
+    ],
+  },
+  {
     version: '0.97',
     date: '2026-11-26',
     en: [

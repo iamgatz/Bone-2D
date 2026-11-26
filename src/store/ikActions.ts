@@ -4,7 +4,7 @@ import { uid } from '@/core/ids';
 import type { Id, IkConstraint, IkKey } from '@/core/model';
 import { newBone } from '@/core/model';
 import { getScene, getSetupSkeleton } from '@/store/scene';
-import { setSelection } from './actions';
+import { setSelection } from './sessionActions';
 import { docStore } from './doc';
 import { toast, uiStore } from './ui';
 

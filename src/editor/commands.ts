@@ -17,6 +17,7 @@ import {
   togglePlay,
 } from '@/store/actions';
 import { setAxesSplit } from '@/store/axisActions';
+import { openAutoRig } from '@/store/autoRigDialog';
 import { selectionBack, selectionForward } from '@/store/selHistory';
 import { hideUnkeyedBones, mirrorCurrentCycle } from '@/store/animToolActions';
 import { addMarkerAtPlayhead, goToMarker, splitAtMarkersAction } from '@/store/markerActions';
@@ -82,6 +83,7 @@ export function buildCommands(): Command[] {
     { id: 'file.import', group: 'File', title: 'Import Spine data (JSON 4.0–4.3, binary 4.3)…', run: () => openSpineImport() },
     { id: 'file.importAdd', group: 'File', title: 'Import Spine data as a new skeleton…', run: () => openSpineImport(true) },
     { id: 'file.unpack', group: 'File', title: 'Unpack an atlas into pictures…', run: () => openAtlasUnpack() },
+    { id: 'edit.autorig', group: 'Edit', title: 'Auto-rig the layers…', run: () => openAutoRig() },
     { id: 'file.demo', group: 'File', title: 'Load demo rig (Kit)', run: () => void loadSample() },
     { id: 'file.welcome', group: 'File', title: 'Welcome screen', run: open('welcomeOpen') },
     { id: 'edit.selback', group: 'Edit', title: 'Previous selection', run: () => void selectionBack() },
