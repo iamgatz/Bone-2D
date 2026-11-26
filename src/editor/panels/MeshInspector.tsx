@@ -446,7 +446,10 @@ export function MeshGroup({ slotId, att, part }: { slotId: Id; att: MeshAttachme
           )}
           {!weighted ? (
             <>
-              <Hint>Bind the mesh to bones so it bends with them. Select the bones in the viewport first.</Hint>
+              <Hint>
+                Bind the mesh to bones so it bends with them. With the picture selected, Shift-click the bones in the viewport or the
+                hierarchy, then press Bind.
+              </Hint>
               <Button
                 primary
                 icon={Link2}
@@ -463,7 +466,7 @@ export function MeshGroup({ slotId, att, part }: { slotId: Id; att: MeshAttachme
                 <Button
                   icon={Link2}
                   onClick={() => bindMeshesToBones(selectedBones)}
-                  title="Add the selected bones as influences (re-computes weights)"
+                  title="Add the selected bones as influences (re-computes weights). Shift-click bones to select them with the picture"
                 >
                   Add bones
                 </Button>

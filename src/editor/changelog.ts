@@ -12,6 +12,18 @@ export interface Release {
 
 export const CHANGELOG: Release[] = [
   {
+    version: '0.93',
+    date: '2026-11-26',
+    en: [
+      'Fixed: a mesh or a path could not be bound to any bone but its own (reported as issue #7). Selecting a bone dropped the picture, and selecting the picture dropped the bone. Now Shift-click (or Ctrl-click in the hierarchy) adds bones to the selected picture, in the viewport and in the hierarchy; it also works the other way round, bones first and then Shift-click on the picture. The added bones are highlighted. A plain click still selects just one thing.',
+      'Fixed: with a picture selected, the Delete key and the trash button of the hierarchy removed the bone the picture sits on, together with everything on that bone. They now remove the picture: the selected image when its slot holds several, else the slot. With points of a mesh or a polygon selected, Delete only ever removes points.',
+    ],
+    ru: [
+      'Исправлено: сетку или путь нельзя было привязать ни к какой кости, кроме своей (сообщение в issue #7). Выбор кости снимал картинку, а выбор картинки снимал кость. Теперь щелчок с Shift (или с Ctrl в иерархии) добавляет кости к выбранной картинке, и во вьюпорте, и в иерархии; работает и в обратном порядке: сначала кости, потом щелчок с Shift по картинке. Добавленные кости подсвечиваются. Обычный щелчок по-прежнему выбирает что-то одно.',
+      'Исправлено: при выбранной картинке клавиша Delete и кнопка корзины в иерархии удаляли кость, на которой лежит картинка, вместе со всем, что на этой кости. Теперь они удаляют картинку: выбранное изображение, если в слоте их несколько, иначе слот. Когда выбраны точки сетки или многоугольника, Delete удаляет только точки.',
+    ],
+  },
+  {
     version: '0.92',
     date: '2026-11-21',
     en: [

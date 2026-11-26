@@ -7,7 +7,6 @@ import {
   clearSelection,
   createBoneWorld,
   currentPose,
-  deleteBones,
   selectBone,
   selectSlot,
   setAttachmentProps,
@@ -214,6 +213,14 @@ export class ViewportController {
     }
 
     if ((ui.tool === 'mesh' || ui.tool === 'weights') && activeMesh()) {
+      // Shift-click on a bone adds it to the picked mesh while its points are edited too (the bones for binding), unless a point is there
+      if (ui.tool === 'mesh' && e.shiftKey && !this.meshTool.vertexAt(wx, wy, scene)) {
+        const bone = hitBone(scene, blocked, wx, wy, cam.zoom, 6);
+        if (bone) {
+          selectBone(bone.id, true);
+          return;
+        }
+      }
       if (this.meshTool.pointerDown(e, wx, wy, scene)) {
         this.begin(e, { kind: 'mesh' });
         this.invalidate();
@@ -292,7 +299,7 @@ export class ViewportController {
     // images
     const ah = hitAttachment(scene, this.hiddenSlots(), wx, wy, cam.zoom, { images: ui.view.images, outlines: ui.view.outlines });
     if (ah) {
-      selectSlot(ah.slotId, ah.name);
+      selectSlot(ah.slotId, ah.name, e.shiftKey);
       if (ui.mode === 'setup' && (ui.tool === 'select' || ui.tool === 'translate')) this.startAttachmentDrag(e, ah.slotId, ah.name, wx, wy);
       return;
     }
@@ -695,11 +702,6 @@ export class ViewportController {
   };
 
   onContextMenu = (e: Event) => e.preventDefault();
-
-  deleteSelection() {
-    const sel = uiStore.get().selection;
-    if (sel.bones.length) deleteBones(sel.bones);
-  }
 
   attach() {
     const el = this.el;

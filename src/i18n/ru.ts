@@ -370,7 +370,8 @@ export const RU: Record<string, string> = {
   'Rebuild the triangles inside the outline': 'Перестроить треугольники внутри контура',
   'Auto-weights to the selected bones': 'Авто-веса для выбранных костей',
   'Add bones': 'Добавить кости',
-  'Add the selected bones as influences (re-computes weights)': 'Добавить выбранные кости как влияющие (веса пересчитаются)',
+  'Add the selected bones as influences (re-computes weights). Shift-click bones to select them with the picture':
+    'Добавить выбранные кости к влияющим (веса пересчитываются). Щелчок с Shift выбирает кости вместе с картинкой',
   Auto: 'Авто',
   Smooth: 'Сглаживание',
   Unbind: 'Отвязать',
@@ -1045,8 +1046,8 @@ export const RU: Record<string, string> = {
     'Заставь эти кости повторять поворот, позицию или масштаб другой кости (маппинги Spine 4.3).',
   unweighted: 'без весов',
   'weighted · {#} bones': 'с весами · костей: {}',
-  'Bind the mesh to bones so it bends with them. Select the bones in the viewport first.':
-    'Привяжи меш к костям, чтобы он гнулся вместе с ними. Сначала выбери кости во вьюпорте.',
+  'Bind the mesh to bones so it bends with them. With the picture selected, Shift-click the bones in the viewport or the hierarchy, then press Bind.':
+    'Привяжите сетку к костям, чтобы она гнулась вместе с ними. Не снимая выбора картинки, щёлкните с Shift по костям во вьюпорте или в иерархии и нажмите кнопку привязки.',
   '"{}" is {#} s long': '«{1}» длится {2} с',
   Timeline: 'Таймлайн',
   'Dark tint': 'Тёмный тинт',
@@ -1134,7 +1135,8 @@ export const RU: Record<string, string> = {
   position: 'позиция',
   spacing: 'интервал',
   'Bind to the selected bones': 'Привязать к выбранным костям',
-  'Let the selected bones move the path (automatic weights)': 'Пусть выбранные кости двигают путь (автоматические веса)',
+  'Let the selected bones move the path (automatic weights). Shift-click bones to select them with the path':
+    'Отдать путь выбранным костям (веса автоматические). Щелчок с Shift выбирает кости вместе с путём',
   'Back to a plain path: the points stay where they are': 'Обратно в обычный путь: точки остаются на месте',
   'Bind path': 'Привязать путь к костям',
   'Unbind path': 'Отвязать путь от костей',

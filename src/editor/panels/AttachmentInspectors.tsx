@@ -147,7 +147,7 @@ export function PathAttachmentInspector({ slotId, att, disabled }: { slotId: Id;
             ghost
             disabled={!selectedBones.length}
             onClick={() => bindPathToBones(slotId, att.name, selectedBones)}
-            title="Let the selected bones move the path (automatic weights)"
+            title="Let the selected bones move the path (automatic weights). Shift-click bones to select them with the path"
           >
             Bind to the selected bones
           </Button>

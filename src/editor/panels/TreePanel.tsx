@@ -30,7 +30,7 @@ import type { Bone, Id, Slot } from '@/core/model';
 import {
   createEvent,
   createSkin,
-  deleteBones,
+  deleteSelected,
   deleteEvent,
   deleteSkin,
   deleteSlots,
@@ -162,6 +162,8 @@ export function TreePanel() {
   }, [doc.slots]);
 
   const toggle = (id: string) => setCollapsed((c) => ({ ...c, [id]: !c[id] }));
+  const onlyOwnBone =
+    !!selection.slot && selection.bones.length === 1 && doc.slots.find((s) => s.id === selection.slot)?.bone === selection.bones[0];
 
   const renderSlot = (slot: Slot, depth: number) => {
     const selected = selection.slot === slot.id || (selection.extraSlots ?? []).includes(slot.id);
@@ -179,7 +181,9 @@ export function TreePanel() {
             e.dataTransfer.effectAllowed = 'move';
           }}
           onClick={(e) =>
-            (e.ctrlKey || e.metaKey || e.shiftKey) && selection.slot ? toggleExtraSlot(slot.id) : selectSlot(slot.id, slot.attachment)
+            (e.ctrlKey || e.metaKey || e.shiftKey) && selection.slot
+              ? toggleExtraSlot(slot.id)
+              : selectSlot(slot.id, slot.attachment, e.ctrlKey || e.metaKey || e.shiftKey)
           }
           onDoubleClick={() => setEditing('s:' + slot.id)}
         >
@@ -213,7 +217,7 @@ export function TreePanel() {
               key={name}
               className={`row${selected && selection.attachment === name ? ' selected' : ''}`}
               style={{ paddingLeft: indent(depth + 1) + 16 }}
-              onClick={() => selectSlot(slot.id, name)}
+              onClick={(e) => selectSlot(slot.id, name, e.ctrlKey || e.metaKey || e.shiftKey)}
             >
               <span className="ico">
                 {atts[name].type === 'clipping' ? (
@@ -252,7 +256,8 @@ export function TreePanel() {
     const slots = (slotsOf.get(bone.id) ?? []).filter((s) => !match.active || match.slots.has(s.id));
     const hasKids = kids.length + slots.length > 0;
     const open = match.active || !collapsed['b:' + bone.id];
-    const selected = selection.bones.includes(bone.id) && !selection.slot;
+    // a picked picture brings its own bone with it, which is not shown as picked; bones added to the picture are
+    const selected = selection.bones.includes(bone.id) && !onlyOwnBone;
     return (
       <div key={bone.id}>
         <div
@@ -332,7 +337,7 @@ export function TreePanel() {
           title="Delete selected"
           small
           disabled={!selection.bones.length && !selection.slot}
-          onClick={() => (selection.slot && !selection.bones.length ? deleteSlots([selection.slot]) : deleteBones(selection.bones))}
+          onClick={() => deleteSelected()}
         />
       </div>
       <SkeletonBar />
@@ -417,7 +422,9 @@ export function TreePanel() {
                     if (id && id !== s.id) moveSlot(id, i);
                   }}
                   onClick={(e) =>
-                    (e.ctrlKey || e.metaKey || e.shiftKey) && selection.slot ? toggleExtraSlot(s.id) : selectSlot(s.id, s.attachment)
+                    (e.ctrlKey || e.metaKey || e.shiftKey) && selection.slot
+                      ? toggleExtraSlot(s.id)
+                      : selectSlot(s.id, s.attachment, e.ctrlKey || e.metaKey || e.shiftKey)
                   }
                 >
                   <span className="ico">

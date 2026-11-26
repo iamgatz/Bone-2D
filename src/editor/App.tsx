@@ -45,7 +45,7 @@ import {
   clearSelection,
   copyKeys,
   flipViewport,
-  deleteBones,
+  deleteSelected,
   deleteKeys,
   pasteKeys,
   sanitizeSelection,
@@ -749,20 +749,21 @@ export function App() {
             e.preventDefault();
             deleteKeys(ui.selectedKeys.map(decodeKey));
             uiStore.patch({ selectedKeys: [] });
-          } else if (
-            ui.tool === 'mesh' &&
-            ui.selection.vertices.length &&
-            (viewportApi.controller?.pathTool.deleteSelectedVertices() ||
-              viewportApi.controller?.polygonTool.deleteSelectedVertices() ||
-              viewportApi.controller?.meshTool.deleteSelectedVertices())
-          ) {
+          } else if ((ui.tool === 'mesh' || ui.tool === 'weights') && ui.selection.vertices.length) {
+            // with points picked, Delete is about points: it never goes on to remove the picture or a bone
             e.preventDefault();
+            if (ui.tool === 'mesh')
+              void (
+                viewportApi.controller?.pathTool.deleteSelectedVertices() ||
+                viewportApi.controller?.polygonTool.deleteSelectedVertices() ||
+                viewportApi.controller?.meshTool.deleteSelectedVertices()
+              );
           } else if (ui.selection.constraint && !ui.selection.bones.length) {
             e.preventDefault();
             deleteConstraint(ui.selection.constraint);
-          } else if (ui.selection.bones.length) {
+          } else if (ui.selection.slot || ui.selection.bones.length) {
             e.preventDefault();
-            deleteBones(ui.selection.bones);
+            deleteSelected();
           }
           break;
         case 'escape':

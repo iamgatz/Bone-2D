@@ -745,7 +745,7 @@ export function InspectorPanel() {
     <div className="panel grow">
       <div className="panel-head">
         <span className="title">Inspector</span>
-        {selection.bones.length > 1 && <span className="chip">{selection.bones.length} bones</span>}
+        {selection.bones.length > 1 && <span className="chip">{`${selection.bones.length} bones`}</span>}
       </div>
       <div className="panel-body">
         {selection.constraint && <ConstraintInspector id={selection.constraint} />}

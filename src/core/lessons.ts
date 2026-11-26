@@ -276,8 +276,8 @@ export const MESH_LESSON: Lesson = {
       target: 'inspector',
       title: { en: 'Bind it to bones', ru: 'Привяжите к костям' },
       text: {
-        en: 'Select the bone or bones that should move it, then press the Bind button in the Inspector.',
-        ru: 'Выберите кость или кости, которые должны её двигать, и нажмите кнопку привязки в инспекторе.',
+        en: 'With the picture still selected, Shift-click every other bone that should move it, then press the Bind button in the Inspector.',
+        ru: 'Не снимая выбора картинки, щёлкните с Shift по остальным костям, которые должны её двигать, и нажмите кнопку привязки в инспекторе.',
       },
       done: (s, base) => s.weightedMeshes > base.weightedMeshes,
     },

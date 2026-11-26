@@ -101,10 +101,14 @@ export function flipViewport() {
 
 export function selectBone(id: Id, additive = false) {
   const cur = uiStore.get().selection;
-  if (additive) {
-    const bones = cur.bones.includes(id) ? cur.bones.filter((b) => b !== id) : [...cur.bones, id];
-    setSelection({ bones });
-  } else setSelection({ bones: [id] });
+  if (!additive) {
+    setSelection({ bones: [id] });
+    return;
+  }
+  const bones = cur.bones.includes(id) ? cur.bones.filter((b) => b !== id) : [...cur.bones, id];
+  // Shift / Ctrl add to what is selected, and a picked picture stays picked: that is how the bones for binding a mesh or a path are chosen
+  if (cur.slot) uiStore.patch({ selection: { ...cur, bones } });
+  else setSelection({ bones });
 }
 
 /** Select (next to the hierarchy filter): selects the bones and slots that match the filter, all at once. Returns how many things it selected. */
@@ -127,12 +131,15 @@ export function toggleExtraSlot(slotId: Id) {
   uiStore.patch({ selection: { ...sel, extraSlots: extra } });
 }
 
-export function selectSlot(slotId: Id, attachment?: string | null) {
+/** Selects a slot (and one of its attachments) with the bone it sits on. `keepBones` (Shift / Ctrl): bones that were selected on their own stay instead. */
+export function selectSlot(slotId: Id, attachment?: string | null, keepBones = false) {
   const slot = slotById(slotId);
+  const cur = uiStore.get().selection;
+  const picked = keepBones && !cur.slot && cur.bones.length ? cur.bones : null;
   setSelection({
     slot: slotId,
     attachment: attachment === undefined ? (slot?.attachment ?? null) : attachment,
-    bones: slot ? [slot.bone] : [],
+    bones: picked ?? (slot ? [slot.bone] : []),
   });
 }
 

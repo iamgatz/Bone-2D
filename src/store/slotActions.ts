@@ -9,7 +9,7 @@ import { docStore } from './doc';
 import { uiStore } from './ui';
 import { setSelection } from './sessionActions';
 import { currentAnimation, project, skeletonDoc } from './accessors';
-import { extendDuration } from './boneActions';
+import { deleteBones, extendDuration } from './boneActions';
 
 /** Creates a slot + region attachment for an image, centered at the given world position (setup pose). */
 export function addImageToScene(imageName: string, worldX: number, worldY: number, boneId?: Id | null): { slotId: Id } | null {
@@ -79,6 +79,27 @@ export function deleteSlots(ids: Id[]) {
     removeSlots(d.skeleton, new Set(ids));
   });
   setSelection({ bones: uiStore.get().selection.bones });
+}
+
+/**
+ * The Delete key and the trash button of the hierarchy: what is picked goes. With a picture picked that is the picture, never the bone it
+ * sits on: the selected attachment when the slot holds several, else the slot (and the other slots picked with it). Bones that were added
+ * to the picture stay selected, so a second press removes them; the slot's own bone does not. With no picture picked, the selected bones go.
+ */
+export function deleteSelected() {
+  const sel = uiStore.get().selection;
+  if (!sel.slot) {
+    if (sel.bones.length) deleteBones(sel.bones);
+    return;
+  }
+  const doc = skeletonDoc();
+  const own = doc.slots.find((s) => s.id === sel.slot)?.bone;
+  const onlyOwn = sel.bones.length === 1 && sel.bones[0] === own;
+  const names = new Set(doc.skins.flatMap((k) => Object.keys(k.attachments[sel.slot!] ?? {})));
+  const extra = sel.extraSlots ?? [];
+  if (sel.attachment && !extra.length && names.size > 1) deleteAttachment(sel.slot, sel.attachment);
+  else deleteSlots([sel.slot, ...extra]);
+  setSelection({ bones: onlyOwn ? [] : sel.bones });
 }
 
 /** Animate mode: keys the draw order with `id` moved to `toIndex`. */

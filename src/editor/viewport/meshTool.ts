@@ -89,6 +89,13 @@ export class MeshTool {
     return slotWorldVertices(scene.skeleton, slotId);
   }
 
+  /** Is a point of the picked mesh under the pointer? */
+  vertexAt(wx: number, wy: number, scene: Scene): boolean {
+    const am = activeMesh();
+    const geo = am && this.worldVerts(scene, am.slotId);
+    return !!geo && hitVertex(geo.vertices, geo.count, wx, wy, uiStore.get().camera.zoom) >= 0;
+  }
+
   pointerDown(e: PointerEvent, wx: number, wy: number, scene: Scene): boolean {
     const ui = uiStore.get();
     const am = activeMesh();
