@@ -934,6 +934,33 @@ export function smoothWeights(
   return cur;
 }
 
+/** For every vertex, the bones that pull it and how much each. */
+export type VertexWeights = { bone: Id; w: number }[][];
+
+/**
+ * Weights with a part of the mesh that follows one bone alone: from `at` on, along the unit direction `along`, the share of `bone`
+ * grows smoothly, and from `over` further it is the whole weight. For the chest of a body, which the arms and the head sit on.
+ */
+export function holdFirm(
+  weights: VertexWeights,
+  world: ArrayLike<number>,
+  bone: Id,
+  firm: { at: readonly [number, number]; along: readonly [number, number]; over: number },
+): VertexWeights {
+  return weights.map((list, i) => {
+    const past = (world[i * 2] - firm.at[0]) * firm.along[0] + (world[i * 2 + 1] - firm.at[1]) * firm.along[1];
+    const t = Math.max(0, Math.min(1, past / (firm.over || 1)));
+    const share = t * t * (3 - 2 * t);
+    if (share <= 0) return list;
+    if (share >= 1) return [{ bone, w: 1 }];
+    const own = list.find((e) => e.bone === bone)?.w ?? 0;
+    return [
+      { bone, w: own + (1 - own) * share },
+      ...list.filter((e) => e.bone !== bone).map((e) => ({ bone: e.bone, w: e.w * (1 - share) })),
+    ];
+  });
+}
+
 /** Converts an unweighted mesh into a weighted one using the given per-vertex weights. */
 export function bindMesh(mesh: MeshAttachment, slotMat: Mat, bones: BoneMats, weights: { bone: Id; w: number }[][]): MeshAttachment {
   const world = meshWorldPositions(mesh, slotMat, bones);

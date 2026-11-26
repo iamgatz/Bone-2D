@@ -89,8 +89,19 @@ export function guessPart(name: string): { part: Part; side: Side } {
   return { part, side: SIDED.has(part) ? (find(SIDES) ?? '') : '' };
 }
 
+/** How a piece of the head turns: hair swings from its top, ears and hats stand on their bottom, the rest turns about its middle. */
+const HANGING: [RegExp, RegExp] = [
+  words('hair|hairs|ponytails?|pigtails?|bangs|fringe|beard|волос[а-я]*|челка|коса|косы|хвостики?|борода'),
+  /发|髮|胡|辫/,
+];
+const STANDING: [RegExp, RegExp] = [words('ears?|hats?|helmet|horns?|ухо|уши|шляпа|шапка|шлем|рога?'), /耳(?!环)|帽|角/];
+/** The picture of the face itself, which is the head and gets no bone of its own. */
+const FACE_BASE = /^(?:face|лицо|脸|臉|面部)$/;
+
 export interface RigLayer {
   id: Id;
+  /** The name of the layer with the groups it sits in ("head/hair"): it names the bone of a piece of the face. */
+  name?: string;
   part: Part;
   side: Side;
   /** Opaque places of the picture in the scene, taken on an even grid. */
@@ -114,6 +125,8 @@ interface RigSkin {
   bones: string[];
   /** Where that mesh bends: the place, and the direction the limb runs there. */
   joints: { at: Point; along: Point }[];
+  /** The part of the mesh that follows the second bone alone: from `at` along `along` its share grows, and is all `over` further. */
+  firm?: { at: Point; along: Point; over: number };
 }
 
 interface RigIk {
@@ -132,6 +145,8 @@ export interface RigPlan {
 export interface RigOptions {
   legIk: boolean;
   armIk: boolean;
+  /** Eyes, mouth, hair and the like get bones of their own on the head. */
+  faceBones: boolean;
 }
 
 interface Shape {
@@ -204,13 +219,18 @@ function ends(shape: Shape, anchor: Point): { near: Point; far: Point; width: nu
   return dist(a, anchor) <= dist(b, anchor) ? { near: a, far: b, width } : { near: b, far: a, width };
 }
 
-/** The middle of where two shapes lie over each other, null when they do not. */
-function overlap(a: Shape, b: Shape): Point | null {
+/** The places of `b` that `a` lies under, as exactly as the grids of the two allow. */
+function shared(a: Shape, b: Shape): Point[] {
   const cell = Math.max(a.step, b.step) * 1.5 || 1;
   const key = (x: number, y: number) => `${Math.floor(x / cell)},${Math.floor(y / cell)}`;
   const taken = new Set(a.points.map((p) => key(p[0], p[1])));
-  const shared = b.points.filter((p) => taken.has(key(p[0], p[1])));
-  return shared.length >= 3 ? mean(shared) : null;
+  return b.points.filter((p) => taken.has(key(p[0], p[1])));
+}
+
+/** The middle of where two shapes lie over each other, null when they do not. */
+function overlap(a: Shape, b: Shape): Point | null {
+  const both = shared(a, b);
+  return both.length >= 3 ? mean(both) : null;
 }
 
 /** The joint between two parts: in their overlap when that is where their ends meet, else halfway between the ends. */
@@ -293,8 +313,33 @@ export function planRig(input: readonly RigLayer[], opts: RigOptions): RigPlan {
     plan.bones.push({ key, name, parent, from, to });
     return key;
   };
-  const put = (shape: { ids: Id[] } | null, bones: string[], joints: RigSkin['joints'] = []) => {
-    for (const id of shape?.ids ?? []) plan.layers.push({ id, bones, joints });
+  const put = (shape: { ids: Id[] } | null, bones: string[], joints: RigSkin['joints'] = [], firm?: RigSkin['firm']) => {
+    for (const id of shape?.ids ?? []) plan.layers.push({ id, bones, joints, ...(firm && { firm }) });
+  };
+
+  /** The bone of one piece of the face, from where the piece turns to where it reaches. */
+  const piece = (layer: RigLayer) => {
+    const path = (layer.name ?? '').split('/');
+    const own = path.at(-1) || 'face';
+    const about = path.map(asWords).join(' ');
+    const is = ([latin, han]: [RegExp, RegExp]) => latin.test(about) || han.test(about);
+    const b = bounds(layer.points);
+    const inset = b.height * 0.15;
+    const centre = mean(layer.points);
+    const reach = Math.max(b.height / 2, layer.step * 2);
+    const [from, to]: [Point, Point] = is(HANGING)
+      ? [
+          [b.cx, b.maxY - inset],
+          [b.cx, Math.min(b.minY, b.maxY - inset - reach)],
+        ]
+      : is(STANDING)
+        ? [
+            [b.cx, b.minY + inset],
+            [b.cx, Math.max(b.maxY, b.minY + inset + reach)],
+          ]
+        : [centre, add(centre, [0, 1], reach)];
+    const key = bone(`face:${layer.id}`, own, 'head', from, to);
+    plan.layers.push({ id: layer.id, bones: [key], joints: [] });
   };
 
   // ---- the middle of the body: hips, torso, neck, head
@@ -323,7 +368,14 @@ export function planRig(input: readonly RigLayer[], opts: RigOptions): RigPlan {
     }
     pelvisKey = bone('hips', 'hips', null, hipPoint, waist);
     if (torso) chestKey = bone('torso', 'torso', pelvisKey, waist, neckBase);
-    put(torso, ['torso']);
+    // the body bends at the waist: its picture goes on both bones when the waist runs through it. The upper half of the spine stays
+    // whole, so that the arms and the head do not come away from the chest, with rows of vertices where that part begins.
+    const t = torso && bounds(torso.points);
+    if (t && waist[1] > t.minY + t.height * 0.1 && waist[1] < t.maxY - t.height * 0.1) {
+      const along = unit(sub(neckBase, waist));
+      const over = dist(waist, neckBase) * 0.5;
+      put(torso, ['hips', 'torso'], [{ at: add(waist, along, over), along }], { at: waist, along, over });
+    } else put(torso, ['torso']);
     put(hips, ['hips']);
   }
   const chest = chestKey ?? pelvisKey;
@@ -344,8 +396,15 @@ export function planRig(input: readonly RigLayer[], opts: RigOptions): RigPlan {
     // the head turns about a point in its lower part
     const from: Point = headBase && headBase[1] < b.minY + b.height / 2 ? headBase : [mean(head.points)[0], b.minY + b.height * 0.15];
     bone('head', 'head', headParent, from, [from[0], Math.max(b.maxY, from[1] + b.height / 2)]);
-    put(head, ['head']);
-    if (shapeOf('head')) put(shapeOf('face'), ['head']);
+    // the pieces of the face: each on a bone of its own, or all with the head
+    const skull = shapeOf('head');
+    if (skull) put(skull, ['head']);
+    for (const l of layers) {
+      if (l.part !== 'face') continue;
+      const base = FACE_BASE.test(asWords(l.name?.split('/').at(-1) ?? ''));
+      if (opts.faceBones && !base) piece(l);
+      else plan.layers.push({ id: l.id, bones: ['head'], joints: [] });
+    }
   }
 
   // ---- limbs
@@ -430,23 +489,31 @@ export function planRig(input: readonly RigLayer[], opts: RigOptions): RigPlan {
     );
   }
 
-  // ---- what is left goes on the closest bone
-  const done = new Set(plan.layers.filter((l) => l.bones.length).map((l) => l.id));
+  // ---- what is left: a detail painted over a part goes with that part, the rest on the closest bone
   plan.layers = plan.layers.filter((l) => l.bones.length);
-  for (const l of layers) {
-    if (done.has(l.id) || !plan.bones.length) continue;
+  const done = new Map(plan.layers.map((l) => [l.id, l.bones]));
+  layers.forEach((l, at) => {
+    if (done.has(l.id) || !plan.bones.length) return;
+    // the layers stand bottom first: the topmost one under this layer that holds nearly all of it
+    let under: string[] | undefined;
+    for (let k = at - 1; k >= 0 && !under && l.part === 'near'; k--) {
+      const bones = done.get(layers[k].id);
+      if (bones && shared(layers[k], l).length >= l.points.length * 0.8) under = bones;
+    }
     const [x, y] = mean(l.points);
-    let closest = plan.bones[0];
+    let closest = '';
     let best = Infinity;
     for (const b of plan.bones) {
+      if (under && !under.includes(b.key)) continue;
       const d = distToSegmentSq(x, y, b.from[0], b.from[1], b.to[0], b.to[1]);
       if (d < best) {
         best = d;
-        closest = b;
+        closest = b.key;
       }
     }
-    plan.layers.push({ id: l.id, bones: [closest.key], joints: [] });
-  }
+    plan.layers.push({ id: l.id, bones: [closest], joints: [] });
+    done.set(l.id, [closest]);
+  });
   return plan;
 }
 

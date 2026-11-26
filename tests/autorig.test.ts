@@ -1,6 +1,7 @@
 /** Auto-rig: the layers of a painted character get a skeleton from their names and shapes, without the picture moving. */
 import { beforeEach, describe, expect, it } from 'vitest';
-import { guessPart, PARTS, planRig } from '@/core/autorig';
+import { guessPart, PARTS, planRig, sampleShape } from '@/core/autorig';
+import type { Part, RigLayer } from '@/core/autorig';
 import { matApply } from '@/core/math';
 import { adjacency, autoWeights, generateMeshFromImage, imageToBoneSpace, smoothWeights } from '@/core/mesh';
 import type { MeshAttachment, RegionAttachment } from '@/core/model';
@@ -200,7 +201,7 @@ beforeEach(() => {
   uiStore.patch({ mode: 'setup', tool: 'select' });
 });
 
-const run = () => autoRig(rigCandidates(), { legIk: true, armIk: false });
+const run = (faceBones = true) => autoRig(rigCandidates(), { legIk: true, armIk: false, faceBones });
 const bone = (name: string) => {
   const found = getSetupSkeleton().bones.find((b) => b.data.name === name);
   if (!found) throw new Error(`no bone ${name}`);
@@ -257,7 +258,7 @@ describe('auto-rig', () => {
   });
 
   it('builds the tree, puts the pictures on it and gives the legs IK', () => {
-    expect(run()).toEqual({ bones: 11, meshes: 3, ik: 2 });
+    expect(run()).toEqual({ bones: 12, meshes: 4, ik: 2 });
     const doc = docStore.get().skeleton;
     const parent = (name: string) => {
       const b = doc.bones.find((x) => x.name === name)!;
@@ -270,10 +271,12 @@ describe('auto-rig', () => {
     expect(parent('forearm-l')).toBe('upper-arm-l');
     expect(parent('thigh-r')).toBe('hips');
     expect(parent('shin-r')).toBe('thigh-r');
-    expect(holder('torso')).toBe('torso');
+    expect(holder('torso')).toBe('hips');
+    expect(attachment('torso').type).toBe('mesh');
     expect(holder('thigh_l')).toBe('thigh-l');
     expect(holder('shin_l')).toBe('shin-l');
-    expect(holder('eye_l')).toBe('head');
+    expect(holder('eye_l')).toBe('eye_l');
+    expect(parent('eye_l')).toBe('head');
     expect(holder('sleeve')).toBe('upper-arm-l');
     expect(holder('background')).toBe('root');
     expect(attachment('arm_l').type).toBe('mesh');
@@ -297,12 +300,12 @@ describe('auto-rig', () => {
         [0, height],
       ].map(([x, y]) => shown(layer, x, y));
     };
-    const plain = ['torso', 'thigh_l', 'shin_l', 'head', 'eye_l', 'sleeve'];
+    const plain = ['thigh_l', 'shin_l', 'head', 'eye_l', 'sleeve'];
     const before = plain.map(corners);
     run();
     plain.forEach((layer, i) => corners(layer).forEach((p, k) => near(p, before[i][k], 0.05)));
     // a mesh shows each place of its picture where the picture was
-    for (const layer of ['arm_l', 'arm_r', 'leg_r']) {
+    for (const layer of ['arm_l', 'arm_r', 'leg_r', 'torso']) {
       const mesh = attachment(layer) as MeshAttachment;
       const { region } = FIGURE.find((l) => l.name === layer)!;
       const { mats, slotMat } = setupMats();
@@ -334,7 +337,7 @@ describe('auto-rig', () => {
     expect(
       autoRig(
         rigCandidates().map((c) => ({ ...c, part: 'keep' as const })),
-        { legIk: true, armIk: true },
+        { legIk: true, armIk: true, faceBones: true },
       ),
     ).toEqual({
       bones: 0,
@@ -342,6 +345,69 @@ describe('auto-rig', () => {
       ik: 0,
     });
     expect(docStore.get()).toBe(before);
+  });
+
+  it('gives every piece of the face its own bone on the head, unless told not to', () => {
+    run();
+    near(from('eye_l'), [-15, 390], 4);
+    docStore.undo();
+    run(false);
+    expect(holder('eye_l')).toBe('head');
+    expect(docStore.get().skeleton.bones.map((b) => b.name)).not.toContain('eye_l');
+  });
+
+  it('bends the body: the hem half stays with the hips, the chest keeps whole, without creases', () => {
+    run();
+    const mesh = attachment('torso') as MeshAttachment;
+    const world = () => {
+      const { mats, slotMat } = setupMats();
+      return meshWorldPositions(mesh, slotMat(slots.torso), mats);
+    };
+    const rest = world();
+    const waist = from('torso');
+    const neck = to('torso');
+    const turn = (degrees: number) => {
+      docStore.update('turn', (d) => void (d.skeleton.bones.find((b) => b.name === 'torso')!.rotation += degrees));
+      return world();
+    };
+    const turned = turn(30);
+    const moved = Array.from({ length: rest.length / 2 }, (_, i) => ({
+      x: rest[i * 2],
+      y: rest[i * 2 + 1],
+      by: Math.hypot(turned[i * 2] - rest[i * 2], turned[i * 2 + 1] - rest[i * 2 + 1]),
+      // how far the vertex is from where the chest bone alone would carry it
+      off: Math.hypot(
+        turned[i * 2] -
+          (waist[0] + (rest[i * 2] - waist[0]) * Math.cos(Math.PI / 6) - (rest[i * 2 + 1] - waist[1]) * Math.sin(Math.PI / 6)),
+        turned[i * 2 + 1] -
+          (waist[1] + (rest[i * 2] - waist[0]) * Math.sin(Math.PI / 6) + (rest[i * 2 + 1] - waist[1]) * Math.cos(Math.PI / 6)),
+      ),
+    }));
+    // the picture spans y 200..350; carried by the chest bone alone its bottom would move by 24
+    const hem = moved.filter((m) => m.y < 215);
+    expect(hem.length).toBeGreaterThan(1);
+    expect(Math.max(...hem.map((m) => m.by))).toBeLessThan(13);
+    // the upper chest, where the arms and the head sit, goes exactly with the chest bone
+    const up: P = [neck[0] - waist[0], neck[1] - waist[1]];
+    const chest = moved.filter((m) => ((m.x - waist[0]) * up[0] + (m.y - waist[1]) * up[1]) / (up[0] ** 2 + up[1] ** 2) > 0.52);
+    expect(chest.length).toBeGreaterThan(3);
+    expect(Math.max(...chest.map((m) => m.off))).toBeLessThan(0.1);
+    /** The share of the area that turned inside out. */
+    const folded = (bent: ArrayLike<number>) => {
+      let over = 0;
+      let all = 0;
+      for (let t = 0; t < mesh.triangles.length; t += 3) {
+        const area = (at: ArrayLike<number>) => {
+          const [a, b, c] = [0, 1, 2].map((k) => mesh.triangles[t + k] * 2);
+          return ((at[b] - at[a]) * (at[c + 1] - at[a + 1]) - (at[c] - at[a]) * (at[b + 1] - at[a + 1])) / 2;
+        };
+        all += Math.abs(area(rest));
+        if (area(rest) * area(bent) < 0) over += Math.abs(area(bent));
+      }
+      return over / all;
+    };
+    expect(folded(turned)).toBeLessThan(0.01);
+    expect(folded(turn(-60))).toBeLessThan(0.01);
   });
 
   it('folds a limb painted in one piece less than a plain trace does', () => {
@@ -400,6 +466,97 @@ describe('auto-rig', () => {
   });
 });
 
+/** A painted layer as the planner takes it. */
+function layerOf(name: string, part: Part, line: P[], radius: number): RigLayer {
+  const { region, image } = painted(name, line, radius);
+  const [left, top] = [region.x - region.width / 2, region.y + region.height / 2];
+  return { id: name, name, part, side: '', ...sampleShape(image.data, image.width, image.height, (x, y) => [left + x, top - y]) };
+}
+
+describe('the pieces of a head and the details painted on a part', () => {
+  const options = { legIk: false, armIk: false, faceBones: true };
+  const head = layerOf('head', 'head', [[0, 400]], 50);
+  const face = (name: string, line: P[], radius: number) => {
+    const plan = planRig([head, layerOf(name, 'face', line, radius)], options);
+    return { plan, bone: plan.bones.find((b) => b.key !== 'head'), skin: plan.layers.find((l) => l.id === name)! };
+  };
+
+  it.each(['hair', 'ponytail', 'Челка', 'beard', '头发'])('hangs %s from its top', (name) => {
+    const { bone } = face(
+      name,
+      [
+        [30, 430],
+        [40, 340],
+      ],
+      12,
+    );
+    expect(bone!.from[1]).toBeGreaterThan(420);
+    expect(bone!.to[1]).toBeLessThan(345);
+    expect(bone!.parent).toBe('head');
+  });
+
+  it.each(['ears', 'hat', 'Шляпа', '帽子'])('stands %s on its bottom', (name) => {
+    const { bone } = face(
+      name,
+      [
+        [0, 440],
+        [0, 490],
+      ],
+      10,
+    );
+    expect(bone!.from[1]).toBeLessThan(450);
+    expect(bone!.to[1]).toBeGreaterThan(490);
+  });
+
+  it('turns an eye or a mouth about its middle', () => {
+    const { bone, skin } = face('head/mouth', [[0, 375]], 8);
+    expect(bone!.name).toBe('mouth');
+    expect(Math.hypot(bone!.from[0], bone!.from[1] - 375)).toBeLessThan(2);
+    expect(skin.bones).toEqual([bone!.key]);
+  });
+
+  it.each(['face', 'Лицо', '脸', 'character/Face'])('leaves the base of the head (%s) on the head bone', (name) => {
+    const { plan, skin } = face(name, [[0, 395]], 40);
+    expect(plan.bones.map((b) => b.name)).toEqual(['head']);
+    expect(skin.bones).toEqual(['head']);
+  });
+
+  it('puts a detail painted over a part on that part, even when another bone is nearer', () => {
+    const body = layerOf(
+      'torso',
+      'torso',
+      [
+        [0, 305],
+        [0, 245],
+      ],
+      45,
+    );
+    const arm = layerOf(
+      'arm',
+      'arm',
+      [
+        [-40, 330],
+        [-100, 270],
+        [-100, 190],
+      ],
+      15,
+    );
+    const badge = layerOf('badge', 'near', [[-25, 318]], 6);
+    const on = (layers: RigLayer[]) => planRig(layers, options).layers.find((l) => l.id === 'badge')!.bones;
+    expect(['hips', 'torso']).toContain(on([body, arm, badge])[0]);
+    // painted under everything it lies on nothing: the nearest bone takes it
+    expect(on([badge, body, arm])).toEqual(['upper-arm']);
+  });
+
+  it('puts a detail on a detail along with it', () => {
+    const eye = layerOf('eye', 'face', [[-15, 405]], 9);
+    const glint = layerOf('glint', 'near', [[-14, 406]], 2);
+    const plan = planRig([head, eye, glint], options);
+    expect(plan.layers.find((l) => l.id === 'glint')!.bones).toEqual(plan.layers.find((l) => l.id === 'eye')!.bones);
+    expect(plan.layers.find((l) => l.id === 'eye')!.bones).not.toEqual(['head']);
+  });
+});
+
 describe('the planner with whatever it is told', () => {
   it('makes a tree with finite places for any choice of parts, shapes of one place included', () => {
     let seed = 7;
@@ -415,7 +572,7 @@ describe('the planner with whatever it is told', () => {
         const points = Array.from({ length: dot ? 1 : 12 }, (_, k): P => (dot ? [x, y] : [x + (w * (k % 3)) / 2, y + (h * (k >> 2)) / 3]));
         return { id: `s${i}`, part: PARTS[random(PARTS.length)], side: sides[random(sides.length)], points, step: 1 + random(4) };
       });
-      const plan = planRig(layers, { legIk: true, armIk: true });
+      const plan = planRig(layers, { legIk: true, armIk: true, faceBones: round % 2 === 0 });
       const keys = new Set<string>();
       for (const b of plan.bones) {
         expect([...b.from, ...b.to].every(Number.isFinite)).toBe(true);

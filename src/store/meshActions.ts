@@ -24,6 +24,7 @@ import {
   removeMeshVertices,
   setBoneWeight,
   smoothWeights,
+  holdFirm,
   swapBoneWeights,
   triangulate,
   unbindMesh,
@@ -31,7 +32,7 @@ import {
   weldWeights,
 } from '@/core/mesh';
 import { mirrorName } from '@/core/duplicate';
-import type { BoneMats, TraceOptions, TriangleMove, VertexMap } from '@/core/mesh';
+import type { BoneMats, TraceOptions, TriangleMove, VertexMap, VertexWeights } from '@/core/mesh';
 import { matApply, matInvert } from '@/core/math';
 import type { Id, Influence, MeshAttachment, RegionAttachment } from '@/core/model';
 import { setupPicture } from '@/core/sequence';
@@ -445,7 +446,12 @@ export function boneSegments(boneIds: Id[]) {
 }
 
 /** Binds (or re-binds) a mesh to the given bones using automatic weights. */
-export function bindMeshToBones(slotId: Id, name: string, boneIds: Id[]) {
+export function bindMeshToBones(
+  slotId: Id,
+  name: string,
+  boneIds: Id[],
+  adjust?: (weights: VertexWeights, world: ArrayLike<number>) => VertexWeights,
+) {
   const mesh = getShapeMesh(slotId, name);
   if (!mesh) return;
   const { mats, slotMat } = setupMats();
@@ -460,6 +466,7 @@ export function bindMeshToBones(slotId: Id, name: string, boneIds: Id[]) {
   const world = meshWorldPositions(mesh, slotMat(slotId), mats);
   let w = autoWeights(world, boneSegments(ids));
   w = smoothWeights(w, adjacency(mesh.triangles, mesh.uvs.length / 2), 2, 0.5);
+  if (adjust) w = adjust(w, world);
   const base = mesh.weights ? unbindMesh(mesh, slotMat(slotId), mats) : mesh;
   writeMesh(slotId, name, bindMesh(base, slotMat(slotId), mats, w), 'Bind mesh'); // unweighted → weighted drops the deform keys; re-binding keeps them per bone
   uiStore.patch({ brush: { ...uiStore.get().brush, bone: uiStore.get().brush.bone ?? ids[0] } });
@@ -474,10 +481,16 @@ export function unbindMeshFromBones(slotId: Id, name: string) {
 }
 
 /**
- * A picture of one limb as a mesh that follows its bones: rows of vertices where it bends (`joints`, in the scene), automatic weights.
- * For the auto-rig, which turns it into a step of its own history entry.
+ * A picture as a mesh that follows its bones: rows of vertices where it bends (`joints`, in the scene), automatic weights, and with
+ * `firm` a part of it that follows the second bone alone. For the auto-rig, which turns it into a step of its own history entry.
  */
-export function bendMesh(slotId: Id, name: string, boneIds: Id[], joints: readonly { at: [number, number]; along: [number, number] }[]) {
+export function bendMesh(
+  slotId: Id,
+  name: string,
+  boneIds: Id[],
+  joints: readonly { at: [number, number]; along: [number, number] }[],
+  firm?: Parameters<typeof holdFirm>[3],
+) {
   const region = getRegion(slotId, name);
   const img = region && assets.getImageData(setupPicture(region) ?? region.path);
   if (!region || !img) return;
@@ -507,7 +520,7 @@ export function bendMesh(slotId: Id, name: string, boneIds: Id[], joints: readon
     height: region.height,
   };
   writeMesh(slotId, name, mesh, 'Convert to mesh');
-  bindMeshToBones(slotId, name, boneIds);
+  bindMeshToBones(slotId, name, boneIds, firm && ((weights, world) => holdFirm(weights, world, boneIds[1], firm)));
 }
 
 /** The selected vertices of this mesh (Spine: Auto, Smooth, Prune and Swap work on them; with none selected, on the whole mesh). */

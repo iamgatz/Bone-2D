@@ -14,6 +14,25 @@ export interface Release {
 
 export const CHANGELOG: Release[] = [
   {
+    version: '1.1',
+    date: '2026-11-26',
+    en: [
+      'Auto-rig bends the body: the torso picture becomes a mesh on the hips and the chest, so its lower edge stays closer to the hips while the chest and shoulders turn as one.',
+      'Auto-rig gives every piece of the face (eyes, mouth, hair, ears, hat) its own bone on the head; hair hangs from its top, ears and hats stand on their bottom. It can be switched off.',
+      'Auto-rig puts a detail with an unknown name (a badge, a glint) on the part it is painted over, not just on the nearest bone.',
+    ],
+    ru: [
+      'Авториг сгибает туловище: его картинка становится мешем на бёдрах и груди, так что нижний край держится ближе к бёдрам, а грудь и плечи поворачиваются как одно целое.',
+      'Авториг даёт каждой части лица (глаза, рот, волосы, уши, шляпа) свою кость на голове; волосы подвешены за верх, уши и шляпы стоят на нижнем краю. Это можно выключить.',
+      'Авториг крепит деталь с незнакомым названием (значок, блик) к той части, поверх которой она нарисована, а не просто к ближайшей кости.',
+    ],
+    zh: [
+      '自动绑定可弯曲身体：躯干图片变为绑定在髋部和胸部的网格，下缘更贴近髋部，胸部和肩部整体转动。',
+      '自动绑定为每个面部部件（眼睛、嘴、头发、耳朵、帽子）在头部创建单独的骨骼；头发从顶部垂挂，耳朵和帽子立于底部。可以关闭。',
+      '自动绑定把名称无法识别的细节（徽章、高光）固定到它所覆盖的部件上，而不只是最近的骨骼。',
+    ],
+  },
+  {
     version: '1.0',
     date: '2026-11-26',
     en: [

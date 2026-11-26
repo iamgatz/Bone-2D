@@ -75,19 +75,20 @@ export function rigCandidates(): RigCandidate[] {
 }
 
 /** The opaque places of every chosen picture, where the setup pose shows them. Pictures do not change while the choices do. */
-export function rigShapes(slotIds: readonly Id[]): Map<Id, Pick<RigLayer, 'points' | 'step'>> {
+export function rigShapes(slotIds: readonly Id[]): Map<Id, Pick<RigLayer, 'name' | 'points' | 'step'>> {
   const { slotMat } = setupMats();
-  const out = new Map<Id, Pick<RigLayer, 'points' | 'step'>>();
+  const doc = skeletonDoc();
+  const out = new Map<Id, Pick<RigLayer, 'name' | 'points' | 'step'>>();
   for (const slotId of slotIds) {
     const att = pictureOf(slotId);
     const img = att && assets.getImageData(setupPicture(att) ?? att.path);
     if (!att || !img) continue;
     const toBone = imageToBoneSpace(att, img.width, img.height);
     const bone = slotMat(slotId);
-    out.set(
-      slotId,
-      sampleShape(img.data, img.width, img.height, (px, py) => matApply(bone, ...toBone(px, py))),
-    );
+    // the groups of the picture, then the name the slot has now
+    const groups = (att.path ?? att.name).split('/').slice(0, -1);
+    const name = [...groups, doc.slots.find((s) => s.id === slotId)!.name].join('/');
+    out.set(slotId, { name, ...sampleShape(img.data, img.width, img.height, (px, py) => matApply(bone, ...toBone(px, py))) });
   }
   return out;
 }
@@ -140,7 +141,7 @@ export function autoRig(choices: readonly RigChoice[], opts: RigOptions): { bone
       setSlotBone(layer.id, bones[0]);
       const att = pictureOf(layer.id);
       if (bones.length > 1 && att) {
-        bendMesh(layer.id, att.name, bones, layer.joints);
+        bendMesh(layer.id, att.name, bones, layer.joints, layer.firm);
         meshes++;
       }
     }

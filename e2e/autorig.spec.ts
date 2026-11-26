@@ -172,13 +172,33 @@ test('a layered character gets its skeleton from the dialog, and one Undo takes 
   await expect(dialog.getByRole('combobox', { name: 'leg left: side' })).toHaveValue('l');
   // the layer with a name that says nothing is corrected by hand
   await expect(dialog.getByRole('combobox', { name: 'mystery: part' })).toHaveValue('near');
+  await expect(dialog.getByRole('switch', { name: 'Face bones' })).toHaveCount(0);
   await dialog.getByRole('combobox', { name: 'mystery: part' }).selectOption('face');
+  // a piece of the face gets a bone of its own, unless that is switched off
+  await expect(preview.locator('[data-bone="mystery"]')).toHaveCount(1);
+  const faceBones = dialog.getByRole('switch', { name: 'Face bones' });
+  await faceBones.click();
+  await expect(preview.locator('[data-bone]')).toHaveCount(11);
+  await faceBones.click();
+  await expect(preview.locator('[data-bone]')).toHaveCount(12);
   await page.screenshot({ path: 'test-results/autorig-dialog.png' });
   await dialog.getByRole('button', { name: 'Build rig' }).click();
   await expect(dialog).toHaveCount(0);
-  await expect.poll(async () => (await rig(page)).bones.length).toBe(14);
-  expect(await rig(page)).toMatchObject({ meshes: ['arm right', 'leg right', 'leg left', 'arm left'], mystery: 'head', ik: 2 });
+  await expect.poll(async () => (await rig(page)).bones.length).toBe(15);
+  expect(await rig(page)).toMatchObject({
+    meshes: ['arm right', 'leg right', 'torso', 'leg left', 'arm left'],
+    mystery: 'mystery',
+    ik: 2,
+  });
   await page.screenshot({ path: 'test-results/autorig-built.png' });
+  // the chest bends the body: what the screen shows with the torso bone turned
+  await page.evaluate(async (u) => {
+    const { docStore } = (await import(u.doc)) as DocModule;
+    docStore.update('turn', (d) => void (d.skeleton.bones.find((b) => b.name === 'torso')!.rotation += 25));
+  }, URLS);
+  await page.waitForTimeout(300);
+  await page.screenshot({ path: 'test-results/autorig-bent.png' });
+  await page.keyboard.press('Control+z');
   await page.keyboard.press('Control+z');
   await expect.poll(async () => await rig(page)).toMatchObject({ bones: ['root'], meshes: [], ik: 0 });
   expect(errors).toEqual([]);
@@ -197,5 +217,7 @@ test('the dialog is opened again from the command palette, in Russian', async ({
   await page.keyboard.press('Enter');
   await expect(dialog).toBeVisible();
   await expect(dialog.getByRole('combobox', { name: 'torso: часть' })).toHaveValue('torso');
+  await dialog.getByRole('combobox', { name: 'mystery: часть' }).selectOption('face');
+  await expect(dialog.getByRole('switch', { name: 'Кости лица' })).toBeChecked();
   await page.screenshot({ path: 'test-results/autorig-ru.png' });
 });

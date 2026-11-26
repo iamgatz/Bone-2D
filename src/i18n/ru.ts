@@ -438,6 +438,9 @@ export const RU: Record<string, string> = {
   'Web game files saved: serve the folder and open index.html':
     'Файлы для веб-игры сохранены: раздайте папку веб-сервером и откройте index.html',
   'Could not make the web game files: {}': 'Не удалось сделать файлы для веб-игры: {}',
+  'Face bones': 'Кости лица',
+  'Eyes, mouth, hair, ears and hats each get a bone of their own on the head':
+    'Глаза, рот, волосы, уши и шляпы получают по своей кости на голове',
   'Re-trace': 'Трассировать заново',
   Retriangulate: 'Перетриангулировать',
   'Rebuild the triangles inside the outline': 'Перестроить треугольники внутри контура',

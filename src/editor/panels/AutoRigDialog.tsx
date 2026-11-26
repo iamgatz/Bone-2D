@@ -114,15 +114,17 @@ function AutoRigDialog() {
   const [rows, setRows] = useState(rigCandidates);
   const [legIk, setLegIk] = useState(true);
   const [armIk, setArmIk] = useState(false);
+  const [faceBones, setFaceBones] = useState(true);
   const [marked, setMarked] = useState<string | null>(null);
   // looking at the pictures takes a moment: once, when the dialog opens
   const [shapes] = useState(() => rigShapes(rows.map((r) => r.slotId)));
-  const plan = useMemo(() => planFor(rows, shapes, { legIk, armIk }), [rows, shapes, legIk, armIk]);
+  const options = useMemo(() => ({ legIk, armIk, faceBones }), [legIk, armIk, faceBones]);
+  const plan = useMemo(() => planFor(rows, shapes, options), [rows, shapes, options]);
   const meshes = plan.layers.filter((l) => l.bones.length > 1).length;
   const change = (slotId: string, patch: Partial<RigCandidate>) =>
     setRows((list) => list.map((r) => (r.slotId === slotId ? { ...r, ...patch } : r)));
   const build = () => {
-    autoRig(rows, { legIk, armIk });
+    autoRig(rows, options);
     closeAutoRig();
     // the character that was just built comes into view
     setTimeout(() => viewportApi.frame(), 60);
@@ -194,6 +196,11 @@ function AutoRigDialog() {
       <Field label="IK for arms" title="Each arm gets an IK constraint and a target to pull its hand by">
         <Toggle on={armIk} onChange={setArmIk} title="IK for arms" />
       </Field>
+      {rows.some((r) => r.part === 'face') && (
+        <Field label="Face bones" title="Eyes, mouth, hair, ears and hats each get a bone of their own on the head">
+          <Toggle on={faceBones} onChange={setFaceBones} title="Face bones" />
+        </Field>
+      )}
     </Dialog>
   );
 }

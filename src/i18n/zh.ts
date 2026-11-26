@@ -417,6 +417,8 @@ export const ZH: Record<string, string> = {
   'Web game files saved, but these pictures are missing: {}': '网页游戏文件已保存，但缺少这些图片：{}',
   'Web game files saved: serve the folder and open index.html': '网页游戏文件已保存：用网页服务器提供该文件夹并打开 index.html',
   'Could not make the web game files: {}': '无法生成网页游戏文件：{}',
+  'Face bones': '面部骨骼',
+  'Eyes, mouth, hair, ears and hats each get a bone of their own on the head': '眼睛、嘴、头发、耳朵和帽子各自在头部获得一根骨骼',
   'Re-trace': '重新描边',
   Retriangulate: '重新三角化',
   'Rebuild the triangles inside the outline': '重建轮廓内的三角形',
