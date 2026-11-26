@@ -34,7 +34,9 @@ describe('layout rules', () => {
   });
 
   it('the top bar keeps Export in view: the secondary buttons are dropped in two steps', () => {
-    expect(css).toMatch(/@media \(max-width: 1240px\)\s*\{\s*\.tb-opt\s*\{\s*display:\s*none;/);
+    // three languages in the switch: the words go early enough, or the Russian bar pushes Export out of the window
+    expect(css).toMatch(/@media \(max-width: 1380px\)\s*\{\s*\.tb-label\s*\{\s*display:\s*none;/);
+    expect(css).toMatch(/@media \(max-width: 1250px\)\s*\{\s*\.tb-opt\s*\{\s*display:\s*none;/);
     expect(css).toMatch(/@media \(max-width: 1130px\)\s*\{\s*\.tb-opt2\s*\{\s*display:\s*none;/);
   });
 });

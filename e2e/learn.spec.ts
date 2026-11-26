@@ -2,6 +2,8 @@ import AxeBuilder from '@axe-core/playwright';
 import { expect, test } from '@playwright/test';
 import type { Page } from '@playwright/test';
 import { CURVES_LESSON, FOX_LESSON, IK_LESSON, LESSONS, MESH_LESSON, RIG_LESSON, SKINS_LESSON, EXPORT_LESSON } from '../src/core/lessons';
+import { RU } from '../src/i18n/ru';
+import { ZH } from '../src/i18n/zh';
 
 type BoneActions = typeof import('../src/store/boneActions');
 type DocModule = typeof import('../src/store/doc');
@@ -9,6 +11,11 @@ type UiModule = typeof import('../src/store/ui');
 const UI = '/src/store/ui.ts';
 const BONES = '/src/store/boneActions.ts';
 const DOC = '/src/store/doc.ts';
+
+const LOCALES = ['en-US', 'ru-RU', 'zh-CN'] as const;
+const LANG = { 'en-US': 'en', 'ru-RU': 'ru', 'zh-CN': 'zh' } as const;
+/** An English text of the interface as the page of a language shows it. */
+const shown = (lang: 'en' | 'ru' | 'zh', en: string) => (lang === 'en' ? en : { ru: RU, zh: ZH }[lang][en]);
 
 /** Starts clean once (not at every reload, so what the editor remembers can be tested), then opens the demo from the welcome window. */
 async function openFresh(page: Page) {
@@ -34,8 +41,8 @@ async function openDemoWithLesson(page: Page) {
   await expect.poll(() => page.locator('.row .label').count()).toBeGreaterThan(5);
 }
 
-for (const locale of ['en-US', 'ru-RU'] as const) {
-  const lang = locale === 'ru-RU' ? 'ru' : 'en';
+for (const locale of LOCALES) {
+  const lang = LANG[locale];
   test.describe(`the fox lesson (${locale})`, () => {
     test.use({ locale });
 
@@ -98,7 +105,7 @@ for (const locale of ['en-US', 'ru-RU'] as const) {
       await expect(page.locator('[data-learn-hl]')).toHaveCount(0);
 
       // Done closes it, and it does not come back after a reload (it was finished and offered once)
-      await card.getByRole('button', { name: lang === 'ru' ? 'Готово' : 'Done' }).click();
+      await card.getByRole('button', { name: shown(lang, 'Done') }).click();
       await expect(card).toHaveCount(0);
       await page.reload();
       await expect(page.locator('.learn')).toHaveCount(0);
@@ -112,13 +119,13 @@ for (const locale of ['en-US', 'ru-RU'] as const) {
       await card.locator('.btn.ghost').click(); // skip the first step
       await expect(card.locator('.learn-step-title')).toHaveText(FOX_LESSON.steps[1].title[lang]);
 
-      await card.getByRole('button', { name: lang === 'ru' ? 'Свернуть урок' : 'Fold the lesson' }).click();
+      await card.getByRole('button', { name: shown(lang, 'Fold the lesson') }).click();
       await expect(card.locator('.learn-body')).toHaveCount(0);
       await expect(page.locator('[data-learn-hl]')).toHaveCount(0); // folded: no frame either
-      await card.getByRole('button', { name: lang === 'ru' ? 'Развернуть урок' : 'Unfold the lesson' }).click();
+      await card.getByRole('button', { name: shown(lang, 'Unfold the lesson') }).click();
       await expect(page.locator('[data-learn-hl]')).toHaveCount(1);
 
-      await card.getByRole('button', { name: lang === 'ru' ? 'Закрыть урок' : 'Close the lesson' }).click();
+      await card.getByRole('button', { name: shown(lang, 'Close the lesson') }).click();
       await expect(card).toHaveCount(0);
       await expect(page.locator('[data-learn-hl]')).toHaveCount(0);
 
@@ -175,8 +182,8 @@ type SessionActions = typeof import('../src/store/sessionActions');
 const SLOTS = '/src/store/slotActions.ts';
 const SESSION = '/src/store/sessionActions.ts';
 
-for (const locale of ['en-US', 'ru-RU'] as const) {
-  const lang = locale === 'ru-RU' ? 'ru' : 'en';
+for (const locale of LOCALES) {
+  const lang = LANG[locale];
   test.describe(`the rig lesson (${locale})`, () => {
     test.use({ locale });
 
@@ -256,8 +263,8 @@ for (const locale of ['en-US', 'ru-RU'] as const) {
   });
 }
 
-for (const locale of ['en-US', 'ru-RU'] as const) {
-  const lang = locale === 'ru-RU' ? 'ru' : 'en';
+for (const locale of LOCALES) {
+  const lang = LANG[locale];
   test.describe(`the mesh lesson (${locale})`, () => {
     test.use({ locale });
 
@@ -289,12 +296,12 @@ for (const locale of ['en-US', 'ru-RU'] as const) {
       // 2. Quad, 3. Bind (the buttons of the Inspector)
       await page
         .locator('aside.right')
-        .getByRole('button', { name: /^(Quad|Квадрат)$/ })
+        .getByRole('button', { name: /^(Quad|Квадрат|四边形)$/ })
         .click();
       await expect(card.locator('.learn-step-title')).toHaveText(step(2).title[lang]);
       await page
         .locator('aside.right')
-        .getByRole('button', { name: /^(Bind to|Привязать к)/ })
+        .getByRole('button', { name: /^(Bind to|Привязать к|绑定到)/ })
         .click();
       await expect(card.locator('.learn-step-title')).toHaveText(step(3).title[lang]);
 
@@ -330,8 +337,8 @@ for (const locale of ['en-US', 'ru-RU'] as const) {
   });
 }
 
-for (const locale of ['en-US', 'ru-RU'] as const) {
-  const lang = locale === 'ru-RU' ? 'ru' : 'en';
+for (const locale of LOCALES) {
+  const lang = LANG[locale];
   for (const width of [1100, 1440]) {
     test.describe(`the Lessons button (${locale}, ${width}px)`, () => {
       test.use({ locale, viewport: { width, height: 720 } });
@@ -382,8 +389,8 @@ for (const locale of ['en-US', 'ru-RU'] as const) {
 type IkActions = typeof import('../src/store/ikActions');
 const IK = '/src/store/ikActions.ts';
 
-for (const locale of ['en-US', 'ru-RU'] as const) {
-  const lang = locale === 'ru-RU' ? 'ru' : 'en';
+for (const locale of LOCALES) {
+  const lang = LANG[locale];
   test.describe(`the IK lesson (${locale})`, () => {
     test.use({ locale });
 
@@ -465,8 +472,8 @@ type KeyRefs = typeof import('../src/core/keyrefs');
 const KEYFRAMES = '/src/store/keyframeActions.ts';
 const KEYREFS = '/src/core/keyrefs.ts';
 
-for (const locale of ['en-US', 'ru-RU'] as const) {
-  const lang = locale === 'ru-RU' ? 'ru' : 'en';
+for (const locale of LOCALES) {
+  const lang = LANG[locale];
   test.describe(`the curves lesson (${locale})`, () => {
     test.use({ locale });
 
@@ -542,9 +549,8 @@ for (const locale of ['en-US', 'ru-RU'] as const) {
   });
 }
 
-for (const locale of ['en-US', 'ru-RU'] as const) {
-  const lang = locale === 'ru-RU' ? 'ru' : 'en';
-  const name = (en: string, ru: string) => (lang === 'ru' ? ru : en);
+for (const locale of LOCALES) {
+  const lang = LANG[locale];
   test.describe(`the skins lesson (${locale})`, () => {
     test.use({ locale });
 
@@ -558,7 +564,7 @@ for (const locale of ['en-US', 'ru-RU'] as const) {
       await expect(page.locator('[data-learn="tree"]')).toHaveAttribute('data-learn-hl', '');
 
       // 1. the plus of the Skins section (a new skin is shown at once)
-      await page.getByRole('button', { name: name('New skin', 'Новый скин'), exact: true }).click();
+      await page.getByRole('button', { name: shown(lang, 'New skin'), exact: true }).click();
       await expect(card.locator('.learn-step-title')).toHaveText(step(1).title[lang]);
 
       // 2. back to another skin by a click on its row
@@ -566,7 +572,7 @@ for (const locale of ['en-US', 'ru-RU'] as const) {
       await expect(card.locator('.learn-step-title')).toHaveText(step(2).title[lang]);
 
       // 3. the plus of the Events section
-      await page.getByRole('button', { name: name('New event', 'Новое событие'), exact: true }).click();
+      await page.getByRole('button', { name: shown(lang, 'New event'), exact: true }).click();
       await expect(card.locator('.learn-step-title')).toHaveText(step(3).title[lang]);
 
       // 4. Tab (the plus button was clicked and holds the focus, so it goes back to the page first)
@@ -576,7 +582,7 @@ for (const locale of ['en-US', 'ru-RU'] as const) {
 
       // 5. the diamond of the new event (the last one in the list)
       await page
-        .getByRole('button', { name: name('Fire this event at the playhead', 'Вызвать это событие в текущем кадре'), exact: true })
+        .getByRole('button', { name: shown(lang, 'Fire this event at the playhead'), exact: true })
         .last()
         .click();
       await expect(card.locator('.learn-step-title')).toHaveText(step(5).title[lang]);
@@ -600,9 +606,8 @@ for (const locale of ['en-US', 'ru-RU'] as const) {
   });
 }
 
-for (const locale of ['en-US', 'ru-RU'] as const) {
-  const lang = locale === 'ru-RU' ? 'ru' : 'en';
-  const name = (en: string, ru: string) => (lang === 'ru' ? ru : en);
+for (const locale of LOCALES) {
+  const lang = LANG[locale];
   test.describe(`the export lesson (${locale})`, () => {
     test.use({ locale });
 
@@ -620,7 +625,7 @@ for (const locale of ['en-US', 'ru-RU'] as const) {
       await expect(card.locator('.learn-step-title')).toHaveText(step(1).title[lang]);
 
       // 2. the ZIP (the button is enabled when the export is built)
-      const zipButton = page.getByRole('button', { name: name('Download ZIP', 'Скачать ZIP'), exact: true });
+      const zipButton = page.getByRole('button', { name: shown(lang, 'Download ZIP'), exact: true });
       await expect(zipButton).toBeEnabled();
       const zip = page.waitForEvent('download');
       await zipButton.click();
@@ -629,7 +634,7 @@ for (const locale of ['en-US', 'ru-RU'] as const) {
 
       // 3. the player page
       const player = page.waitForEvent('download');
-      await page.getByRole('button', { name: name('Save player page', 'Сохранить страницу-плеер'), exact: true }).click();
+      await page.getByRole('button', { name: shown(lang, 'Save player page'), exact: true }).click();
       expect((await player).suggestedFilename()).toMatch(/-player\.html$/);
       await expect(card.locator('.learn-count')).toHaveText('3/3');
       await expect(card.locator('.learn-text')).toHaveText(EXPORT_LESSON.outro[lang]);

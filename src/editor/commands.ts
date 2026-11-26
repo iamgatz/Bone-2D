@@ -28,6 +28,7 @@ import { startSetParent } from '@/store/parentActions';
 import { copyPose, duplicateSelection, flipScale, moveBoneOrderAction, pastePose, resetPose, swapSides } from '@/store/poseActions';
 import { LESSONS } from '@/core/lessons';
 import { getLang } from '@/i18n';
+import type { Lang } from '@/i18n';
 import { openLesson } from '@/store/learn';
 import { newProject, openProjectFile, packageProject, saveProjectFile } from '@/store/project';
 import { pickProjectToCompare } from '@/store/checkpoints';
@@ -44,6 +45,9 @@ import { KEYS } from './hotkeys';
 import { openAtlasUnpack, openSpineImport } from './importSpine';
 import { TOOLS, hotkeyOf } from './tools';
 import { viewportApi } from './viewport/Viewport';
+
+/** A lesson is named in the palette with its title in the current language. */
+const LESSON_PREFIX: Record<Lang, string> = { en: 'Lesson: ', ru: 'Урок: ', zh: '课程：' };
 
 export interface Command {
   id: string;
@@ -247,7 +251,7 @@ export function buildCommands(): Command[] {
     ...LESSONS.map((l) => ({
       id: `app.lesson.${l.id}`,
       group: 'Help',
-      title: getLang() === 'ru' ? `Урок: ${l.title.ru}` : `Lesson: ${l.title.en}`,
+      title: `${LESSON_PREFIX[getLang()]}${l.title[getLang()]}`,
       run: () => void openLesson(l.id),
     })),
     { id: 'app.updates', group: 'Help', title: 'Updates: what is new and the project activity', run: open('updatesOpen') },

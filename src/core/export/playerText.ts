@@ -1,10 +1,10 @@
 /**
- * The words of the player page, in the two languages of the editor. The page is one file that goes to people who never saw the editor, so it
- * chooses its language by itself from the language of the browser that opens it (Russian when that is Russian, English for everything else).
+ * The words of the player page, in the languages of the editor. The page is one file that goes to people who never saw the editor, so it
+ * chooses its language by itself from the language of the browser that opens it (Russian or Chinese when it is one of those, English for everything else).
  * Pure: the player script and the tests read the same table.
  */
 
-export type PlayerLang = 'en' | 'ru';
+export type PlayerLang = 'en' | 'ru' | 'zh';
 
 const en = {
   play: 'Play',
@@ -54,11 +54,35 @@ const ru: Record<PlayerKey, string> = {
   couldNotStart: 'Не удалось запустить плеер: {message}',
 };
 
-export const PLAYER_TEXTS: Record<PlayerLang, Record<PlayerKey, string>> = { en, ru };
+const zh: Record<PlayerKey, string> = {
+  play: '播放',
+  pause: '暂停',
+  background: '背景',
+  backgroundTip: '浅色或深色背景',
+  comment: '评论',
+  commentTip: '在动画的当前时刻添加评论',
+  send: '发送评论（{n}）',
+  sendTip: '把你的评论下载为文件，发给动画师',
+  close: '关闭',
+  addComment: '添加评论',
+  yourName: '你的名字',
+  whatShould: '这里需要怎么改？',
+  animation: '动画',
+  skin: '皮肤',
+  defaultSkin: '默认',
+  dialogLabel: '评论',
+  boneHint: '单击画面中的骨骼，让评论指向它',
+  bone: '骨骼：{name}',
+  clearBone: '不指向任何骨骼',
+  couldNotStart: '无法启动播放器：{message}',
+};
+
+export const PLAYER_TEXTS: Record<PlayerLang, Record<PlayerKey, string>> = { en, ru, zh };
 
 /** The language of the page for the language of the browser (`navigator.language`, `ru`, `ru-RU`, `RU_ru`…). */
 export function playerLang(browserLanguage: string | null | undefined): PlayerLang {
-  return typeof browserLanguage === 'string' && /^ru(?![a-z])/i.test(browserLanguage.trim()) ? 'ru' : 'en';
+  const code = typeof browserLanguage === 'string' ? browserLanguage.trim() : '';
+  return /^ru(?![a-z])/i.test(code) ? 'ru' : /^zh(?![a-z])/i.test(code) ? 'zh' : 'en';
 }
 
 /** A text of the page in a language, with `{name}` places filled in. */

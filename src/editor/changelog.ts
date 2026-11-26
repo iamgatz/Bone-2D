@@ -1,6 +1,7 @@
 /**
  * What changed, newest first. The Updates window shows it, and the dot on its button lights up when the newest entry has not been opened yet.
- * Every line has both languages here (the language runtime translates the interface, not data), so a new entry is one object.
+ * The lines of every language are here (the language runtime translates the interface, not data), so a new entry is one object.
+ * Chinese starts with 0.93; the older entries show in English there.
  */
 export interface Release {
   /** Shown as the title; also what the "seen" mark remembers. */
@@ -8,9 +9,21 @@ export interface Release {
   date: string;
   en: string[];
   ru: string[];
+  zh?: string[];
 }
 
 export const CHANGELOG: Release[] = [
+  {
+    version: '0.94',
+    date: '2026-11-26',
+    en: [
+      'Chinese interface (Simplified): switch EN / RU / 中文 in the top bar. A browser set to Chinese opens the editor in Chinese by itself; the lessons and the exported player page are translated too.',
+    ],
+    ru: [
+      'Интерфейс на китайском (упрощённом): переключатель EN / RU / 中文 в верхней панели. Если в браузере выбран китайский, редактор сам откроется на нём; уроки и страница плеера тоже переведены.',
+    ],
+    zh: ['新增简体中文界面：在顶部栏切换 EN / RU / 中文。浏览器语言为中文时，编辑器会自动以中文打开；课程和导出的播放器页面也已翻译。'],
+  },
   {
     version: '0.93',
     date: '2026-11-26',
@@ -21,6 +34,10 @@ export const CHANGELOG: Release[] = [
     ru: [
       'Исправлено: сетку или путь нельзя было привязать ни к какой кости, кроме своей (сообщение в issue #7). Выбор кости снимал картинку, а выбор картинки снимал кость. Теперь щелчок с Shift (или с Ctrl в иерархии) добавляет кости к выбранной картинке, и во вьюпорте, и в иерархии; работает и в обратном порядке: сначала кости, потом щелчок с Shift по картинке. Добавленные кости подсвечиваются. Обычный щелчок по-прежнему выбирает что-то одно.',
       'Исправлено: при выбранной картинке клавиша Delete и кнопка корзины в иерархии удаляли кость, на которой лежит картинка, вместе со всем, что на этой кости. Теперь они удаляют картинку: выбранное изображение, если в слоте их несколько, иначе слот. Когда выбраны точки сетки или многоугольника, Delete удаляет только точки.',
+    ],
+    zh: [
+      '修复：网格或路径只能绑定到它自身所在的骨骼（issue #7）。选择骨骼会取消图片的选择，选择图片又会丢掉骨骼。现在按住 Shift 单击（层级树中也可用 Ctrl 单击）即可在保持图片选中的同时添加骨骼，反过来的顺序也可以。',
+      '修复：选中图片时，Delete 键和层级树的垃圾桶按钮会删除图片所在的骨骼以及该骨骼上的全部内容。现在只删除图片。',
     ],
   },
   {

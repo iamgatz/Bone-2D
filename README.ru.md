@@ -1,6 +1,6 @@
 # Bone 2D
 
-[English](README.md) · **Русский**
+[English](README.md) · **Русский** · [简体中文](README.zh-CN.md)
 
 <p align="center"><img src="docs/media/kit-walk.gif" alt="Демо-лиса Kit идёт: IK-ноги, физический хвост, уши и шарф" width="280"></p>
 
@@ -10,7 +10,7 @@
 Открытый код (MIT), в духе Spine. Пишет формат **Spine 4.3** (`.json` или бинарный `.skel`, `.atlas`, `.png`), а результат сверяется с официальным рантаймом `spine-core`.
 
 **[Открыть редактор →](https://iamgatz.github.io/Bone-2D/)** Демо-риг «Kit» открывается одним щелчком.
-Прямые ссылки: [`?demo`](https://iamgatz.github.io/Bone-2D/?demo) открывает лису, [`?demo=wave`](https://iamgatz.github.io/Bone-2D/?demo=wave) открывает её с играющей анимацией `wave` (есть ещё `walk`, `jump`, `idle`). Интерфейс на русском и английском.
+Прямые ссылки: [`?demo`](https://iamgatz.github.io/Bone-2D/?demo) открывает лису, [`?demo=wave`](https://iamgatz.github.io/Bone-2D/?demo=wave) открывает её с играющей анимацией `wave` (есть ещё `walk`, `jump`, `idle`). Интерфейс на русском, английском и упрощённом китайском.
 При первом открытии демо двухминутный интерактивный урок («Оживите лису») проведёт по главному циклу работы; из справки его можно запустить снова, а в меню «Обучение» всего семь уроков (риг, сетка, IK, кривые, скины и события, экспорт).
 
 ## Возможности
@@ -55,7 +55,7 @@ src/render    WebGL2-рендерер (батчи, blend-режимы, двух�
 src/editor    React-панели, viewport, dopesheet и график, горячие клавиши
 src/player    страница, которую открывает рецензент
 tests, e2e    vitest (unit, дифф-тесты, случайные сессии) и дымовые тесты Playwright
-docs          архитектура, сравнение со Spine, журнал разработки
+docs          архитектура, сравнение со Spine
 ```
 
 Стек: TypeScript (strict), Vite, React 19, immer, delaunator, собственный WebGL2-рендерер. Карта для разработчиков — [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) (на английском).

@@ -179,3 +179,8 @@
     --dur-slow: 0.01ms;
   }
 }
+
+/* Chinese: Latin letters stay in Inter, the characters come from the system's Simplified Chinese font */
+:root:lang(zh) {
+  --font: 'Inter Variable', Inter, system-ui, -apple-system, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', sans-serif;
+}

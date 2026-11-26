@@ -43,6 +43,8 @@ async function main() {
   const over = $<HTMLCanvasElement>('over');
   // the words follow the language of the browser that opens the page
   const lang = playerLang(navigator.language);
+  // the browser picks the glyphs of a Chinese text by the language of the page
+  document.documentElement.lang = lang === 'zh' ? 'zh-CN' : lang;
   const T = (key: PlayerKey, vars: Record<string, string | number> = {}) => playerText(lang, key, vars);
   const images = await loadImages(payload);
   const renderer = new GLRenderer(canvas);

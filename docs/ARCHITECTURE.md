@@ -1,6 +1,6 @@
 # Architecture
 
-A short map for someone who wants to change the code. The development log (what each release did and why, in Russian) is [IDEAS.md](IDEAS.md).
+A short map for someone who wants to change the code.
 
 ## The idea
 
@@ -23,7 +23,7 @@ Everything that decides how a skeleton looks lives in `src/core` and has no DOM,
 | `src/store` | The document store (`doc.ts`: immer patches, one undo step per gesture), the UI store, the settings, the solved scene (`scene.ts`), and the actions the UI calls, one file per area (`boneActions`, `slotActions`, `animationActions`, `keyframeActions`, `skinActions`, ...; `actions.ts` lists them). Reads that need no action live in `accessors.ts`. |
 | `src/render` | The WebGL2 renderer: batches, blend modes, two-color tint, stencil clipping. |
 | `src/editor` | The React panels, the viewport (tools and the overlay), the dopesheet and the graph editor, the hotkey table, the command palette. |
-| `src/i18n` | English / Russian. UI texts stay English in the components and are translated while rendering. |
+| `src/i18n` | English / Russian / Chinese. UI texts stay English in the components and are translated while rendering. |
 | `src/player` | The standalone page a reviewer opens to look at an animation and leave comments. |
 | `cli` | `npm run cli`: export and check a project without the editor. |
 | `tests` | Vitest: unit tests, differential tests against the official runtime, and the random editor sessions (fuzzer). |
@@ -48,7 +48,7 @@ Run the long fuzzer with `FUZZ_FROM=1 FUZZ_SEEDS=300 FUZZ_STEPS=100 npx vitest r
 
 ## Adding a UI string
 
-Write the English text in the component and add its Russian translation to `src/i18n/ru.ts` (`{}` in a key matches any text, `{#}` a number). `npm test` fails when a static string has no translation.
+Write the English text in the component and add its translations to `src/i18n/ru.ts` and `src/i18n/zh.ts` (`{}` in a key matches any text, `{#}` a number). `npm test` fails when a static string has no translation.
 
 ## Adding a hotkey
 

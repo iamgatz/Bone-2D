@@ -1,30 +1,48 @@
 /**
- * Interface language (English / Русский).
+ * Interface language (English / Русский / 中文).
  *
  * The strings in the components stay English. `tr()` translates a string when it is displayed: the custom JSX runtime
  * (`jsx-runtime.ts`, selected by `jsxImportSource` in vite.config.ts and tsconfig.json) runs every string child and the text props
  * (`title`, `label`, `placeholder`, ...) through it, so components need no `t()` calls. Strings built in code (toasts, undo labels)
  * are translated the same way when they are rendered.
  *
- * To translate something new, add it to `ru.ts` (`{}` in a key matches any text and `{#}` a number; the matched parts are translated too).
- * `tests/i18n.test.ts` fails when a static UI string in the sources has no Russian text.
+ * To translate something new, add it to `ru.ts` and `zh.ts` (`{}` in a key matches any text and `{#}` a number; the matched parts are
+ * translated too). `tests/i18n.test.ts` fails when a static UI string in the sources has no text in one of the languages.
  */
 import { useSyncExternalStore } from 'react';
 import { RU } from './ru';
+import { ZH } from './zh';
 
-export type Lang = 'en' | 'ru';
+export type Lang = 'en' | 'ru' | 'zh';
+
+/** The languages with the names the switches show. */
+export const LANGS: { value: Lang; label: string }[] = [
+  { value: 'en', label: 'EN' },
+  { value: 'ru', label: 'RU' },
+  { value: 'zh', label: '中文' },
+];
 
 const STORAGE_KEY = 'bone2d.lang';
-const TITLE: Record<Lang, string> = { en: 'Bone 2D — 2D skeletal animation', ru: 'Bone 2D — 2D-скелетная анимация' };
+const TITLE: Record<Lang, string> = {
+  en: 'Bone 2D — 2D skeletal animation',
+  ru: 'Bone 2D — 2D-скелетная анимация',
+  zh: 'Bone 2D — 2D 骨骼动画',
+};
+/** What `<html lang>` says: the browser picks the glyphs of a Chinese text by it. */
+const HTML_LANG: Record<Lang, string> = { en: 'en', ru: 'ru', zh: 'zh-CN' };
+
+const isLang = (v: unknown): v is Lang => LANGS.some((l) => l.value === v);
 
 function detect(): Lang {
   try {
     const saved = localStorage.getItem(STORAGE_KEY);
-    if (saved === 'en' || saved === 'ru') return saved;
+    if (isLang(saved)) return saved;
   } catch {
     /* storage can be blocked (private mode, sandboxed frame) */
   }
-  return typeof navigator !== 'undefined' && /^ru\b/i.test(navigator.language) ? 'ru' : 'en';
+  const browser = typeof navigator !== 'undefined' ? navigator.language : '';
+  // every Chinese browser gets the Simplified text: closer to a reader of the Traditional script than English is
+  return /^ru\b/i.test(browser) ? 'ru' : /^zh\b/i.test(browser) ? 'zh' : 'en';
 }
 
 interface State {
@@ -38,7 +56,7 @@ const state: State = (global.__bone2dI18n ??= { lang: detect(), listeners: new S
 
 function applyDocument() {
   if (typeof document === 'undefined') return;
-  document.documentElement.lang = state.lang;
+  document.documentElement.lang = HTML_LANG[state.lang];
   document.title = TITLE[state.lang];
 }
 applyDocument();
@@ -75,30 +93,48 @@ interface Pattern {
   weight: number;
 }
 
-const exact = new Map<string, string>();
-const patterns: Pattern[] = [];
+interface Dictionary {
+  exact: Map<string, string>;
+  patterns: Pattern[];
+  /** What stands between the items of a translated list. */
+  comma: string;
+}
+
 const escapeRe = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
-for (const [en, ru] of Object.entries(RU)) {
-  if (!/\{#?\}/.test(en)) {
-    exact.set(en, ru);
-    continue;
+function compile(table: Record<string, string>, comma: string): Dictionary {
+  const exact = new Map<string, string>();
+  const patterns: Pattern[] = [];
+  for (const [en, text] of Object.entries(table)) {
+    if (!/\{#?\}/.test(en)) {
+      exact.set(en, text);
+      continue;
+    }
+    // `{}` matches any text, `{#}` only a number
+    const source = en
+      .split(/(\{#?\})/)
+      .map((tok) => (tok === '{}' ? '(.+?)' : tok === '{#}' ? '(\\d+(?:\\.\\d+)?)' : escapeRe(tok)))
+      .join('');
+    patterns.push({
+      re: new RegExp('^' + source + '$'),
+      fill: (parts) => {
+        let next = 0;
+        return text.replace(/\{(\d*)\}/g, (_, n: string) => parts[n ? Number(n) - 1 : next++] ?? '');
+      },
+      weight: en.replace(/\{#?\}/g, '').length,
+    });
   }
-  // `{}` matches any text, `{#}` only a number
-  const source = en
-    .split(/(\{#?\})/)
-    .map((tok) => (tok === '{}' ? '(.+?)' : tok === '{#}' ? '(\\d+(?:\\.\\d+)?)' : escapeRe(tok)))
-    .join('');
-  patterns.push({
-    re: new RegExp('^' + source + '$'),
-    fill: (parts) => {
-      let next = 0;
-      return ru.replace(/\{(\d*)\}/g, (_, n: string) => parts[n ? Number(n) - 1 : next++] ?? '');
-    },
-    weight: en.replace(/\{#?\}/g, '').length,
-  });
+  patterns.sort((a, b) => b.weight - a.weight);
+  return { exact, patterns, comma };
 }
-patterns.sort((a, b) => b.weight - a.weight);
+
+const tables: Record<Exclude<Lang, 'en'>, () => Dictionary> = {
+  ru: () => compile(RU, ', '),
+  zh: () => compile(ZH, '，'),
+};
+const compiled: Partial<Record<Lang, Dictionary>> = {};
+/** The dictionary of a language, built when it is first needed. */
+const dictionary = (lang: Exclude<Lang, 'en'>): Dictionary => (compiled[lang] ??= tables[lang]());
 
 const missing = new Set<string>();
 function noteMissing(core: string) {
@@ -107,19 +143,19 @@ function noteMissing(core: string) {
 }
 
 /** "2 problems repaired, 1 image could not be read": a list whose items are known texts. */
-function translateList(core: string): { text: string; all: boolean } | null {
+function translateList(core: string, comma: string): { text: string; all: boolean } | null {
   if (!core.includes(', ')) return null;
   const parts = core.split(', ');
   const out = parts.map((s) => tr(s));
   const changed = out.filter((s, i) => s !== parts[i]).length;
-  return changed ? { text: out.join(', '), all: changed === parts.length } : null;
+  return changed ? { text: out.join(comma), all: changed === parts.length } : null;
 }
 
-function translate(core: string): string {
+function translate(core: string, { exact, patterns, comma }: Dictionary): string {
   const hit = exact.get(core);
   if (hit !== undefined) return hit;
   // a list goes first: a lazy `{}` in a pattern would otherwise swallow several items
-  const list = translateList(core);
+  const list = translateList(core, comma);
   if (list?.all) return list.text;
   for (const p of patterns) {
     const m = p.re.exec(core);
@@ -138,7 +174,7 @@ export function tr(s: string): string {
   const m = /^(\s*)([\s\S]*?)(\s*)$/.exec(s)!;
   let out = s;
   if (m[2] && /[A-Za-z]{2}/.test(m[2])) {
-    const t = translate(m[2]);
+    const t = translate(m[2], dictionary(state.lang));
     if (t !== m[2]) out = m[1] + t + m[3];
   }
   if (state.cache.size > 3000) state.cache.clear();

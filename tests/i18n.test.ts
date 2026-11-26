@@ -3,6 +3,7 @@ import { join } from 'node:path';
 import { afterAll, describe, expect, it } from 'vitest';
 import { setLang, tr } from '@/i18n';
 import { RU } from '@/i18n/ru';
+import { ZH } from '@/i18n/zh';
 
 function sources(dir: string, out: string[] = []): string[] {
   for (const e of readdirSync(dir, { withFileTypes: true })) {
@@ -62,8 +63,12 @@ function staticStrings(): { file: string; text: string }[] {
 describe('interface language', () => {
   afterAll(() => setLang('en'));
 
+  it('has the same keys in Russian and in Chinese', () => {
+    expect(Object.keys(ZH).sort()).toEqual(Object.keys(RU).sort());
+  });
+
   it('keeps the placeholders of every pattern', () => {
-    for (const [en, ru] of Object.entries(RU)) {
+    for (const [en, ru] of [...Object.entries(RU), ...Object.entries(ZH)]) {
       const parts = (en.match(/\{#?\}/g) ?? []).length;
       const used = [...ru.matchAll(/\{(\d*)\}/g)];
       if (parts === 0) {
@@ -117,10 +122,31 @@ describe('interface language', () => {
     expect(tr('Click to fold')).not.toBe('Click to fold');
   });
 
-  it('has a Russian text for every static UI string in the sources', () => {
+  it('writes Chinese where it should: no Russian letters, and no sentence left in English', () => {
+    expect(Object.values(ZH).filter((zh) => /[а-яё]/i.test(zh) || zh.trim() === '')).toEqual([]);
+    // what has no Chinese character is a name that stays as it is: a format, a key, a unit, a product
+    const kept = Object.entries(ZH).filter(([, zh]) => !/[\u4e00-\u9fff]/.test(zh));
+    expect(kept.filter(([en]) => /[a-z]{3,} [a-z]{3,}/.test(en)).map(([en]) => en)).toEqual([]);
+  });
+
+  it('translates texts built from parts into Chinese, with the parts in the order Chinese needs', () => {
+    setLang('zh');
+    expect(tr('Save')).toBe('保存');
+    expect(tr('arm-upper')).toBe('arm-upper');
+    expect(tr('Copied 3 keys')).toBe('已复制 3 个关键帧');
+    expect(tr('Made 3 animations from "walk"')).toBe('已从“walk”生成 3 个动画');
+    expect(tr('Took 2 from old save')).toBe('已从 old save 取回 2 项');
+    expect(tr('Opened bolt.bone2d (2 problems repaired, 1 image could not be read)')).toBe(
+      '已打开 bolt.bone2d（修复了 2 个问题，1 张图片无法读取）',
+    );
+    expect(tr('arm · rotation')).toBe('arm · 旋转');
+    setLang('en');
+  });
+
+  it('has a text in every language for every static UI string in the sources', () => {
     const strings = staticStrings();
     expect(strings.length).toBeGreaterThan(150); // the scan itself works
     const missing = strings.filter((s) => !covered(s.text)).map((s) => `${s.file}: ${s.text}`);
-    expect(missing, 'add these to src/i18n/ru.ts').toEqual([]);
+    expect(missing, 'add these to src/i18n/ru.ts and src/i18n/zh.ts').toEqual([]);
   });
 });

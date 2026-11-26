@@ -21,7 +21,7 @@ async function scan(page: Page) {
   return r.violations.map((v) => `${v.impact} ${v.id} x${v.nodes.length}: ${v.nodes[0]?.target.join(' ')}`);
 }
 
-for (const locale of ['en-US', 'ru-RU']) {
+for (const locale of ['en-US', 'ru-RU', 'zh-CN']) {
   test.describe(`accessibility (axe) ${locale}`, () => {
     test.use({ locale });
 

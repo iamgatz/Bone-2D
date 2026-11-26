@@ -4,6 +4,7 @@ import { ENGINE_NEED_TEXTS, engineNeeds } from '../src/core/export/engineNeeds';
 import { emptyProject } from '../src/core/model';
 import type { Attachment } from '../src/core/model';
 import { RU } from '../src/i18n/ru';
+import { ZH } from '../src/i18n/zh';
 import { buildFixture } from './fixture';
 import { addPhysicsRig } from './physicsrig';
 
@@ -116,7 +117,7 @@ describe('engineNeeds', () => {
 
 describe('the texts', () => {
   it('are all translated into Russian (the dialog shows them as they are)', () => {
-    for (const t of ENGINE_NEED_TEXTS) expect(RU[t], t).toBeTruthy();
+    for (const t of ENGINE_NEED_TEXTS) for (const table of [RU, ZH]) expect(table[t], t).toBeTruthy();
   });
   it('are written once each', () => {
     expect(new Set(ENGINE_NEED_TEXTS).size).toBe(ENGINE_NEED_TEXTS.length);

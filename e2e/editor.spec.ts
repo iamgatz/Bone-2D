@@ -53,8 +53,9 @@ test('the icon of every icon button sits in the middle of the button', async ({ 
   expect(off).toBeLessThan(0.75);
 });
 
-for (const locale of ['en-US', 'ru-RU']) {
-  for (const width of [1100, 1440, 1920]) {
+for (const locale of ['en-US', 'ru-RU', 'zh-CN']) {
+  // 1251 and 1381 are the narrowest windows that show one more part of the top bar
+  for (const width of [1100, 1251, 1381, 1440, 1920]) {
     test.describe(`${locale} at ${width}px`, () => {
       test.use({ locale });
       test('nothing spills sideways', async ({ page }) => {
@@ -62,15 +63,16 @@ for (const locale of ['en-US', 'ru-RU']) {
         await openDemo(page);
         const spill = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
         expect(spill).toBeLessThanOrEqual(0);
+        expect(await page.locator('.topbar').evaluate((el) => el.scrollWidth - el.clientWidth)).toBeLessThanOrEqual(0);
       });
     });
   }
 }
 
-// the panels dragged to their smallest: no panel may grow a sideways scrollbar, whatever is selected and in either language
+// the panels dragged to their smallest: no panel may grow a sideways scrollbar, whatever is selected and in every language
 type ActionsModule = typeof import('../src/store/actions');
 const ACTIONS = '/src/store/actions.ts';
-for (const locale of ['en-US', 'ru-RU']) {
+for (const locale of ['en-US', 'ru-RU', 'zh-CN']) {
   test.describe(`panels at their minimum width (${locale})`, () => {
     test.use({ locale });
     test('no panel scrolls sideways for any bone or slot, in Setup and in Animate', async ({ page }) => {

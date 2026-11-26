@@ -1,4 +1,4 @@
-/** The lessons: the data is complete in both languages, every step condition says what it should, and the store follows the editor. */
+/** The lessons: the data is complete in every language, every step condition says what it should, and the store follows the editor. */
 import { beforeEach, describe, expect, it } from 'vitest';
 import {
   CURVES_LESSON,
@@ -60,9 +60,10 @@ const state = (over: Partial<LessonState> = {}): LessonState => ({
 
 const TARGETS = ['tree', 'viewport', 'inspector', 'mode', 'play', 'export', 'images', 'toolIk', 'timeline', 'graph'];
 const russian = (s: string) => /[а-яё]/i.test(s);
+const chinese = (s: string) => /[\u4e00-\u9fff]/.test(s);
 
 describe('lesson data', () => {
-  it('has every text in both languages, unique ids and known targets', () => {
+  it('has every text in every language, unique ids and known targets', () => {
     const ids = new Set<string>();
     for (const lesson of LESSONS) {
       expect(ids.has(lesson.id)).toBe(false);
@@ -71,6 +72,8 @@ describe('lesson data', () => {
         expect(t.en.trim().length).toBeGreaterThan(3);
         expect(russian(t.ru), `Russian text: ${t.ru}`).toBe(true);
         expect(russian(t.en), `English text: ${t.en}`).toBe(false);
+        expect(chinese(t.zh), `Chinese text: ${t.zh}`).toBe(true);
+        expect(chinese(t.en) || russian(t.zh), `languages mixed: ${t.en}`).toBe(false);
       }
       const stepIds = new Set<string>();
       for (const step of lesson.steps) {
@@ -81,6 +84,8 @@ describe('lesson data', () => {
           expect(t.en.trim().length).toBeGreaterThan(3);
           expect(russian(t.ru), `Russian text: ${t.ru}`).toBe(true);
           expect(russian(t.en), `English text: ${t.en}`).toBe(false);
+          expect(chinese(t.zh), `Chinese text: ${t.zh}`).toBe(true);
+          expect(chinese(t.en) || russian(t.zh), `languages mixed: ${t.en}`).toBe(false);
         }
       }
     }

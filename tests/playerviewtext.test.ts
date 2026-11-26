@@ -1,4 +1,4 @@
-/** The player page: its words in two languages, and the click that points a comment at a bone. */
+/** The player page: its words in every language, and the click that points a comment at a bone. */
 import { describe, expect, it } from 'vitest';
 import playerScript from 'virtual:bone2d-player';
 import { PLAYER_TEXTS, playerLang, playerText } from '../src/core/export/playerText';
@@ -8,39 +8,44 @@ import { canvasToWorld, distanceToSegment, nearestBone, viewScale, worldToCanvas
 import { buildFixture } from './fixture';
 
 describe('the words of the page', () => {
-  it('every text exists in both languages and none is empty', () => {
+  it('every text exists in every language and none is empty', () => {
     const en = Object.keys(PLAYER_TEXTS.en).sort();
-    expect(Object.keys(PLAYER_TEXTS.ru).sort()).toEqual(en);
-    for (const lang of ['en', 'ru'] as const)
+    for (const lang of ['ru', 'zh'] as const) expect(Object.keys(PLAYER_TEXTS[lang]).sort()).toEqual(en);
+    for (const lang of ['en', 'ru', 'zh'] as const)
       for (const key of en as PlayerKey[]) expect(PLAYER_TEXTS[lang][key].trim().length, `${lang}.${key}`).toBeGreaterThan(0);
   });
 
-  it('a Russian text is not the English one, except where a word is the same in both', () => {
-    const same = (Object.keys(PLAYER_TEXTS.en) as PlayerKey[]).filter((k) => PLAYER_TEXTS.en[k] === PLAYER_TEXTS.ru[k]);
-    expect(same).toEqual([]);
+  it('a translated text is not the English one', () => {
+    const keys = Object.keys(PLAYER_TEXTS.en) as PlayerKey[];
+    for (const lang of ['ru', 'zh'] as const) expect(keys.filter((k) => PLAYER_TEXTS.en[k] === PLAYER_TEXTS[lang][k])).toEqual([]);
   });
 
-  it('the places to fill have the same names in both languages', () => {
+  it('the places to fill have the same names in every language', () => {
     const slots = (s: string) => (s.match(/\{\w+\}/g) ?? []).sort().join();
     for (const key of Object.keys(PLAYER_TEXTS.en) as PlayerKey[])
-      expect(slots(PLAYER_TEXTS.ru[key]), key).toBe(slots(PLAYER_TEXTS.en[key]));
+      for (const lang of ['ru', 'zh'] as const) expect(slots(PLAYER_TEXTS[lang][key]), key).toBe(slots(PLAYER_TEXTS.en[key]));
   });
 
-  it('is Russian for a Russian browser and English for the rest', () => {
+  it('follows the language of the browser: Russian, Chinese, and English for the rest', () => {
     for (const l of ['ru', 'ru-RU', 'RU', 'ru_RU', ' ru-UA ']) expect(playerLang(l), l).toBe('ru');
-    for (const l of ['en', 'en-US', 'de', 'uk', 'rus', 'ruby', '', null, undefined]) expect(playerLang(l as never), String(l)).toBe('en');
+    for (const l of ['zh', 'zh-CN', 'ZH_cn', 'zh-TW', 'zh-Hans-SG']) expect(playerLang(l), l).toBe('zh');
+    for (const l of ['en', 'en-US', 'de', 'uk', 'rus', 'ruby', 'zha', '', null, undefined])
+      expect(playerLang(l as never), String(l)).toBe('en');
   });
 
   it('fills the places and leaves a place nobody filled as it is', () => {
     expect(playerText('en', 'send', { n: 3 })).toBe('Send comments (3)');
     expect(playerText('ru', 'send', { n: 3 })).toBe('Отправить комментарии (3)');
+    expect(playerText('zh', 'send', { n: 3 })).toBe('发送评论（3）');
     expect(playerText('en', 'bone', { name: 'arm' })).toBe('Bone: arm');
     expect(playerText('en', 'bone')).toBe('Bone: {name}');
   });
 
-  it('the page script carries the Russian words, and the shell has the places the script fills', () => {
+  it('the page script carries the translated words, and the shell has the places the script fills', () => {
     expect(playerScript).toContain('Отправить комментарии');
     expect(playerScript).toContain('Щёлкните кость');
+    // the bundler may write the characters as escapes
+    expect(playerScript.replace(/\\u([0-9a-fA-F]{4})/g, (_, h: string) => String.fromCharCode(parseInt(h, 16)))).toContain('发送评论');
     const html = playerPageHtml({ title: 'Hero', skeleton: buildFixture().project.skeleton, images: {}, smooth: true }, 'x');
     for (const id of [
       'over',

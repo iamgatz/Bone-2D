@@ -1,6 +1,6 @@
 # Bone 2D
 
-**English** · [Русский](README.ru.md)
+**English** · [Русский](README.ru.md) · [简体中文](README.zh-CN.md)
 
 <p align="center"><img src="docs/media/kit-walk.gif" alt="The demo fox Kit walking: IK legs, a physics tail, ears and scarf" width="280"></p>
 
@@ -10,7 +10,7 @@
 Open source (MIT), in the spirit of Spine. It writes the **Spine 4.3** format (`.json` or binary `.skel`, `.atlas`, `.png`), and the result is checked against the official `spine-core` runtime.
 
 **[Open the editor →](https://iamgatz.github.io/Bone-2D/)** The demo rig "Kit" is one click away.
-Direct links: [`?demo`](https://iamgatz.github.io/Bone-2D/?demo) opens the fox, [`?demo=wave`](https://iamgatz.github.io/Bone-2D/?demo=wave) opens it playing the `wave` animation (also `walk`, `jump`, `idle`). The interface is in English and Russian.
+Direct links: [`?demo`](https://iamgatz.github.io/Bone-2D/?demo) opens the fox, [`?demo=wave`](https://iamgatz.github.io/Bone-2D/?demo=wave) opens it playing the `wave` animation (also `walk`, `jump`, `idle`). The interface is in English, Russian and Simplified Chinese.
 The first time you open the demo, a two-minute interactive lesson ("Bring the fox to life") leads you through the main loop; Help brings it back, and the Learn menu holds seven lessons in all (rigging, meshes, IK, curves, skins and events, export).
 
 ## Features
@@ -55,7 +55,7 @@ src/render    WebGL2 renderer (batches, blend modes, two-color tint, stencil cli
 src/editor    React panels, the viewport, the dopesheet and the graph editor, hotkeys
 src/player    the page a reviewer opens
 tests, e2e    vitest (unit, differential, random sessions) and Playwright smoke tests
-docs          architecture, the Spine comparison, the development log
+docs          architecture, the Spine comparison
 ```
 
 Stack: TypeScript (strict), Vite, React 19, immer, delaunator, an own WebGL2 renderer. The map for contributors is [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).

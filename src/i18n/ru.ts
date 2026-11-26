@@ -1231,6 +1231,8 @@ export const RU: Record<string, string> = {
   'Mid drag': 'Средняя кн.',
   'Right drag': 'Правая кн.',
   drag: 'мышь',
+  'drag a key': 'перетащить ключ',
+  'drag a selected key': 'перетащить выбранный ключ',
   Updates: 'Обновления',
   'Updates: what is new and the project activity': 'Обновления: что нового и активность проекта',
   'Send feedback to the author': 'Написать автору',

@@ -106,7 +106,7 @@ export function UpdatesDialog() {
                 <span className="muted">{r.date}</span>
               </h3>
               <ul>
-                {r[lang].map((line) => (
+                {(r[lang] ?? r.en).map((line) => (
                   <li key={line}>{line}</li>
                 ))}
               </ul>

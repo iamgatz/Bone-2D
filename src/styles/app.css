@@ -125,13 +125,13 @@ textarea {
 .tb-opt2 {
   display: contents;
 }
-@media (max-width: 1240px) {
+@media (max-width: 1250px) {
   .tb-opt {
     display: none;
   }
 }
-/* the Learn button keeps only its icon, and the project name is shorter, so the top bar fits in a window up to 1340 px wide */
-@media (max-width: 1340px) {
+/* the Learn button keeps only its icon, and the project name is shorter, so the top bar fits in a window up to 1380 px wide */
+@media (max-width: 1380px) {
   .tb-label {
     display: none;
   }

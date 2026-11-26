@@ -43,13 +43,13 @@ $env:FUZZ_SEEDS='100'; $env:FUZZ_STEPS='80'; npx vitest run tests/fuzz.test.ts
 
 ## Interface texts
 
-Texts stay English in the components and are translated while rendering. Add the Russian text of every new string to `src/i18n/ru.ts` (`{}` in a key matches any text, `{#}` a number); `npm test` fails when a static string has no translation. To add another language, add a dictionary like `ru.ts` and extend `Lang`.
+Texts stay English in the components and are translated while rendering. Add every new string to `src/i18n/ru.ts` (Russian) and `src/i18n/zh.ts` (Simplified Chinese) (`{}` in a key matches any text, `{#}` a number); `npm test` fails when a static string has no translation or the two lists differ. If you do not know a language, say so in the pull request. To add another language, add a dictionary like `ru.ts` and extend `Lang`.
 
 ## Pull requests
 
 - One topic per pull request; a short description of what changed and why.
 - Tests for what you changed. A bug fix comes with a test that fails without it.
-- Add a line to `src/editor/changelog.ts` (English and Russian) when the change is visible to a user.
+- Add a line to `src/editor/changelog.ts` (English, Russian and Chinese) when the change is visible to a user.
 
 ## Where to start
 

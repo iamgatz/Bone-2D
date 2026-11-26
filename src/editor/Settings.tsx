@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { RotateCcw } from 'lucide-react';
-import { setLang, useLang } from '@/i18n';
+import { LANGS, setLang, useLang } from '@/i18n';
 import { BONE_SCALE_RANGE, DEFAULT_SETTINGS, resetSettings, setSettings, useSettings } from '@/store/settings';
 import { forgetSavedCurve } from '@/store/actions';
 import { toast, uiStore } from '@/store/ui';
@@ -180,13 +180,7 @@ export function SettingsDialog() {
         {tab === 'general' && (
           <>
             <Row label="Language">
-              <Segmented
-                className="lang"
-                label="Language"
-                value={lang}
-                onChange={setLang}
-                options={(['en', 'ru'] as const).map((l) => ({ value: l, label: l.toUpperCase() }))}
-              />
+              <Segmented className="lang" label="Language" value={lang} onChange={setLang} options={LANGS} />
             </Row>
             <Row label="Welcome window" hint="Shown when the editor starts with an empty project">
               <Toggle on={showWelcome} onChange={(v) => setSettings({ showWelcome: v })} title="Welcome window" />

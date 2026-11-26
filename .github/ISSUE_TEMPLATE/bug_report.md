@@ -18,5 +18,5 @@ Attach the `.bone2d` file (File → Save) if you can. Drag it into this box.
 **Where**
 - Browser and version:
 - Operating system:
-- Interface language (English / Russian):
+- Interface language (English / Russian / Chinese):
 - For an export problem: the runtime and its version that read the file:
