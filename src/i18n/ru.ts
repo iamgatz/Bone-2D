@@ -422,6 +422,15 @@ export const RU: Record<string, string> = {
   Right: 'Справа',
   Front: 'Спереди',
   Back: 'Сзади',
+  'Sprite sheet': 'Спрайтшит',
+  'For games that play frames: the frames cut and packed onto a picture, with a JSON file in the TexturePacker "hash" form (frames, their order and time, the origin).':
+    'Для игр, играющих кадры: кадры обрезаны и уложены на картинку, рядом JSON в формате TexturePacker «hash» (кадры, их порядок и длительность, точка отсчёта).',
+  'A ZIP with one PNG per frame, full color and soft transparency: for video editors and other tools.':
+    'ZIP с PNG на каждый кадр, полный цвет и мягкая прозрачность: для видеоредакторов и других программ.',
+  'All animations': 'Все анимации',
+  'Put every animation on the sheet': 'Положить на лист все анимации',
+  'Page size': 'Размер листа',
+  'Sprite sheet: frames {#}, different pictures {#}, pages {#}': 'Спрайтшит: кадров {}, разных картинок {}, листов {}',
   'Re-trace': 'Трассировать заново',
   Retriangulate: 'Перетриангулировать',
   'Rebuild the triangles inside the outline': 'Перестроить треугольники внутри контура',
@@ -1804,8 +1813,6 @@ export const RU: Record<string, string> = {
   'Render an animation to pictures': 'Отрисовать анимацию в картинки',
   'One animated picture that plays anywhere. 256 colors, transparency is on or off.':
     'Одна анимированная картинка, играет везде. 256 цветов, прозрачность включена или выключена.',
-  'A ZIP with one PNG per frame, full color and soft transparency: for sprite sheets and video editors.':
-    'ZIP с одним PNG на кадр, полный цвет и мягкая прозрачность: для спрайт-листов и видеоредакторов.',
   'A video, recorded in real time by the browser (it takes as long as the animation). It has no transparency.':
     'Видео, браузер записывает его в реальном времени (это занимает столько же, сколько идёт анимация). Прозрачности нет.',
   'Make an animation first: it is rendered frame by frame.': 'Сначала создайте анимацию: она рисуется кадр за кадром.',

@@ -26,7 +26,12 @@ export interface RenderOptions {
   to?: number;
   /** Seconds the animation runs before the first frame, so the physics has settled (as if it had been looping). */
   warmUp?: number;
+  /** The part of the scene the pictures show, to give several animations frames of one size; default: what this animation covers. */
+  box?: Box | null;
 }
+
+/** A part of the scene: smallest x and y, largest x and y. */
+export type Box = [number, number, number, number];
 
 export interface Prepared {
   width: number;
@@ -34,6 +39,8 @@ export interface Prepared {
   /** Number of frames: the animation without its last instant (it is the first one again in a loop). */
   count: number;
   fps: number;
+  /** The pixel of the picture where the origin of the skeleton is (it may lie outside). */
+  origin: [number, number];
   /** The picture of frame `i`; the canvas is reused, so copy what you need before asking for the next one. */
   frame(i: number): ImageData;
   dispose(): void;
@@ -44,7 +51,8 @@ const MAX_SIDE = 4096;
 /** The number of frames of an animation at `fps`. */
 export const frameCount = (duration: number, fps: number) => Math.max(1, Math.round(duration * fps));
 
-export function prepareRender(opts: RenderOptions): Prepared {
+/** A skeleton that poses the frames of the range asked for. */
+function posing(opts: RenderOptions) {
   const { animation: anim, fps } = opts;
   const data = compileSkeleton(opts.doc);
   const skeleton: Skeleton = createSkeleton(data, opts.skinId ?? null);
@@ -53,31 +61,33 @@ export function prepareRender(opts: RenderOptions): Prepared {
   // the range of frames asked for (clamped, at least one frame)
   const first = Math.max(0, Math.min(total - 1, Math.floor(opts.from ?? 0)));
   const count = Math.max(1, Math.min(total, Math.floor(opts.to ?? total)) - first);
-
   // posing runs forward: physics keeps its state from the frame before
   const { pose: poseFrame } = makePoser(skeleton, anim, fps, hasPhysics, opts.warmUp ?? 0);
-  const pose = (i: number) => poseFrame(first + i);
+  return { skeleton, count, pose: (i: number) => poseFrame(first + i) };
+}
 
-  // the bounds of the whole animation, so every frame has the same size and the character does not jump about
-  let minX = Infinity;
-  let minY = Infinity;
-  let maxX = -Infinity;
-  let maxY = -Infinity;
+/** What the frames of an animation cover, all of them together; null when they show nothing. */
+export function animationBox(opts: RenderOptions): Box | null {
+  const { skeleton, count, pose } = posing(opts);
+  let box: Box | null = null;
   for (let i = 0; i < count; i++) {
     pose(i);
     const b = skeleton.getBounds();
-    if (!b) continue;
-    minX = Math.min(minX, b[0]);
-    minY = Math.min(minY, b[1]);
-    maxX = Math.max(maxX, b[0] + b[2]);
-    maxY = Math.max(maxY, b[1] + b[3]);
+    if (b) box = joinBoxes(box, [b[0], b[1], b[0] + b[2], b[1] + b[3]]);
   }
-  if (minX === Infinity) {
-    minX = -50;
-    minY = -50;
-    maxX = 50;
-    maxY = 50;
-  }
+  return box;
+}
+
+export function joinBoxes(a: Box | null, b: Box | null): Box | null {
+  if (!a || !b) return a ?? b;
+  return [Math.min(a[0], b[0]), Math.min(a[1], b[1]), Math.max(a[2], b[2]), Math.max(a[3], b[3])];
+}
+
+export function prepareRender(opts: RenderOptions): Prepared {
+  const { fps } = opts;
+  // one box for every frame, so the pictures have one size and the character does not jump about
+  const [minX, minY, maxX, maxY] = opts.box ?? animationBox(opts) ?? [-50, -50, 50, 50];
+  const { skeleton, count, pose } = posing(opts);
   const pad = Math.max(0, opts.padding);
   let scale = opts.scale;
   const side = (v: number) => Math.ceil((v - 0) * scale + pad * 2);
@@ -107,6 +117,7 @@ export function prepareRender(opts: RenderOptions): Prepared {
     height,
     count,
     fps,
+    origin: [width / 2 - cam.x * scale, height / 2 + cam.y * scale],
     frame(i) {
       pose(Math.min(count - 1, Math.max(0, i)));
       renderer.begin(cam, bg ? [bg[0], bg[1], bg[2], 1] : [0, 0, 0, 0]);

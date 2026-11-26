@@ -14,6 +14,28 @@ export interface Release {
 
 export const CHANGELOG: Release[] = [
   {
+    version: '0.99',
+    date: '2026-11-26',
+    en: [
+      'Sprite sheet export (Export → Animation): the frames of one or of all animations, trimmed and packed onto a picture, with a JSON file in the TexturePacker "hash" form. For games that play frames.',
+      "Every frame of every animation has the same size and carries the place of the skeleton's origin (pivot), so switching animations does not make the character jump. Frames that look the same are stored once.",
+      'Fixed: rendering an animation with physics a second time gave different frames than the first time.',
+      'Fixed: Render pressed right after a setting was changed could use the old settings.',
+    ],
+    ru: [
+      'Экспорт спрайтшита («Экспорт» → «Анимация»): кадры одной или всех анимаций обрезаются и укладываются на картинку, рядом JSON в формате TexturePacker «hash». Для игр, играющих кадры.',
+      'Все кадры всех анимаций одного размера и несут положение начала координат скелета (pivot), поэтому при смене анимации персонаж не прыгает. Одинаковые кадры хранятся один раз.',
+      'Исправлено: повторный рендер анимации с физикой давал не те же кадры, что первый.',
+      'Исправлено: кнопка «Отрисовать», нажатая сразу после смены настройки, могла взять старые настройки.',
+    ],
+    zh: [
+      '精灵表导出（“导出”→“动画”）：一个或全部动画的帧经裁剪后打包到图片上，附带 TexturePacker “hash” 格式的 JSON，用于逐帧播放的游戏。',
+      '所有动画的每一帧尺寸相同，并带有骨架原点位置（pivot），切换动画时角色不会跳动。相同的帧只保存一次。',
+      '修复：带物理效果的动画第二次渲染时，帧与第一次不一致。',
+      '修复：修改设置后立即点击渲染，可能仍使用旧设置。',
+    ],
+  },
+  {
     version: '0.98',
     date: '2026-11-26',
     en: [

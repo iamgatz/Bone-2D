@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Film } from 'lucide-react';
 import { useProject } from '@/store/doc';
 import { downloadBlob } from '@/store/project';
@@ -7,16 +7,19 @@ import type { EncodeJob } from '@/store/encodeInWorker';
 import { toast } from '@/store/ui';
 import { Button, ColorSwatch, NumberField, SelectField, Toggle } from './ui/controls';
 import { Segmented } from './ui/Segmented';
-import { frameCount, framesToWebm, frameToJpeg, frameToPng, prepareRender } from './renderAnimation';
+import { animationBox, frameCount, framesToWebm, frameToJpeg, frameToPng, joinBoxes, prepareRender } from './renderAnimation';
 import { frameDelay } from '@/core/export/apng';
-import type { Prepared } from './renderAnimation';
+import { sheetBuilder } from '@/core/export/spriteSheet';
+import type { Box, Prepared, RenderOptions } from './renderAnimation';
 
-type Format = 'gif' | 'apng' | 'png' | 'jpeg' | 'webm';
+type Format = 'gif' | 'apng' | 'sheet' | 'png' | 'jpeg' | 'webm';
 
 const FORMAT_NOTE: Record<Format, string> = {
   gif: 'One animated picture that plays anywhere. 256 colors, transparency is on or off.',
   apng: 'One animated PNG: full color and soft transparency, plays in browsers like a picture.',
-  png: 'A ZIP with one PNG per frame, full color and soft transparency: for sprite sheets and video editors.',
+  sheet:
+    'For games that play frames: the frames cut and packed onto a picture, with a JSON file in the TexturePacker "hash" form (frames, their order and time, the origin).',
+  png: 'A ZIP with one PNG per frame, full color and soft transparency: for video editors and other tools.',
   jpeg: 'A ZIP with one JPEG per frame. Small files, no transparency: for previews and video editors.',
   webm: 'A video, recorded in real time by the browser (it takes as long as the animation). It has no transparency.',
 };
@@ -39,6 +42,9 @@ export function ExportAnimation() {
   const [transparent, setTransparent] = useState(true);
   const [bg, setBg] = useState<[number, number, number]>([0.075, 0.082, 0.1]);
   const [frameIndex, setFrameIndex] = useState(0);
+  // a sprite sheet: every animation on one sheet, and the largest side of a page
+  const [allAnims, setAllAnims] = useState(true);
+  const [sheetSize, setSheetSize] = useState('2048');
   const [progress, setProgress] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
   const cancel = useRef(false);
@@ -46,30 +52,44 @@ export function ExportAnimation() {
   const job = useRef<EncodeJob | null>(null);
   const canvas = useRef<HTMLCanvasElement>(null);
   const [prepared, setPrepared] = useState<Prepared | null>(null);
+  /** The settings `prepared` was made with: while they differ from the window's, Render waits. */
+  const [made, setMade] = useState<unknown>(null);
 
-  const anim = doc.animations.find((a) => a.id === animId) ?? null;
+  // the project may be swapped under the open window: then the first animation of the new one is shown
+  const anim = doc.animations.find((a) => a.id === animId) ?? doc.animations[0] ?? null;
   const total = anim ? frameCount(anim.duration, +fps) : 1;
   const solid = format === 'webm' || format === 'jpeg' || !transparent;
   const background = useMemo(() => (solid ? bg : null), [solid, bg]);
+  const every = format === 'sheet' && allAnims && doc.animations.length > 1;
+
+  /** The settings of the window for one animation. */
+  const options = useCallback(
+    (animation: RenderOptions['animation'], box?: Box | null): RenderOptions => ({
+      doc,
+      animation,
+      fps: +fps,
+      scale: +scale,
+      padding: +pad,
+      background,
+      // a sheet of every animation takes each one whole
+      ...(every ? {} : { from, to: to ?? undefined }),
+      warmUp: warm,
+      box,
+    }),
+    [doc, fps, scale, pad, background, every, from, to, warm],
+  );
+  /** Frames of one size and one origin for all the animations of a sheet. */
+  const common = () => (every ? doc.animations.reduce<Box | null>((box, a) => joinBoxes(box, animationBox(options(a))), null) : null);
 
   // the picture the settings give: a first frame to look at, and the size of the files
   useEffect(() => {
     if (!anim) return setPrepared(null);
-    let made: Prepared | null = null;
+    let next: Prepared | null = null;
     const timer = setTimeout(() => {
       try {
-        made = prepareRender({
-          doc,
-          animation: anim,
-          fps: +fps,
-          scale: +scale,
-          padding: +pad,
-          background,
-          from,
-          to: to ?? undefined,
-          warmUp: warm,
-        });
-        setPrepared(made);
+        next = prepareRender(options(anim, common()));
+        setPrepared(next);
+        setMade(() => options);
         setError(null);
       } catch (e) {
         setPrepared(null);
@@ -78,9 +98,11 @@ export function ExportAnimation() {
     }, 150);
     return () => {
       clearTimeout(timer);
-      made?.dispose();
+      next?.dispose();
     };
-  }, [doc, anim, fps, scale, pad, background, from, to, warm]);
+    // `common` is made of the same things as `options`
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [anim, options]);
 
   useEffect(() => {
     if (!prepared || !canvas.current) return;
@@ -91,13 +113,49 @@ export function ExportAnimation() {
     canvas.current.getContext('2d')!.putImageData(image, 0, 0);
   }, [prepared, frameIndex]);
 
+  const renderSheet = async (first: Prepared, current: RenderOptions['animation']) => {
+    const list = every ? doc.animations : [current];
+    const box = common();
+    const name = (doc.name || 'skeleton').replace(/[^\w-]+/g, '_') + (every ? '' : '-' + current.name.replace(/[^\w-]+/g, '_'));
+    const builder = sheetBuilder(first.width, first.height, first.origin);
+    for (const [n, a] of list.entries()) {
+      if (cancel.current) return;
+      const made = a.id === current.id ? first : prepareRender(options(a, box));
+      try {
+        builder.animation(a.name, made.fps);
+        for (let i = 0; i < made.count && !cancel.current; i++) {
+          builder.add(made.frame(i).data);
+          setProgress((n + (i + 1) / made.count) / list.length);
+          await sleep();
+        }
+      } finally {
+        if (made !== first) made.dispose();
+      }
+    }
+    if (cancel.current) return;
+    const sheet = builder.build(name, { maxSize: +sheetSize });
+    const text = new TextEncoder();
+    const files: { name: string; data: Uint8Array }[] = [];
+    for (const [i, page] of sheet.pages.entries()) {
+      const image = new ImageData(new Uint8ClampedArray(page.pixels), page.width, page.height);
+      files.push({ name: page.image, data: await frameToPng(image) }, { name: page.json, data: text.encode(sheet.data[i]) });
+    }
+    if (sheet.index) files.push({ name: sheet.index.name, data: text.encode(sheet.index.text) });
+    job.current = encodeInWorker({ kind: 'zip', files });
+    downloadBlob(new Blob([(await job.current.result) as BlobPart], { type: 'application/zip' }), `${name}-spritesheet.zip`);
+    toast(`Sprite sheet: frames ${sheet.frames}, different pictures ${sheet.unique}, pages ${sheet.pages.length}`, 'ok', 5000);
+    return true;
+  };
+
   const run = async () => {
     if (!prepared || !anim || progress !== null) return;
     cancel.current = false;
     setProgress(0);
     const base = (doc.name || 'skeleton').replace(/[^\w-]+/g, '_') + '-' + anim.name.replace(/[^\w-]+/g, '_');
     try {
-      if (format === 'webm') {
+      if (format === 'sheet') {
+        if (await renderSheet(prepared, anim)) return;
+      } else if (format === 'webm') {
         const blob = await framesToWebm(
           prepared,
           (n) => setProgress(n / prepared.count),
@@ -171,7 +229,7 @@ export function ExportAnimation() {
         <label>Animation</label>
         <SelectField
           name="Animation"
-          value={animId}
+          value={anim?.id ?? ''}
           options={doc.animations.map((a) => ({ value: a.id, label: a.name }))}
           onChange={setAnimId}
         />
@@ -183,6 +241,7 @@ export function ExportAnimation() {
           options={[
             { value: 'gif', label: 'GIF', tone: 'plain' },
             { value: 'apng', label: 'APNG', tone: 'plain' },
+            { value: 'sheet', label: 'Sprite sheet', tone: 'plain' },
             { value: 'png', label: 'PNG frames', tone: 'plain' },
             { value: 'jpeg', label: 'JPEG frames', tone: 'plain' },
             { value: 'webm', label: 'WebM video', tone: 'plain' },
@@ -209,29 +268,52 @@ export function ExportAnimation() {
           options={['0', '4', '8', '16', '32'].map((v) => ({ value: v, label: `${v} px` }))}
           onChange={setPad}
         />
-        <label>Frames</label>
-        <div className="hstack">
-          <NumberField
-            label="from"
-            value={from}
-            step={1}
-            precision={0}
-            min={0}
-            max={Math.max(0, total - 1)}
-            onChange={(v) => setFrom(Math.max(0, Math.min(total - 1, Math.round(v))))}
-            title="The first frame that is rendered (the animation has frames 0 to the last one)"
-          />
-          <NumberField
-            label="to"
-            value={to ?? total}
-            step={1}
-            precision={0}
-            min={1}
-            max={total}
-            onChange={(v) => setTo(v >= total ? null : Math.max(1, Math.round(v)))}
-            title="Rendering stops before this frame (the end of the animation is the last frame plus one)"
-          />
-        </div>
+        {format === 'sheet' && (
+          <>
+            {doc.animations.length > 1 && (
+              <>
+                <label>All animations</label>
+                <div className="hstack">
+                  <Toggle on={allAnims} onChange={setAllAnims} title="Put every animation on the sheet" />
+                </div>
+              </>
+            )}
+            <label>Page size</label>
+            <SelectField
+              name="Page size"
+              value={sheetSize}
+              options={['1024', '2048', '4096', '8192'].map((v) => ({ value: v, label: `${v} px` }))}
+              onChange={setSheetSize}
+            />
+          </>
+        )}
+        {!every && (
+          <>
+            <label>Frames</label>
+            <div className="hstack">
+              <NumberField
+                label="from"
+                value={from}
+                step={1}
+                precision={0}
+                min={0}
+                max={Math.max(0, total - 1)}
+                onChange={(v) => setFrom(Math.max(0, Math.min(total - 1, Math.round(v))))}
+                title="The first frame that is rendered (the animation has frames 0 to the last one)"
+              />
+              <NumberField
+                label="to"
+                value={to ?? total}
+                step={1}
+                precision={0}
+                min={1}
+                max={total}
+                onChange={(v) => setTo(v >= total ? null : Math.max(1, Math.round(v)))}
+                title="Rendering stops before this frame (the end of the animation is the last frame plus one)"
+              />
+            </div>
+          </>
+        )}
         <label>Warm up</label>
         <NumberField
           label="s"
@@ -288,7 +370,7 @@ export function ExportAnimation() {
             </Button>
           </>
         )}
-        <Button primary icon={Film} disabled={!prepared || progress !== null} onClick={run}>
+        <Button primary icon={Film} disabled={!prepared || made !== options || progress !== null} onClick={run}>
           Render
         </Button>
       </div>

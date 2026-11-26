@@ -402,6 +402,15 @@ export const ZH: Record<string, string> = {
   Right: '右',
   Front: '前',
   Back: '后',
+  'Sprite sheet': '精灵表',
+  'For games that play frames: the frames cut and packed onto a picture, with a JSON file in the TexturePacker "hash" form (frames, their order and time, the origin).':
+    '用于逐帧播放的游戏：帧经裁剪后打包到图片上，附带 TexturePacker “hash” 格式的 JSON（帧、顺序、时长和原点）。',
+  'A ZIP with one PNG per frame, full color and soft transparency: for video editors and other tools.':
+    'ZIP 压缩包，每帧一个 PNG，全彩色和柔和透明度：用于视频编辑器等工具。',
+  'All animations': '全部动画',
+  'Put every animation on the sheet': '将所有动画放到精灵表上',
+  'Page size': '页面尺寸',
+  'Sprite sheet: frames {#}, different pictures {#}, pages {#}': '精灵表：帧 {}，不同图片 {}，页面 {}',
   'Re-trace': '重新描边',
   Retriangulate: '重新三角化',
   'Rebuild the triangles inside the outline': '重建轮廓内的三角形',
@@ -1730,8 +1739,6 @@ export const ZH: Record<string, string> = {
   'Skeleton JSON, texture atlas and a preview page': '骨架 JSON、纹理图集和预览页面',
   'Render an animation to pictures': '将动画渲染为图片',
   'One animated picture that plays anywhere. 256 colors, transparency is on or off.': '一张到处都能播放的动图。256 色，透明度只有开或关。',
-  'A ZIP with one PNG per frame, full color and soft transparency: for sprite sheets and video editors.':
-    '每帧一张 PNG 打包成 ZIP，全彩并支持半透明：适合制作精灵表和导入视频编辑器。',
   'A video, recorded in real time by the browser (it takes as long as the animation). It has no transparency.':
     '由浏览器实时录制的视频（耗时与动画等长），不支持透明。',
   'Make an animation first: it is rendered frame by frame.': '请先创建动画：它会被逐帧渲染。',

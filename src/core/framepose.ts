@@ -41,6 +41,8 @@ export function makePoser(skeleton: Skeleton, anim: Animation, fps: number, hasP
       if (i > 0) for (let k = 0; k < i; k++) pose(k);
     }
     const t = i / fps;
+    // the physics clock starts over with the first frame: the steps it takes are counted from it, so every run gives the same frames
+    if (i === 0) skeleton.time = 0;
     applyAnimation(skeleton, anim, t);
     if (!hasPhysics) skeleton.updateWorldTransform('none');
     else if (i > 0) {

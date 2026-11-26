@@ -66,6 +66,22 @@ describe('makePoser', () => {
     expect(world(jump)).toEqual(world(next));
   });
 
+  it('gives the same frames when the same poser renders them a second time', () => {
+    const { anim, make, world, hasPhysics } = setup(true);
+    for (const warm of [0, 1]) {
+      const sk = make();
+      const poser = makePoser(sk, anim, 12, hasPhysics, warm);
+      const run = () =>
+        Array.from({ length: 72 }, (_, i) => {
+          poser.pose(i);
+          return world(sk);
+        });
+      const first = run();
+      expect(run()).toEqual(first);
+      expect(run()).toEqual(first);
+    }
+  });
+
   it('does nothing about warm up for a skeleton without physics', () => {
     const { anim, make, world, hasPhysics } = setup(false);
     expect(hasPhysics).toBe(false);

@@ -1969,6 +1969,15 @@ a.btn {
     0 0,
     8px 8px;
 }
+/* the formats go on to a second row instead of breaking their names in two */
+.export-anim .seg {
+  flex-wrap: wrap;
+  justify-self: start;
+}
+.export-anim .seg button {
+  padding: 0 11px;
+  white-space: nowrap;
+}
 .export-anim input[type='range'] {
   width: 100%;
   accent-color: var(--accent);
