@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Copy, Download, FileCode, FolderOpen, Package, Save } from 'lucide-react';
+import { Copy, Download, FileCode, Gamepad2, FolderOpen, Package, Save } from 'lucide-react';
 import { exportSettingsFromText, exportSettingsToText, loadExportSettings, rememberExportSettings } from '@/core/export/settings';
 import type { ExportSettings } from '@/core/export/settings';
 import { useProject } from '@/store/doc';
@@ -133,6 +133,24 @@ export function ExportDialog() {
     }
   };
 
+  /** A ZIP a web game plays the skeleton with: the player module, the character and an example page. */
+  const saveGame = async () => {
+    try {
+      const { buildWebGame } = await import('./exportPlayer');
+      const game = await buildWebGame(doc, { smooth: filter !== 'Nearest' });
+      downloadBlob(new Blob([game.zip as BlobPart], { type: 'application/zip' }), `${base}-web-game.zip`);
+      toast(
+        game.missing.length
+          ? `Web game files saved, but these pictures are missing: ${game.missing.join(', ')}`
+          : 'Web game files saved: serve the folder and open index.html',
+        game.missing.length ? 'info' : 'ok',
+        7000,
+      );
+    } catch (e) {
+      toast(`Could not make the web game files: ${(e as Error).message}`, 'error');
+    }
+  };
+
   const needs = engineNeeds(doc, { format, scale, pma, rotate, filter, atlasPerSkin });
   const close = () => uiStore.patch({ exportOpen: false });
   const base = (all ? project.name || 'project' : doc.name || 'skeleton').replace(/[^\w-]+/g, '_');
@@ -177,6 +195,17 @@ export function ExportDialog() {
               title="One HTML file with the skeleton, its pictures and a player: opens offline, nothing to install. For sending to a client"
             >
               Save player page
+            </Button>
+          )}
+          {tab === 'data' && (
+            <Button
+              ghost
+              icon={Gamepad2}
+              disabled={busy}
+              onClick={() => void saveGame()}
+              title="For your own web game: a small free player (one JavaScript file), the character and an example page, in a ZIP. No engine licence needed"
+            >
+              Web game
             </Button>
           )}
           {tab === 'data' && (

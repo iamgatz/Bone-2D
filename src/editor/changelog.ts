@@ -14,6 +14,25 @@ export interface Release {
 
 export const CHANGELOG: Release[] = [
   {
+    version: '1.0',
+    date: '2026-11-26',
+    en: [
+      'Web game export (Export → Web game): a ZIP with a free player in one JavaScript file, your character and an example page. No engine licence needed.',
+      'In your game: play animations by name with a smooth mix and a queue, get their events, change skins and pictures in slots, read bone places and hold an IK target where you want it.',
+      'The player poses and draws with the same code as the editor.',
+    ],
+    ru: [
+      'Экспорт для веб-игры («Экспорт» → «Для веб-игры»): ZIP с бесплатным плеером в одном JavaScript-файле, вашим персонажем и страницей-примером. Лицензия на движок не нужна.',
+      'В игре: анимации по имени с плавным переходом и очередью, их события, смена скинов и картинок в слотах, положения костей и удержание цели IK там, где нужно.',
+      'Плеер считает позы и рисует тем же кодом, что и редактор.',
+    ],
+    zh: [
+      '网页游戏导出（“导出”→“网页游戏”）：一个 ZIP，包含单个 JavaScript 文件的免费播放器、你的角色和示例页面。无需引擎许可证。',
+      '在游戏中：按名称播放动画（支持平滑过渡和队列）、接收事件、切换皮肤和插槽图片、读取骨骼位置，并把 IK 目标固定在指定处。',
+      '播放器使用与编辑器相同的代码计算姿势和绘制。',
+    ],
+  },
+  {
     version: '0.99',
     date: '2026-11-26',
     en: [

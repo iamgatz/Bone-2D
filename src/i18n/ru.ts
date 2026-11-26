@@ -431,6 +431,13 @@ export const RU: Record<string, string> = {
   'Put every animation on the sheet': 'Положить на лист все анимации',
   'Page size': 'Размер листа',
   'Sprite sheet: frames {#}, different pictures {#}, pages {#}': 'Спрайтшит: кадров {}, разных картинок {}, листов {}',
+  'Web game': 'Для веб-игры',
+  'For your own web game: a small free player (one JavaScript file), the character and an example page, in a ZIP. No engine licence needed':
+    'Для своей веб-игры: небольшой бесплатный плеер (один JavaScript-файл), персонаж и страница-пример в ZIP. Лицензия на движок не нужна',
+  'Web game files saved, but these pictures are missing: {}': 'Файлы для веб-игры сохранены, но не хватает картинок: {}',
+  'Web game files saved: serve the folder and open index.html':
+    'Файлы для веб-игры сохранены: раздайте папку веб-сервером и откройте index.html',
+  'Could not make the web game files: {}': 'Не удалось сделать файлы для веб-игры: {}',
   'Re-trace': 'Трассировать заново',
   Retriangulate: 'Перетриангулировать',
   'Rebuild the triangles inside the outline': 'Перестроить треугольники внутри контура',

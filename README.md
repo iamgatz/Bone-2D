@@ -18,7 +18,7 @@ The first time you open the demo, a two-minute interactive lesson ("Bring the fo
 - **Rigging:** bones, slots, weighted meshes (auto-trace, weight brush), skins, clipping, bounding boxes, paths, Photoshop and OpenRaster (Krita, GIMP) import, and an auto-rig that builds bones, meshes and IK for a character painted in layers.
 - **Constraints:** IK, transform, path, physics and the Spine 4.3 sliders.
 - **Animation:** dopesheet and graph editor with Bézier curves, onion skins, events, draw-order and sequence keys, a pose library, keying tools.
-- **Export:** Spine 4.3 JSON or binary with an atlas packer; a GIF, a PNG sequence, a video or a packed sprite sheet with JSON for games that play frames; a single-file player page. Import of Spine JSON 4.0 – 4.3 and binary 4.3.
+- **Export:** Spine 4.3 JSON or binary with an atlas packer; a GIF, a PNG sequence, a video or a packed sprite sheet with JSON for games that play frames; a single-file player page; a **web game** package with a free player (one JavaScript file, MIT) that plays your character in your own game. Import of Spine JSON 4.0 – 4.3 and binary 4.3.
 - **Review:** send one HTML page with the animation; the reviewer clicks a bone and leaves a comment that you import back as a marker.
 - **Safe to experiment:** 300 undo steps, checkpoints to compare with and take parts from, automatic backups.
 - **No account, no server:** also usable from the command line (`npm run cli`).

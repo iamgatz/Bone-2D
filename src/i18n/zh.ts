@@ -411,6 +411,12 @@ export const ZH: Record<string, string> = {
   'Put every animation on the sheet': '将所有动画放到精灵表上',
   'Page size': '页面尺寸',
   'Sprite sheet: frames {#}, different pictures {#}, pages {#}': '精灵表：帧 {}，不同图片 {}，页面 {}',
+  'Web game': '网页游戏',
+  'For your own web game: a small free player (one JavaScript file), the character and an example page, in a ZIP. No engine licence needed':
+    '用于你自己的网页游戏：一个免费的小型播放器（单个 JavaScript 文件）、角色和示例页面，打包为 ZIP。无需引擎许可证',
+  'Web game files saved, but these pictures are missing: {}': '网页游戏文件已保存，但缺少这些图片：{}',
+  'Web game files saved: serve the folder and open index.html': '网页游戏文件已保存：用网页服务器提供该文件夹并打开 index.html',
+  'Could not make the web game files: {}': '无法生成网页游戏文件：{}',
   'Re-trace': '重新描边',
   Retriangulate: '重新三角化',
   'Rebuild the triangles inside the outline': '重建轮廓内的三角形',

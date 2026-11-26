@@ -10,8 +10,11 @@ import { REGION_TRIANGLES, REGION_UVS, meshWorldVertices, regionWorldVertices } 
 import type { Skeleton, Slot } from '@/core/skeleton';
 
 export interface TextureSource {
-  /** Returns pixel source for a region/mesh `path`, or null when the image is missing. */
-  get(name: string): { bitmap: ImageBitmap | HTMLImageElement | HTMLCanvasElement; version: number } | null;
+  /**
+   * Returns pixel source for a region/mesh `path`, or null when the image is missing. `key` keeps apart two pictures of one name from
+   * different sources (the name when it is not given).
+   */
+  get(name: string): { bitmap: ImageBitmap | HTMLImageElement | HTMLCanvasElement; version: number; key?: string } | null;
 }
 
 export interface CameraView {
@@ -181,7 +184,8 @@ export class GLRenderer {
       }
       return null;
     }
-    const hit = this.textures.get(name);
+    const key = src.key ?? name;
+    const hit = this.textures.get(key);
     if (hit && hit.version === src.version) return hit;
     const gl = this.gl;
     const tex = hit?.tex ?? gl.createTexture();
@@ -194,7 +198,7 @@ export class GLRenderer {
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
     const entry = { tex, version: src.version, w: src.bitmap.width, h: src.bitmap.height };
-    this.textures.set(name, entry);
+    this.textures.set(key, entry);
     return entry;
   }
 
