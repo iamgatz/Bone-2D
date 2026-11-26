@@ -441,6 +441,9 @@ export const RU: Record<string, string> = {
   'Face bones': 'Кости лица',
   'Eyes, mouth, hair, ears and hats each get a bone of their own on the head':
     'Глаза, рот, волосы, уши и шляпы получают по своей кости на голове',
+  'Imported layers: {#} from {}, hidden alternates: {#}': 'Импортировано слоёв: {1} из {2}, скрытых вариантов: {3}',
+  'Imported layers: {#} from {}, hidden alternates: {#} ({#} hidden skipped)':
+    'Импортировано слоёв: {1} из {2}, скрытых вариантов: {3} (скрытых пропущено: {4})',
   'Re-trace': 'Трассировать заново',
   Retriangulate: 'Перетриангулировать',
   'Rebuild the triangles inside the outline': 'Перестроить треугольники внутри контура',

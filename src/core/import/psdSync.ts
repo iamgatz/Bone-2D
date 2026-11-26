@@ -14,6 +14,16 @@ export interface PsdSyncPlan<L> {
   gone: string[];
 }
 
+/**
+ * The layers of a file that an update looks at: the visible ones, and the hidden ones whose picture the project has (a state kept in
+ * a slot, or a layer switched off in the file since). A hidden layer never speaks for a picture that a visible layer has the name of.
+ */
+export function layersToSync<L extends { name: string }>(file: { layers: L[]; hidden: L[] }, images: ImageRef[]): L[] {
+  const known = new Set(images.map((i) => i.name));
+  for (const layer of file.layers) known.delete(layer.name);
+  return [...file.layers, ...file.hidden.filter((l) => known.delete(l.name))];
+}
+
 export function planPsdSync<L extends { name: string }>(layers: L[], images: ImageRef[]): PsdSyncPlan<L> {
   const byName = new Map(images.map((i) => [i.name, i] as const));
   const updates: PsdSyncPlan<L>['updates'] = [];

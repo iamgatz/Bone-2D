@@ -112,6 +112,8 @@ describe('reading an OpenRaster file', () => {
     expect(eye).toMatchObject({ left: 120, top: 10, opacity: 0.5, blend: 'multiply' });
     expect(eye.pixels.png[32]).toBe(1);
     expect(ora.skipped).toEqual({ hidden: 1, empty: 1 });
+    // the hidden layer is there with its picture, under a name of its own
+    expect(ora.hidden.map((l) => [l.name, l.left, l.top, l.width])).toEqual([['arm/sketch', 0, 0, 40]]);
   });
 
   it('says what is wrong with a file that is not one', async () => {

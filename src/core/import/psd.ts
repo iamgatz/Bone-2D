@@ -4,7 +4,8 @@
  * here has no DOM in it, so it can be tested and planned without a canvas.
  *
  * - groups are folders: a layer "arm" in the group "left" becomes the picture "left/arm" (the Images window shows folders);
- * - hidden layers (and everything in a hidden group) are left out, empty layers too;
+ * - hidden layers (and everything in a hidden group) are kept apart: the import takes those that are other states of a visible one
+ *   (`alternates.ts`); empty layers are left out;
  * - opacity becomes the alpha of the slot colour, and the blend modes Spine has (multiply, screen, additive) are kept;
  * - the scene origin is the middle of the bottom edge of the document, y up: a character standing on the bottom of the canvas stands on y = 0.
  *   Masks, clipping layers, layer effects and adjustment layers are not applied.
@@ -38,7 +39,9 @@ export interface PsdFile<P = PsdPixels> {
   height: number;
   /** Back to front. */
   layers: PsdLayer<P>[];
-  /** How many layers were left out, by reason. */
+  /** The layers with something on them that are hidden in the file, back to front. */
+  hidden: PsdLayer<P>[];
+  /** How many layers are not among `layers`, by reason. */
   skipped: { hidden: number; empty: number };
 }
 
@@ -79,6 +82,7 @@ export function pictureName(name: string | undefined, fallback: string): string 
 /** Flattens the layer tree of a document into the pictures to import. */
 export function flattenPsd(width: number, height: number, roots: RawLayer[]): PsdFile {
   const layers: PsdLayer[] = [];
+  const hiddenLayers: PsdLayer[] = [];
   const skipped = { hidden: 0, empty: 0 };
   let unnamed = 0;
   const walk = (list: RawLayer[], path: string[], hidden: boolean, opacity: number) => {
@@ -91,15 +95,12 @@ export function flattenPsd(width: number, height: number, roots: RawLayer[]): Ps
         continue;
       }
       const px = raw.imageData;
-      if (isHidden) {
-        skipped.hidden++;
-        continue;
-      }
+      if (isHidden) skipped.hidden++;
       if (!px || px.width < 1 || px.height < 1) {
-        skipped.empty++;
+        if (!isHidden) skipped.empty++;
         continue;
       }
-      layers.push({
+      (isHidden ? hiddenLayers : layers).push({
         name: [...path, name].join('/'),
         left: raw.left ?? 0,
         top: raw.top ?? 0,
@@ -112,7 +113,7 @@ export function flattenPsd(width: number, height: number, roots: RawLayer[]): Ps
     }
   };
   walk(roots, [], false, 1);
-  return { width, height, layers, skipped };
+  return { width, height, layers, hidden: hiddenLayers, skipped };
 }
 
 /** Reads a .psd file. `ag-psd` is loaded when it is needed, the editor does not carry it otherwise. */

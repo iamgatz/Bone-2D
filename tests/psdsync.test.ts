@@ -1,6 +1,6 @@
 /** "Update from PSD": layers are matched to pictures by name, regions follow the new size and the move of the layer. */
 import { describe, expect, it } from 'vitest';
-import { fitRegion, planPsdSync } from '@/core/import/psdSync';
+import { fitRegion, layersToSync, planPsdSync } from '@/core/import/psdSync';
 import type { PsdLayer } from '@/core/import/psd';
 import { emptyProject } from '@/core/model';
 import type { ImageRef } from '@/core/model';
@@ -71,5 +71,18 @@ describe('PSD position of a picture', () => {
     expect(p.images[1].psd).toBeUndefined();
     expect(p.images[2].psd).toBeUndefined();
     expect(notes.some((n) => n.includes('PSD position'))).toBe(true);
+  });
+});
+
+describe('the layers an update looks at', () => {
+  it('are the visible ones and the hidden ones the project has a picture of, one for each name', () => {
+    const l = (name: string, from: string) => ({ name, from });
+    const file = {
+      layers: [l('head', 'seen'), l('mouth', 'seen')],
+      hidden: [l('head', 'backup'), l('mouth open', 'first'), l('sketch', 'hidden'), l('mouth open', 'second')],
+    };
+    const images = ['head', 'mouth', 'mouth open'].map((name) => ({ id: name, name, width: 1, height: 1 }));
+    expect(layersToSync(file, images).map((x) => `${x.name}:${x.from}`)).toEqual(['head:seen', 'mouth:seen', 'mouth open:first']);
+    expect(images).toHaveLength(3);
   });
 });

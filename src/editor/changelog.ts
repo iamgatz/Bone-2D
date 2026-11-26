@@ -14,6 +14,25 @@ export interface Release {
 
 export const CHANGELOG: Release[] = [
   {
+    version: '1.2',
+    date: '2026-11-27',
+    en: [
+      'PSD and ORA import takes hidden states with it: a hidden layer such as "mouth open", a closed eye or a fist becomes another picture in the slot of the visible one, ready to switch and key.',
+      'They are recognised by name ("mouth" and "mouth open", or "open" and "closed" in a group "mouth") and by lying where the visible layer does. Other hidden layers are left out as before.',
+      '"Update from PSD / ORA" repaints those pictures too.',
+    ],
+    ru: [
+      'Импорт PSD и ORA забирает скрытые варианты: скрытый слой вроде «рот открытый», закрытый глаз или кулак становится ещё одной картинкой в слоте видимого слоя, её можно переключать и ставить на ключи.',
+      'Они узнаются по названию («рот» и «рот открытый» или «open» и «closed» в группе «mouth») и по тому, что лежат там же, где видимый слой. Остальные скрытые слои, как и раньше, пропускаются.',
+      '«Обновить из PSD / ORA» перерисовывает и эти картинки.',
+    ],
+    zh: [
+      'PSD 和 ORA 导入会带上隐藏状态：隐藏的“嘴张开”、闭眼或拳头图层，会成为可见图层插槽中的另一张图片，可直接切换和打关键帧。',
+      '按名称识别（“嘴”和“嘴张开”，或“嘴”组中的“开”和“闭”），并要求与可见图层位置重叠。其他隐藏图层仍像以前一样忽略。',
+      '“从 PSD / ORA 更新”也会更新这些图片。',
+    ],
+  },
+  {
     version: '1.1',
     date: '2026-11-26',
     en: [

@@ -419,6 +419,9 @@ export const ZH: Record<string, string> = {
   'Could not make the web game files: {}': '无法生成网页游戏文件：{}',
   'Face bones': '面部骨骼',
   'Eyes, mouth, hair, ears and hats each get a bone of their own on the head': '眼睛、嘴、头发、耳朵和帽子各自在头部获得一根骨骼',
+  'Imported layers: {#} from {}, hidden alternates: {#}': '已导入图层：{} 个，来自 {}，隐藏变体：{} 个',
+  'Imported layers: {#} from {}, hidden alternates: {#} ({#} hidden skipped)':
+    '已导入图层：{} 个，来自 {}，隐藏变体：{} 个（跳过 {} 个隐藏图层）',
   'Re-trace': '重新描边',
   Retriangulate: '重新三角化',
   'Rebuild the triangles inside the outline': '重建轮廓内的三角形',

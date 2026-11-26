@@ -2,12 +2,13 @@
 import { freshName } from '@/core/edit';
 import { atan2Deg } from '@/core/math';
 import { newBone, newSlot } from '@/core/model';
-import type { Id, ImageRef } from '@/core/model';
+import type { Id, ImageRef, RegionAttachment } from '@/core/model';
 import { commonShift, isPsd, layerCenter, readPsdFile } from '@/core/import/psd';
 import type { PsdFile, PsdLayer, PsdPixels } from '@/core/import/psd';
 import { isOra, readOraFile } from '@/core/import/ora';
 import type { PngPicture } from '@/core/import/ora';
-import { fitRegion, planPsdSync } from '@/core/import/psdSync';
+import { findAlternates } from '@/core/import/alternates';
+import { fitRegion, layersToSync, planPsdSync } from '@/core/import/psdSync';
 import { cleanImageName } from '@/core/images';
 import { getSetupSkeleton } from '@/store/scene';
 import { assets } from './assets';
@@ -101,9 +102,25 @@ function pictureToPng(px: LayerPicture): Promise<Blob> {
   );
 }
 
+/** The plain picture of a layer, at its place on the bone. */
+const layerRegion = (ref: ImageRef, at: { x: number; y: number; rotation: number }): RegionAttachment => ({
+  type: 'region',
+  name: ref.name,
+  path: ref.name,
+  x: at.x,
+  y: at.y,
+  rotation: at.rotation,
+  scaleX: 1,
+  scaleY: 1,
+  width: ref.width,
+  height: ref.height,
+  color: [1, 1, 1, 1],
+});
+
 /**
  * Imports a Photoshop or OpenRaster file: every visible layer becomes a picture (groups are folders) and a slot with a region attachment, bottom layer
- * first, so the stack of the file is the draw order. The slots go on the selected bone (the first one, or a new root when there is none).
+ * first, so the stack of the file is the draw order. Hidden layers that are other states of a visible one go into its slot as further
+ * attachments. The slots go on the selected bone (the first one, or a new root when there is none).
  * One step in the history. Returns the number of layers imported.
  */
 export async function importPsd(file: File): Promise<number> {
@@ -119,13 +136,25 @@ export async function importPsd(file: File): Promise<number> {
     toast(`${file.name} has no visible pixel layers`, 'info');
     return 0;
   }
-  const refs: { ref: ImageRef; layer: (typeof psd.layers)[number] }[] = [];
-  for (const layer of psd.layers) {
+  type Layer = (typeof psd.layers)[number];
+  const read = async (layer: Layer) => {
     try {
-      refs.push({ ref: await assets.addFile(await pictureToPng(layer.pixels), layer.name), layer });
+      return [{ ref: await assets.addFile(await pictureToPng(layer.pixels), layer.name), layer }];
     } catch (e) {
       toast(`Could not read the layer "${layer.name}"`, 'error');
       console.error(e);
+      return [];
+    }
+  };
+  const alternates = findAlternates(psd.layers, psd.hidden);
+  const refs: { ref: ImageRef; layer: Layer; others: { ref: ImageRef; layer: Layer }[] }[] = [];
+  let states = 0;
+  for (const layer of psd.layers) {
+    for (const own of await read(layer)) {
+      const others = [];
+      for (const hidden of alternates.get(layer) ?? []) others.push(...(await read(hidden)));
+      states += others.length;
+      refs.push({ ...own, others });
     }
   }
   const doc = skeletonDoc();
@@ -138,9 +167,7 @@ export async function importPsd(file: File): Promise<number> {
   docStore.update(isOra(file) ? 'Import ORA' : 'Import PSD', (d) => {
     if (root) d.skeleton.bones.push(root);
     const skin = d.skeleton.skins[0];
-    for (const { ref, layer } of refs) {
-      const center = layerCenter(psd, layer);
-      const { x: lx, y: ly, rotation } = placeOnBone(live, center[0], center[1]);
+    for (const { ref, layer, others } of refs) {
       const slot = newSlot({
         name: freshName(ref.name.split('/').pop() ?? ref.name, d.skeleton.slots),
         bone: boneId,
@@ -148,33 +175,22 @@ export async function importPsd(file: File): Promise<number> {
         color: [1, 1, 1, layer.opacity],
         blend: layer.blend,
       });
-      d.images.push({ ...ref, psd: center });
       d.skeleton.slots.push(slot);
-      skin.attachments[slot.id] = {
-        [ref.name]: {
-          type: 'region',
-          name: ref.name,
-          path: ref.name,
-          x: lx,
-          y: ly,
-          rotation,
-          scaleX: 1,
-          scaleY: 1,
-          width: ref.width,
-          height: ref.height,
-          color: [1, 1, 1, 1],
-        },
-      };
+      skin.attachments[slot.id] = {};
+      for (const picture of [{ ref, layer }, ...others]) {
+        const center = layerCenter(psd, picture.layer);
+        d.images.push({ ...picture.ref, psd: center });
+        skin.attachments[slot.id][picture.ref.name] = layerRegion(picture.ref, placeOnBone(live, center[0], center[1]));
+      }
       slotIds.push(slot.id);
     }
   });
   if (slotIds.length) setSelection({ slot: slotIds[slotIds.length - 1], bones: [boneId] });
-  toast(
-    psd.skipped.hidden
-      ? `Imported layers: ${slotIds.length} from ${file.name} (${psd.skipped.hidden} hidden skipped)`
-      : `Imported layers: ${slotIds.length} from ${file.name}`,
-    'ok',
-  );
+  const left = psd.skipped.hidden - states;
+  const head = states
+    ? `Imported layers: ${slotIds.length} from ${file.name}, hidden alternates: ${states}`
+    : `Imported layers: ${slotIds.length} from ${file.name}`;
+  toast(left > 0 ? `${head} (${left} hidden skipped)` : head, 'ok');
   // a character that arrives in layers named after its body gets the auto-rig offered right away
   if (doc.bones.length <= 1 && looksLikeCharacter(slotIds)) openAutoRig();
   return slotIds.length;
@@ -201,7 +217,7 @@ export async function reimportPsd(file: File): Promise<{ updated: number; added:
     console.error(e);
     return none;
   }
-  const plan = planPsdSync(psd.layers, project().images);
+  const plan = planPsdSync(layersToSync(psd, project().images), project().images);
   if (!plan.updates.length && !plan.added.length) {
     toast(`${file.name} has no visible pixel layers`, 'info');
     return none;
@@ -294,21 +310,7 @@ export async function reimportPsd(file: File): Promise<{ updated: number; added:
       d.images.push({ ...ref, psd: center });
       const at0 = anchor ? d.skeleton.slots.findIndex((s) => s.id === anchor) + 1 : 0;
       d.skeleton.slots.splice(at0, 0, slot);
-      skin0.attachments[slot.id] = {
-        [ref.name]: {
-          type: 'region',
-          name: ref.name,
-          path: ref.name,
-          x: at.x,
-          y: at.y,
-          rotation: at.rotation,
-          scaleX: 1,
-          scaleY: 1,
-          width: ref.width,
-          height: ref.height,
-          color: [1, 1, 1, 1],
-        },
-      };
+      skin0.attachments[slot.id] = { [ref.name]: layerRegion(ref, at) };
       anchor = slot.id;
     }
   });

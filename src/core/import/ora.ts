@@ -80,6 +80,7 @@ export async function readOraFile(buffer: ArrayBuffer): Promise<PsdFile<PngPictu
   const image = parseXml(new TextDecoder().decode(await stack())).children.find((n) => n.tag === 'image');
   if (!image) throw new Error('stack.xml has no image');
   const layers: PsdLayer<PngPicture>[] = [];
+  const hiddenLayers: PsdLayer<PngPicture>[] = [];
   const skipped = { hidden: 0, empty: 0 };
   let unnamed = 0;
   const walk = async (node: XmlNode, path: string[], hidden: boolean, opacity: number, dx: number, dy: number) => {
@@ -97,19 +98,16 @@ export async function readOraFile(buffer: ArrayBuffer): Promise<PsdFile<PngPictu
         continue;
       }
       const name = [...path, pictureName(a.name, `layer ${++unnamed}`)].join('/');
-      if (isHidden) {
-        skipped.hidden++;
-        continue;
-      }
+      if (isHidden) skipped.hidden++;
       const entry = zip.get(a.src ?? '');
       const png = entry ? await entry() : null;
       const size = png && pngSize(png);
       // programs write a layer with nothing on it as a single clear pixel
       if (!png || !size || size[0] * size[1] <= 1) {
-        skipped.empty++;
+        if (!isHidden) skipped.empty++;
         continue;
       }
-      layers.push({
+      (isHidden ? hiddenLayers : layers).push({
         name,
         left: x,
         top: y,
@@ -124,13 +122,13 @@ export async function readOraFile(buffer: ArrayBuffer): Promise<PsdFile<PngPictu
   for (const root of image.children.filter((n) => n.tag === 'stack')) await walk(root, [], false, 1, 0, 0);
   // two layers of one name would give one picture: the later ones get a number
   const taken = new Set<string>();
-  for (const layer of layers) {
+  for (const layer of [...layers, ...hiddenLayers]) {
     let name = layer.name;
     for (let i = 2; taken.has(name); i++) name = `${layer.name} ${i}`;
     taken.add(name);
     layer.name = name;
   }
-  return { width: number(image.attrs.w, 0), height: number(image.attrs.h, 0), layers, skipped };
+  return { width: number(image.attrs.w, 0), height: number(image.attrs.h, 0), layers, hidden: hiddenLayers, skipped };
 }
 
 export function isOra(file: { name: string; type?: string }): boolean {

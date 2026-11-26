@@ -221,3 +221,74 @@ test('the dialog is opened again from the command palette, in Russian', async ({
   await expect(dialog.getByRole('switch', { name: 'Кости лица' })).toBeChecked();
   await page.screenshot({ path: 'test-results/autorig-ru.png' });
 });
+
+/** A head with a closed mouth, an open one switched off, and a sketch switched off. */
+function faces(openColor: [number, number, number]) {
+  const layers: [name: string, x: number, y: number, w: number, h: number, color: [number, number, number], hidden: boolean][] = [
+    ['head', 100, 40, 100, 100, [235, 190, 150], false],
+    ['mouth open', 132, 96, 36, 28, openColor, true],
+    ['mouth closed', 130, 104, 40, 8, [60, 20, 20], false],
+    ['rough sketch', 100, 40, 100, 100, [0, 0, 0], true],
+  ];
+  const files = layers.map(([, , , w, h, color], i) => ({
+    name: `data/${i}.png`,
+    data: png(w, h, [[w / 2, h / 2]], Math.max(w, h) / 2, color),
+  }));
+  const stack = layers
+    .map(
+      ([name, x, y, , , , hidden], i) =>
+        `<layer name="${name}" src="data/${i}.png" x="${x}" y="${y}"${hidden ? ' visibility="hidden"' : ''}/>`,
+    )
+    .reverse();
+  const xml = `<?xml version="1.0"?><image w="300" h="200"><stack>${stack.join('')}</stack></image>`;
+  return {
+    name: 'faces.ora',
+    mimeType: 'image/openraster',
+    buffer: Buffer.from(createZip([{ name: 'stack.xml', data: new TextEncoder().encode(xml) }, ...files])),
+  };
+}
+
+const slots = (page: Page) =>
+  page.evaluate(async (u) => {
+    const { docStore } = (await import(u.doc)) as DocModule;
+    const d = docStore.get();
+    return {
+      slots: d.skeleton.slots.map((s) => [s.name, s.attachment, ...Object.keys(d.skeleton.skins[0].attachments[s.id])]),
+      pictures: d.images.map((i) => [i.name, i.rev ?? 0]),
+    };
+  }, URLS);
+
+test('a hidden state of a layer comes in as another picture of its slot, to switch to, and follows an update of the file', async ({
+  page,
+}) => {
+  const errors: string[] = [];
+  page.on('pageerror', (e) => errors.push(e.message));
+  page.on('console', (m) => m.type() === 'error' && errors.push(m.text()));
+  await openEmpty(page, 'en');
+  await page.locator('input[accept="image/*,.psd,.ora"]').setInputFiles(faces([120, 30, 40]));
+  await expect(page.getByText('Imported layers: 2 from faces.ora, hidden alternates: 1 (1 hidden skipped)')).toBeVisible();
+  expect(await slots(page)).toEqual({
+    slots: [
+      ['head', 'head', 'head'],
+      ['mouth closed', 'mouth closed', 'mouth closed', 'mouth open'],
+    ],
+    pictures: [
+      ['head', 0],
+      ['mouth closed', 0],
+      ['mouth open', 0],
+    ],
+  });
+  await page.getByText('mouth closed', { exact: true }).first().click();
+  await page.keyboard.press('f');
+  await page.screenshot({ path: 'test-results/alternates-closed.png' });
+  const picture = page.locator('select', { has: page.locator('option', { hasText: 'mouth open' }) });
+  await picture.selectOption('mouth open');
+  await expect.poll(async () => (await slots(page)).slots[1][1]).toBe('mouth open');
+  await page.screenshot({ path: 'test-results/alternates-open.png' });
+  // the repainted file: the hidden picture is brought up to date too, and nothing is added
+  await page.locator('input[accept=".psd,.ora"]').setInputFiles(faces([20, 90, 160]));
+  await expect.poll(async () => (await slots(page)).pictures.find(([n]) => n === 'mouth open')![1]).toBe(1);
+  expect((await slots(page)).slots).toHaveLength(2);
+  await page.screenshot({ path: 'test-results/alternates-updated.png' });
+  expect(errors).toEqual([]);
+});

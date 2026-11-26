@@ -28,7 +28,7 @@ function file(children: Layer[]): ArrayBuffer {
 }
 
 describe('PSD import', () => {
-  it('reads the layers back to front, groups as folders, hidden ones skipped', async () => {
+  it('reads the layers back to front, groups as folders, hidden ones apart', async () => {
     const psd = await readPsdFile(
       file([
         layer('back', 0, 0, 100, 80),
@@ -44,6 +44,7 @@ describe('PSD import', () => {
     expect(psd.height).toBe(80);
     expect(psd.layers.map((l) => l.name)).toEqual(['back', 'arm/upper', 'top']);
     expect(psd.skipped.hidden).toBe(2);
+    expect(psd.hidden.map((l) => l.name)).toEqual(['arm/ghost', 'off/inside']);
     const upper = psd.layers[1];
     expect([upper.left, upper.top, upper.width, upper.height]).toEqual([10, 20, 20, 30]);
     expect(upper.opacity).toBeCloseTo(0.5, 1);
