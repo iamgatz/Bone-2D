@@ -9,13 +9,21 @@ type P = ArrayLike<number>;
 const cross = (p: P, a: number, b: number, c: number) =>
   (p[b * 2] - p[a * 2]) * (p[c * 2 + 1] - p[a * 2 + 1]) - (p[b * 2 + 1] - p[a * 2 + 1]) * (p[c * 2] - p[a * 2]);
 
+/** Twice the area under which three points count as being on one line. */
+const ON_LINE = 1e-9;
+
 /** The open segments a-b and c-d cross at a point that is inside both (touching at an end or sharing a vertex does not count). */
 export function segmentsCross(p: P, a: number, b: number, c: number, d: number): boolean {
   if (a === c || a === d || b === c || b === d) return false;
-  const d1 = cross(p, a, b, c);
-  const d2 = cross(p, a, b, d);
-  const d3 = cross(p, c, d, a);
-  const d4 = cross(p, c, d, b);
+  // a point on the line stays on it, whatever the last digits of the sum say: a flip across it would make a triangle without area
+  const side = (x: number, y: number, z: number) => {
+    const s = cross(p, x, y, z);
+    return Math.abs(s) > ON_LINE ? s : 0;
+  };
+  const d1 = side(a, b, c);
+  const d2 = side(a, b, d);
+  const d3 = side(c, d, a);
+  const d4 = side(c, d, b);
   return ((d1 > 0 && d2 < 0) || (d1 < 0 && d2 > 0)) && ((d3 > 0 && d4 < 0) || (d3 < 0 && d4 > 0));
 }
 

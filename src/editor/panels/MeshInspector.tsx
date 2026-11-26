@@ -247,6 +247,92 @@ function TestPoseControls() {
   );
 }
 
+/**
+ * Tracing the mesh again with other numbers. The result follows the fields at once; on a mesh with deform keys, which a new trace
+ * removes, it waits for the button.
+ */
+function RetraceControls({ slotId, att, together }: { slotId: Id; att: MeshAttachment; together: number }) {
+  const deformed = useProject().skeleton.animations.some((a) => Object.values(a.deform).some((skin) => skin[slotId]?.[att.name]));
+  const [padding, setPadding] = useState(2);
+  const [threshold, setThreshold] = useState(12);
+  // the number asked for while the trace waits for the button
+  const [wanted, setWanted] = useState<number | null>(null);
+  const count = att.uvs.length / 2;
+  const trace = (next: { vertices?: number; padding?: number; threshold?: number } = {}) => {
+    const opts = { vertices: wanted ?? count, padding, threshold, ...next };
+    if (together > 1) regenerateMeshes(opts);
+    else regenerateMesh(slotId, att.name, opts);
+    setWanted(null);
+  };
+  return (
+    <>
+      <Field label="Vertices">
+        <NumberField
+          label="#"
+          value={wanted ?? count}
+          step={1}
+          precision={0}
+          min={8}
+          max={400}
+          onChange={(v) => {
+            const vertices = Math.round(v);
+            if (deformed) setWanted(vertices);
+            else if (vertices !== count) trace({ vertices });
+          }}
+          title="How many vertices the mesh has. It gets more than asked when the outline needs them"
+        />
+      </Field>
+      <Field label="Padding">
+        <NumberField
+          label="px"
+          value={padding}
+          step={1}
+          precision={0}
+          min={-20}
+          max={40}
+          onChange={(v) => {
+            setPadding(v);
+            if (!deformed && v !== padding) trace({ padding: v });
+          }}
+          title="How far the outline sits outside the opaque pixels"
+        />
+      </Field>
+      <Field label="Alpha">
+        <NumberField
+          label=">"
+          value={threshold}
+          step={1}
+          precision={0}
+          min={0}
+          max={254}
+          onChange={(v) => {
+            setThreshold(v);
+            if (!deformed && v !== threshold) trace({ threshold: v });
+          }}
+          title="A pixel counts as part of the shape when its alpha (0-255) is above this"
+        />
+      </Field>
+      <Hint>
+        {deformed
+          ? 'This mesh has deform keys, which a new trace removes: press Re-trace to apply.'
+          : 'A new trace keeps the weights and the selected vertices.'}
+      </Hint>
+      <div className="hstack">
+        <Button
+          icon={RefreshCw}
+          onClick={() => trace()}
+          title="Trace the image again: weights and reshaping carry over, selected vertices stay where they are"
+        >
+          Re-trace
+        </Button>
+        <Button onClick={() => retriangulateMesh(slotId, att.name)} title="Rebuild the triangles inside the outline">
+          Retriangulate
+        </Button>
+      </div>
+    </>
+  );
+}
+
 export function MeshGroup({ slotId, att, part }: { slotId: Id; att: MeshAttachment; part?: 'main' | 'weights' }) {
   const toolsFloating = useFloats((s) => s.open.meshTools);
   const weightsFloating = useFloats((s) => s.open.weights);
@@ -263,8 +349,6 @@ export function MeshGroup({ slotId, att, part }: { slotId: Id; att: MeshAttachme
   const extraSlots = useUi((s) => s.selection.extraSlots);
   const pickedList = useUi((s) => (s.selection.slot === slotId && s.selection.attachment === att.name ? s.selection.vertices : EMPTY));
   const pickedVertices = pickedList.length;
-  const [spacing, setSpacing] = useState(34);
-  const [padding, setPadding] = useState(2);
   const [pruneBones, setPruneBones] = useState(4);
   const [pruneBelow, setPruneBelow] = useState(5);
   const [swapA, setSwapA] = useState<Id>('');
@@ -403,26 +487,7 @@ export function MeshGroup({ slotId, att, part }: { slotId: Id; att: MeshAttachme
                   }}
                 />
               </Field>
-              <Field label="Density">
-                <NumberField label="px" value={spacing} step={1} precision={0} min={8} max={400} onChange={setSpacing} />
-              </Field>
-              <Field label="Padding">
-                <NumberField label="px" value={padding} step={1} precision={0} min={-20} max={40} onChange={setPadding} />
-              </Field>
-              <div className="hstack">
-                <Button
-                  icon={RefreshCw}
-                  onClick={() =>
-                    together > 1 ? regenerateMeshes({ spacing, padding }) : regenerateMesh(slotId, att.name, { spacing, padding })
-                  }
-                  title="Trace the image again (unweighted meshes)"
-                >
-                  Re-trace
-                </Button>
-                <Button onClick={() => retriangulateMesh(slotId, att.name)} title="Rebuild the triangles inside the outline">
-                  Retriangulate
-                </Button>
-              </div>
+              <RetraceControls slotId={slotId} att={att} together={together} />
               <Field label="Edges">
                 <span
                   className="chip"

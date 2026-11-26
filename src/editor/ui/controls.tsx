@@ -143,6 +143,8 @@ export function NumberField(props: {
   const [text, setText] = useState<string | null>(null);
   const scrub = useRef<{ x: number; v: number } | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  /** Enter has committed, or Escape has given up, and now takes the focus away: the blur that follows must not commit. */
+  const committed = useRef(false);
   const name = useControlName(props.label);
 
   const commit = (raw: string) => {
@@ -196,13 +198,18 @@ export function NumberField(props: {
           requestAnimationFrame(() => e.target.select());
         }}
         onChange={(e) => setText(e.target.value)}
-        onBlur={() => text !== null && commit(text)}
+        onBlur={() => {
+          if (!committed.current && text !== null) commit(text);
+          committed.current = false;
+        }}
         onKeyDown={(e) => {
           if (e.key === 'Enter') {
             commit(text ?? fmt(value, precision));
+            committed.current = true;
             inputRef.current?.blur();
           } else if (e.key === 'Escape') {
             setText(null);
+            committed.current = true; // what was typed is given up: the blur must not commit it
             inputRef.current?.blur();
           } else if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
             e.preventDefault();

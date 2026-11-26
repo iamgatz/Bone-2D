@@ -373,8 +373,17 @@ export const RU: Record<string, string> = {
   'Four corner vertices only': 'Только четыре угловые вершины',
   Weights: 'Веса',
   'Paint weights (W)': 'Рисовать веса (W)',
+  Alpha: 'Альфа',
+  'How many vertices the mesh has. It gets more than asked when the outline needs them':
+    'Сколько вершин у меша. Станет больше заданного, если контуру нужно больше',
+  'A pixel counts as part of the shape when its alpha (0-255) is above this':
+    'Пиксель входит в форму, если его альфа (0–255) выше этого значения',
+  'This mesh has deform keys, which a new trace removes: press Re-trace to apply.':
+    'Есть ключи деформации, новая трассировка их удалит: нажмите «Трассировать заново».',
+  'A new trace keeps the weights and the selected vertices.': 'Новая трассировка сохраняет веса и выбранные вершины.',
+  'Trace the image again: weights and reshaping carry over, selected vertices stay where they are':
+    'Обвести картинку заново: веса и изменения формы переносятся, выбранные вершины остаются на месте',
   'Re-trace': 'Трассировать заново',
-  'Trace the image again (unweighted meshes)': 'Трассировать картинку заново (меши без весов)',
   Retriangulate: 'Перетриангулировать',
   'Rebuild the triangles inside the outline': 'Перестроить треугольники внутри контура',
   'Auto-weights to the selected bones': 'Авто-веса для выбранных костей',
@@ -570,7 +579,6 @@ export const RU: Record<string, string> = {
   'The root bone cannot be constrained by IK': 'Корневую кость нельзя ограничить IK',
   'The target cannot be a child of the constrained bones': 'Цель не может быть потомком ограничиваемых костей',
   'The source must be a different bone than the constrained bones': 'Источник должен отличаться от ограничиваемых костей',
-  'Unbind the mesh before re-tracing it': 'Отвяжи меш перед повторной трассировкой',
   'A mesh outline needs at least 3 vertices': 'Контуру меша нужно минимум 3 вершины',
   'Select the bones to bind to first': 'Сначала выбери кости для привязки',
   'Deform keys of "{}" were removed: the mesh layout changed': 'Ключи деформации «{}» удалены: структура меша изменилась',

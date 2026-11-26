@@ -181,7 +181,8 @@ describe('tracing several images at once', () => {
     expect(M.convertImagesToMeshes('quad')).toBe(0);
   });
 
-  it('re-tracing leaves weighted meshes alone', () => {
-    expect(M.regenerateMeshes({})).toBe(0);
+  it('re-tracing takes the weighted meshes of the group with it, still bound', () => {
+    expect(M.regenerateMeshes({ vertices: 30 })).toBe(2);
+    expect(mesh(armSlot, 'arm').weights!.length).toBe(mesh(armSlot, 'arm').uvs.length / 2);
   });
 });

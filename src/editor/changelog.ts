@@ -14,6 +14,25 @@ export interface Release {
 
 export const CHANGELOG: Release[] = [
   {
+    version: '0.97',
+    date: '2026-11-26',
+    en: [
+      'Re-trace works on a bound mesh: the weights and any reshaping carry over to the new vertices, so there is no need to unbind and paint again. Vertices you select stay exactly where they are.',
+      'Mesh section: set how many vertices the mesh has, the padding and the alpha threshold, and see the result at once. A mesh with deform keys waits for the Re-trace button, because a new trace removes them.',
+      'Fixed: Trace mesh could leave a vertex of the outline outside every triangle, so it moved nothing.',
+    ],
+    ru: [
+      '«Трассировать заново» работает и на привязанном меше: веса и изменения формы переносятся на новые вершины — не нужно отвязывать и красить заново. Выбранные вершины остаются точно на месте.',
+      'Раздел меша: задаётся число вершин, отступ и порог альфы, результат виден сразу. Меш с ключами деформации ждёт кнопку, потому что новая трассировка их удаляет.',
+      'Исправлено: «Трассировать меш» мог оставить вершину контура вне всех треугольников, и она ничего не двигала.',
+    ],
+    zh: [
+      '“重新描边”现在可用于已绑定的网格：权重和形状调整会转到新顶点上，无需解绑后重新绘制。选中的顶点位置完全保持不变。',
+      '网格部分：可设置顶点数、外扩距离和透明度阈值，结果立即可见。带变形关键帧的网格需按按钮应用，因为重新描边会删除这些关键帧。',
+      '修复：“描边生成网格”可能让轮廓上的某个顶点不属于任何三角形，导致它不起作用。',
+    ],
+  },
+  {
     version: '0.96',
     date: '2026-11-26',
     en: [

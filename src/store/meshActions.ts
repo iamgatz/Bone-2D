@@ -34,6 +34,7 @@ import type { BoneMats, TraceOptions, TriangleMove, VertexMap } from '@/core/mes
 import { matInvert } from '@/core/math';
 import type { Id, Influence, MeshAttachment, RegionAttachment } from '@/core/model';
 import { setupPicture } from '@/core/sequence';
+import { rebuildMesh } from '@/core/retrace';
 import { skinHolding } from '@/core/skeleton';
 import { getScene, getSetupSkeleton, getViewScene } from '@/store/scene';
 import { assets } from './assets';
@@ -125,29 +126,29 @@ export function convertToMesh(slotId: Id, name: string, kind: 'trace' | 'quad' =
   toast(`Mesh: ${mesh.uvs.length / 2} vertices, ${mesh.triangles.length / 3} triangles`, 'ok');
 }
 
-/** Re-traces an existing (unweighted) mesh from its image. */
+/**
+ * Traces an existing mesh from its image again. The weights and any reshaping carry over to the new vertices, and the selected
+ * vertices stay as they are.
+ */
 export function regenerateMesh(slotId: Id, name: string, opts: TraceOptions) {
   const mesh = getShapeMesh(slotId, name);
   if (!mesh) return;
-  if (mesh.weights) {
-    toast('Unbind the mesh before re-tracing it', 'error');
-    return;
-  }
-  const r = mesh.region ?? { x: 0, y: 0, rotation: 0, scaleX: 1, scaleY: 1, width: mesh.width, height: mesh.height };
+  const img = assets.getImageData(setupPicture(mesh) ?? mesh.path);
+  if (!img) return;
   const region: RegionAttachment = {
     type: 'region',
     name: mesh.name,
     path: mesh.path,
     color: mesh.color,
-    ...r,
-    ...(mesh.sequence ? { sequence: mesh.sequence } : {}),
+    ...(mesh.region ?? { x: 0, y: 0, rotation: 0, scaleX: 1, scaleY: 1, width: mesh.width, height: mesh.height }),
   };
-  const img = assets.getImageData(setupPicture(mesh) ?? mesh.path);
-  if (!img) return;
-  const next = generateMeshFromImage(region, img.data, img.width, img.height, opts);
-  next.region = mesh.region;
-  writeMesh(slotId, name, next, 'Re-trace mesh', 'drop'); // a new vertex set: old deform keys mean nothing
-  setSelection({ slot: slotId, attachment: name, bones: uiStore.get().selection.bones, vertices: [] });
+  const fresh = generateMeshFromImage(region, img.data, img.width, img.height, opts);
+  const { mats, slotMat } = setupMats();
+  const positions = mesh.weights ? meshWorldPositions(mesh, slotMat(slotId), mats) : mesh.vertices;
+  const keep = [...(weightScope(slotId, name, mesh.uvs.length / 2) ?? [])];
+  const next = rebuildMesh(mesh, fresh, img.width, img.height, positions, keep, mesh.weights ? mats : null);
+  writeMesh(slotId, name, next.mesh, 'Re-trace mesh', 'drop'); // a new vertex set: old deform keys mean nothing
+  setSelection({ slot: slotId, attachment: name, bones: uiStore.get().selection.bones, vertices: next.kept });
 }
 
 /** Moves vertices to world positions in the setup pose. */
@@ -417,9 +418,9 @@ export function convertImagesToMeshes(kind: 'trace' | 'quad' = 'trace', opts: Tr
   return inRefs('Trace meshes', traceGroup(), (m) => convertToMesh(m.slotId, m.name, kind, opts));
 }
 
-/** Re-traces every unweighted mesh of the group from its image. One history step. */
+/** Re-traces every mesh of the group from its image. One history step. */
 export function regenerateMeshes(opts: TraceOptions): number {
-  const refs = weightGroup().filter((m) => !getMesh(m.slotId, m.name)?.weights);
+  const refs = weightGroup().filter((m) => !getMesh(m.slotId, m.name)?.link);
   return inRefs('Re-trace meshes', refs, (m) => regenerateMesh(m.slotId, m.name, opts));
 }
 

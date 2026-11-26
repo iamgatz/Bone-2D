@@ -150,6 +150,8 @@ export interface TraceOptions {
   /** Approximate spacing of interior vertices in pixels (0 = no interior points). */
   spacing?: number;
   maxHullVertices?: number;
+  /** How many vertices the whole mesh gets, outline and interior together. Without it the spacing decides. */
+  vertices?: number;
 }
 
 /** The longest outer contour of a mask, as the corners of its cells in image pixels. */
@@ -233,7 +235,12 @@ function outlineOf(loop: [number, number][], w: number, h: number, tolerance: nu
   }
   if (poly.length < 3) poly = loop.slice(0, 3);
   if (pad !== 0) poly = offsetPolygon(poly, pad);
-  return poly.map((p) => [Math.min(w, Math.max(0, p[0])), Math.min(h, Math.max(0, p[1]))]);
+  const onPicture: [number, number][] = poly.map((p) => [Math.min(w, Math.max(0, p[0])), Math.min(h, Math.max(0, p[1]))]);
+  // two corners pushed onto the same spot of the picture's edge would leave one of them without a triangle
+  return onPicture.filter((p, i) => {
+    const next = onPicture[(i + 1) % onPicture.length];
+    return Math.hypot(p[0] - next[0], p[1] - next[1]) > 0.25;
+  });
 }
 
 /**
@@ -241,7 +248,31 @@ function outlineOf(loop: [number, number][], w: number, h: number, tolerance: nu
  * several separate pieces gets a contour that runs round all of them over narrow bridges (or, if that cannot be built, their convex wrap).
  */
 export function traceOutline(rgba: ArrayLike<number>, w: number, h: number, opts: TraceOptions = {}): [number, number][] {
-  const threshold = opts.threshold ?? 12;
+  const traced = traceMask(rgba, w, h, opts.threshold);
+  const { mask, scale } = traced;
+  const tolerance = opts.tolerance ?? Math.max(1.2, scale * 0.9);
+  const maxHull = opts.maxHullVertices ?? 48;
+  const pad = opts.padding ?? 2;
+  if (traced.pieces < 2) {
+    const loop = largestLoop(mask, scale);
+    return loop.length ? outlineOf(loop, w, h, tolerance, maxHull, pad) : [];
+  }
+  const rim = rimPoints(mask, scale, w, h);
+  // every piece adds corners; the push outwards makes up for what the simplification cuts off
+  const corners = Math.min(120, maxHull + 12 * (traced.pieces - 1));
+  for (const thick of [1, 2, 4]) {
+    const loop = largestLoop(bridgePieces(mask, thick), scale);
+    for (const push of [Math.max(pad, tolerance + 0.5), Math.max(pad, scale * 2 + 1)]) {
+      const poly = outlineOf(loop, w, h, tolerance, corners, push);
+      if (poly.length <= 120 && isSimple(poly) && holds(poly, rim)) return poly;
+    }
+  }
+  const hull = wrap(rim);
+  return offsetPolygon(hull, Math.max(1, pad)).map((p) => [Math.min(w, Math.max(0, p[0])), Math.min(h, Math.max(0, p[1]))]);
+}
+
+/** The opaque pixels of a picture on a grid fine enough to trace, with the stray specks taken off. */
+function traceMask(rgba: ArrayLike<number>, w: number, h: number, threshold = 12): { mask: Mask; scale: number; pieces: number } {
   const scale = Math.max(1, Math.ceil(Math.max(w, h) / 220));
   const mw = Math.ceil(w / scale);
   const mh = Math.ceil(h / scale);
@@ -258,26 +289,7 @@ export function traceOutline(rgba: ArrayLike<number>, w: number, h: number, opts
   const all: Mask = { cells, width: mw, height: mh };
   const clean = withoutSpecks(all, solid);
   // a picture of nothing but specks is traced as it is
-  const mask = clean.pieces ? clean.mask : all;
-  const tolerance = opts.tolerance ?? Math.max(1.2, scale * 0.9);
-  const maxHull = opts.maxHullVertices ?? 48;
-  const pad = opts.padding ?? 2;
-  if (clean.pieces < 2) {
-    const loop = largestLoop(mask, scale);
-    return loop.length ? outlineOf(loop, w, h, tolerance, maxHull, pad) : [];
-  }
-  const rim = rimPoints(mask, scale, w, h);
-  // every piece adds corners; the push outwards makes up for what the simplification cuts off
-  const corners = Math.min(120, maxHull + 12 * (clean.pieces - 1));
-  for (const thick of [1, 2, 4]) {
-    const loop = largestLoop(bridgePieces(mask, thick), scale);
-    for (const push of [Math.max(pad, tolerance + 0.5), Math.max(pad, scale * 2 + 1)]) {
-      const poly = outlineOf(loop, w, h, tolerance, corners, push);
-      if (poly.length <= 120 && isSimple(poly) && holds(poly, rim)) return poly;
-    }
-  }
-  const hull = wrap(rim);
-  return offsetPolygon(hull, Math.max(1, pad)).map((p) => [Math.min(w, Math.max(0, p[0])), Math.min(h, Math.max(0, p[1]))]);
+  return { mask: clean.pieces ? clean.mask : all, scale, pieces: clean.pieces };
 }
 
 /**
@@ -405,6 +417,103 @@ export function subdivideOutline(hull: [number, number][], maxEdge: number): [nu
   return out;
 }
 
+/**
+ * The outline for a mesh of `count` vertices: it gets a part of them, as many corners as it takes to still hold every opaque pixel.
+ */
+function countedOutline(rgba: ArrayLike<number>, w: number, h: number, count: number, opts: TraceOptions): [number, number][] {
+  const pad = opts.padding ?? 2;
+  const share = Math.max(4, Math.min(48, Math.round(count * 0.6)));
+  const { mask, scale } = traceMask(rgba, w, h, opts.threshold);
+  const rim = rimPoints(mask, scale, w, h);
+  let poly: [number, number][] = [];
+  // a negative padding asks for an outline inside the art
+  for (const corners of [share, Math.min(48, Math.round(share * 1.5)), 48]) {
+    for (const more of [0, 2, 5, 10]) {
+      poly = traceOutline(rgba, w, h, { ...opts, maxHullVertices: corners, padding: pad + more });
+      if (pad < 0 || poly.length < 3 || (holds(poly, rim) && isSimple(poly))) return poly;
+    }
+  }
+  return poly;
+}
+
+/** Splits the longest side of a polygon in half until it has `count` corners. */
+function splitLongest(poly: [number, number][], count: number): [number, number][] {
+  const out = poly.slice();
+  while (out.length < count) {
+    let longest = 0;
+    let at = 0;
+    for (let i = 0; i < out.length; i++) {
+      const b = out[(i + 1) % out.length];
+      const d = Math.hypot(b[0] - out[i][0], b[1] - out[i][1]);
+      if (d > longest) {
+        longest = d;
+        at = i;
+      }
+    }
+    if (longest < 4) break; // closer corners than this only make slivers
+    const b = out[(at + 1) % out.length];
+    out.splice(at + 1, 0, [(out[at][0] + b[0]) / 2, (out[at][1] + b[1]) / 2]);
+  }
+  return out;
+}
+
+/** How many of `count` evenly spread vertices of a shape fall on its outline. */
+function outlineShare(outline: [number, number][], count: number): number {
+  let around = 0;
+  for (let i = 0; i < outline.length; i++) {
+    const b = outline[(i + 1) % outline.length];
+    around += Math.hypot(b[0] - outline[i][0], b[1] - outline[i][1]);
+  }
+  // the side of the triangles when `count` vertices cover the area evenly
+  const side = Math.sqrt((1.6 * Math.abs(polygonArea(outline))) / count);
+  return Math.min(Math.round(count * 0.6), Math.round(around / Math.max(side, 1)));
+}
+
+/**
+ * The points of a mesh with exactly `count` vertices (more only when the outline itself needs more): the outline as dense as the rest
+ * will be, the interior on the widest even grid that fits what is left, and what is still missing in the middle of the largest
+ * triangles.
+ */
+function countedPoints(
+  rgba: ArrayLike<number>,
+  w: number,
+  h: number,
+  count: number,
+  opts: TraceOptions,
+): { outline: [number, number][]; inner: [number, number][] } {
+  const first = countedOutline(rgba, w, h, count, opts);
+  if (first.length < 3) return { outline: first, inner: [] };
+  const outline = splitLongest(first, outlineShare(first, count));
+  const room = count - outline.length;
+  let inner: [number, number][] = [];
+  let low = Math.sqrt((w * h) / (4 * count));
+  let high = 2 * Math.max(w, h);
+  for (let i = 0; i < 20 && room > 0; i++) {
+    const mid = (low + high) / 2;
+    const grid = interiorPoints(outline, mid);
+    if (grid.length <= room) {
+      inner = grid;
+      high = mid;
+    } else low = mid;
+  }
+  while (outline.length + inner.length < count) {
+    const flat = [...outline, ...inner].flat();
+    const t = triangulate(flat, outline.length);
+    let largest = 0;
+    let middle: [number, number] | null = null;
+    for (let i = 0; i < t.length; i += 3) {
+      const [a, b, c] = [t[i] * 2, t[i + 1] * 2, t[i + 2] * 2];
+      const area = Math.abs((flat[b] - flat[a]) * (flat[c + 1] - flat[a + 1]) - (flat[c] - flat[a]) * (flat[b + 1] - flat[a + 1]));
+      if (area <= largest) continue;
+      largest = area;
+      middle = [(flat[a] + flat[b] + flat[c]) / 3, (flat[a + 1] + flat[b + 1] + flat[c + 1]) / 3];
+    }
+    if (!middle) break;
+    inner.push(middle);
+  }
+  return { outline, inner };
+}
+
 /** Builds a fully triangulated mesh from the opaque pixels of an image (replaces a region attachment). */
 export function generateMeshFromImage(
   region: RegionAttachment,
@@ -413,11 +522,18 @@ export function generateMeshFromImage(
   imgH: number,
   opts: TraceOptions = {},
 ): MeshAttachment {
-  let outline = traceOutline(rgba, imgW, imgH, opts);
-  if (outline.length < 3) return meshFromRegion(region);
-  const spacing = opts.spacing ?? Math.max(imgW, imgH) / 5;
-  outline = subdivideOutline(outline, spacing * 1.6);
-  const inner = interiorPoints(outline, spacing);
+  let outline: [number, number][];
+  let inner: [number, number][];
+  if (opts.vertices) {
+    ({ outline, inner } = countedPoints(rgba, imgW, imgH, Math.round(opts.vertices), opts));
+    if (outline.length < 3) return meshFromRegion(region);
+  } else {
+    outline = traceOutline(rgba, imgW, imgH, opts);
+    if (outline.length < 3) return meshFromRegion(region);
+    const spacing = opts.spacing ?? Math.max(imgW, imgH) / 5;
+    outline = subdivideOutline(outline, spacing * 1.6);
+    inner = interiorPoints(outline, spacing);
+  }
   const pts: [number, number][] = [...outline, ...inner];
   const flat: number[] = [];
   for (const p of pts) flat.push(p[0], p[1]);
