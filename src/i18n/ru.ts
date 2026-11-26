@@ -49,8 +49,8 @@ export const RU: Record<string, string> = {
   'Toggle names': 'Показать / скрыть имена',
   'Click a bone or image to select · drag a bone to rotate it · drag an IK target to move it':
     'Клик по кости или картинке — выбрать · тяни кость, чтобы повернуть · тяни IK-цель, чтобы переместить',
-  'Drag to create a bone · it attaches to the selected bone · start from a bone tip to chain':
-    'Тяни, чтобы создать кость · она крепится к выбранной · начни с кончика кости, чтобы продолжить цепочку',
+  'Drag to create a bone · it attaches to the selected bone · start from a bone tip to chain · Ctrl-click: a bone without length':
+    'Тяни, чтобы создать кость · она крепится к выбранной · начни с кончика кости, чтобы продолжить цепочку · Ctrl-щелчок: кость без длины',
   'Drag to move the selected bone (or grab an axis) · Shift = add to selection':
     'Тяни, чтобы переместить выбранную кость (или хватай ось) · Shift — добавить к выбору',
   'Drag anywhere to rotate the selected bones around their origins': 'Тяни где угодно, чтобы повернуть выбранные кости вокруг их начал',
@@ -156,11 +156,14 @@ export const RU: Record<string, string> = {
   KB: 'КБ',
   px: 'px',
 
-  'Drop PNG / WebP images, a folder of them or a PSD file here': 'Перетащи сюда PNG / WebP, папку с ними или файл PSD',
+  'Drop PNG / WebP images, a folder of them or a PSD / ORA file here': 'Перетащи сюда PNG / WebP, папку с ними или файл PSD / ORA',
   'Import a folder of images (its folders become folders of pictures)': 'Импорт папки с картинками (её папки станут папками картинок)',
   'or click to browse': 'или нажми, чтобы выбрать',
   'Import images': 'Импорт картинок',
   'Import PSD': 'Импорт PSD',
+  'Import ORA': 'Импорт ORA',
+  'Update from ORA': 'Обновление из ORA',
+  'Update from PSD / ORA': 'Обновление из PSD / ORA',
   'Update from PSD': 'Обновление из PSD',
   'Set parent': 'Назначить родителя',
   'Set parent works in Setup mode': 'Назначение родителя работает в режиме Setup',
@@ -290,8 +293,8 @@ export const RU: Record<string, string> = {
   'The root bone can only be split nested': 'Корневую кость можно резать только цепочкой',
   'The bone has no length to split': 'У кости нет длины, резать нечего',
   'Bone not found': 'Кость не найдена',
-  'Import images (or a PSD file: every layer becomes a picture and a slot)':
-    'Импорт картинок (или файла PSD: каждый слой станет картинкой и слотом)',
+  'Import images (or a PSD / ORA file: every layer becomes a picture and a slot)':
+    'Импорт картинок (или файла PSD / ORA: каждый слой станет картинкой и слотом)',
   'Remove image': 'Удалить картинку',
   '{} — drag into the viewport, or double-click to add at the center': '{} — перетащи во вьюпорт или кликни дважды, чтобы добавить в центр',
   '"{}" is used by an attachment': '«{}» используется аттачментом',
@@ -540,7 +543,8 @@ export const RU: Record<string, string> = {
   '{} · {}': '{1} · {2}',
 
   'IK constraints are created in Setup mode': 'IK-констрейнты создаются в режиме «Риг»',
-  'Drag to set the bone length': 'Потяни, чтобы задать длину кости',
+  'Drag to set the bone length · Ctrl-click makes a bone without length':
+    'Потяни, чтобы задать длину кости · Ctrl-щелчок создаёт кость без длины',
   'Bind the mesh to bones first (Inspector → Weights → Bind)': 'Сначала привяжи меш к костям (Инспектор → Веса → Привязать)',
   'Weights are edited in Setup mode': 'Веса правятся в режиме «Риг»',
   'Vertices can only be removed in Setup mode': 'Вершины можно удалять только в режиме «Риг»',

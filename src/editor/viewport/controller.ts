@@ -670,7 +670,11 @@ export class ViewportController {
       if (Math.hypot(wx - d.ox, wy - d.oy) * ui.camera.zoom >= 8) {
         const id = createBoneWorld({ parent: d.parent, x: d.ox, y: d.oy, tipX: wx, tipY: wy });
         if (id) setSelection({ bones: [id] });
-      } else toast('Drag to set the bone length');
+      } else if (e.ctrlKey || e.metaKey) {
+        // a bone without length: a pivot or an anchor. It takes a key held down, so that a stray click makes nothing
+        const id = createBoneWorld({ parent: d.parent, x: d.ox, y: d.oy, tipX: d.ox, tipY: d.oy });
+        if (id) setSelection({ bones: [id] });
+      } else toast('Drag to set the bone length · Ctrl-click makes a bone without length');
       this.interaction = null;
     }
     docStore.endGesture();

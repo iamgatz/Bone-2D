@@ -4,21 +4,20 @@
  * added, and a picture whose layer is gone is left alone (nothing is removed behind the user's back).
  */
 import type { ImageRef } from '../model';
-import type { PsdLayer } from './psd';
 
-export interface PsdSyncPlan {
+export interface PsdSyncPlan<L> {
   /** Layers that have a picture by the same name. */
-  updates: { layer: PsdLayer; image: ImageRef }[];
+  updates: { layer: L; image: ImageRef }[];
   /** Layers with no picture yet, back to front. */
-  added: PsdLayer[];
+  added: L[];
   /** Pictures that came from a PSD (they have a recorded position) and whose layer is not in the file any more. */
   gone: string[];
 }
 
-export function planPsdSync(layers: PsdLayer[], images: ImageRef[]): PsdSyncPlan {
+export function planPsdSync<L extends { name: string }>(layers: L[], images: ImageRef[]): PsdSyncPlan<L> {
   const byName = new Map(images.map((i) => [i.name, i] as const));
-  const updates: PsdSyncPlan['updates'] = [];
-  const added: PsdLayer[] = [];
+  const updates: PsdSyncPlan<L>['updates'] = [];
+  const added: L[] = [];
   const seen = new Set<string>();
   for (const layer of layers) {
     seen.add(layer.name);

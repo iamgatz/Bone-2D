@@ -15,7 +15,7 @@ The first time you open the demo, a two-minute interactive lesson ("Bring the fo
 
 ## Features
 
-- **Rigging:** bones, slots, weighted meshes (auto-trace, weight brush), skins, clipping, bounding boxes, paths, Photoshop import.
+- **Rigging:** bones, slots, weighted meshes (auto-trace, weight brush), skins, clipping, bounding boxes, paths, Photoshop and OpenRaster (Krita, GIMP) import.
 - **Constraints:** IK, transform, path, physics and the Spine 4.3 sliders.
 - **Animation:** dopesheet and graph editor with Bézier curves, onion skins, events, draw-order and sequence keys, a pose library, keying tools.
 - **Export:** Spine 4.3 JSON or binary with an atlas packer; a GIF, a PNG sequence or a video of an animation; a single-file player page. Import of Spine JSON 4.0 – 4.3 and binary 4.3.

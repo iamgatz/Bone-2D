@@ -18,7 +18,8 @@ export interface PsdPixels {
   data: Uint8ClampedArray | Uint8Array;
 }
 
-export interface PsdLayer {
+/** A layer of a layered file. `P` is how its picture is held: raw pixels from a .psd, a PNG from an .ora. */
+export interface PsdLayer<P = PsdPixels> {
   /** The name of the picture: the groups it sits in and its own name, joined with "/". */
   name: string;
   /** Pixels of the document the layer's left edge is at. */
@@ -29,14 +30,14 @@ export interface PsdLayer {
   /** 0..1, group opacities multiplied in. */
   opacity: number;
   blend: BlendMode;
-  pixels: PsdPixels;
+  pixels: P;
 }
 
-export interface PsdFile {
+export interface PsdFile<P = PsdPixels> {
   width: number;
   height: number;
   /** Back to front. */
-  layers: PsdLayer[];
+  layers: PsdLayer<P>[];
   /** How many layers were left out, by reason. */
   skipped: { hidden: number; empty: number };
 }

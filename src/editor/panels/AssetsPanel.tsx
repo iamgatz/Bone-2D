@@ -164,7 +164,7 @@ export function AssetsPanel() {
 
         <IconButton
           icon={ImagePlus}
-          title="Import images (or a PSD file: every layer becomes a picture and a slot)"
+          title="Import images (or a PSD / ORA file: every layer becomes a picture and a slot)"
           small
           onClick={() => fileRef.current?.click()}
         />
@@ -199,7 +199,7 @@ export function AssetsPanel() {
                 onClick={() => psdRef.current?.click()}
                 title="Layers with the name of a picture give it new pixels, new layers become slots"
               >
-                Update from PSD
+                Update from PSD / ORA
               </MenuItem>
               <MenuItem
                 icon={Eraser}
@@ -243,7 +243,7 @@ export function AssetsPanel() {
         <input
           ref={psdRef}
           type="file"
-          accept=".psd"
+          accept=".psd,.ora"
           hidden
           onChange={async (e) => {
             const file = e.target.files?.[0];
@@ -254,7 +254,7 @@ export function AssetsPanel() {
         <input
           ref={fileRef}
           type="file"
-          accept="image/*,.psd"
+          accept="image/*,.psd,.ora"
           multiple
           hidden
           onChange={async (e) => (await importImageFiles([...(e.target.files ?? [])]), (e.target.value = ''))}
@@ -283,7 +283,7 @@ export function AssetsPanel() {
       >
         {project.images.length === 0 ? (
           <div className="drop-hint" onClick={() => fileRef.current?.click()}>
-            Drop PNG / WebP images, a folder of them or a PSD file here
+            Drop PNG / WebP images, a folder of them or a PSD / ORA file here
             <br />
             or click to browse
           </div>

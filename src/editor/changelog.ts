@@ -14,6 +14,25 @@ export interface Release {
 
 export const CHANGELOG: Release[] = [
   {
+    version: '0.95',
+    date: '2026-11-26',
+    en: [
+      'Fixed: Trace mesh covered only the biggest piece of a picture, so a second eye, a loose strand or a button drawn apart was cut off. The outline now runs round every piece.',
+      'OpenRaster (.ora) files, saved by Krita, GIMP and MyPaint, come in like Photoshop files: every layer becomes a picture and a slot, groups are folders, and "Update from PSD / ORA" takes a repainted file.',
+      'Bone tool: Ctrl-click (Cmd on a Mac) makes a bone without length, for a pivot or an anchor.',
+    ],
+    ru: [
+      'Исправлено: «Трассировать меш» захватывала только самый большой кусок картинки — второй глаз, отдельная прядь или пуговица пропадали. Теперь контур обходит все куски.',
+      'Файлы OpenRaster (.ora) из Krita, GIMP и MyPaint импортируются как файлы Photoshop: каждый слой становится картинкой и слотом, группы — папками, а «Обновление из PSD / ORA» принимает перерисованный файл.',
+      'Инструмент кости: Ctrl-щелчок (Cmd на Mac) создаёт кость без длины — для опорной точки или якоря.',
+    ],
+    zh: [
+      '修复：“描边生成网格”只覆盖图片中最大的一块，分开绘制的另一只眼睛、一缕头发或纽扣会被裁掉。现在轮廓会包住每一块。',
+      '支持导入 Krita、GIMP 和 MyPaint 保存的 OpenRaster（.ora）文件，方式与 Photoshop 文件相同：每个图层生成图片和插槽，图层组成为文件夹，重新绘制后可用“从 PSD / ORA 更新”。',
+      '骨骼工具：按住 Ctrl 单击（Mac 上用 Cmd）创建无长度骨骼，用作轴心或锚点。',
+    ],
+  },
+  {
     version: '0.94',
     date: '2026-11-26',
     en: [

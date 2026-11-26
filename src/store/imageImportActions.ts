@@ -1,10 +1,12 @@
-/** Bringing pictures in: files, dropped folders, Photoshop files. */
+/** Bringing pictures in: files, dropped folders, layered files (Photoshop and OpenRaster). */
 import { freshName } from '@/core/edit';
 import { atan2Deg } from '@/core/math';
 import { newBone, newSlot } from '@/core/model';
 import type { Id, ImageRef } from '@/core/model';
 import { commonShift, isPsd, layerCenter, readPsdFile } from '@/core/import/psd';
-import type { PsdLayer, PsdPixels } from '@/core/import/psd';
+import type { PsdFile, PsdLayer, PsdPixels } from '@/core/import/psd';
+import { isOra, readOraFile } from '@/core/import/ora';
+import type { PngPicture } from '@/core/import/ora';
 import { fitRegion, planPsdSync } from '@/core/import/psdSync';
 import { cleanImageName } from '@/core/images';
 import { getSetupSkeleton } from '@/store/scene';
@@ -20,7 +22,7 @@ import { keepPixelsForUndo } from './imageActions';
 export async function importImageFiles(files: File[], paths?: string[]): Promise<string[]> {
   const refs: ImageRef[] = [];
   for (const [i, f] of files.entries()) {
-    if (isPsd(f)) {
+    if (isPsd(f) || isOra(f)) {
       await importPsd(f);
       continue;
     }
@@ -80,7 +82,14 @@ function placeOnBone(
   return { x, y, rotation: det < 0 ? -rot : rot };
 }
 
-function pixelsToPng(px: PsdPixels): Promise<Blob> {
+type LayerPicture = PsdPixels | PngPicture;
+
+const readLayered = async (file: File): Promise<PsdFile<LayerPicture>> =>
+  isOra(file) ? readOraFile(await file.arrayBuffer()) : readPsdFile(await file.arrayBuffer());
+
+function pictureToPng(px: LayerPicture): Promise<Blob> {
+  // an OpenRaster layer is a PNG already
+  if ('png' in px) return Promise.resolve(new Blob([new Uint8Array(px.png)], { type: 'image/png' }));
   const canvas = document.createElement('canvas');
   canvas.width = px.width;
   canvas.height = px.height;
@@ -91,14 +100,14 @@ function pixelsToPng(px: PsdPixels): Promise<Blob> {
 }
 
 /**
- * Imports a Photoshop file: every visible layer becomes a picture (groups are folders) and a slot with a region attachment, bottom layer
+ * Imports a Photoshop or OpenRaster file: every visible layer becomes a picture (groups are folders) and a slot with a region attachment, bottom layer
  * first, so the stack of the file is the draw order. The slots go on the selected bone (the first one, or a new root when there is none).
  * One step in the history. Returns the number of layers imported.
  */
 export async function importPsd(file: File): Promise<number> {
   let psd;
   try {
-    psd = await readPsdFile(await file.arrayBuffer());
+    psd = await readLayered(file);
   } catch (e) {
     toast(`Could not read ${file.name}`, 'error');
     console.error(e);
@@ -111,7 +120,7 @@ export async function importPsd(file: File): Promise<number> {
   const refs: { ref: ImageRef; layer: (typeof psd.layers)[number] }[] = [];
   for (const layer of psd.layers) {
     try {
-      refs.push({ ref: await assets.addFile(await pixelsToPng(layer.pixels), layer.name), layer });
+      refs.push({ ref: await assets.addFile(await pictureToPng(layer.pixels), layer.name), layer });
     } catch (e) {
       toast(`Could not read the layer "${layer.name}"`, 'error');
       console.error(e);
@@ -124,7 +133,7 @@ export async function importPsd(file: File): Promise<number> {
   const root = live ? null : newBone({ name: freshName('root', doc.bones) });
   const boneId = live ? live.data.id : root!.id;
   const slotIds: Id[] = [];
-  docStore.update('Import PSD', (d) => {
+  docStore.update(isOra(file) ? 'Import ORA' : 'Import PSD', (d) => {
     if (root) d.skeleton.bones.push(root);
     const skin = d.skeleton.skins[0];
     for (const { ref, layer } of refs) {
@@ -168,7 +177,7 @@ export async function importPsd(file: File): Promise<number> {
 }
 
 /**
- * "Update from PSD": the layers of a (repainted) Photoshop file are matched to the pictures of the project by name. The matched pictures get
+ * "Update from PSD / ORA": the layers of a (repainted) layered file are matched to the pictures of the project by name. The matched pictures get
  * the new pixels (a region attachment follows the new size and the way the layer moved; meshes keep their shape, so a repaint of the same
  * size drops in), the layers the project has not got become new slots in their place of the stack, and nothing is removed. One step.
  */
@@ -176,7 +185,7 @@ export async function reimportPsd(file: File): Promise<{ updated: number; added:
   const none = { updated: 0, added: 0 };
   let psd;
   try {
-    psd = await readPsdFile(await file.arrayBuffer());
+    psd = await readLayered(file);
   } catch (e) {
     toast(`Could not read ${file.name}`, 'error');
     console.error(e);
@@ -187,12 +196,12 @@ export async function reimportPsd(file: File): Promise<{ updated: number; added:
     toast(`${file.name} has no visible pixel layers`, 'info');
     return none;
   }
-  const fresh = new Map<string, { asset: ImageAsset; layer: PsdLayer }>();
+  const fresh = new Map<string, { asset: ImageAsset; layer: PsdLayer<LayerPicture> }>();
   const refs = new Map<string, ImageRef>();
   try {
     for (const { layer, image } of plan.updates)
-      fresh.set(image.name, { asset: await assets.decode(image.name, await pixelsToPng(layer.pixels)), layer });
-    for (const layer of plan.added) refs.set(layer.name, await assets.addFile(await pixelsToPng(layer.pixels), layer.name));
+      fresh.set(image.name, { asset: await assets.decode(image.name, await pictureToPng(layer.pixels)), layer });
+    for (const layer of plan.added) refs.set(layer.name, await assets.addFile(await pictureToPng(layer.pixels), layer.name));
   } catch (e) {
     toast(`Could not read the layers of ${file.name}`, 'error');
     console.error(e);
@@ -219,7 +228,7 @@ export async function reimportPsd(file: File): Promise<{ updated: number; added:
       return [c[0] - image.psd[0], c[1] - image.psd[1]] as [number, number];
     }),
   );
-  docStore.update('Update from PSD', (d) => {
+  docStore.update(isOra(file) ? 'Update from ORA' : 'Update from PSD', (d) => {
     if (root && plan.added.length) d.skeleton.bones.push(root);
     const skin0 = d.skeleton.skins[0];
     // 1. the pictures that exist: pixels, size, and the attachments that show them

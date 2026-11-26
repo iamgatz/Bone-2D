@@ -55,7 +55,7 @@ export function setToolKey(tool: Tool, letter: string): Tool | null {
 /** What the tool does, shown at the bottom of the viewport while it is active. */
 export const HINTS: Record<Tool, string> = {
   select: 'Click a bone or image to select · drag a bone to rotate it · drag an IK target to move it',
-  create: 'Drag to create a bone · it attaches to the selected bone · start from a bone tip to chain',
+  create: 'Drag to create a bone · it attaches to the selected bone · start from a bone tip to chain · Ctrl-click: a bone without length',
   translate: 'Drag to move the selected bone (or grab an axis) · Shift = add to selection',
   rotate: 'Drag anywhere to rotate the selected bones around their origins',
   scale: 'Drag to scale · Shift = X only · Alt = Y only',

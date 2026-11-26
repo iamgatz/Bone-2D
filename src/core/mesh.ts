@@ -7,6 +7,8 @@ import type { Id, Influence, MeshAttachment, PathAttachment, RegionAttachment } 
 import { DEG2RAD, distToSegmentSq, matApply, matInvert, pointInPolygon } from './math';
 import type { Mat } from './math';
 import { constrainTriangles, segmentsCross } from './constrain';
+import { bridgePieces, holds, isSimple, rimPoints, withoutSpecks, wrap } from './pieces';
+import type { Mask } from './pieces';
 
 /** A 4 vertex quad covering the region (vertices in slot-bone space, hull = 4). */
 export function meshFromRegion(r: RegionAttachment): MeshAttachment {
@@ -150,19 +152,9 @@ export interface TraceOptions {
   maxHullVertices?: number;
 }
 
-/** Largest outer contour of the opaque pixels, in image pixel coordinates (y down). */
-export function traceOutline(rgba: ArrayLike<number>, w: number, h: number, opts: TraceOptions = {}): [number, number][] {
-  const threshold = opts.threshold ?? 12;
-  const scale = Math.max(1, Math.ceil(Math.max(w, h) / 220));
-  const mw = Math.ceil(w / scale);
-  const mh = Math.ceil(h / scale);
-  const mask = new Uint8Array(mw * mh);
-  for (let y = 0; y < h; y++) {
-    for (let x = 0; x < w; x++) {
-      if (rgba[(y * w + x) * 4 + 3] > threshold) mask[Math.floor(y / scale) * mw + Math.floor(x / scale)] = 1;
-    }
-  }
-  const filled = (x: number, y: number) => x >= 0 && y >= 0 && x < mw && y < mh && mask[y * mw + x] === 1;
+/** The longest outer contour of a mask, as the corners of its cells in image pixels. */
+function largestLoop({ cells, width: mw, height: mh }: Mask, scale: number): [number, number][] {
+  const filled = (x: number, y: number) => x >= 0 && y >= 0 && x < mw && y < mh && cells[y * mw + x] === 1;
 
   // directed boundary edges on the corner lattice, filled pixel on the right-hand side
   const stride = mw + 1;
@@ -228,18 +220,64 @@ export function traceOutline(rgba: ArrayLike<number>, w: number, h: number, opts
       bestLoop = loop;
     }
   }
-  const clamp = (p: [number, number]): [number, number] => [Math.min(w, Math.max(0, p[0])), Math.min(h, Math.max(0, p[1]))];
-  let tol = opts.tolerance ?? Math.max(1.2, scale * 0.9);
-  let poly = simplifyClosed(bestLoop, tol);
-  const maxHull = opts.maxHullVertices ?? 48;
+  return bestLoop;
+}
+
+/** Simplifies a contour until it has at most `maxHull` corners, pushes it out by `pad` pixels and keeps it on the picture. */
+function outlineOf(loop: [number, number][], w: number, h: number, tolerance: number, maxHull: number, pad: number): [number, number][] {
+  let tol = tolerance;
+  let poly = simplifyClosed(loop, tol);
   while (poly.length > maxHull && tol < 200) {
     tol *= 1.35;
-    poly = simplifyClosed(bestLoop, tol);
+    poly = simplifyClosed(loop, tol);
   }
-  if (poly.length < 3) poly = bestLoop.slice(0, 3);
-  const pad = opts.padding ?? 2;
+  if (poly.length < 3) poly = loop.slice(0, 3);
   if (pad !== 0) poly = offsetPolygon(poly, pad);
-  return poly.map(clamp);
+  return poly.map((p) => [Math.min(w, Math.max(0, p[0])), Math.min(h, Math.max(0, p[1]))]);
+}
+
+/**
+ * The outline of a mesh for the opaque pixels, in image pixel coordinates (y down). A picture of one piece gets its contour; one of
+ * several separate pieces gets a contour that runs round all of them over narrow bridges (or, if that cannot be built, their convex wrap).
+ */
+export function traceOutline(rgba: ArrayLike<number>, w: number, h: number, opts: TraceOptions = {}): [number, number][] {
+  const threshold = opts.threshold ?? 12;
+  const scale = Math.max(1, Math.ceil(Math.max(w, h) / 220));
+  const mw = Math.ceil(w / scale);
+  const mh = Math.ceil(h / scale);
+  const cells = new Uint8Array(mw * mh);
+  const solid = new Uint32Array(mw * mh);
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      if (rgba[(y * w + x) * 4 + 3] <= threshold) continue;
+      const i = Math.floor(y / scale) * mw + Math.floor(x / scale);
+      cells[i] = 1;
+      solid[i]++;
+    }
+  }
+  const all: Mask = { cells, width: mw, height: mh };
+  const clean = withoutSpecks(all, solid);
+  // a picture of nothing but specks is traced as it is
+  const mask = clean.pieces ? clean.mask : all;
+  const tolerance = opts.tolerance ?? Math.max(1.2, scale * 0.9);
+  const maxHull = opts.maxHullVertices ?? 48;
+  const pad = opts.padding ?? 2;
+  if (clean.pieces < 2) {
+    const loop = largestLoop(mask, scale);
+    return loop.length ? outlineOf(loop, w, h, tolerance, maxHull, pad) : [];
+  }
+  const rim = rimPoints(mask, scale, w, h);
+  // every piece adds corners; the push outwards makes up for what the simplification cuts off
+  const corners = Math.min(120, maxHull + 12 * (clean.pieces - 1));
+  for (const thick of [1, 2, 4]) {
+    const loop = largestLoop(bridgePieces(mask, thick), scale);
+    for (const push of [Math.max(pad, tolerance + 0.5), Math.max(pad, scale * 2 + 1)]) {
+      const poly = outlineOf(loop, w, h, tolerance, corners, push);
+      if (poly.length <= 120 && isSimple(poly) && holds(poly, rim)) return poly;
+    }
+  }
+  const hull = wrap(rim);
+  return offsetPolygon(hull, Math.max(1, pad)).map((p) => [Math.min(w, Math.max(0, p[0])), Math.min(h, Math.max(0, p[1]))]);
 }
 
 /**
