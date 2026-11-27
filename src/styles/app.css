@@ -1508,6 +1508,14 @@ button.crumb:hover {
   box-shadow: var(--shadow);
   padding: 0;
 }
+.import-notes {
+  max-height: 46vh;
+  overflow-y: auto;
+  margin: 0;
+  padding-left: 18px;
+  line-height: 1.6;
+  user-select: text;
+}
 .rig-dialog {
   display: grid;
   grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);

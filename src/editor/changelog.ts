@@ -14,6 +14,25 @@ export interface Release {
 
 export const CHANGELOG: Release[] = [
   {
+    version: '1.3',
+    date: '2026-11-27',
+    en: [
+      'DragonBones projects open here: File → Import Spine or DragonBones data, then pick the *_ske.json, the *_tex.json and its picture together.',
+      'Bones, slots, skins, meshes with weights, IK, events and the animations (moves, pictures, colours, draw order, deforms) come over. Checked against the official DragonBones runtime on its 50 sample characters.',
+      'What cannot carry over is listed in a window: armatures shown inside a slot, surfaces, timelines of the 5.6 format, path constraints; a few ways of ignoring a parent bone come out slightly different. Binary .dbbin files are not read.',
+    ],
+    ru: [
+      'Проекты DragonBones открываются здесь: «Файл» → «Импорт данных Spine или DragonBones», затем выберите вместе *_ske.json, *_tex.json и его картинку.',
+      'Переносятся кости, слоты, скины, меши с весами, IK, события и анимации (движения, картинки, цвета, порядок отрисовки, деформации). Сверено с официальным рантаймом DragonBones на его 50 персонажах-примерах.',
+      'Что перенести нельзя, перечисляется в окне: арматуры внутри слота, поверхности (surface), таймлайны формата 5.6, path-констрейнты; часть способов не наследовать родительскую кость даёт чуть другой результат. Бинарные файлы .dbbin не читаются.',
+    ],
+    zh: [
+      'DragonBones 项目可以在这里打开：“文件”→“导入 Spine 或 DragonBones 数据”，然后同时选择 *_ske.json、*_tex.json 及其图片。',
+      '骨骼、插槽、皮肤、带权重的网格、IK、事件和动画（移动、图片、颜色、绘制顺序、变形）都会导入。已用官方 DragonBones 运行库在其 50 个示例角色上核对。',
+      '无法转换的内容会在窗口中列出：插槽内嵌套的骨架、曲面（surface）、5.6 格式的时间轴、路径约束；少数不继承父骨骼的方式效果略有不同。不读取二进制 .dbbin 文件。',
+    ],
+  },
+  {
     version: '1.2',
     date: '2026-11-27',
     en: [

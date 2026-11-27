@@ -71,8 +71,8 @@ export function WelcomeDialog() {
         <Choice icon={FolderOpen} title="Open a project" text="A .bone2d file from your computer" onClick={go(openProjectFile)} />
         <Choice
           icon={FolderOpen}
-          title="Import from Spine"
-          text="A Spine .json (4.0 – 4.3) or .skel (4.3) with its atlas and images"
+          title="Import from Spine or DragonBones"
+          text="A Spine .json or .skel, or a DragonBones *_ske.json, with its atlas and images"
           onClick={go(openSpineImport)}
         />
       </div>

@@ -81,6 +81,7 @@ import { AskHost } from './ui/AskHost';
 import { MarkerDialogHost } from './timeline/MarkerDialog';
 import { SliceDialogHost } from './panels/SliceDialog';
 import { AutoRigHost } from './panels/AutoRigDialog';
+import { ImportNotesHost } from './panels/ImportNotesDialog';
 import { FLOAT_LIST, toggleFloat, useFloats } from '@/store/floats';
 import { Viewport, viewportApi } from './viewport/Viewport';
 import { ExportDialog } from './ExportDialog';
@@ -178,10 +179,10 @@ function TopBar() {
               Export for Spine 4.3…
             </MenuItem>
             <MenuItem icon={FolderOpen} close={close} onClick={() => openSpineImport()}>
-              Import Spine data (JSON 4.0–4.3, binary 4.3)…
+              Import Spine or DragonBones data…
             </MenuItem>
             <MenuItem icon={FolderOpen} close={close} onClick={() => openSpineImport(true)}>
-              Import Spine data as a new skeleton…
+              Import Spine or DragonBones data as a new skeleton…
             </MenuItem>
             <MenuItem icon={FolderOpen} close={close} onClick={() => openAtlasUnpack()}>
               Unpack an atlas into pictures…
@@ -885,6 +886,7 @@ export function App() {
       <MarkerDialogHost />
       <SliceDialogHost />
       <AutoRigHost />
+      <ImportNotesHost />
       <Toast />
       <TooltipHost />
     </div>

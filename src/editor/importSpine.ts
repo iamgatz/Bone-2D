@@ -1,11 +1,14 @@
 /**
- * "Import Spine data…": a skeleton .json or binary .skel plus (optionally) its .atlas and page images, picked together. It opens as a new project, or
- * (`add`) as one more skeleton of the project that is open. "Unpack atlas…": the pictures of an .atlas and its pages, added to the project's images.
+ * "Import skeleton data…": a Spine skeleton .json or binary .skel plus (optionally) its .atlas and page images, or a DragonBones
+ * *_ske.json with its *_tex.json and picture, picked together. It opens as a new project, or (`add`) as one more skeleton of the project
+ * that is open. "Unpack atlas…": the pictures of an .atlas and its pages, added to the project's images.
  */
 import { parseAtlas } from '@/core/import/atlas';
 import type { ParsedPage } from '@/core/import/atlas';
+import { displayPaths, dragonAtlas, importDragonBones, isDragonAtlas, isDragonBones } from '@/core/import/dragonBones';
 import { binaryToJson } from '@/core/import/spineBinary';
 import { importSpineJson } from '@/core/import/spineJson';
+import type { SpineImportResult } from '@/core/import/spineJson';
 import { cutRegion, unpackAtlas, unpremultiplyAlpha } from '@/core/import/unpack';
 import type { Picture } from '@/core/import/unpack';
 import { migrateProject } from '@/core/model';
@@ -15,6 +18,7 @@ import { importImageFiles } from '@/store/actions';
 import { assets } from '@/store/assets';
 import type { ImageAsset } from '@/store/assets';
 import { docStore } from '@/store/doc';
+import { showImportNotes } from '@/store/importNotes';
 import { emptySelection, toast, uiStore } from '@/store/ui';
 import { canvasToBlob } from './ui/canvas';
 
@@ -43,46 +47,92 @@ function pictureBlob(pic: Picture): Promise<Blob> {
   return canvasToBlob(canvas);
 }
 
-/** Opens a skeleton .json / .skel (+ .atlas + page images selected together) as a new project, or as one more skeleton of the open project. */
-async function importSpineFiles(files: File[], add = false): Promise<void> {
-  const json = files.find((f) => /\.(json|skel)$/i.test(f.name));
-  if (!json) throw new Error('Select a Spine skeleton (.json or .skel) — optionally together with its .atlas and image files');
-  const atlasFile = files.find((f) => /\.atlas$/i.test(f.name));
-  const skeleton: unknown = /\.skel$/i.test(json.name)
-    ? binaryToJson(new Uint8Array(await json.arrayBuffer()))
-    : JSON.parse(await json.text());
-  const result = importSpineJson(skeleton, stem(json.name));
-  const warnings = [...result.warnings];
+const fileNamed = (files: File[], name: string) => files.find((f) => baseName(f.name).toLowerCase() === baseName(name).toLowerCase());
 
+/** The pictures cut out of the pages of an atlas, for the pages that were picked. */
+async function cutPages(pages: ParsedPage[], files: File[], warnings: string[]): Promise<ImageAsset[]> {
   const decoded: ImageAsset[] = [];
-  if (atlasFile) {
-    const pages: ParsedPage[] = parseAtlas(await atlasFile.text());
-    for (const page of pages) {
-      const pageFile = files.find((f) => baseName(f.name).toLowerCase() === baseName(page.file).toLowerCase());
-      if (!pageFile) {
-        warnings.push(`atlas page "${page.file}" was not selected, its images are missing`);
-        continue;
-      }
-      const pixels = await pagePixels(pageFile);
-      if (page.pma) unpremultiplyAlpha(pixels.data);
-      for (const r of page.regions) {
-        try {
-          const asset = await assets.decode(r.name, await pictureBlob(cutRegion(pixels, r)));
-          decoded.push(asset);
-          const ref = result.project.images.find((i) => i.name === r.name);
-          if (ref) {
-            ref.width = asset.width;
-            ref.height = asset.height;
-          }
-        } catch (e) {
-          warnings.push(`region "${r.name}" could not be cut out of "${page.file}"`);
-          console.warn(e);
-        }
+  for (const page of pages) {
+    const pageFile = fileNamed(files, page.file);
+    if (!pageFile) {
+      warnings.push(`atlas page "${page.file}" was not selected, its images are missing`);
+      continue;
+    }
+    const pixels = await pagePixels(pageFile);
+    if (page.pma) unpremultiplyAlpha(pixels.data);
+    for (const r of page.regions) {
+      try {
+        decoded.push(await assets.decode(r.name, await pictureBlob(cutRegion(pixels, r))));
+      } catch (e) {
+        warnings.push(`region "${r.name}" could not be cut out of "${page.file}"`);
+        console.warn(e);
       }
     }
-  } else if (result.project.images.length) warnings.push('no .atlas file was selected: the attachments have no images yet');
-  for (const img of result.project.images)
-    if (!decoded.some((d) => d.name === img.name)) warnings.push(`image "${img.name}" is not in the atlas`);
+  }
+  return decoded;
+}
+
+/** Pictures picked one by one, under the names the skeleton calls them by (a name may hold folders, the picked file has none). */
+async function loosePictures(names: string[], files: File[]): Promise<ImageAsset[]> {
+  const decoded: ImageAsset[] = [];
+  for (const name of names) {
+    const file = files.find((f) => /\.(png|jpe?g|webp)$/i.test(f.name) && stem(f.name).toLowerCase() === baseName(name).toLowerCase());
+    if (file) decoded.push(await assets.decode(name, file));
+  }
+  return decoded;
+}
+
+interface Read {
+  result: SpineImportResult;
+  decoded: ImageAsset[];
+  warnings: string[];
+}
+
+async function readDragonBones(skeleton: unknown, atlases: unknown[], files: File[], file: string): Promise<Read> {
+  const warnings: string[] = [];
+  let decoded = await cutPages(atlases.map(dragonAtlas), files, warnings);
+  if (!atlases.length) decoded = await loosePictures(displayPaths(skeleton), files);
+  const sizes = new Map(decoded.map((d) => [d.name, { width: d.width, height: d.height }]));
+  const result = importDragonBones(skeleton, sizes);
+  if (result.project.skeleton.name === 'imported') result.project.skeleton.name = stem(file);
+  if (!atlases.length && !decoded.length)
+    warnings.push('no *_tex.json atlas or pictures were selected: the attachments have no images yet');
+  return { result, decoded, warnings: [...result.warnings, ...warnings] };
+}
+
+async function readSpine(skeleton: unknown, files: File[], file: string): Promise<Read> {
+  const atlasFile = files.find((f) => /\.atlas$/i.test(f.name));
+  const result = importSpineJson(skeleton, stem(file));
+  const warnings = [...result.warnings];
+  const decoded = atlasFile ? await cutPages(parseAtlas(await atlasFile.text()), files, warnings) : [];
+  if (!atlasFile && result.project.images.length) warnings.push('no .atlas file was selected: the attachments have no images yet');
+  return { result, decoded, warnings };
+}
+
+/** Opens a skeleton with its atlas and pictures (selected together) as a new project, or as one more skeleton of the open project. */
+async function importSkeletonFiles(files: File[], add = false): Promise<void> {
+  // a DragonBones export has two .json files: the atlas is told by what is in it
+  let json: File | undefined;
+  let skeleton: unknown;
+  const atlases: unknown[] = [];
+  for (const f of files.filter((f) => /\.(json|skel)$/i.test(f.name))) {
+    const read: unknown = /\.skel$/i.test(f.name) ? binaryToJson(new Uint8Array(await f.arrayBuffer())) : JSON.parse(await f.text());
+    if (isDragonAtlas(read)) atlases.push(read);
+    else if (!json) [json, skeleton] = [f, read];
+  }
+  if (!json)
+    throw new Error('Select a skeleton file (Spine .json or .skel, DragonBones *_ske.json) together with its atlas and image files');
+  const dragon = isDragonBones(skeleton);
+  const { result, decoded, warnings } = dragon
+    ? await readDragonBones(skeleton, atlases, files, json.name)
+    : await readSpine(skeleton, files, json.name);
+  for (const img of result.project.images) {
+    const asset = decoded.find((d) => d.name === img.name);
+    if (asset) {
+      img.width = asset.width;
+      img.height = asset.height;
+    } else warnings.push(`image "${img.name}" is not in the atlas`);
+  }
 
   const repaired = repairProject(result.project);
   if (repaired.length) console.warn('imported project repaired:', repaired);
@@ -125,7 +175,13 @@ async function importSpineFiles(files: File[], add = false): Promise<void> {
       selectedKeys: [],
     });
   }
-  if (warnings.length) console.warn('Spine import:', warnings);
+  if (warnings.length) console.warn('Skeleton import:', warnings);
+  // another editor's file loses more on the way: what did is listed in a window, not only in the console
+  if (dragon && warnings.length) {
+    showImportNotes(json.name, warnings);
+    toast(`Imported "${json.name}"`, 'info');
+    return;
+  }
   toast(
     `Imported "${json.name}"${warnings.length ? ` — ${warnings.length} note${warnings.length === 1 ? '' : 's'} (see the console)` : ''}`,
     warnings.length ? 'info' : 'ok',
@@ -174,7 +230,7 @@ function pick(accept: string, then: (files: File[]) => Promise<void>, failure: s
 }
 
 export function openSpineImport(add = false) {
-  pick('.json,.skel,.atlas,.png,.jpg,.jpeg,.webp', (files) => importSpineFiles(files, add), 'Could not import');
+  pick('.json,.skel,.atlas,.png,.jpg,.jpeg,.webp', (files) => importSkeletonFiles(files, add), 'Could not import');
 }
 
 export function openAtlasUnpack() {

@@ -42,8 +42,13 @@ export default tseslint.config(
     },
   },
   {
-    // Spine files are untyped JSON and bytes: reading them is dynamic by nature.
-    files: ['src/core/export/spineBinary.ts', 'src/core/export/scale.ts', 'src/core/import/{spineBinary,spineJson,legacy}.ts', 'tests/**'],
+    // Spine and DragonBones files are untyped JSON and bytes: reading them is dynamic by nature.
+    files: [
+      'src/core/export/spineBinary.ts',
+      'src/core/export/scale.ts',
+      'src/core/import/{spineBinary,spineJson,dragonBones,legacy}.ts',
+      'tests/**',
+    ],
     rules: {
       '@typescript-eslint/no-unsafe-member-access': 'off',
       '@typescript-eslint/no-unsafe-assignment': 'off',
