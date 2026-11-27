@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { RotateCcw } from 'lucide-react';
-import { LANGS, setLang, useLang } from '@/i18n';
+import { tr, LANGS, setLang, useLang } from '@/i18n';
 import { BONE_SCALE_RANGE, DEFAULT_SETTINGS, resetSettings, setSettings, useSettings } from '@/store/settings';
 import { forgetSavedCurve } from '@/store/actions';
 import { toast, uiStore } from '@/store/ui';
@@ -434,7 +434,7 @@ export function SettingsDialog() {
                   ) : (
                     <div key={r.label} className="set-row">
                       <div className="set-label">{r.label}</div>
-                      <div className="set-control muted">{r.keys.join('  /  ')}</div>
+                      <div className="set-control muted">{r.keys.map((k) => tr(k)).join('  /  ')}</div>
                     </div>
                   ),
                 )}

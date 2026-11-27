@@ -38,6 +38,7 @@ for (const locale of ['en-US', 'ru-RU', 'zh-CN']) {
     });
 
     test('inspector states: Animate mode, a weighted mesh, an IK bone', async ({ page }) => {
+      test.slow(); // three scans, and the first test of a run also waits for the dev server
       await openDemo(page);
       const seen: string[] = [];
       for (const state of ['animate wave', 'mesh weights', 'ik bone'] as const) {

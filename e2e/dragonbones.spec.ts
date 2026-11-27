@@ -62,9 +62,9 @@ function exported() {
   ];
 }
 
-for (const [lang, button, title, close] of [
-  ['en', 'Import from Spine or DragonBones', 'Import notes', 'Got it'],
-  ['ru', 'Импорт из Spine или DragonBones', 'Заметки об импорте', 'Понятно'],
+for (const [lang, button, title, close, lost] of [
+  ['en', 'Import from Spine or DragonBones', 'Import notes', 'Got it', /armatures shown inside a slot/],
+  ['ru', 'Импорт из Spine или DragonBones', 'Заметки об импорте', 'Понятно', /арматуры внутри слота не поддерживаются \(слот «body»\)/],
 ] as const) {
   test(`a DragonBones export opens as a character, and what it lost is listed (${lang})`, async ({ page }) => {
     const errors: string[] = [];
@@ -80,7 +80,7 @@ for (const [lang, button, title, close] of [
     await (await chooser).setFiles(exported());
     const notes = page.getByRole('dialog', { name: title });
     await expect(notes).toBeVisible();
-    await expect(notes.locator('li')).toHaveText([/armatures shown inside a slot/]);
+    await expect(notes.locator('li')).toHaveText([lost]);
     await page.screenshot({ path: `test-results/dragonbones-notes-${lang}.png` });
     await notes.getByRole('button', { name: close }).click();
     await expect(notes).toHaveCount(0);

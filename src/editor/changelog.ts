@@ -14,6 +14,17 @@ export interface Release {
 
 export const CHANGELOG: Release[] = [
   {
+    version: '1.5',
+    date: '2026-11-27',
+    en: [
+      'The English lines that were left in the Russian and Chinese interface are translated: pop-up messages, import errors and the notes of an import, hints under the pointer and a few short labels.',
+    ],
+    ru: [
+      'Переведены английские строки, остававшиеся в русском и китайском интерфейсе: всплывающие сообщения, ошибки импорта и заметки об импорте, подсказки при наведении и несколько коротких подписей.',
+    ],
+    zh: ['翻译了俄语和中文界面中残留的英文：弹出消息、导入错误和导入说明、悬停提示以及几个简短标签。'],
+  },
+  {
     version: '1.4',
     date: '2026-11-27',
     en: [

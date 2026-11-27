@@ -182,7 +182,7 @@ export function tr(s: string): string {
   return out;
 }
 
-const TEXT_PROPS = ['title', 'label', 'placeholder', 'aria-label', 'alt'] as const;
+const TEXT_PROPS = ['title', 'label', 'placeholder', 'aria-label', 'alt', 'data-tip'] as const;
 
 /** Called by the JSX runtime for every element: translates string children and the text props. */
 export function localizeProps<P>(props: P): P {

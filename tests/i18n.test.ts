@@ -4,6 +4,7 @@ import { afterAll, describe, expect, it } from 'vitest';
 import { setLang, tr } from '@/i18n';
 import { RU } from '@/i18n/ru';
 import { ZH } from '@/i18n/zh';
+import { shownTexts } from './i18nscan';
 
 function sources(dir: string, out: string[] = []): string[] {
   for (const e of readdirSync(dir, { withFileTypes: true })) {
@@ -140,6 +141,37 @@ describe('interface language', () => {
       '已打开 bolt.bone2d（修复了 2 个问题，1 张图片无法读取）',
     );
     expect(tr('arm · rotation')).toBe('arm · 旋转');
+    setLang('en');
+  });
+
+  it('translates every message, error, undo label and hint that the sources build, into both languages', () => {
+    const texts = shownTexts();
+    expect(texts.length).toBeGreaterThan(800); // the scan itself works
+    for (const [lang, table] of [
+      ['ru', RU],
+      ['zh', ZH],
+    ] as const) {
+      setLang(lang);
+      const left = texts
+        .filter((s) => !Object.hasOwn(table, s.text))
+        // unchanged, or a catch-all pattern took a part of the sentence and left the rest in English
+        .filter((s) => tr(s.text) === s.text || /[A-Za-z]{2,} [a-z]{2,} [a-z]{2,}/.test(tr(s.text)))
+        .map((s) => `${s.file}:${s.line}: ${s.text}`);
+      expect(left, `add these to src/i18n/${lang}.ts`).toEqual([]);
+    }
+  });
+
+  it('translates a message about an imported file with the names in their places', () => {
+    setLang('ru');
+    expect(tr('bone "arm" ignores part of a parent that stretches one way more than the other: its angle can differ')).toMatch(
+      /^кость «arm» частично/,
+    );
+    expect(tr('skin "red": mesh attachment "cape" is not supported and was skipped')).toBe(
+      'скин «red»: вложение «cape» типа mesh не поддерживается и пропущено',
+    );
+    expect(tr('Could not import: The binary file is cut off or damaged')).toBe(
+      'Не удалось импортировать: Бинарный файл обрезан или повреждён',
+    );
     setLang('en');
   });
 

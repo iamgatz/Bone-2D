@@ -468,7 +468,7 @@ export const CURVES_LESSON: Lesson = {
       title: { en: 'Change the interpolation', ru: 'Смените интерполяцию', zh: '更改插值' },
       text: {
         en: 'Right-click the selected key and pick Stepped, Ease in-out or another: the motion after this key changes.',
-        ru: 'Нажмите правой кнопкой на выбранный ключ и выберите «Stepped», «Ease in-out» или другое: движение после этого ключа изменится.',
+        ru: 'Нажмите правой кнопкой на выбранный ключ и выберите «Ступенчатая», «Плавный старт и финиш» или другое: движение после этого ключа изменится.',
         zh: '右键单击选中的关键帧，选择“阶梯”“缓入缓出”或其他方式：此关键帧之后的动作随之改变。',
       },
       done: (s) => s.interpEdits >= 1,

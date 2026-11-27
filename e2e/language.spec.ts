@@ -108,3 +108,19 @@ test('no English sentence is left in the editor, its panels and its windows', as
   await note('command palette');
   expect(left).toEqual({});
 });
+
+test.describe('in Russian', () => {
+  test.use({ locale: 'ru-RU' });
+
+  test('a message, a hint under the pointer and a mouse action of the settings are in Russian', async ({ page }) => {
+    await openDemo(page);
+    await page.locator('.topbar .project-name').hover();
+    await expect(page.getByRole('tooltip')).toHaveText('Название проекта');
+    await page.keyboard.press('Tab'); // Animate
+    await page.keyboard.press('w'); // the Weights tool belongs to Setup
+    await expect(page.locator('.toast')).toHaveText('Чтобы править веса, переключись в режим «Риг»');
+    await page.evaluate(async (u) => ((await import(u.ui)) as UiModule).uiStore.patch({ settingsOpen: true }), URLS);
+    await page.locator('.overlay .dialog-body > .seg button').nth(2).click();
+    await expect(page.locator('.overlay')).toContainText('Средняя кн.  /  Правая кн.  /  Alt+мышь', { useInnerText: true });
+  });
+});
