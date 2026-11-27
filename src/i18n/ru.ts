@@ -154,7 +154,6 @@ export const RU: Record<string, string> = {
   'Select a Spine skeleton (.json or .skel) — optionally together with its .atlas and image files':
     'Выберите скелет Spine (.json или .skel), можно вместе с .atlas и картинками',
   'Packing atlas…': 'Упаковка атласа…',
-  'Bone colors, fps, image path': 'Цвета костей, fps, путь к картинке',
   'Export downloaded': 'Экспорт скачан',
   'Missing images:': 'Нет картинок:',
   '{#} bones · {#} slots · {#} animations · {#} atlas page': 'Костей: {1} · слотов: {2} · анимаций: {3} · страниц атласа: {4}',
@@ -625,6 +624,13 @@ export const RU: Record<string, string> = {
   'Ctrl+Wheel': 'Ctrl+колесо',
   'Save layout as': 'Сохранить раскладку как',
   'Alt+drag': 'Alt+мышь',
+  'The pictures that other skins replace are in a skin named "base": the game has to set that skin (alone or combined with another one), or those places stay empty.':
+    'Картинки, которые заменяют другие скины, лежат в скине «base»: игра должна включить его (один или вместе с другим), иначе эти места останутся пустыми.',
+  'What another skin replaces moves from the default skin into a skin named base, so the Spine editor takes the file; a game then sets that skin. Off, the Spine editor does not take the file':
+    'То, что заменяет другой скин, переносится из стандартного скина в скин base, и редактор Spine принимает файл; игра тогда включает этот скин. Если выключено, редактор Spine файл не примет',
+  'Skins as in Spine': 'Скины как в Spine',
+  'Bone colors, fps, and the pictures as files of their own in an images folder':
+    'Цвета костей, fps и картинки отдельными файлами в папке images',
   'Re-trace': 'Трассировать заново',
   Retriangulate: 'Перетриангулировать',
   'Rebuild the triangles inside the outline': 'Перестроить треугольники внутри контура',

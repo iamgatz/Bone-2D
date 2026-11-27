@@ -145,7 +145,6 @@ export const ZH: Record<string, string> = {
   'Select a Spine skeleton (.json or .skel) — optionally together with its .atlas and image files':
     '选择 Spine 骨架（.json 或 .skel），可同时选择它的 .atlas 和图片文件',
   'Packing atlas…': '正在打包图集…',
-  'Bone colors, fps, image path': '骨骼颜色、帧率、图片路径',
   'Export downloaded': '导出文件已下载',
   'Missing images:': '缺少图片：',
   '{#} bones · {#} slots · {#} animations · {#} atlas page': '骨骼 {} · 插槽 {} · 动画 {} · 图集页 {}',
@@ -586,6 +585,12 @@ export const ZH: Record<string, string> = {
   'Ctrl+Wheel': 'Ctrl+滚轮',
   'Save layout as': '布局另存为',
   'Alt+drag': 'Alt+拖动',
+  'The pictures that other skins replace are in a skin named "base": the game has to set that skin (alone or combined with another one), or those places stay empty.':
+    '被其他皮肤替换的图片放在名为“base”的皮肤中：游戏必须启用该皮肤（单独启用或与其他皮肤组合），否则这些位置会是空的。',
+  'What another skin replaces moves from the default skin into a skin named base, so the Spine editor takes the file; a game then sets that skin. Off, the Spine editor does not take the file':
+    '被其他皮肤替换的内容会从默认皮肤移到名为 base 的皮肤，这样 Spine 编辑器才能接受该文件；游戏需要启用这个皮肤。关闭后，Spine 编辑器不接受该文件',
+  'Skins as in Spine': '按 Spine 方式处理皮肤',
+  'Bone colors, fps, and the pictures as files of their own in an images folder': '骨骼颜色、帧率，以及 images 文件夹中逐个保存的图片',
   'Re-trace': '重新描边',
   Retriangulate: '重新三角化',
   'Rebuild the triangles inside the outline': '重建轮廓内的三角形',

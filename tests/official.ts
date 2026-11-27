@@ -27,6 +27,16 @@ export function loadOfficial(json: unknown, atlasText: string, scale = 1) {
 }
 
 /**
+ * The name an attachment is set and keyed by: its placeholder in the skin that holds it. The attachment's own name may differ
+ * (`base/head`), because the Spine editor takes a name once per slot.
+ */
+export function placeholderOf(data: any, attachment: unknown): string | null {
+  for (const skin of data.skins)
+    for (const entry of skin.getAttachments()) if (entry.attachment === attachment) return entry.placeholder as string;
+  return null;
+}
+
+/**
  * The official runtime starts every bone with an all-zero world matrix; ours starts with the identity. They differ only for what
  * is read before it is updated: a path constraint that follows a path skinned to bones (not to the slot's own bone) looks at the
  * slot bone's matrix to pick the sign of its rotation offset, and on the very first update of a fresh skeleton the official

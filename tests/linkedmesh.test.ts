@@ -20,7 +20,7 @@ import { duplicateSkin } from '../src/core/skins';
 import * as A from '../src/store/actions';
 import { docStore } from '../src/store/doc';
 import { buildFixture } from './fixture';
-import { loadOfficial, loadOfficialBinary, startLikeOfficial } from './official';
+import { loadOfficial, loadOfficialBinary, startLikeOfficial, placeholderOf } from './official';
 
 interface Rig {
   project: Project;
@@ -131,7 +131,7 @@ function officialWorld(sd: any, skinName: string, t: number, animation = 'wobble
     const n = att.worldVerticesLength;
     const w = new Array(n).fill(0);
     att.computeWorldVertices(sk, slot, 0, n, w, 0, 2);
-    out[`${slot.data.name}:${att.name}`] = w;
+    out[`${slot.data.name}:${placeholderOf(sd, att)}`] = w;
   }
   return out;
 }

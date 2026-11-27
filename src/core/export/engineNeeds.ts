@@ -5,6 +5,7 @@
  * lists them before the file is sent off. Only facts about the data: nothing here guesses what a given engine does.
  */
 import type { SkeletonDoc } from '../model';
+import { withBaseSkin } from './spineEditor';
 
 export interface EngineNeed {
   /** Stable name, for tests. */
@@ -23,6 +24,8 @@ export interface EngineNeedsOptions {
   filter?: 'Linear' | 'Nearest';
   /** One atlas per skin (only matters for a skeleton with more than one skin). */
   atlasPerSkin?: boolean;
+  /** Skins as the Spine editor takes them (see `withBaseSkin`). */
+  editorSkins?: boolean;
 }
 
 const TEXT = {
@@ -34,6 +37,8 @@ const TEXT = {
   nearest: 'Sharp pixels (Nearest): the engine has to sample the atlas without smoothing, or the pixel art blurs.',
   perSkin:
     'An atlas per skin: load the atlas of the default skin and the atlas of the skin you show; the pictures of a skin that the default skin does not use are only in its own atlas.',
+  baseSkin:
+    'The pictures that other skins replace are in a skin named "base": the game has to set that skin (alone or combined with another one), or those places stay empty.',
   rotate: 'The atlas has pictures turned a quarter turn (rotate: 90): the loader has to read rotated regions (the official runtimes do).',
   twoColor:
     'Two colour tint (slots with a dark colour): the engine needs the two colour tint shader and a vertex format with the second colour.',
@@ -60,6 +65,7 @@ export function engineNeeds(doc: SkeletonDoc, opts: EngineNeedsOptions = {}): En
   if (opts.filter === 'Nearest') add('nearest', 'note');
   if (opts.rotate) add('rotate', 'note');
   if (opts.atlasPerSkin && doc.skins.length > 1) add('perSkin', 'note');
+  if (opts.editorSkins && withBaseSkin(doc).skin) add('baseSkin', 'note');
 
   if (doc.slots.some((s) => s.dark)) add('twoColor', 'needs');
   if (doc.slots.some((s) => s.blend !== 'normal')) add('blend', 'needs');

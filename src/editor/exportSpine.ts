@@ -8,6 +8,8 @@ import { findAliases, makeRegion, scaledSize, skinAtlasGroups, usedImages } from
 import type { AtlasFilter, AtlasPage, PackInput } from '@/core/export/atlas';
 import { mixesToText } from '@/core/export/mixes';
 import { createZip } from '@/core/export/zip';
+import { safeZipPath } from '@/core/export/packageProject';
+import { withBaseSkin } from '@/core/export/spineEditor';
 import { activeIndex, skeletonList } from '@/core/skeletons';
 import type { ZipEntry } from '@/core/export/zip';
 import { assets } from '@/store/assets';
@@ -51,6 +53,8 @@ export interface ExportOptions {
   splitColor?: boolean;
   /** Which skeleton of the project (index in its list; default: the edited one). */
   skeletonIndex?: number;
+  /** Skins as the Spine editor takes them (see `withBaseSkin`). */
+  editorSkins?: boolean;
   /** Animations left out of the export (an animation a slider uses always stays). */
   excludeAnimations?: string[];
   baseName?: string;
@@ -110,6 +114,7 @@ function previewHtml(
   animation: string | null,
   title: string,
   pma = false,
+  skin: string | null = null,
 ): string {
   const utf8 = (s: string) => bytesToBase64(new TextEncoder().encode(s));
   const uris: Record<string, string> = {
@@ -132,6 +137,7 @@ new spine.SpinePlayer("player", {
   atlas: ${JSON.stringify(`${base}.atlas`)},
   rawDataURIs: ${JSON.stringify(uris)},
   ${animation ? `animation: ${JSON.stringify(animation)},` : ''}
+  ${skin ? `skin: ${JSON.stringify(skin)},` : ''}
   premultipliedAlpha: ${pma},
   showControls: true,
   backgroundColor: "#13161c"
@@ -170,6 +176,7 @@ export async function buildSpineExport(opts: ExportOptions): Promise<ExportResul
       nonessential: opts.nonessential,
       imagesPath: './images/',
       splitColor: opts.splitColor,
+      editorSkins: opts.editorSkins,
     }),
     scale,
   );
@@ -234,8 +241,23 @@ export async function buildSpineExport(opts: ExportOptions): Promise<ExportResul
         firstAnim,
         doc.name || base,
         !!opts.pma,
+        opts.editorSkins ? (withBaseSkin(doc).skin?.name ?? null) : null,
       );
       files.push({ name: `${base}-preview.html`, data: enc.encode(preview) });
+    }
+  }
+  // the pictures one by one, where the file says they are (`images`): Import Data in the Spine editor finds them there
+  if (opts.nonessential) {
+    for (const { name } of images) {
+      const a = assets.get(name);
+      if (!a) continue;
+      const [width, height] = scaledSize(a.width, a.height, scale);
+      const canvas = document.createElement('canvas');
+      canvas.width = width;
+      canvas.height = height;
+      canvas.getContext('2d')!.putImageData(scaledPixels(name, width, height), 0, 0);
+      const blob = await canvasToBlob(canvas);
+      files.push({ name: safeZipPath(`images/${name}.png`), data: new Uint8Array(await blob.arrayBuffer()) });
     }
   }
   // the mix table belongs to the edited skeleton (project.mixes) or waits in the aside of another one
@@ -245,7 +267,7 @@ export async function buildSpineExport(opts: ExportOptions): Promise<ExportResul
   files.push({
     name: 'README.txt',
     data: enc.encode(
-      `Exported from Bone 2D.\n\n${skeletonFile.padEnd(base.length + 5)}  Spine 4.3 skeleton data (${binary ? 'binary' : 'JSON'})\n${atlasFiles.length > 1 ? `${atlasFiles.join(', ')}  texture atlases, one for the default skin and one for each other skin (load the default one and the one of the skin you show; ${opts.pma ? 'premultiplied alpha, pma:true' : 'straight alpha, pma:false'})` : `${base}.atlas         texture atlas (${opts.pma ? 'premultiplied alpha, pma:true' : 'straight alpha, pma:false'})`}\n${base}-preview.html  open in a browser: plays the animations with the official Spine 4.3 web player (needs internet for the player script)\n${mixText ? `${base}.mixes.json  crossfade times between animations (defaultMix and setMix of AnimationStateData)\n` : ''}\nLoad with the official Spine 4.3 runtimes (spine-ts, Unity, Godot, ...).\n`,
+      `Exported from Bone 2D.\n\n${skeletonFile.padEnd(base.length + 5)}  Spine 4.3 skeleton data (${binary ? 'binary' : 'JSON'})\n${atlasFiles.length > 1 ? `${atlasFiles.join(', ')}  texture atlases, one for the default skin and one for each other skin (load the default one and the one of the skin you show; ${opts.pma ? 'premultiplied alpha, pma:true' : 'straight alpha, pma:false'})` : `${base}.atlas         texture atlas (${opts.pma ? 'premultiplied alpha, pma:true' : 'straight alpha, pma:false'})`}\n${base}-preview.html  open in a browser: plays the animations with the official Spine 4.3 web player (needs internet for the player script)\n${opts.nonessential ? 'images/  the pictures one by one: after Import Data in the Spine editor, set the path of the Images node to this folder\n' : ''}${mixText ? `${base}.mixes.json  crossfade times between animations (defaultMix and setMix of AnimationStateData)\n` : ''}\nLoad with the official Spine 4.3 runtimes (spine-ts, Unity, Godot, ...).\n`,
     ),
   });
   const zip = createZip(files);

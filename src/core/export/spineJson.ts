@@ -9,6 +9,7 @@ import { deformLength } from '../mesh';
 import type { Animation, Attachment, Id, IkKey, Influence, Key, SequenceDef, SkeletonDoc, Timeline } from '../model';
 import { GLOBAL_PHYSICS, PHYSICS_PARAMS, polygonVertexCount } from '../model';
 import { compileSkeleton, createSkeleton } from '../skeleton';
+import { attachmentId, bonesInOrder, editorEdges, editorNames, withBaseSkin } from './spineEditor';
 
 export const SPINE_VERSION = '4.3.13';
 
@@ -16,6 +17,11 @@ export interface SpineExportOptions {
   /** Include editor-only data (bone colors, fps, image path). */
   nonessential?: boolean;
   imagesPath?: string;
+  /**
+   * Skins as the Spine editor takes them: what another skin replaces moves from the default skin into a skin `base`, and attachments that
+   * may not share a name get their own. A game then sets that skin. Off, the default skin keeps them and the editor refuses such a file.
+   */
+  editorSkins?: boolean;
   version?: string;
   /**
    * Split colour keys: a slot whose colour keys only change the alpha (the colour stays the setup colour) gets an `alpha` timeline, and one that
@@ -85,15 +91,18 @@ function withTime(o: Json, time: number) {
   if (time !== 0) o.time = r5(time);
 }
 
-export function exportSpineJson(doc: SkeletonDoc, options: SpineExportOptions = {}): Json {
-  const data = compileSkeleton(doc);
+export function exportSpineJson(source: SkeletonDoc, options: SpineExportOptions = {}): Json {
+  const arranged = options.editorSkins ? withBaseSkin(source) : { doc: source, skin: null };
+  const data = compileSkeleton(arranged.doc);
+  const doc = bonesInOrder(arranged.doc, data.boneIndex);
+  const renamed = options.editorSkins ? editorNames(doc) : new Map<string, string>();
   const boneById = new Map(doc.bones.map((b) => [b.id, b] as const));
   const slotById = new Map(doc.slots.map((s) => [s.id, s] as const));
   const skinById = new Map(doc.skins.map((s) => [s.id, s] as const));
   const boneName = (id: Id) => boneById.get(id)?.name ?? '';
   const slotName = (id: Id) => slotById.get(id)?.name ?? '';
 
-  const setup = createSkeleton(data);
+  const setup = createSkeleton(data, arranged.skin?.id);
   setup.setToSetupPose();
   setup.updateWorldTransform();
   const bounds = setup.getBounds() ?? [0, 0, 0, 0];
@@ -286,8 +295,9 @@ export function exportSpineJson(doc: SkeletonDoc, options: SpineExportOptions = 
                 deform: att.link.deform,
               }
             : null;
+        const name = renamed.get(attachmentId(s.id, slotId, key));
         perSlot[key] = exportAttachment(
-          att,
+          name ? { ...att, name } : att,
           key,
           data.boneIndex,
           slotName,
@@ -442,7 +452,7 @@ function exportAttachment(
   o.uvs = att.uvs.map((v) => r5(v));
   o.triangles = att.triangles.slice();
   o.hull = att.hull;
-  if (nonessential && att.edges?.length) o.edges = att.edges.slice(); // the manual edges (editor data)
+  if (nonessential) o.edges = editorEdges(att); // editor data
   o.vertices = exportVertices(att, boneIndex);
   if (att.sequence) o.sequence = exportSequence(att.sequence);
   return o;

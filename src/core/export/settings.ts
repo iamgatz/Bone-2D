@@ -31,6 +31,8 @@ export interface ExportSettings {
   splitColor: boolean;
   /** One atlas for the default skin and one for each other skin (only the pictures the default skin does not use), so a game loads a skin's pictures when it needs them. */
   atlasPerSkin: boolean;
+  /** Skins as the Spine editor takes them: what a skin replaces moves from the default skin into a skin `base`. */
+  editorSkins: boolean;
 }
 
 const EXPORT_SCALES = [0.25, 0.5, 0.75, 1, 2] as const;
@@ -57,6 +59,7 @@ export const DEFAULT_EXPORT_SETTINGS: ExportSettings = {
   cleanUp: false,
   splitColor: false,
   atlasPerSkin: false,
+  editorSkins: true,
 };
 
 const oneOf = <T>(v: unknown, list: readonly T[], fallback: T): T => (list.includes(v as T) ? (v as T) : fallback);
@@ -86,6 +89,7 @@ export function readExportSettings(raw: unknown): ExportSettings {
     cleanUp: flag(o.cleanUp, d.cleanUp),
     splitColor: flag(o.splitColor, d.splitColor),
     atlasPerSkin: flag(o.atlasPerSkin, d.atlasPerSkin),
+    editorSkins: flag(o.editorSkins, d.editorSkins),
   };
 }
 

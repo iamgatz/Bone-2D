@@ -1,3 +1,4 @@
+import { withBaseSkin } from '@/core/export/spineEditor';
 import { useEffect, useRef, useState } from 'react';
 import { Copy, Download, FileCode, Gamepad2, FolderOpen, Package, Save } from 'lucide-react';
 import { exportSettingsFromText, exportSettingsToText, loadExportSettings, rememberExportSettings } from '@/core/export/settings';
@@ -43,6 +44,7 @@ export function ExportDialog() {
     cleanUp,
     splitColor,
     atlasPerSkin,
+    editorSkins,
   } = settings;
   const change = (patch: Partial<ExportSettings>) => setSettings((s) => ({ ...s, ...patch }));
   const [excluded, setExcluded] = useState<string[]>([]);
@@ -78,6 +80,7 @@ export function ExportDialog() {
       cleanUp,
       splitColor,
       atlasPerSkin,
+      editorSkins,
       includeMixes: mixes,
       excludeAnimations: excluded,
       skeletonIndex: picked,
@@ -107,6 +110,7 @@ export function ExportDialog() {
     cleanUp,
     splitColor,
     atlasPerSkin,
+    editorSkins,
     mixes,
     excluded,
     tab,
@@ -151,7 +155,13 @@ export function ExportDialog() {
     }
   };
 
-  const needs = engineNeeds(doc, { format, scale, pma, rotate, filter, atlasPerSkin });
+  const needs = engineNeeds(doc, { format, scale, pma, rotate, filter, atlasPerSkin, editorSkins });
+  // the switch only matters when some skin replaces a picture of the default skin
+  const replaces = (all ? skeletons : [doc]).some((d) => withBaseSkin(d).skin);
+  // the pictures that are files of their own are one line of the list
+  const pictures = result?.files.filter((f) => f.name.includes('images/')) ?? [];
+  const listed = result ? result.files.filter((f) => !pictures.includes(f)) : [];
+  if (pictures.length) listed.push({ name: `images/ × ${pictures.length}`, size: pictures.reduce((n, f) => n + f.size, 0) });
   const close = () => uiStore.patch({ exportOpen: false });
   const base = (all ? project.name || 'project' : doc.name || 'skeleton').replace(/[^\w-]+/g, '_');
 
@@ -289,7 +299,21 @@ export function ExportDialog() {
               onChange={(v) => change({ scale: +v })}
             />
             <label>Editor data</label>
-            <Toggle on={nonessential} onChange={(v) => change({ nonessential: v })} title="Bone colors, fps, image path" />
+            <Toggle
+              on={nonessential}
+              onChange={(v) => change({ nonessential: v })}
+              title="Bone colors, fps, and the pictures as files of their own in an images folder"
+            />
+            {replaces && (
+              <>
+                <label>Skins as in Spine</label>
+                <Toggle
+                  on={editorSkins}
+                  onChange={(v) => change({ editorSkins: v })}
+                  title="What another skin replaces moves from the default skin into a skin named base, so the Spine editor takes the file; a game then sets that skin. Off, the Spine editor does not take the file"
+                />
+              </>
+            )}
             {format === 'json' && (
               <>
                 <label>Pretty JSON</label>
@@ -465,7 +489,7 @@ export function ExportDialog() {
                     ? `${skeletons.length} skeletons · ${result.pages} atlas page${result.pages === 1 ? '' : 's'}`
                     : `${doc.bones.length} bones · ${doc.slots.length} slots · ${doc.animations.length} animations · ${result.pages} atlas page${result.pages === 1 ? '' : 's'}`}
                 </div>
-                {result.files.map((f) => (
+                {listed.map((f) => (
                   <div key={f.name} className="spread dim">
                     <span>{f.name}</span>
                     <span className="muted">{(f.size / 1024).toFixed(1)} KB</span>

@@ -14,6 +14,25 @@ export interface Release {
 
 export const CHANGELOG: Release[] = [
   {
+    version: '1.6',
+    date: '2026-11-27',
+    en: [
+      'Spine export opens in the Spine editor (Import Data): before, the editor refused a character with several skins or with weighted meshes.',
+      'Skins as in Spine (a switch of the export window, on by default): what another skin replaces moves from the default skin into a skin named base, so the editor shows it. A game then has to set that skin. Switch it off to keep the old layout for a game.',
+      'The export ZIP holds the pictures one by one in an images folder: after Import Data, point the Images node at it.',
+    ],
+    ru: [
+      'Экспорт в Spine открывается в редакторе Spine (Import Data): раньше редактор не принимал персонажа с несколькими скинами или с мешами на весах.',
+      'Скины как в Spine (переключатель в окне экспорта, включён): то, что заменяет другой скин, переносится из стандартного скина в скин base, и редактор это показывает. Игра тогда должна включить этот скин. Выключите переключатель, чтобы для игры осталась прежняя раскладка.',
+      'В ZIP экспорта картинки лежат по отдельности в папке images: после Import Data укажите её в узле Images.',
+    ],
+    zh: [
+      'Spine 导出文件现在可以在 Spine 编辑器中打开（Import Data）：此前编辑器不接受带多个皮肤或带权重网格的角色。',
+      '按 Spine 方式处理皮肤（导出窗口中的开关，默认开启）：被其他皮肤替换的内容从默认皮肤移到名为 base 的皮肤，这样编辑器才能显示。游戏随后需要启用该皮肤。如需为游戏保留原有结构，请关闭开关。',
+      '导出的 ZIP 在 images 文件夹中逐个保存图片：导入后请将 Images 节点指向该文件夹。',
+    ],
+  },
+  {
     version: '1.5',
     date: '2026-11-27',
     en: [

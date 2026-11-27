@@ -6,6 +6,7 @@
  */
 import { animationEndTime } from '../animate';
 import { curveFromAbsolute, sampleKeys } from '../curve';
+import { foldBaseSkin } from '../export/spineEditor';
 import { uid, uniqueName } from '../ids';
 import { deformLength } from '../mesh';
 import { attachmentPictures, cleanSequence, cleanSequenceKey, sequenceFrameNames } from '../sequence';
@@ -199,6 +200,7 @@ export function importSpineJson(input: unknown, name = 'imported'): SpineImportR
     warn(`Spine ${version || 'older than 4.3'} file: converted to the 4.3 structure`);
     for (const w of upgraded.warnings) warn(w);
   } else if (version && !version.startsWith('4.3')) warn(`The file was exported by Spine ${version}; only 4.3 files import faithfully`);
+  root = foldBaseSkin(root); // our own export for the Spine editor keeps part of the default skin in a skin of its own
 
   const project = emptyProject(name);
   const doc: SkeletonDoc = project.skeleton;

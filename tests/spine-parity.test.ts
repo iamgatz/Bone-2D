@@ -5,7 +5,7 @@
 import { describe, expect, it } from 'vitest';
 import * as spine from '@esotericsoftware/spine-core';
 import { buildFixture } from './fixture';
-import { loadOfficial } from './official';
+import { loadOfficial, placeholderOf } from './official';
 import { exportSpineJson } from '../src/core/export/spineJson';
 import { packAtlas, writeAtlas } from '../src/core/export/atlas';
 import { compileSkeleton, createSkeleton, meshWorldVertices, regionWorldVertices } from '../src/core/skeleton';
@@ -101,7 +101,7 @@ describe('Spine 4.3 parity', () => {
     for (const os of official.slots) {
       const mine = ours.slots.find((s) => s.data.name === os.data.name)!;
       const tag = `t=${t} slot ${os.data.name}`;
-      expect(mine.attachmentName ?? null, `${tag} attachment`).toBe(os.appliedPose.attachment?.name ?? null);
+      expect(mine.attachmentName ?? null, `${tag} attachment`).toBe(placeholderOf(sd, os.appliedPose.attachment));
       const c = os.appliedPose.color;
       close(mine.color[0], c.r, `${tag}.r`);
       close(mine.color[1], c.g, `${tag}.g`);
