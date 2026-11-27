@@ -19,7 +19,7 @@ async function openDemo(page: Page) {
 test('a Chinese browser opens in Chinese, and the choice of another language is remembered', async ({ page }) => {
   await page.goto('/');
   await expect(page.locator('html')).toHaveAttribute('lang', 'zh-CN');
-  await expect(page).toHaveTitle('Bone 2D — 2D 骨骼动画');
+  await expect(page).toHaveTitle('Bone 2D — 免费的 2D 骨骼动画编辑器，Spine 替代工具');
   const dialog = page.locator('.overlay .dialog');
   await expect(dialog).toContainText('欢迎使用 Bone 2D');
   await dialog.locator('.lang').getByRole('radio', { name: 'EN' }).click();

@@ -24,9 +24,9 @@ export const LANGS: { value: Lang; label: string }[] = [
 
 const STORAGE_KEY = 'bone2d.lang';
 const TITLE: Record<Lang, string> = {
-  en: 'Bone 2D — 2D skeletal animation',
-  ru: 'Bone 2D — 2D-скелетная анимация',
-  zh: 'Bone 2D — 2D 骨骼动画',
+  en: 'Bone 2D — free 2D skeletal animation editor, a Spine alternative',
+  ru: 'Bone 2D — бесплатный редактор 2D-скелетной анимации, аналог Spine',
+  zh: 'Bone 2D — 免费的 2D 骨骼动画编辑器，Spine 替代工具',
 };
 /** What `<html lang>` says: the browser picks the glyphs of a Chinese text by it. */
 const HTML_LANG: Record<Lang, string> = { en: 'en', ru: 'ru', zh: 'zh-CN' };

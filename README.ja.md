@@ -6,8 +6,8 @@
 
 ![License: MIT](https://img.shields.io/badge/license-MIT-blue) ![CI](https://github.com/iamgatz/Bone-2D/actions/workflows/ci.yml/badge.svg)
 
-**ブラウザで動く 2D スケルタルアニメーションエディターです。** リンクを開いて、リグを組み、アニメーションを付けて、エクスポートするだけです。インストールは不要で、ファイルがあなたのマシンの外に出ることはありません。
-Spine の精神を受け継いだオープンソース（MIT）です。**Spine 4.3** 形式（`.json` またはバイナリの `.skel`、`.atlas`、`.png`）で書き出し、その結果は公式の `spine-core` ランタイムで検証されています。
+**ブラウザで動く無料の 2D スケルタルアニメーションエディターです。** リンクを開いて、リグを組み、アニメーションを付けて、エクスポートするだけです。インストールは不要で、ファイルがあなたのマシンの外に出ることはありません。
+オープンソース（MIT）の Spine 代替ツールです。**Spine 4.3** 形式（`.json` またはバイナリの `.skel`、`.atlas`、`.png`）で書き出し、その結果は公式の `spine-core` ランタイムで検証されています。
 
 **[エディターを開く →](https://iamgatz.github.io/Bone-2D/)** デモ用のリグ「Kit」はワンクリックで開けます。
 直接リンク：[`?demo`](https://iamgatz.github.io/Bone-2D/?demo) でキツネを開き、[`?demo=wave`](https://iamgatz.github.io/Bone-2D/?demo=wave) で `wave` アニメーションを再生した状態で開きます（`walk`、`jump`、`idle` もあります）。インターフェースは英語、ロシア語、簡体字中国語に対応しています。

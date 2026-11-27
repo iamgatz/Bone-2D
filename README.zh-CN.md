@@ -6,8 +6,8 @@
 
 ![License: MIT](https://img.shields.io/badge/license-MIT-blue) ![CI](https://github.com/iamgatz/Bone-2D/actions/workflows/ci.yml/badge.svg)
 
-**在浏览器中运行的 2D 骨骼动画编辑器。** 打开链接即可绑定骨骼、制作动画、导出。无需安装，你的文件不会离开你的电脑。
-开源（MIT），设计思路类似 Spine。它写出 **Spine 4.3** 格式（`.json` 或二进制 `.skel`、`.atlas`、`.png`），结果经过官方 `spine-core` 运行库的校验。
+**在浏览器中运行的免费 2D 骨骼动画编辑器。** 打开链接即可绑定骨骼、制作动画、导出。无需安装，你的文件不会离开你的电脑。
+开源（MIT）的 Spine 替代工具。它写出 **Spine 4.3** 格式（`.json` 或二进制 `.skel`、`.atlas`、`.png`），结果经过官方 `spine-core` 运行库的校验。
 
 **[打开编辑器 →](https://iamgatz.github.io/Bone-2D/)** 示例骨架“Kit”一键即可载入。
 直达链接：[`?demo`](https://iamgatz.github.io/Bone-2D/?demo) 打开示例狐狸，[`?demo=wave`](https://iamgatz.github.io/Bone-2D/?demo=wave) 打开并播放 `wave` 动画（还有 `walk`、`jump`、`idle`）。界面支持英语、俄语和简体中文：浏览器语言为中文时自动使用中文，也可以在顶部栏切换。

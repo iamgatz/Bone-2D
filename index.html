@@ -4,7 +4,45 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="color-scheme" content="dark" />
-    <title>Bone 2D — 2D skeletal animation</title>
+    <title>Bone 2D — free 2D skeletal animation editor, a Spine alternative</title>
+    <meta
+      name="description"
+      content="Free, open-source 2D skeletal animation editor in your browser. No install, no account. Rig, animate and export to Spine 4.3, GIF, video or sprite sheet."
+    />
+    <link rel="canonical" href="https://iamgatz.github.io/Bone-2D/" />
+    <!-- the card a link to the editor turns into in chats and social networks -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Bone 2D" />
+    <meta property="og:url" content="https://iamgatz.github.io/Bone-2D/" />
+    <meta property="og:title" content="Bone 2D — free 2D skeletal animation in your browser" />
+    <meta
+      property="og:description"
+      content="A free, open-source Spine alternative: bones, weighted meshes, IK and physics, with Spine 4.3 export. Nothing to install."
+    />
+    <meta property="og:image" content="https://iamgatz.github.io/Bone-2D/og.jpg" />
+    <meta property="og:image:width" content="1280" />
+    <meta property="og:image:height" content="640" />
+    <meta property="og:image:alt" content="Bone 2D and its demo fox: 2D skeletal animation in your browser" />
+    <meta property="og:locale" content="en_US" />
+    <meta property="og:locale:alternate" content="ru_RU" />
+    <meta property="og:locale:alternate" content="zh_CN" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "SoftwareApplication",
+        "name": "Bone 2D",
+        "description": "Free, open-source 2D skeletal animation editor that runs in the browser and exports Spine 4.3 files.",
+        "url": "https://iamgatz.github.io/Bone-2D/",
+        "image": "https://iamgatz.github.io/Bone-2D/og.jpg",
+        "applicationCategory": "MultimediaApplication",
+        "operatingSystem": "Web browser",
+        "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+        "license": "https://github.com/iamgatz/Bone-2D/blob/main/LICENSE",
+        "sameAs": "https://github.com/iamgatz/Bone-2D",
+        "inLanguage": ["en", "ru", "zh-CN"]
+      }
+    </script>
     <link
       rel="icon"
       href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23111318'/%3E%3Cpath d='M9 22 L16 10 L23 22' stroke='%2331d0aa' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3Ccircle cx='9' cy='22' r='2.4' fill='%2331d0aa'/%3E%3Ccircle cx='16' cy='10' r='2.4' fill='%2331d0aa'/%3E%3Ccircle cx='23' cy='22' r='2.4' fill='%2331d0aa'/%3E%3C/svg%3E"
@@ -21,6 +59,28 @@
   </head>
   <body>
     <div id="root"></div>
+    <!-- for readers without JavaScript, search robots among them -->
+    <noscript>
+      <main
+        style="
+          max-width: 640px;
+          margin: 48px auto;
+          padding: 0 16px;
+          color: #e6e8ec;
+          font:
+            16px/1.5 system-ui,
+            sans-serif;
+        "
+      >
+        <h1>Bone 2D — free 2D skeletal animation editor in your browser</h1>
+        <p>
+          An open-source Spine alternative. Build a rig with bones, weighted meshes, skins, IK and physics, animate it with a dopesheet and
+          curves, and export to Spine 4.3 (JSON or binary), GIF, video or a sprite sheet. It imports Spine and DragonBones projects. Nothing
+          to install, no account, and your files stay on your computer. The interface is in English, Russian and Simplified Chinese.
+        </p>
+        <p>The editor needs JavaScript. <a href="https://github.com/iamgatz/Bone-2D" style="color: #31d0aa">Source code on GitHub</a></p>
+      </main>
+    </noscript>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

@@ -6,8 +6,8 @@
 
 ![License: MIT](https://img.shields.io/badge/license-MIT-blue) ![CI](https://github.com/iamgatz/Bone-2D/actions/workflows/ci.yml/badge.svg)
 
-**A 2D skeletal animation editor that runs in your browser.** Open a link, rig, animate, export. Nothing to install, and your files never leave your machine.
-Open source (MIT), in the spirit of Spine. It writes the **Spine 4.3** format (`.json` or binary `.skel`, `.atlas`, `.png`), and the result is checked against the official `spine-core` runtime.
+**A free 2D skeletal animation editor that runs in your browser.** Open a link, rig, animate, export. Nothing to install, and your files never leave your machine.
+An open-source (MIT) Spine alternative. It writes the **Spine 4.3** format (`.json` or binary `.skel`, `.atlas`, `.png`), and the result is checked against the official `spine-core` runtime.
 
 **[Open the editor →](https://iamgatz.github.io/Bone-2D/)** The demo rig "Kit" is one click away.
 Direct links: [`?demo`](https://iamgatz.github.io/Bone-2D/?demo) opens the fox, [`?demo=wave`](https://iamgatz.github.io/Bone-2D/?demo=wave) opens it playing the `wave` animation (also `walk`, `jump`, `idle`). The interface is in English, Russian and Simplified Chinese.
