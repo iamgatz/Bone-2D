@@ -14,6 +14,7 @@ import {
 import { useProject } from '@/store/doc';
 import { useUi } from '@/store/ui';
 import { IconButton } from '../ui/controls';
+import { PanelTitle } from '../ui/PanelTitle';
 
 /** Spine groups animations in folders; the folder is the part of the name before the last "/" ("emotes/wave"). */
 function folderOf(name: string): string {
@@ -108,9 +109,9 @@ export function AnimationsPanel() {
   };
 
   return (
-    <div className="panel grow" style={{ minHeight: 110 }}>
+    <div className="panel">
       <div className="panel-head">
-        <span className="title">Animations</span>
+        <PanelTitle>Animations</PanelTitle>
         <IconButton icon={Plus} title="New animation" small onClick={() => (createAnimation(), setMode('animate'))} />
       </div>
       <div className="panel-body">

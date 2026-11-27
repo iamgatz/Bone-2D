@@ -3,6 +3,7 @@ import { ChevronDown, ChevronUp, X } from 'lucide-react';
 import { lessonById, LESSONS } from '@/core/lessons';
 import type { LearnTarget } from '@/core/lessons';
 import { useLang } from '@/i18n';
+import { foldPanel } from '@/store/dockActions';
 import { newProject } from '@/store/project';
 import { openLesson, runLessonHelper, setLearnCollapsed, skipStep, stopLesson, useLearn } from '@/store/learn';
 import { Button, IconButton } from './ui/controls';
@@ -11,7 +12,7 @@ import { Button, IconButton } from './ui/controls';
 const TARGETS: Record<LearnTarget, string> = {
   tree: '[data-learn="tree"]',
   viewport: '.viewport-wrap',
-  inspector: 'aside.right',
+  inspector: '[data-panel="inspector"]',
   mode: '[data-learn="mode"]',
   play: '[data-learn="play"]',
   export: '[data-learn="export"]',
@@ -37,6 +38,8 @@ export function LearnCard() {
   // the frame: put on the target of the step in front, taken off when the step, the card or the lesson goes
   useEffect(() => {
     if (!target || collapsed) return;
+    // a lesson never points at a folded panel
+    if (target === 'tree' || target === 'images' || target === 'inspector') foldPanel(target, false);
     const el = document.querySelector(TARGETS[target]);
     el?.setAttribute('data-learn-hl', '');
     return () => el?.removeAttribute('data-learn-hl');

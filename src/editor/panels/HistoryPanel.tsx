@@ -7,6 +7,7 @@ import { backupCurrent, restoreBackup } from '@/store/project';
 import { toast } from '@/store/ui';
 import { IconButton } from '../ui/controls';
 import { Checkpoints } from './Checkpoints';
+import { PanelTitle } from '../ui/PanelTitle';
 
 const WHY: Record<BackupWhy, string> = {
   auto: 'Automatic',
@@ -69,9 +70,9 @@ export function HistoryPanel() {
   }, []);
   const { past, future } = docStore.history;
   return (
-    <div className="panel grow" style={{ minHeight: 110 }}>
+    <div className="panel">
       <div className="panel-head">
-        <span className="title">History</span>
+        <PanelTitle>History</PanelTitle>
         <IconButton icon={Undo2} title="Undo" small disabled={!docStore.canUndo} onClick={() => docStore.undo()} />
       </div>
       <div className="panel-body wrap-rows">

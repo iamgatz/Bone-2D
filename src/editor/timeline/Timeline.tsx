@@ -1,4 +1,5 @@
 import { useCallback, useMemo, useRef, useState } from 'react';
+import type { CSSProperties } from 'react';
 import {
   ArrowLeftToLine,
   ArrowRightFromLine,
@@ -64,9 +65,22 @@ import { setSettings, useSettings } from '@/store/settings';
 import { uiStore, useUi } from '@/store/ui';
 import type { CurveKind } from '@/store/ui';
 import { KEYS } from '../hotkeys';
-import { Button, IconButton, SelectField, TextField, menuKeys, useFitInWindow, useFocusFirstItem, useOutsideClose } from '../ui/controls';
+import {
+  Button,
+  IconButton,
+  SelectField,
+  Splitter,
+  TextField,
+  menuKeys,
+  useFitInWindow,
+  useFocusFirstItem,
+  useOutsideClose,
+} from '../ui/controls';
 import { Dopesheet, ROW_H } from './Dopesheet';
 import type { TimelineMenuRequest } from './Dopesheet';
+
+/** The usual width of the column of names. */
+const LABELS = 232;
 import { TRACK_GROUPS, buildRows, filterRows, isTrackFilter } from '@/core/timelineRows';
 import type { Row, TrackFilter } from '@/core/timelineRows';
 import { setBones } from '@/core/selsets';
@@ -271,6 +285,7 @@ export function Timeline() {
   const selection = useUi((s) => s.selection);
   const expanded = useUi((s) => s.expanded);
   const height = useUi((s) => s.panel.bottom);
+  const labels = useUi((s) => s.panel.labels ?? LABELS);
   const view = useUi((s) => s.timelineView);
   const graphSync = useSettings((s) => s.graphSync);
   const selectedKeys = useUi((s) => s.selectedKeys);
@@ -305,8 +320,20 @@ export function Timeline() {
     uiStore.patch({ selectedKeys: r.keys.flatMap((k) => k.refs).map(encodeKey) });
   };
 
+  /** The width of the keys: the timeline without its column of names. */
+  const trackWidth = () => {
+    const body = bodyRef.current;
+    return (body?.clientWidth ?? 800) - (body?.querySelector<HTMLElement>('.tl-labels')?.offsetWidth ?? LABELS);
+  };
+  /** The column of names can be made wider (long bone names) or narrower (more room for keys). */
+  const dragLabels = (d: number) => {
+    const shown = bodyRef.current?.querySelector<HTMLElement>('.tl-labels')?.offsetWidth ?? labels;
+    const most = (bodyRef.current?.clientWidth ?? 800) * 0.6;
+    uiStore.patch({ panel: { ...uiStore.get().panel, labels: Math.round(Math.max(140, Math.min(most, shown + d))) } });
+  };
+
   const fit = () => {
-    const w = (bodyRef.current?.clientWidth ?? 800) - 232 - 24;
+    const w = trackWidth() - 24;
     const d = Math.max(0.1, anim?.duration ?? 1);
     uiStore.patch({ tlZoom: Math.max(20, w / d), tlScroll: -8 / Math.max(20, w / d) });
   };
@@ -324,7 +351,7 @@ export function Timeline() {
       hi += 0.25;
     }
     const pad = (hi - lo) * 0.06;
-    const w = (bodyRef.current?.clientWidth ?? 800) - 232 - 24;
+    const w = trackWidth() - 24;
     uiStore.patch({ tlZoom: Math.min(3000, Math.max(20, w / (hi - lo + 2 * pad))), tlScroll: lo - pad });
   };
 
@@ -332,7 +359,7 @@ export function Timeline() {
   const jump = (t: number) => (uiStore.patch({ playing: false }), setTime(t));
 
   return (
-    <div className="timeline" style={{ height }}>
+    <div className="timeline" style={{ height, '--w-tl-labels': `${labels}px` } as CSSProperties}>
       <div className="tl-bar">
         <div className="anim-select" style={{ flex: 'none' }}>
           <Film size={15} color="var(--animate)" />
@@ -473,6 +500,12 @@ export function Timeline() {
         </div>
       )}
       <div className="tl-body" ref={bodyRef}>
+        <Splitter
+          dir="v"
+          className="tl-split"
+          onDrag={dragLabels}
+          onReset={() => uiStore.patch({ panel: { ...uiStore.get().panel, labels: LABELS } })}
+        />
         {view === 'graph' ? (
           <GraphEditor anim={anim} doc={doc} selection={selection} selectedKeys={selectedKeys} fps={doc.fps} />
         ) : (
@@ -545,7 +578,7 @@ export function Timeline() {
           <div
             className="tl-empty"
             style={{
-              left: 232,
+              left: 'min(var(--w-tl-labels), 60%)',
               top: 28,
               pointerEvents: !anim ? 'auto' : 'none',
             }}

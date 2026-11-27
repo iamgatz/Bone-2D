@@ -60,7 +60,7 @@ for (const locale of LOCALES) {
       // 1. pick a bone (a click in the hierarchy)
       await page.locator('.left .row').nth(2).click();
       await expect(card.locator('.learn-step-title')).toHaveText(step(1).title[lang]);
-      await expect(page.locator('aside.right')).toHaveAttribute('data-learn-hl', '');
+      await expect(page.locator('[data-panel="inspector"]')).toHaveAttribute('data-learn-hl', '');
       await expect(page.locator('[data-learn="tree"]')).not.toHaveAttribute('data-learn-hl', '');
 
       // 2. change it (the same action a drag or an Inspector field makes)

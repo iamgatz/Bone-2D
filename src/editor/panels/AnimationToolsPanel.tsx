@@ -26,6 +26,7 @@ import { Field } from '../ui/Field';
 import { MARKER_TOKENS } from '../ui/tokens';
 import { Button, IconButton, NumberField, SelectField, Toggle } from '../ui/controls';
 import { keyListsIn } from '@/core/keylists';
+import { PanelTitle } from '../ui/PanelTitle';
 
 /** The reference video (rotoscoping): load a video, place it under the pose, and set where it starts. Nothing is saved or exported. */
 function RefVideoControls() {
@@ -337,9 +338,9 @@ export function AnimationToolsPanel() {
   const hasConstraints = doc.constraints.length > 0;
 
   return (
-    <div className="panel grow" style={{ minHeight: 200 }}>
+    <div className="panel">
       <div className="panel-head">
-        <span className="title">Animation tools</span>
+        <PanelTitle>Animation tools</PanelTitle>
       </div>
       <div className="panel-body pad">
         {!anim && <p className="hint-text">Select an animation to work on it.</p>}

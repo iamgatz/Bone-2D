@@ -8,6 +8,7 @@ import { uiStore, useUi } from '@/store/ui';
 import { KEYS } from '../hotkeys';
 import { Field } from '../ui/Field';
 import { Button, IconButton, NumberField, Toggle } from '../ui/controls';
+import { PanelTitle } from '../ui/PanelTitle';
 
 const SPEEDS = [0.25, 0.5, 1, 2];
 
@@ -35,9 +36,9 @@ export function PlaybackPanel() {
   };
 
   return (
-    <div className="panel grow" style={{ minHeight: 160 }}>
+    <div className="panel">
       <div className="panel-head">
-        <span className="title">Playback</span>
+        <PanelTitle>Playback</PanelTitle>
         <span className="dim row-meta">{anim ? anim.name : ''}</span>
         <IconButton
           icon={Volume2}

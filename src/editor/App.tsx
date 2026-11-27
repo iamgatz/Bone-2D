@@ -68,10 +68,11 @@ import { useLang } from '@/i18n';
 import { LangToggle } from './ui/LangToggle';
 import { openDeepLink } from './deeplink';
 import { startPlaybackLoop } from './playback';
-import { AssetsPanel } from './panels/AssetsPanel';
-import { InspectorPanel } from './panels/InspectorPanel';
-import { TreePanel } from './panels/TreePanel';
 import { Timeline } from './timeline/Timeline';
+import { DockColumn } from './DockColumn';
+import { usePanelDrag } from './ui/panelDrag';
+import { resetDock } from '@/store/dockActions';
+import type { Side } from '@/store/dock';
 import { Button, Dialog, IconButton, Menu, MenuItem, Splitter } from './ui/controls';
 import { Segmented } from './ui/Segmented';
 import { TooltipHost } from './ui/Tooltip';
@@ -102,15 +103,6 @@ import { copyPose, duplicateSelection, pastePose, resetPose, swapSides } from '@
 import { clearGuides } from '@/store/guideActions';
 import { isolateSelection, showAll } from '@/store/visibilityActions';
 import { useSettings } from '@/store/settings';
-import { AnimationsPanel } from './panels/AnimationsPanel';
-import { SkinsPanel } from './panels/SkinsPanel';
-import { AnimationToolsPanel } from './panels/AnimationToolsPanel';
-import { PosesPanel } from './panels/PosesPanel';
-import { PlaybackPanel } from './panels/PlaybackPanel';
-import { MetricsPanel } from './panels/MetricsPanel';
-import { PreviewPanel } from './panels/PreviewPanel';
-import { HistoryPanel } from './panels/HistoryPanel';
-import { CommentsPanel } from './panels/CommentsPanel';
 import { LAYOUTS, VIEW_LIST, sameViews } from '@/store/layout';
 import { applyLayout, startLayoutPersist, toggleAllViews, toggleView } from '@/store/viewActions';
 import { microMove } from '@/store/nudgeActions';
@@ -281,6 +273,9 @@ function TopBar() {
             ))}
             <MenuItem close={close} icon={Save} onClick={() => void saveLayoutDialog()}>
               Save layout as…
+            </MenuItem>
+            <MenuItem close={close} icon={RotateCcw} onClick={() => resetDock()}>
+              Reset panel places and sizes
             </MenuItem>
             <div className="menu-sep" />
             <MenuItem close={close} hotkey={KEYS.hideViews} onClick={() => toggleAllViews()}>
@@ -651,6 +646,7 @@ function Toast() {
 export function App() {
   const panel = useUi((s) => s.panel);
   const views = useUi((s) => s.views);
+  const dock = useUi((s) => s.dock);
   const exportOpen = useUi((s) => s.exportOpen);
   const helpOpen = useUi((s) => s.helpOpen);
   const updatesOpen = useUi((s) => s.updatesOpen);
@@ -800,48 +796,34 @@ export function App() {
     return () => window.removeEventListener('error', onErr);
   }, []);
 
-  const drag = (key: 'left' | 'right' | 'bottom', sign: 1 | -1, min: number, max: number) => (d: number) => {
+  // a size can be dragged as far as the window has room for it
+  const drag = (key: 'left' | 'right' | 'bottom', sign: 1 | -1, min: number, max: () => number) => (d: number) => {
     const p = uiStore.get().panel;
-    uiStore.patch({ panel: { ...p, [key]: Math.min(max, Math.max(min, p[key] + sign * d)) } });
+    // from what is shown, not from what was asked for: a smaller window may have squeezed it
+    const shown = document.querySelector(key === 'bottom' ? '.timeline' : `.main > .${key}`)?.getBoundingClientRect();
+    const from = shown ? (key === 'bottom' ? shown.height : shown.width) : p[key];
+    uiStore.patch({ panel: { ...p, [key]: Math.round(Math.max(min, Math.min(max(), from + sign * d))) } });
   };
+  /** A column may take what the other one and the narrowest viewport leave. */
+  const widest = (other: Side) => () =>
+    Math.min(720, window.innerWidth - (document.querySelector(`.main > .${other}`)?.getBoundingClientRect().width ?? 0) - 420);
+  /** The timeline may take everything above the lowest viewport. */
+  const tallest = () => (document.querySelector('.center')?.clientHeight ?? 0) - 121;
+  const resetSize = (key: 'left' | 'right' | 'bottom', value: number) => () =>
+    uiStore.patch({ panel: { ...uiStore.get().panel, [key]: value } });
 
-  const leftOn =
-    views.tree ||
-    views.images ||
-    views.animations ||
-    views.skins ||
-    views.playback ||
-    views.tools ||
-    views.poses ||
-    views.metrics ||
-    views.history ||
-    views.preview;
+  const dragging = usePanelDrag() !== null;
+  // an empty column shows up while a panel is on the move, as a place to drop it
+  const column = (side: Side) => dragging || dock[side].some((id) => views[id]);
 
   return (
     <div className="app">
       <TopBar />
       <div className="main">
-        {leftOn && (
+        {column('left') && (
           <>
-            <aside
-              className="left"
-              aria-label="Hierarchy and images"
-              style={{ width: panel.left }}
-              onPointerDownCapture={() => setFocusArea('tree')}
-            >
-              {views.tree && <TreePanel />}
-              {views.animations && <AnimationsPanel />}
-              {views.skins && <SkinsPanel />}
-              {views.playback && <PlaybackPanel />}
-              {views.tools && <AnimationToolsPanel />}
-              {views.poses && <PosesPanel />}
-              {views.metrics && <MetricsPanel />}
-              {views.history && <HistoryPanel />}
-              {views.comments && <CommentsPanel />}
-              {views.preview && <PreviewPanel />}
-              {views.images && <AssetsPanel />}
-            </aside>
-            <Splitter dir="v" onDrag={drag('left', 1, 200, 480)} />
+            <DockColumn side="left" width={panel.left} />
+            <Splitter dir="v" onDrag={drag('left', 1, 200, widest('right'))} onReset={resetSize('left', 270)} />
           </>
         )}
         <main className="center">
@@ -852,24 +834,17 @@ export function App() {
           </div>
           {views.timeline && (
             <>
-              <Splitter dir="h" onDrag={drag('bottom', -1, 130, 620)} />
-              <div onPointerDownCapture={() => setFocusArea('timeline')}>
+              <Splitter dir="h" onDrag={drag('bottom', -1, 130, tallest)} onReset={resetSize('bottom', 300)} />
+              <div className="tl-wrap" onPointerDownCapture={() => setFocusArea('timeline')}>
                 <Timeline />
               </div>
             </>
           )}
         </main>
-        {views.inspector && (
+        {column('right') && (
           <>
-            <Splitter dir="v" onDrag={drag('right', -1, 230, 480)} />
-            <aside
-              className="right"
-              aria-label="Inspector"
-              style={{ width: panel.right }}
-              onPointerDownCapture={() => setFocusArea('viewport')}
-            >
-              <InspectorPanel />
-            </aside>
+            <Splitter dir="v" onDrag={drag('right', -1, 230, widest('left'))} onReset={resetSize('right', 300)} />
+            <DockColumn side="right" width={panel.right} />
           </>
         )}
       </div>

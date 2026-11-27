@@ -14,9 +14,9 @@ import { toast, uiStore } from '@/store/ui';
 import { Button, IconButton, NumberField, SelectField, Toggle } from '../ui/controls';
 import { mirrorToPopout, openPopout } from '../popout';
 import { Field } from '../ui/Field';
+import { PanelTitle } from '../ui/PanelTitle';
 
 const SETUP = '';
-const HEIGHT = 190;
 
 /** One animation played over the main one. */
 interface LayerCfg {
@@ -110,6 +110,7 @@ export function PreviewPanel() {
     let scratch: Skeleton | null = null;
     let built: { doc: unknown; skin: Id | null } | null = null;
     let physicsReset = true;
+    let size = '';
     let raf = 0;
     let last = performance.now();
 
@@ -169,6 +170,11 @@ export function PreviewPanel() {
       const dpr = window.devicePixelRatio || 1;
       const w = el.clientWidth;
       const h = el.clientHeight;
+      if (!w || !h) return; // folded away
+      if (size !== `${w}x${h}`) {
+        size = `${w}x${h}`;
+        fit.current = true; // a panel made bigger or smaller shows the whole character again
+      }
       if (el.width !== Math.round(w * dpr) || el.height !== Math.round(h * dpr)) {
         el.width = Math.max(1, Math.round(w * dpr));
         el.height = Math.max(1, Math.round(h * dpr));
@@ -213,9 +219,9 @@ export function PreviewPanel() {
   const animOptions = animations.map((a) => ({ value: a.id, label: a.name }));
 
   return (
-    <div className="panel" style={{ minHeight: 120 }}>
+    <div className="panel">
       <div className="panel-head">
-        <span className="title">Preview</span>
+        <PanelTitle>Preview</PanelTitle>
         <IconButton icon={playing ? Pause : Play} title={playing ? 'Pause' : 'Play'} small onClick={() => setPlaying(!playing)} />
         <IconButton icon={RotateCcw} title="Play the animation again from the start" small onClick={restart} />
         <IconButton icon={Maximize2} title="Fit the view to the animation" small onClick={() => (fit.current = true)} />
@@ -235,8 +241,8 @@ export function PreviewPanel() {
           onClick={() => pickSounds(setSounds)}
         />
       </div>
-      <div className="panel-body" style={{ padding: 8 }}>
-        <canvas ref={canvas} style={{ width: '100%', height: HEIGHT, display: 'block', borderRadius: 4 }} />
+      <div className="panel-body preview-body">
+        <canvas ref={canvas} className="preview-canvas" />
         <Field label="Animation">
           <SelectField value={animId} options={options} onChange={choose} />
         </Field>

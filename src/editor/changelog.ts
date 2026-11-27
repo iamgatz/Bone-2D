@@ -14,6 +14,28 @@ export interface Release {
 
 export const CHANGELOG: Release[] = [
   {
+    version: '1.7',
+    date: '2026-11-27',
+    en: [
+      'The editor stays inside the window: opening many side windows, or a tall timeline on a low screen, no longer made the page longer than the screen. A column that cannot hold its panels now scrolls by itself.',
+      'Panels are yours to arrange: drag the lower edge of a panel to make it taller or shorter, fold it to its title bar with the arrow, drag it by its name up, down or into the other column. Windows → Reset panel places and sizes brings everything back.',
+      'The column of names in the timeline can be made wider or narrower, the columns can be dragged wider, and a taller Preview shows a bigger character. A double click on a divider returns the usual size.',
+      'On a narrow screen the buttons of the timeline go onto a second line instead of being cut off, the viewport keeps room for its tools, and a column with only the Comments window open shows up.',
+    ],
+    ru: [
+      'Редактор не выходит за пределы окна: много открытых боковых окон или высокая шкала времени на низком экране больше не делают страницу длиннее экрана. Колонка, в которую панели не помещаются, прокручивается сама.',
+      'Панели настраиваются: тяните нижний край панели, чтобы сделать её выше или ниже, сворачивайте стрелкой до заголовка, перетаскивайте за название вверх, вниз или в другую колонку. Окна → «Вернуть места и размеры панелей» возвращает всё как было.',
+      'Колонку имён на шкале времени можно расширить или сузить, боковые колонки тянутся шире, а в высоком окне просмотра персонаж крупнее. Двойной щелчок по разделителю возвращает обычный размер.',
+      'На узком экране кнопки шкалы времени переносятся на вторую строку и не обрезаются, вьюпорту остаётся место для инструментов, а колонка с одним окном комментариев теперь появляется.',
+    ],
+    zh: [
+      '编辑器不再超出窗口：打开多个侧边窗口，或在较矮的屏幕上把时间轴调高时，页面不会再比屏幕长。放不下面板的栏会自行滚动。',
+      '面板可以自由安排：拖动面板下边缘调整高度，点箭头收起为标题栏，按住名称把它拖到上方、下方或另一栏。“窗口 → 恢复面板的位置和大小”可还原一切。',
+      '时间轴的名称列可以加宽或收窄，左右两栏可以拖得更宽，预览面板越高角色显示越大。双击分隔条恢复默认大小。',
+      '在较窄的屏幕上，时间轴按钮会换到第二行而不是被裁掉，视口为工具保留空间，只打开“评论”窗口时侧栏也能正常显示。',
+    ],
+  },
+  {
     version: '1.6',
     date: '2026-11-27',
     en: [

@@ -12,6 +12,7 @@ import { fixAllSafeWarnings, fixFinding, fixWarning, revealFinding, revealStress
 import { useProject } from '@/store/doc';
 import { useUi } from '@/store/ui';
 import { getScene } from '@/store/scene';
+import { PanelTitle } from '../ui/PanelTitle';
 
 const WARNING_TEXT: Record<Warning['kind'], string> = {
   unusedImage: 'Image is not used by any attachment',
@@ -83,9 +84,9 @@ export function MetricsPanel() {
   ];
 
   return (
-    <div className="panel grow" style={{ minHeight: 110 }}>
+    <div className="panel">
       <div className="panel-head">
-        <span className="title">Metrics</span>
+        <PanelTitle>Metrics</PanelTitle>
       </div>
       <div className="panel-body metrics">
         <div className="metric-grid">

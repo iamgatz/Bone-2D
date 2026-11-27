@@ -35,6 +35,7 @@ import { openSliceDialog } from '@/store/sliceDialog';
 import { openAutoRig } from '@/store/autoRigDialog';
 import { toast, uiStore } from '@/store/ui';
 import { IconButton, Menu, MenuItem } from '../ui/controls';
+import { PanelTitle } from '../ui/PanelTitle';
 
 function Thumb({ name }: { name: string }) {
   const [url, setUrl] = useState<string | null>(null);
@@ -160,9 +161,9 @@ export function AssetsPanel() {
   };
 
   return (
-    <div className="panel" style={{ height: 260 }} data-learn="images">
+    <div className="panel" data-learn="images">
       <div className="panel-head">
-        <span className="title">Images</span>
+        <PanelTitle>Images</PanelTitle>
 
         <IconButton
           icon={ImagePlus}

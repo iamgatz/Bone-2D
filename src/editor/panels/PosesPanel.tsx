@@ -5,6 +5,7 @@ import { useProject } from '@/store/doc';
 import { useUi } from '@/store/ui';
 import { Field } from '../ui/Field';
 import { IconButton, NumberField } from '../ui/controls';
+import { PanelTitle } from '../ui/PanelTitle';
 
 /**
  * The pose library: poses kept by name (a guard stance, a wave, a hand shape) that go onto the skeleton with one click. In Setup mode they set
@@ -20,9 +21,9 @@ export function PosesPanel() {
   const [renaming, setRenaming] = useState<string | null>(null);
 
   return (
-    <div className="panel grow" style={{ minHeight: 160 }}>
+    <div className="panel">
       <div className="panel-head">
-        <span className="title">Poses</span>
+        <PanelTitle>Poses</PanelTitle>
         <IconButton
           icon={Plus}
           title={selected ? 'Keep the pose of the selected bones as a new pose' : 'Keep the pose of all bones as a new pose'}

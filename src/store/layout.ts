@@ -2,6 +2,8 @@
  * Which windows (views) are open. Spine lets you open and close every view and keeps the arrangement; so does this: the choice is remembered in the browser.
  * Pure data here (no store), so it can be read by the UI store at start-up and tested.
  */
+import { readDock } from './dock';
+import type { Dock } from './dock';
 export type ViewId =
   | 'tree'
   | 'images'
@@ -115,9 +117,19 @@ export const LAYOUTS: { id: string; label: string; views: Views }[] = [
 
 const KEY = 'bone2d.layout';
 
+/** Widths of the two columns, the height of the timeline and the width of its column of names. */
+export interface PanelSizes {
+  left: number;
+  right: number;
+  bottom: number;
+  labels?: number;
+}
+
 export interface SavedLayout {
   views: Views;
-  panel: { left: number; right: number; bottom: number };
+  panel: PanelSizes;
+  /** Where the side panels are and how tall; arrangements saved by an older version have none. */
+  dock?: Dock;
 }
 
 /** Takes a stored value for what it is worth: unknown or missing windows keep their defaults. */
@@ -133,7 +145,13 @@ export function readLayout(raw: string | null): Partial<SavedLayout> {
     }
     const p = data.panel;
     if (p && [p.left, p.right, p.bottom].every((n) => typeof n === 'number' && n >= 100 && n <= 1200))
-      out.panel = { left: p.left, right: p.right, bottom: p.bottom };
+      out.panel = {
+        left: p.left,
+        right: p.right,
+        bottom: p.bottom,
+        ...(typeof p.labels === 'number' && p.labels >= 100 && p.labels <= 1200 ? { labels: p.labels } : {}),
+      };
+    if (data.dock && typeof data.dock === 'object') out.dock = readDock(data.dock);
     return out;
   } catch {
     return {};
@@ -172,12 +190,13 @@ export function readNamedLayouts(raw: string | null): NamedLayout[] {
     const out: NamedLayout[] = [];
     for (const item of list as Partial<NamedLayout>[]) {
       if (!item || typeof item !== 'object' || typeof item.name !== 'string' || !item.name.trim() || typeof item.id !== 'string') continue;
-      const own = readLayout(JSON.stringify({ views: item.views, panel: item.panel }));
+      const own = readLayout(JSON.stringify({ views: item.views, panel: item.panel, dock: item.dock }));
       out.push({
         id: item.id,
         name: uniqueLayoutName(out, item.name),
         views: own.views ?? { ...DEFAULT_VIEWS },
         panel: own.panel ?? { left: 240, right: 280, bottom: 240 },
+        ...(own.dock ? { dock: own.dock } : {}),
       });
     }
     return out;

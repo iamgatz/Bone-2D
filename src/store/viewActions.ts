@@ -1,10 +1,13 @@
+import { setFolded } from './dock';
 import { LAYOUTS, VIEW_LIST, saveLayout } from './layout';
 import type { ViewId, Views } from './layout';
 import { uiStore } from './ui';
 
 export function toggleView(id: ViewId) {
-  const views = uiStore.get().views;
-  uiStore.patch({ views: { ...views, [id]: !views[id] } });
+  const { views, dock } = uiStore.get();
+  // a window that is opened is opened for real, not as a folded title bar
+  const unfolded = !views[id] && id !== 'timeline' ? setFolded(dock, id, false) : dock;
+  uiStore.patch({ views: { ...views, [id]: !views[id] }, dock: unfolded });
 }
 
 export function applyLayout(id: string) {
@@ -30,10 +33,10 @@ export function toggleAllViews() {
 export function startLayoutPersist(): () => void {
   let last = '';
   return uiStore.subscribe(() => {
-    const { views, panel } = uiStore.get();
-    const next = JSON.stringify({ views, panel });
+    const { views, panel, dock } = uiStore.get();
+    const next = JSON.stringify({ views, panel, dock });
     if (next === last) return;
     last = next;
-    saveLayout({ views, panel });
+    saveLayout({ views, panel, dock });
   });
 }

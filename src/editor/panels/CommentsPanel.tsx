@@ -5,6 +5,7 @@ import { useProject } from '@/store/doc';
 import { goToComment, resolveAllComments, setCommentResolved } from '@/store/commentActions';
 import { pickReviewFile } from '@/store/reviewActions';
 import { IconButton } from '../ui/controls';
+import { PanelTitle } from '../ui/PanelTitle';
 
 /** The Comments window: the notes a reviewer left through the player page (File → Import reviewer comments), all in one list. A click goes to the moment. */
 export function CommentsPanel() {
@@ -13,9 +14,9 @@ export function CommentsPanel() {
   const counts = reviewCounts(doc);
   const items = listReview(doc, true).filter((i) => showResolved || !i.marker.resolved);
   return (
-    <div className="panel grow" style={{ minHeight: 110 }}>
+    <div className="panel">
       <div className="panel-head">
-        <span className="title">Comments</span>
+        <PanelTitle>Comments</PanelTitle>
         <span className="chip" title="Open and resolved comments">{`${counts.open} open · ${counts.resolved} resolved`}</span>
         <IconButton icon={MessageSquareText} title="Import the comments a reviewer sent back" small onClick={() => pickReviewFile()} />
         <IconButton

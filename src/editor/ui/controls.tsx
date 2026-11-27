@@ -544,12 +544,13 @@ export function Dialog(props: { title: string; onClose: () => void; children: Re
   );
 }
 
-export function Splitter(props: { dir: 'v' | 'h'; onDrag: (delta: number) => void }) {
+export function Splitter(props: { dir: 'v' | 'h'; onDrag: (delta: number) => void; onReset?: () => void; className?: string }) {
   const [active, setActive] = useState(false);
   const last = useRef(0);
   return (
     <div
-      className={`split-${props.dir}${active ? ' active' : ''}`}
+      className={`split-${props.dir}${active ? ' active' : ''}${props.className ? ` ${props.className}` : ''}`}
+      onDoubleClick={props.onReset}
       onPointerDown={(e) => {
         (e.target as HTMLElement).setPointerCapture(e.pointerId);
         last.current = props.dir === 'v' ? e.clientX : e.clientY;

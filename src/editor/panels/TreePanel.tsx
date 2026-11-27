@@ -66,6 +66,7 @@ import { Field } from '../ui/Field';
 import { RenameBar } from './RenameBar';
 import { SelectionSets } from './SelectionSets';
 import { SkeletonBar } from './SkeletonBar';
+import { PanelTitle } from '../ui/PanelTitle';
 
 /** How far a row of the given depth is moved in: 14 px a level for the first five, then 6 px, so a deep chain still leaves room for a name in a narrow panel. */
 function indent(depth: number): number {
@@ -328,9 +329,9 @@ export function TreePanel() {
   const roots = childrenOf.get(null) ?? [];
 
   return (
-    <div className="panel grow" style={{ minHeight: 120 }} data-learn="tree">
+    <div className="panel" data-learn="tree">
       <div className="panel-head">
-        <span className="title">Hierarchy</span>
+        <PanelTitle>Hierarchy</PanelTitle>
         <IconButton icon={Eye} title="Show everything hidden" small onClick={() => showAll()} />
         <IconButton
           icon={Trash2}

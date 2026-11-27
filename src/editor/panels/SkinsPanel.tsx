@@ -36,6 +36,7 @@ import {
 import { useProject } from '@/store/doc';
 import { useUi } from '@/store/ui';
 import { Button, IconButton, SelectField, Toggle } from '../ui/controls';
+import { PanelTitle } from '../ui/PanelTitle';
 
 /** Bones in tree order with their depth (parents come first in the document, so one pass is enough). */
 function boneRows(doc: SkeletonDoc): { bone: Bone; depth: number }[] {
@@ -264,9 +265,9 @@ export function SkinsPanel() {
   const constraintIcon = (c: Constraint) => <Link2 size={13} className={`k-${c.type}`} />;
 
   return (
-    <div className="panel grow" style={{ minHeight: 160 }}>
+    <div className="panel">
       <div className="panel-head">
-        <span className="title">Skins</span>
+        <PanelTitle>Skins</PanelTitle>
         <IconButton icon={Copy} title="Duplicate skin" small disabled={isDefault} onClick={() => duplicateSkinAction(current.id)} />
         <IconButton
           icon={CopyPlus}

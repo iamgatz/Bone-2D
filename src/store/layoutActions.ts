@@ -18,7 +18,7 @@ function commit(list: NamedLayout[]) {
 export function saveLayoutAs(name: string): NamedLayout | null {
   const wanted = name.trim();
   if (!wanted) return null;
-  const { views, panel } = uiStore.get();
+  const { views, panel, dock } = uiStore.get();
   const list = namedLayoutsStore.get().list;
   const same = list.find((l) => l.name.toLowerCase() === wanted.toLowerCase());
   const entry: NamedLayout = {
@@ -26,6 +26,7 @@ export function saveLayoutAs(name: string): NamedLayout | null {
     name: same?.name ?? uniqueLayoutName(list, wanted),
     views: { ...views },
     panel: { ...panel },
+    dock: structuredClone(dock),
   };
   commit(same ? list.map((l) => (l === same ? entry : l)) : [...list, entry]);
   return entry;
@@ -42,7 +43,9 @@ export async function saveLayoutDialog() {
 
 export function applySavedLayout(id: string) {
   const entry = namedLayoutsStore.get().list.find((l) => l.id === id);
-  if (entry) uiStore.patch({ views: { ...entry.views }, panel: { ...entry.panel } });
+  if (!entry) return;
+  const dock = entry.dock ? { dock: structuredClone(entry.dock) } : {};
+  uiStore.patch({ views: { ...entry.views }, panel: { ...entry.panel }, ...dock });
 }
 
 export function deleteSavedLayout(id: string) {

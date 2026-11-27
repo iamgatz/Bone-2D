@@ -39,6 +39,7 @@ import { toast, uiStore } from '@/store/ui';
 import { clearGuides } from '@/store/guideActions';
 import { isolateSelection, showAll } from '@/store/visibilityActions';
 import { applyLayout, toggleAllViews, toggleView } from '@/store/viewActions';
+import { resetDock } from '@/store/dockActions';
 import { applySavedLayout, namedLayoutsStore, saveLayoutDialog } from '@/store/layoutActions';
 import { saveSelectionSet, selectSet } from '@/store/selectionSetActions';
 import { FLOAT_LIST, toggleFloat } from '@/store/floats';
@@ -266,6 +267,7 @@ export function buildCommands(): Command[] {
     list.push({ id: `float.${w.id}`, group: 'Windows', title: `Floating: ${w.label}`, run: () => toggleFloat(w.id) });
   for (const l of LAYOUTS) list.push({ id: `layout.${l.id}`, group: 'Windows', title: `Layout: ${l.label}`, run: () => applyLayout(l.id) });
   list.push({ id: 'layout.save', group: 'Windows', title: 'Save layout as…', run: () => void saveLayoutDialog() });
+  list.push({ id: 'layout.reset', group: 'Windows', title: 'Reset panel places and sizes', run: resetDock });
   for (const l of namedLayoutsStore.get().list)
     list.push({ id: `layout.saved.${l.id}`, group: 'Windows', title: `Layout: ${l.name}`, run: () => applySavedLayout(l.id) });
   list.push({ id: 'edit.saveset', group: 'Edit', title: 'Keep the selected bones as a selection set', run: () => void saveSelectionSet() });

@@ -54,7 +54,7 @@ textarea {
   display: flex;
   flex-direction: column;
   height: 100%;
-  /* the smallest window the editor is made for (the top bar needs about 1060 px; the columns alone need 200 + 300 + 230): below this the page scrolls instead of things being cut off */
+  /* the smallest window the editor is made for (the top bar needs about 1060 px; the columns alone need 200 + 420 + 230): below this the page scrolls instead of things being cut off */
   min-width: 1100px;
   min-height: 560px;
 }
@@ -62,6 +62,7 @@ textarea {
   flex: 1;
   min-height: 0;
   display: flex;
+  overflow: hidden; /* whatever is opened, the editor never grows past the window */
 }
 .left,
 .right {
@@ -69,6 +70,9 @@ textarea {
   display: flex;
   flex-direction: column;
   min-height: 0;
+  /* panels that cannot all have their smallest height scroll inside the column */
+  overflow-x: hidden;
+  overflow-y: auto;
 }
 /* the same smallest widths as the splitters allow (App.tsx), so a narrow window cannot crush a panel below what its content needs */
 .left {
@@ -81,7 +85,7 @@ textarea {
 }
 .center {
   flex: 1;
-  min-width: 300px;
+  min-width: 420px; /* narrower than this the tools and the view buttons of the viewport run into each other */
   display: flex;
   flex-direction: column;
   min-height: 0;
@@ -416,6 +420,117 @@ textarea {
 }
 
 /* ---------------------------------------------------------------- panels */
+.dock-slot {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+.dock-slot > .panel {
+  flex: 1;
+  min-height: 0;
+}
+.dock-slot.folded > .panel > :not(.panel-head) {
+  display: none;
+}
+/* the lower edge of a panel, to drag it taller or shorter */
+.dock-edge {
+  flex: none;
+  height: 7px;
+  margin: -3px 0;
+  position: relative;
+  z-index: var(--z-split);
+  cursor: row-resize;
+  touch-action: none;
+}
+.dock-edge:hover,
+.dock-edge:active {
+  background: linear-gradient(transparent 2px, var(--accent-line) 2px, var(--accent-line) 5px, transparent 5px);
+}
+.panel-fold {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 16px;
+  height: 20px;
+  margin-left: -8px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-xs);
+  background: none;
+  color: var(--muted);
+  cursor: pointer;
+}
+.panel-fold:hover {
+  background: var(--panel-3);
+  color: var(--text);
+}
+.panel-head .title.drag {
+  cursor: grab;
+  touch-action: none;
+}
+body.moving-panel,
+body.moving-panel * {
+  cursor: grabbing !important;
+}
+.dock-slot.dragged {
+  opacity: 0.5;
+}
+.dock-slot.drop-before::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: var(--accent);
+  z-index: var(--z-split);
+}
+.left.drop-end,
+.right.drop-end {
+  box-shadow: inset 0 -3px 0 var(--accent);
+}
+/* an empty column while a panel is on the move: a place to drop it */
+.left.dock-nothing,
+.right.dock-nothing {
+  width: 130px;
+  min-width: 130px;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  padding: 10px;
+  text-align: center;
+  color: var(--muted);
+  border: 1px dashed var(--border-strong);
+}
+.dock-nothing.drop {
+  background: var(--accent-soft);
+  border-color: var(--accent);
+}
+/* the menu of a title bar must not be cut off by the column it is in */
+.dock-slot .panel-head .menu {
+  position: static;
+}
+.dock-slot .panel-head .menu-pop {
+  position: fixed;
+  top: auto;
+  left: auto;
+}
+.preview-body {
+  display: flex;
+  flex-direction: column;
+  padding: 8px;
+}
+.preview-body > * {
+  flex: none;
+}
+/* the picture takes the height the controls leave, so a taller panel shows a bigger character */
+.preview-body > .preview-canvas {
+  flex: 1 0 190px;
+  width: 100%;
+  min-height: 0;
+  display: block;
+  border-radius: 4px;
+}
 .panel {
   display: flex;
   flex-direction: column;
@@ -1335,8 +1450,16 @@ button.crumb:hover {
 }
 
 /* ---------------------------------------------------------------- timeline */
+/* the timeline keeps the height asked for while the window has room for it and the viewport above */
+.tl-wrap {
+  display: flex;
+  flex-direction: column;
+  flex: 0 1 auto;
+  min-height: 130px;
+}
 .timeline {
   display: flex;
+  flex: 0 1 auto;
   flex-direction: column;
   background: var(--panel);
   border-top: 1px solid var(--border);
@@ -1347,12 +1470,14 @@ button.crumb:hover {
   overflow: hidden;
 }
 .tl-bar {
-  height: var(--h-tl-bar);
+  min-height: var(--h-tl-bar);
   flex: none;
   display: flex;
+  /* buttons that do not fit go onto a second line instead of being cut off */
+  flex-wrap: wrap;
   align-items: center;
   gap: 4px;
-  padding: 0 10px;
+  padding: 3px 10px;
   border-bottom: 1px solid var(--border);
   overflow: hidden;
   min-width: 0;
@@ -1445,8 +1570,15 @@ button.crumb:hover {
   display: flex;
   position: relative;
 }
+.split-v.tl-split {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: calc(min(var(--w-tl-labels), 60%) - 3px);
+  margin: 0;
+}
 .tl-labels {
-  width: var(--w-tl-labels);
+  width: min(var(--w-tl-labels), 60%);
   flex: none;
   border-right: 1px solid var(--border);
   display: flex;

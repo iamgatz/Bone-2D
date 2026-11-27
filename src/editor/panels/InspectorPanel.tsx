@@ -53,6 +53,7 @@ import { ConvertToMeshGroup, LinkedMeshFields, MeshGroup } from './MeshInspector
 import { SequenceSection } from './SequenceSection';
 import { ConstraintInspector } from './ConstraintInspector';
 import { projectStats, projectWarnings } from '@/core/stats';
+import { PanelTitle } from '../ui/PanelTitle';
 
 /** The short names of the three split switches. */
 const AXIS_SHORT: Record<AxisGroup, string> = { translate: 'Pos', scale: 'Scl', shear: 'Shr' };
@@ -742,9 +743,9 @@ export function InspectorPanel() {
   const showBone = selection.bones.length > 0 && !(selection.slot && selection.attachment) && !selection.constraint;
 
   return (
-    <div className="panel grow">
+    <div className="panel">
       <div className="panel-head">
-        <span className="title">Inspector</span>
+        <PanelTitle>Inspector</PanelTitle>
         {selection.bones.length > 1 && <span className="chip">{`${selection.bones.length} bones`}</span>}
       </div>
       <div className="panel-body">

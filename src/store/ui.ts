@@ -6,8 +6,10 @@ import type { SoftShape } from '@/core/soft';
 import { NO_TRACK_FILTER } from '@/core/timelineRows';
 import type { TrackFilter } from '@/core/timelineRows';
 import { createStore, useStore } from './store';
+import { DEFAULT_DOCK } from './dock';
+import type { Dock } from './dock';
 import { DEFAULT_VIEWS, loadLayout } from './layout';
-import type { Views } from './layout';
+import type { PanelSizes, Views } from './layout';
 
 export type Mode = 'setup' | 'animate';
 export type Tool =
@@ -187,9 +189,11 @@ export interface UiState {
   weightView: WeightView;
   meshView: MeshView;
   toast: { id: number; text: string; kind: 'info' | 'error' | 'ok' } | null;
-  panel: { left: number; right: number; bottom: number };
+  panel: PanelSizes;
   /** Which windows are open (see layout.ts). */
   views: Views;
+  /** Where the side panels are and how tall (see dock.ts). */
+  dock: Dock;
   exportOpen: boolean;
   helpOpen: boolean;
   updatesOpen: boolean;
@@ -278,6 +282,7 @@ export const uiStore = createStore<UiState>({
       ? { left: 210, right: 240, bottom: 250 }
       : { left: 270, right: 300, bottom: 300 }),
   views: saved.views ?? DEFAULT_VIEWS,
+  dock: saved.dock ?? DEFAULT_DOCK,
   exportOpen: false,
   helpOpen: false,
   updatesOpen: false,
