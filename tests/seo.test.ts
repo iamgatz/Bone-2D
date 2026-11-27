@@ -16,6 +16,10 @@ describe('the page describes itself', () => {
     expect(html).toContain(`<link rel="canonical" href="${SITE}" />`);
   });
 
+  it('keeps the tag Google Search Console verifies the site by', () => {
+    expect(meta('google-site-verification')).toBeTruthy();
+  });
+
   it('keeps the same English title once the app has started', () => {
     const title = /<title>([^<]+)<\/title>/.exec(html)![1];
     expect(readFileSync('src/i18n/index.ts', 'utf8')).toContain(`en: '${title}'`);
