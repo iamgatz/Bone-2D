@@ -1,6 +1,6 @@
 # Bone 2D
 
-[English](README.md) · **Русский** · [简体中文](README.zh-CN.md)
+[English](README.md) · **Русский** · [简体中文](README.zh-CN.md) · [日本語](README.ja.md)
 
 <p align="center"><img src="docs/media/kit-walk.gif" alt="Демо-лиса Kit идёт: IK-ноги, физический хвост, уши и шарф" width="280"></p>
 

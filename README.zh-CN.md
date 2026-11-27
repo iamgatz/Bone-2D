@@ -1,6 +1,6 @@
 # Bone 2D
 
-[English](README.md) · [Русский](README.ru.md) · **简体中文**
+[English](README.md) · [Русский](README.ru.md) · **简体中文** · [日本語](README.ja.md)
 
 <p align="center"><img src="docs/media/kit-walk.gif" alt="示例狐狸 Kit 行走：IK 腿部、物理尾巴、耳朵和围巾" width="280"></p>
 

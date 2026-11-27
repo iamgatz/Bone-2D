@@ -1,6 +1,6 @@
 # Bone 2D
 
-**English** · [Русский](README.ru.md) · [简体中文](README.zh-CN.md)
+**English** · [Русский](README.ru.md) · [简体中文](README.zh-CN.md) · [日本語](README.ja.md)
 
 <p align="center"><img src="docs/media/kit-walk.gif" alt="The demo fox Kit walking: IK legs, a physics tail, ears and scarf" width="280"></p>
 
