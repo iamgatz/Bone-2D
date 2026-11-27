@@ -528,7 +528,7 @@ export function Dialog(props: { title: string; onClose: () => void; children: Re
         aria-label={props.title}
         tabIndex={-1}
         onKeyDown={keys}
-        style={props.width ? { width: props.width } : undefined}
+        style={props.width ? { width: `min(${props.width}px, calc(100vw - 40px))` } : undefined}
       >
         <div className="dialog-head">
           <span role="heading" aria-level={2}>

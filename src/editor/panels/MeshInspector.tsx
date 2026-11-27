@@ -437,15 +437,17 @@ export function MeshGroup({ slotId, att, part }: { slotId: Id; att: MeshAttachme
           {tool === 'mesh' && <SoftControls />}
           {tool === 'mesh' && setup && !linked && (
             <>
-              <Field label="Triangle order">
-                <Toggle
-                  on={meshView.pickTriangle}
-                  onChange={(v) => uiStore.patch({ meshView: { ...meshView, pickTriangle: v, triangle: v ? meshView.triangle : null } })}
-                  title="A click in the viewport picks a triangle (click again to pick the one under it) instead of a vertex"
-                />
-                <span className="chip" title="Triangles are drawn in this order: where they overlap, the later one is on top">
-                  {pickedTriangle === null ? `${triangleCount} triangles` : `${pickedTriangle + 1} of ${triangleCount}`}
-                </span>
+              <Field stack label="Triangle order">
+                <div className="hstack wrap">
+                  <Toggle
+                    on={meshView.pickTriangle}
+                    onChange={(v) => uiStore.patch({ meshView: { ...meshView, pickTriangle: v, triangle: v ? meshView.triangle : null } })}
+                    title="A click in the viewport picks a triangle (click again to pick the one under it) instead of a vertex"
+                  />
+                  <span className="chip" title="Triangles are drawn in this order: where they overlap, the later one is on top">
+                    {pickedTriangle === null ? `${triangleCount} triangles` : `${pickedTriangle + 1} of ${triangleCount}`}
+                  </span>
+                </div>
               </Field>
               {pickedTriangle !== null && (
                 <div className="hstack mb">
@@ -605,7 +607,7 @@ export function MeshGroup({ slotId, att, part }: { slotId: Id; att: MeshAttachme
                   ? `Auto, Smooth, Prune, Swap, Weld and Update bindings work on the ${pickedVertices} selected vertices.`
                   : 'Select vertices with the mesh tool (M) to limit Auto, Smooth, Prune, Swap, Weld and Update bindings to them; with none selected they work on the whole mesh.'}
               </Hint>
-              <Field label="Prune">
+              <Field stack label="Prune">
                 <NumberField
                   label="bones"
                   value={pruneBones}
@@ -628,7 +630,7 @@ export function MeshGroup({ slotId, att, part }: { slotId: Id; att: MeshAttachme
                 />
               </Field>
               {influencing.length > 1 && (
-                <Field label="Swap">
+                <Field stack label="Swap">
                   <SelectField
                     value={swapFrom}
                     options={influencing.map((id) => ({ value: id, label: boneName(id) }))}
@@ -645,7 +647,7 @@ export function MeshGroup({ slotId, att, part }: { slotId: Id; att: MeshAttachme
                 </Field>
               )}
               {welds.length > 0 && (
-                <Field label="Weld">
+                <Field stack label="Weld">
                   <SelectField
                     value={weldKey}
                     options={welds.map((w, i) => ({ value: String(i), label: `${w.label} (${w.shared})` }))}

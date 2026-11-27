@@ -336,7 +336,7 @@ export const ZH: Record<string, string> = {
   'Drag vertices · Ctrl-click or double-click an edge adds one · Del removes the selected vertices.':
     '拖动顶点 · Ctrl 单击或双击边可添加顶点 · Del 删除所选顶点。',
   'End slot': '结束插槽',
-  '— to the end of the draw order —': '— 直到绘制顺序末尾 —',
+  '— to the end —': '— 直到末尾 —',
   Convex: '凸多边形',
   'Treat the polygon as convex (its convex hull is used when it is not)': '将多边形视为凸多边形（若不是，则使用它的凸包）',
   Inverse: '反向',
@@ -742,7 +742,7 @@ export const ZH: Record<string, string> = {
   'The frame of the marker (seconds are frame / fps)': '标记所在帧（秒 = 帧 / fps）',
   Colour: '颜色',
   Note: '备注',
-  'a note for yourself or the team': '给自己或团队的备注',
+  'a note for yourself': '给自己的备注',
   'Select keys in the timeline first (click the name of a row to take all its keys)':
     '请先在时间轴上选择关键帧（单击行名称可选中该行全部关键帧）',
   'A timeline needs two keys or more to wiggle': '时间线至少需要两个关键帧才能抖动',
@@ -1122,7 +1122,7 @@ export const ZH: Record<string, string> = {
   'Fixed distance': '固定距离',
   'Proportional to the bones': '按骨骼比例',
   'Tangent (follow the curve)': '切线（跟随曲线）',
-  'Chain (point at the next bone)': '链式（指向下一根骨骼）',
+  'Chain (aim at next bone)': '链式（指向下一根骨骼）',
   'Chain + scale (stretch to reach)': '链式 + 缩放（拉伸到达）',
   'Remove the position key at the playhead': '删除播放头处的位置关键帧',
   'Key the position at the playhead': '在播放头处为位置打关键帧',
@@ -1645,7 +1645,7 @@ export const ZH: Record<string, string> = {
   'Turn a picture a quarter turn on the page when that saves room': '能节省空间时，在图集页上将图片旋转 90 度',
   'Save settings': '保存设置',
   'Load settings': '载入设置',
-  'Save these settings to a file to share with a team': '将这些设置保存为文件，便于与团队共享',
+  'Save these settings to a file to use them again': '将这些设置保存为文件，以便再次使用',
   'Load export settings from a file': '从文件载入导出设置',
   'Export settings saved': '导出设置已保存',
   'Export settings loaded': '导出设置已载入',
@@ -2063,8 +2063,8 @@ export const ZH: Record<string, string> = {
   'a reviewer': '审阅者',
   'Select the bone the comment points at': '选择评论所指的骨骼',
   'Compare with a project file': '与项目文件对比',
-  "Compare with a project file: another version of the project (a teammate's copy, an older save)":
-    '与项目文件对比：项目的另一个版本（同事的副本或旧存档）',
+  'Compare with a project file: another version of the project (an older save, another copy)':
+    '与项目文件对比：项目的另一个版本（旧存档或另一份副本）',
   'Copy the list of changes as text (to paste into a message)': '将改动列表复制为文本（便于粘贴到消息里）',
   'Changes copied': '改动列表已复制',
   'This is not a Bone 2D project file': '这不是 Bone 2D 项目文件',

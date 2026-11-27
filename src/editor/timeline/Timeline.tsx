@@ -197,6 +197,7 @@ function TimelineMenu({ menu, onClose }: { menu: TimelineMenuRequest; onClose: (
   }
   const item = (label: string, fn: () => void, hot?: string) => (
     <button
+      key={label}
       type="button"
       role="menuitem"
       className="menu-item"
@@ -390,7 +391,7 @@ export function Timeline() {
           animate
           onClick={() => uiStore.patch({ autoKey: !autoKey })}
         />
-        <div className="tl-opt" style={{ width: 112 }}>
+        <div className="tl-opt">
           <SelectField
             name="New keys interpolation"
             value={defaultCurve}
@@ -616,7 +617,7 @@ function TimeGapControls() {
 function LengthField({ value, onChange }: { value: number; onChange: (v: number) => void }) {
   const [text, setText] = useState<string | null>(null);
   return (
-    <div className="field" style={{ width: 74 }}>
+    <div className="field" style={{ width: 84 }}>
       <input
         value={text ?? value.toFixed(2)}
         onFocus={(e) => (setText(value.toFixed(2)), requestAnimationFrame(() => e.target.select()))}

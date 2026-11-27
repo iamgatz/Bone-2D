@@ -352,7 +352,7 @@ export const RU: Record<string, string> = {
   'Drag vertices · Ctrl-click or double-click an edge adds one · Del removes the selected vertices.':
     'Тяни вершины · Ctrl-клик или двойной клик по ребру добавляет вершину · Del удаляет выбранные.',
   'End slot': 'Конечный слот',
-  '— to the end of the draw order —': '— до конца порядка отрисовки —',
+  '— to the end —': '— до конца —',
   Convex: 'Выпуклый',
   'Treat the polygon as convex (its convex hull is used when it is not)':
     'Считать полигон выпуклым (если он не выпуклый, берётся его выпуклая оболочка)',
@@ -777,7 +777,7 @@ export const RU: Record<string, string> = {
   'The frame of the marker (seconds are frame / fps)': 'Кадр маркера (секунды = кадр / fps)',
   Colour: 'Цвет',
   Note: 'Заметка',
-  'a note for yourself or the team': 'заметка себе или команде',
+  'a note for yourself': 'заметка для себя',
   'Select keys in the timeline first (click the name of a row to take all its keys)':
     'Сначала выбери ключи на таймлайне (щелчок по названию ряда берёт все его ключи)',
   'A timeline needs two keys or more to wiggle': 'Чтобы потрясти таймлайн, в нём нужно два ключа или больше',
@@ -1171,7 +1171,7 @@ export const RU: Record<string, string> = {
   'Fixed distance': 'Фиксированное расстояние',
   'Proportional to the bones': 'Пропорционально костям',
   'Tangent (follow the curve)': 'Касательная (по кривой)',
-  'Chain (point at the next bone)': 'Цепочка (кость смотрит на следующую)',
+  'Chain (aim at next bone)': 'Цепочка (к след. кости)',
   'Chain + scale (stretch to reach)': 'Цепочка + масштаб (тянется до следующей)',
   'Remove the position key at the playhead': 'Убрать ключ позиции в текущем кадре',
   'Key the position at the playhead': 'Поставить ключ позиции в текущем кадре',
@@ -1715,7 +1715,7 @@ export const RU: Record<string, string> = {
   'Turn a picture a quarter turn on the page when that saves room': 'Класть картинку на страницу боком, если это экономит место',
   'Save settings': 'Сохранить настройки',
   'Load settings': 'Загрузить настройки',
-  'Save these settings to a file to share with a team': 'Сохранить эти настройки в файл, чтобы передать команде',
+  'Save these settings to a file to use them again': 'Сохранить эти настройки в файл, чтобы применить их снова',
   'Load export settings from a file': 'Загрузить настройки экспорта из файла',
   'Export settings saved': 'Настройки экспорта сохранены',
   'Export settings loaded': 'Настройки экспорта загружены',
@@ -2146,8 +2146,8 @@ export const RU: Record<string, string> = {
   'a reviewer': 'рецензент',
   'Select the bone the comment points at': 'Выбрать кость, на которую указывает замечание',
   'Compare with a project file': 'Сравнить с файлом проекта',
-  "Compare with a project file: another version of the project (a teammate's copy, an older save)":
-    'Сравнить с файлом проекта: другая версия проекта (копия коллеги, старое сохранение)',
+  'Compare with a project file: another version of the project (an older save, another copy)':
+    'Сравнить с файлом проекта: другая версия проекта (старое сохранение, другая копия)',
   'Copy the list of changes as text (to paste into a message)': 'Скопировать список изменений текстом (чтобы вставить в сообщение)',
   'Changes copied': 'Изменения скопированы',
   'This is not a Bone 2D project file': 'Это не файл проекта Bone 2D',

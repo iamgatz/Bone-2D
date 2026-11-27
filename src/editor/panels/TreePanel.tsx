@@ -345,7 +345,9 @@ export function TreePanel() {
         <Search size={13} />
         <input
           value={query}
-          placeholder="Filter by name (words, * ?, /regex/)"
+          placeholder="Filter by name"
+          aria-label="Filter by name"
+          title="Filter by name (words, * ?, /regex/)"
           onChange={(e) => setQuery(e.target.value)}
           onKeyDown={(e) => {
             if (e.key === 'Escape') setQuery('');

@@ -47,7 +47,7 @@ export function PlaybackPanel() {
         />
       </div>
       <div className="panel-body pad">
-        <div className="hstack mb">
+        <div className="hstack wrap mb">
           <IconButton icon={ChevronLeft} title="Previous frame" onClick={() => setTime(time - 1 / fps)} disabled={!anim} />
           <IconButton
             icon={playing ? Pause : Play}

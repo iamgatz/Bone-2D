@@ -14,6 +14,22 @@ export interface Release {
 
 export const CHANGELOG: Release[] = [
   {
+    version: '1.4',
+    date: '2026-11-27',
+    en: [
+      'Texts that stuck out of their place or were cut off are fixed, in all three languages: the Export window, the lesson card, the lists of the timeline and of the inspector, the menus (their entries broke into several lines), the panels and the floating windows.',
+      'In a low window the tools stand in several columns, so that none of them is off the screen, and the trail of the selection no longer hides under them.',
+    ],
+    ru: [
+      'Исправлены тексты, которые вылезали или обрезались, на всех трёх языках: окно экспорта, карточка урока, списки на таймлайне и в инспекторе, меню (пункты разбивались на несколько строк), панели и плавающие окна.',
+      'В низком окне инструменты встают в несколько колонок, и ни один не уходит за экран, а путь выделения больше не прячется под ними.',
+    ],
+    zh: [
+      '修复了三种语言界面中超出位置或被截断的文字：导出窗口、课程卡片、时间轴和属性面板中的下拉列表、菜单（菜单项曾折成多行）、各面板和浮动窗口。',
+      '窗口较矮时，工具会按多列排列，不会有工具超出屏幕，选择路径也不再被工具栏挡住。',
+    ],
+  },
+  {
     version: '1.3',
     date: '2026-11-27',
     en: [

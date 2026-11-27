@@ -115,7 +115,7 @@ textarea {
   flex: none;
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   padding: 0 12px;
   background: var(--panel);
   border-bottom: 1px solid var(--border);
@@ -142,6 +142,9 @@ textarea {
 @media (max-width: 1130px) {
   .tb-opt2 {
     display: none;
+  }
+  .topbar {
+    gap: 7px;
   }
 }
 .brand {
@@ -299,6 +302,7 @@ textarea {
   gap: 2px;
 }
 .seg button {
+  white-space: nowrap;
   height: 26px;
   padding: 0 14px;
   border: 0;
@@ -335,7 +339,9 @@ textarea {
   position: absolute;
   top: 32px;
   left: 0;
+  width: max-content;
   min-width: 210px;
+  max-width: min(480px, calc(100vw - 16px));
   background: var(--panel-2);
   border: 1px solid var(--border-strong);
   border-radius: var(--radius-lg);
@@ -356,6 +362,9 @@ textarea {
   font: inherit;
   text-align: left;
   cursor: pointer;
+}
+.menu-item > svg {
+  flex: none;
 }
 .menu-item:hover,
 .menu-item:focus-visible {
@@ -417,9 +426,10 @@ textarea {
   flex: 1;
 }
 .panel-head {
-  height: var(--h-panel-head);
+  min-height: var(--h-panel-head);
   flex: none;
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 6px;
   padding: 0 8px 0 12px;
@@ -437,6 +447,13 @@ textarea {
   flex: 1;
   min-height: 0;
   container-type: inline-size; /* the rows inside change their shape with the width of the panel, see .frow below */
+}
+.panel-body.pad {
+  padding: 0 12px 10px;
+}
+.panel-body.pad > .section-label {
+  padding-left: 0;
+  padding-right: 0;
 }
 .summary-chips {
   display: flex;
@@ -502,6 +519,14 @@ textarea {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+.wrap-rows .row {
+  height: auto;
+  min-height: var(--h-row);
+}
+.wrap-rows .row .label {
+  white-space: normal;
+  line-height: 1.25;
 }
 .row .label input {
   width: 100%;
@@ -828,9 +853,23 @@ textarea {
 .frow-label {
   color: var(--muted);
   min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  overflow-wrap: break-word;
+  line-height: 1.25;
+}
+/* a row whose controls need the whole width: long lists, two lists and a button */
+.frow.stacked {
+  grid-template-columns: minmax(0, 1fr);
+  gap: 2px;
+}
+.frow.stacked.keys {
+  grid-template-columns: minmax(0, 1fr) var(--w-key);
+}
+.frow.stacked.keys .frow-label {
+  grid-column: 1 / -1;
+}
+.frow.stacked .frow-body {
+  grid-auto-flow: row;
+  grid-template-columns: minmax(0, 1fr);
 }
 /* the controls of a row share its width equally: X and Y side by side, or one select across */
 .frow-body {
@@ -863,7 +902,8 @@ textarea {
   }
 }
 /* a button with a long label (often a Russian one) wraps onto a second line in a panel instead of sticking out of it */
-.panel-body .btn {
+.panel-body .btn,
+.float-body .btn {
   max-width: 100%;
   min-width: 0;
   overflow-wrap: anywhere;
@@ -875,11 +915,10 @@ textarea {
   line-height: 1.25;
   text-align: left;
 }
-.panel-body .btn.sm {
-  height: 22px;
-  min-height: 0;
-  padding: 0 var(--sp-3);
-  white-space: nowrap;
+.panel-body .btn.sm,
+.float-body .btn.sm {
+  min-height: 22px;
+  padding: 1px var(--sp-3);
 }
 .hstack {
   display: flex;
@@ -887,7 +926,9 @@ textarea {
   gap: var(--sp-3);
   min-width: 0;
 }
-.hstack.wrap {
+/* a row of buttons that does not fit goes onto the next line */
+.hstack.wrap,
+.hstack:has(> .btn) {
   flex-wrap: wrap;
 }
 .stack {
@@ -954,15 +995,29 @@ textarea {
 }
 .card-head {
   display: grid;
-  grid-template-columns: 1fr 16px 1fr 22px;
+  grid-template-columns: 16px minmax(0, 1fr) 22px;
   gap: var(--sp-3);
   align-items: center;
   margin-bottom: var(--sp-3);
 }
+/* from, arrow, to, remove: "from" on the first line, the arrow and "to" on the second */
+.card-head > :nth-child(1) {
+  grid-area: 1 / 2;
+}
+.card-head > :nth-child(2) {
+  grid-area: 2 / 1;
+}
+.card-head > :nth-child(3) {
+  grid-area: 2 / 2;
+}
+.card-head > :nth-child(4) {
+  grid-area: 1 / 3;
+}
 /* switches in two columns: name, switch, name, switch */
 .toggles {
   display: grid;
-  grid-template-columns: 1fr auto 1fr auto;
+  overflow-wrap: anywhere;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr) auto;
   gap: var(--sp-2) var(--sp-4);
   align-items: center;
 }
@@ -1029,6 +1084,7 @@ textarea {
 
 /* ---------------------------------------------------------------- viewport */
 .viewport-wrap {
+  container: viewport / size;
   position: relative;
   flex: 1;
   min-height: 120px;
@@ -1111,10 +1167,58 @@ textarea {
   display: block;
   position: absolute;
   right: 3px;
-  bottom: 1px;
+  bottom: 2px;
+  line-height: 1;
   font-size: var(--fs-2xs);
   color: var(--muted);
   font-family: var(--mono);
+}
+/* a low viewport: the tools stand in two, three or five columns, so that none of them is cut off */
+/* a narrow viewport: the trail is one line with the skeleton and the last two steps, long names shortened */
+@container viewport (max-width: 760px) {
+  .viewport-wrap .vp-crumbs {
+    flex-wrap: nowrap;
+  }
+  .viewport-wrap .crumb-wrap:nth-child(n + 2):nth-last-child(n + 3) {
+    display: none;
+  }
+}
+@container viewport (max-height: 506px) {
+  .toolbox {
+    display: grid;
+    grid-auto-flow: column;
+    grid-template-rows: repeat(7, 34px);
+  }
+  .viewport-wrap .vp-crumbs {
+    left: 102px;
+    max-width: max(120px, calc(100% - 338px));
+  }
+}
+@container viewport (max-height: 290px) {
+  /* the tip of a tool would cover most of so low a viewport */
+  .vp-hint {
+    display: none;
+  }
+  .toolbox {
+    grid-template-rows: repeat(5, 34px);
+  }
+  .viewport-wrap .vp-crumbs {
+    left: 138px;
+    max-width: max(110px, calc(100% - 374px));
+  }
+}
+@container viewport (max-height: 218px) {
+  .toolbox {
+    top: 6px;
+    grid-template-rows: repeat(3, 30px);
+  }
+  .toolbox .icon-btn {
+    width: 30px;
+    height: 30px;
+  }
+  .viewport-wrap .vp-crumbs {
+    display: none;
+  }
 }
 .toolbox .hr {
   height: 1px;
@@ -1145,7 +1249,8 @@ textarea {
   display: flex;
   align-items: center;
   gap: 2px;
-  max-width: calc(100% - 330px);
+  max-width: max(120px, calc(100% - 300px));
+  flex-wrap: wrap;
   overflow: hidden;
   white-space: nowrap;
   padding: 3px 8px;
@@ -1161,6 +1266,7 @@ textarea {
   align-items: center;
   gap: 2px;
   min-width: 0;
+  max-width: 100%;
 }
 .crumb {
   background: transparent;
@@ -1574,6 +1680,7 @@ button.crumb:hover {
 }
 .dialog-foot {
   display: flex;
+  flex-wrap: wrap;
   gap: 8px;
   justify-content: flex-end;
   padding: 12px 16px;
@@ -1657,6 +1764,7 @@ button.crumb:hover {
   display: inline-flex;
   align-items: center;
   height: 20px;
+  white-space: nowrap;
   padding: 0 7px;
   border-radius: var(--radius-lg);
   background: var(--panel-3);
@@ -2488,6 +2596,8 @@ a.btn {
   z-index: var(--z-hud);
   width: 272px;
   max-width: calc(100% - 24px);
+  max-height: calc(100% - 62px); /* a low viewport: the card scrolls, nothing of it is cut off */
+  overflow-y: auto;
   display: flex;
   flex-direction: column;
   gap: var(--sp-3);
@@ -2505,9 +2615,7 @@ a.btn {
 .learn-title {
   flex: 1;
   min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  line-height: 1.25;
   font-weight: 600;
 }
 .learn-count {
@@ -2546,8 +2654,16 @@ a.btn {
 }
 .learn-actions {
   display: flex;
+  flex-wrap: wrap;
   justify-content: flex-end;
   gap: var(--sp-3);
+}
+.learn-actions .btn {
+  max-width: 100%;
+  height: auto;
+  min-height: 22px;
+  white-space: normal;
+  text-align: right;
 }
 /* the part of the editor a lesson step points at: a ring inside its edge, no change of layout, nothing dimmed */
 [data-learn-hl] {

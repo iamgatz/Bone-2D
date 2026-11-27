@@ -179,7 +179,7 @@ export function ExportDialog() {
   return (
     <Dialog
       title="Export"
-      width={tab === 'animation' ? 640 : undefined}
+      width={640}
       onClose={close}
       footer={
         <>
@@ -415,7 +415,7 @@ export function ExportDialog() {
             </div>
           </details>
           <div className="hstack mb">
-            <Button ghost icon={Save} onClick={saveSettings} title="Save these settings to a file to share with a team">
+            <Button ghost icon={Save} onClick={saveSettings} title="Save these settings to a file to use them again">
               Save settings
             </Button>
             <Button ghost icon={Copy} onClick={copySettings} title="Copy these settings as text to paste into a message">

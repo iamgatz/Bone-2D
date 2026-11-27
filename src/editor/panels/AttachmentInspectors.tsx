@@ -39,7 +39,7 @@ export function PolygonInspector({ slotId, att, disabled }: { slotId: Id; att: P
   const doc = project.skeleton;
   const set = (patch: Record<string, unknown>, label: string) => setAttachmentProps(slotId, att.name, patch, label);
   const clip = att.type === 'clipping' ? att : null;
-  const slotOptions = [{ value: '', label: '— to the end of the draw order —' }, ...doc.slots.map((s) => ({ value: s.id, label: s.name }))];
+  const slotOptions = [{ value: '', label: '— to the end —' }, ...doc.slots.map((s) => ({ value: s.id, label: s.name }))];
   const index = doc.slots.findIndex((s) => s.id === slotId);
   const endIndex = clip?.end ? doc.slots.findIndex((s) => s.id === clip.end) : -1;
   const clipHint = clip
@@ -53,7 +53,7 @@ export function PolygonInspector({ slotId, att, disabled }: { slotId: Id; att: P
       </div>
       {clip && (
         <>
-          <Field label="End slot">
+          <Field stack label="End slot">
             <SelectField
               value={clip.end ?? ''}
               options={slotOptions}

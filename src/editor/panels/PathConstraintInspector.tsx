@@ -20,7 +20,7 @@ const SPACING_LABEL: Record<PathSpacingMode, string> = {
 };
 const ROTATE_LABEL: Record<PathRotateMode, string> = {
   tangent: 'Tangent (follow the curve)',
-  chain: 'Chain (point at the next bone)',
+  chain: 'Chain (aim at next bone)',
   chainScale: 'Chain + scale (stretch to reach)',
 };
 
@@ -95,21 +95,21 @@ export function PathConstraintInspector({ id }: { id: Id }) {
       </Section>
 
       <Section id="path.modes" title="Modes">
-        <Field label="Position">
+        <Field stack label="Position">
           <SelectField
             value={c.positionMode}
             options={PATH_POSITION_MODES.map((m) => ({ value: m, label: POSITION_LABEL[m] }))}
             onChange={(v) => !animate && updatePathConstraint(id, (x) => void (x.positionMode = v), 'Path position mode')}
           />
         </Field>
-        <Field label="Spacing">
+        <Field stack label="Spacing">
           <SelectField
             value={c.spacingMode}
             options={PATH_SPACING_MODES.map((m) => ({ value: m, label: SPACING_LABEL[m] }))}
             onChange={(v) => !animate && updatePathConstraint(id, (x) => void (x.spacingMode = v), 'Path spacing mode')}
           />
         </Field>
-        <Field label="Rotate">
+        <Field stack label="Rotate">
           <SelectField
             value={c.rotateMode}
             options={PATH_ROTATE_MODES.map((m) => ({ value: m, label: ROTATE_LABEL[m] }))}

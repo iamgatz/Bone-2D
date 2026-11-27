@@ -32,7 +32,9 @@ export function Breadcrumbs() {
                 {c.label}
               </button>
             ) : (
-              <span className={`crumb ${c.kind}${i === last ? ' current' : ''}`}>{c.label}</span>
+              <span className={`crumb ${c.kind}${i === last ? ' current' : ''}`} title={c.label}>
+                {c.label}
+              </span>
             )}
           </span>
         );

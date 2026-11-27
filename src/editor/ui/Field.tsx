@@ -24,12 +24,12 @@ export function KeyButton(props: { on: boolean; onClick: () => void; title: stri
 /**
  * One row of an inspector: a label, the controls, and (in Animate mode) a column for the key button.
  * The controls share the width equally (two number fields for X and Y, one select across the whole row); put several controls of
- * different widths into one `.hstack` child instead.
+ * different widths into one `.hstack` child instead. `stack` puts the controls under the label, each across the whole row.
  */
-export function Field(props: { label: string; title?: string; children: ReactNode; keyButton?: ReactNode }) {
+export function Field(props: { label: string; title?: string; children: ReactNode; keyButton?: ReactNode; stack?: boolean }) {
   const animate = useUi((s) => s.mode === 'animate');
   return (
-    <div className={`frow${animate ? ' keys' : ''}`}>
+    <div className={`frow${animate ? ' keys' : ''}${props.stack ? ' stacked' : ''}`}>
       <span
         className="frow-label"
         data-tip={props.title ?? props.label}

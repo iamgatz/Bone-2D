@@ -101,7 +101,7 @@ function MarkerDialog({ id }: { id: string }) {
         </div>
       </Field>
       <Field label="Note">
-        <TextField value={m.text} placeholder="a note for yourself or the team" onCommit={(v) => updateMarker(id, { text: v })} wide />
+        <TextField value={m.text} placeholder="a note for yourself" onCommit={(v) => updateMarker(id, { text: v })} wide />
       </Field>
     </Dialog>
   );

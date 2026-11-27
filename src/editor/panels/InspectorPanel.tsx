@@ -221,7 +221,7 @@ function BoneInspector({ id }: { id: Id }) {
             label="Split X / Y"
             title="Key position, scale or shear one axis at a time: X and Y get their own timelines (Spine's split timelines)"
           >
-            <div className="hstack">
+            <div className="hstack wrap">
               {(['translate', 'scale', 'shear'] as const).map((g) => (
                 <span key={g} className="hstack">
                   <span className="dim">{AXIS_SHORT[g]}</span>
@@ -650,7 +650,7 @@ function SlotInspector({ slotId, attachmentName }: { slotId: Id; attachmentName:
           <SelectField value={current ?? ''} options={attOptions} onChange={(v) => setSlotAttachment(slotId, v || null)} />
         </Field>
         {activeSkin && att && attachmentImage(att) !== null && (
-          <Field label="In skin">
+          <Field stack label="In skin">
             <SelectField
               value={(activeSkin.attachments[slotId]?.[att.name] && attachmentImage(activeSkin.attachments[slotId][att.name])) || ''}
               options={[

@@ -162,7 +162,7 @@ export function Checkpoints() {
         <span className="actions pinned">
           <IconButton
             icon={FileDiff}
-            title="Compare with a project file: another version of the project (a teammate's copy, an older save)"
+            title="Compare with a project file: another version of the project (an older save, another copy)"
             small
             onClick={() => pickProjectToCompare()}
           />

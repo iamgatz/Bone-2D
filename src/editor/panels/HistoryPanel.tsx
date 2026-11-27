@@ -74,7 +74,7 @@ export function HistoryPanel() {
         <span className="title">History</span>
         <IconButton icon={Undo2} title="Undo" small disabled={!docStore.canUndo} onClick={() => docStore.undo()} />
       </div>
-      <div className="panel-body">
+      <div className="panel-body wrap-rows">
         <div className="row" onClick={() => docStore.jumpTo(-1)}>
           <span className="ico">
             <CircleDot size={12} />
